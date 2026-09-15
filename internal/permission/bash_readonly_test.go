@@ -30,8 +30,14 @@ func TestIsReadOnlyBashSubject(t *testing.T) {
 		{"git diff", true},
 		{"git show HEAD", true},
 		{"git blame main.go", true},
-		{"git remote", false},
+		// Bare `git remote` / `git branch` only list refs — the shell parser
+		// proves they are readers. Adding operands or mutation flags flips them
+		// to writers (see the cases below), so this is not a loosening.
+		{"git remote", true},
+		{"git remote -v", true},
 		{"git remote add origin git@example.com:x/y", false},
+		{"git branch feature/new", false},
+		{"git branch -D main", false},
 		{"git config --global user.name Xinwei", false},
 		{"git stash", false},
 		{"git stash push", false},
@@ -51,8 +57,7 @@ func TestIsReadOnlyBashSubject(t *testing.T) {
 		{"rm file.txt", false},
 		{"rm -rf /", false},
 		{"git commit -m 'msg'", false},
-		{"git branch", false},
-		{"git branch feature/new", false},
+		{"git branch --set-upstream-to=origin/main main", false},
 		{"git push", false},
 		{"git push --force", false},
 		{"cd /tmp && rm file.txt", false},
@@ -88,6 +93,20 @@ func TestIsReadOnlyBashSubject(t *testing.T) {
 		{"curl https://example.com", false},
 		{"npm install", false},
 		{"chmod 777 file", false},
+		// Regression cases for the shellsafe-based classifier merged from
+		// upstream Reasonix (merge-reasonix-1.38.8). These all used to pass
+		// through the old first-word whitelist as "read-only":
+		//   * bare `env` was whitelisted, so `env <anything>` auto-approved.
+		//   * `date -s` rewrites the system clock.
+		//   * `cargo check` executes the crate's build.rs.
+		// PowerShell inspection cmdlets are now recognised as readers.
+		{"env rm -rf /", false},
+		{"env FOO=1 ls", false},
+		{"date -s 2020-01-01", false},
+		{"cargo check", false},
+		{"cargo build", false},
+		{"Get-ChildItem", true},
+		{"Get-Content go.mod", true},
 		{"", false},
 	}
 
