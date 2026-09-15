@@ -28,10 +28,11 @@ import (
 type Status string
 
 const (
-	Running Status = "running"
-	Done    Status = "done"
-	Failed  Status = "failed"
-	Killed  Status = "killed"
+	Running     Status = "running"
+	Done        Status = "done"
+	Failed      Status = "failed"
+	Killed      Status = "killed"
+	Interrupted Status = "interrupted"
 )
 
 // View is a read-only snapshot of a job for the status bar.

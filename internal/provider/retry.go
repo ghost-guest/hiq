@@ -171,6 +171,7 @@ func SendWithRetry(ctx context.Context, httpClient *http.Client, opts SendOption
 		if err != nil {
 			return nil, fmt.Errorf("%s: build request: %w", provName, err)
 		}
+		recordRequestAttempt(ctx)
 		resp, err := httpClient.Do(req)
 		if err != nil {
 			if !transientErr(err) {
