@@ -1,6 +1,6 @@
 module github.com/zzycxz/fairpeer/desktop
 
-go 1.26
+go 1.26.0
 
 toolchain go1.26.5
 
@@ -22,7 +22,7 @@ require (
 	golang.org/x/crypto v0.53.0
 	golang.org/x/image v0.43.0
 	golang.org/x/mod v0.37.0
-	golang.org/x/sys v0.46.0
+	golang.org/x/sys v0.47.0
 	golang.org/x/text v0.39.0
 )
 
@@ -131,6 +131,7 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.52.0 // indirect
+	mvdan.cc/sh/v3 v3.14.0 // indirect
 )
 
 replace github.com/zzycxz/fairpeer => ../
