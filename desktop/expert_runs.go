@@ -333,8 +333,8 @@ func (a *App) priorExpertRuns(ctrl tabSession) []experts.PriorRun {
 		if m.Role != provider.RoleTool || m.Name != experts.ExpertCollabToolName {
 			continue
 		}
-		s, ok := m.Content.(string)
-		if !ok {
+		s := m.Content
+		if s == "" {
 			continue
 		}
 		if rec, ok := experts.ParseCollabRecord(s); ok {

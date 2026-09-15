@@ -418,8 +418,14 @@ func (a *Agent) SummarizeUpTo(ctx context.Context, toIdx int) error {
 // isCompactionSummary reports whether m is a rolling summary from a prior fold.
 func isCompactionSummary(m provider.Message) bool {
 	return m.Role == provider.RoleUser &&
-		strings.HasPrefix(strings.TrimLeft(provider.ContentString(m.Content), "\n "), summaryTagOpen)
+		strings.HasPrefix(strings.TrimLeft(m.Content, "\n "), summaryTagOpen)
 }
+
+// IsCompactionSummary reports whether m is a rolling digest inserted by a prior
+// compaction fold. Exported for session owners outside this package (e.g. the
+// guardian) whose turn rollback must not treat a digest as a disposable user
+// message.
+func IsCompactionSummary(m provider.Message) bool { return isCompactionSummary(m) }
 
 // latestCompactionSummary returns the text of the most recent compaction-summary
 // message in msgs plus its index, or ("", -1) when none exists. Only the summary
@@ -653,6 +659,7 @@ func (a *Agent) summarize(ctx context.Context, region []provider.Message, instru
 	}
 
 	var b strings.Builder
+	var usage *provider.Usage
 	for {
 		select {
 		case <-ctx.Done():
@@ -663,11 +670,23 @@ func (a *Agent) summarize(ctx context.Context, region []provider.Message, instru
 				if s == "" {
 					return "", fmt.Errorf("summarizer returned empty output")
 				}
+				// The summarizer call is billable like any other, so report its
+				// token cost on the same Usage event stream the turn loop uses.
+				// Frontends show the compaction cost, and internal callers that
+				// aggregate a step's spend (the guardian) see it too.
+				if usage != nil && usage.TotalTokens > 0 {
+					a.sink.Emit(event.Event{Kind: event.Usage, ModelRef: a.modelRef,
+						Usage:      usage,
+						Pricing:    a.pricing,
+						SessionHit: int(a.sessCacheHit.Load()), SessionMiss: int(a.sessCacheMiss.Load())})
+				}
 				return s, nil
 			}
 			switch chunk.Type {
 			case provider.ChunkText:
 				b.WriteString(chunk.Text)
+			case provider.ChunkUsage:
+				usage = chunk.Usage
 			case provider.ChunkError:
 				return "", chunk.Err
 			}

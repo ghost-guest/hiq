@@ -109,6 +109,10 @@ const (
 	// Item is the synthetic kind for the 4-1 item model (dual-track with
 	// the flat kinds above). Item payload carries the structured form.
 	Item
+	// GuardianAssessment reports the outcome of a guardian sub-agent safety
+	// review (Guardian payload: Outcome, RiskLevel, Rationale, review usage).
+	// Appended last to keep the Kind values before it wire-stable.
+	GuardianAssessment
 )
 
 // Level classifies a Notice so sinks can style or filter it.
@@ -175,8 +179,8 @@ type FileDiff struct {
 // The default 3 (once/session/always) stay unchanged; fine-grained options
 // appear only when the tool carries path or network restrictions.
 type Decision struct {
-	Label       string       `json:"label"`
-	Scope       string       `json:"scope"`  // once | session | always | path | host
+	Label        string        `json:"label"`
+	Scope        string        `json:"scope"` // once | session | always | path | host
 	Restrictions *Restrictions `json:"restrictions,omitempty"`
 }
 
@@ -319,6 +323,11 @@ type Event struct {
 	RetryMax     int        // Retrying: total attempts before giving up
 	RetryAfterMs int64      // Retrying: backoff delay before the attempt (0 = immediate)
 	Collab       Collab     // ExpertCollab
+	// ModelRef is the canonical "provider/model" ref that produced this event.
+	// Set on Usage and GuardianAssessment events.
+	ModelRef string
+	// Guardian carries the guardian review payload (GuardianAssessment only).
+	Guardian GuardianResult
 	// Item carries the item-model payload (4-1 dual-track). Non-nil only on
 	// the synthetic "Item" Kind; old sinks skip it naturally.
 	Item *ItemEvent
@@ -338,6 +347,21 @@ func RecordReadinessAudit(s Sink, a evidence.ReadinessAudit) {
 	if rs, ok := s.(ReadinessAuditSink); ok {
 		rs.RecordReadinessAudit(a)
 	}
+}
+
+// GuardianResult carries the outcome of a guardian sub-agent safety review.
+// Emitted with Kind=GuardianAssessment after each review completes.
+type GuardianResult struct {
+	ID                string            // unique review id
+	Tool              string            // tool being reviewed (e.g. "bash")
+	Subject           string            // call subject (e.g. "rm -rf /tmp/build")
+	Outcome           string            // "allow" | "deny"
+	RiskLevel         string            // "low" | "medium" | "high" | "critical"
+	UserAuthorization string            // "unknown" | "low" | "medium" | "high"
+	Rationale         string            // one-sentence reason
+	DurationMs        int64             // wall-clock review time
+	Usage             *provider.Usage   // guardian review token telemetry
+	Pricing           *provider.Pricing // for cost display (nil = omit cost)
 }
 
 // Sink consumes a turn's events. The agent calls Emit serially from its run

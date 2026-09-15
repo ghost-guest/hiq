@@ -22,6 +22,7 @@ import (
 	// cmd/fairpeer does — boot.Build resolves providers/tools from these registries.
 	_ "github.com/zzycxz/fairpeer/internal/provider/anthropic"
 	_ "github.com/zzycxz/fairpeer/internal/provider/openai"
+	"github.com/zzycxz/fairpeer/internal/sandbox"
 	_ "github.com/zzycxz/fairpeer/internal/tool/builtin"
 )
 
@@ -57,7 +58,25 @@ func windowsWebview2GPUDisabled() bool {
 	return channel == "canary"
 }
 
+// runWindowsSandboxHelperIfRequested handles the private re-entry used by the
+// native Windows command sandbox, reporting whether this process was that
+// helper (in which case the caller must exit with the returned code).
+func runWindowsSandboxHelperIfRequested(argv []string) (int, bool) {
+	if len(argv) > 1 && argv[1] == sandbox.WindowsHelperCommand {
+		return sandbox.RunWindowsSandboxHelper(argv[2:], os.Stdin, os.Stdout, os.Stderr), true
+	}
+	return 0, false
+}
+
 func main() {
+	// Windows command-sandbox helper dispatch. An enforced bash launch re-enters
+	// this same executable with a private argv marker; dispatch before any
+	// application initialization so an enforced launch can never fall through
+	// into an unconfined GUI process.
+	if code, ok := runWindowsSandboxHelperIfRequested(os.Args); ok {
+		os.Exit(code)
+	}
+	sandbox.RegisterHelperDispatch()
 	app := NewApp()
 
 	// Restore saved window size, or fall back to the default.

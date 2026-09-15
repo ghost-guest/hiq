@@ -340,6 +340,9 @@ func (r *desktopExpertRunner) runSearchMiniAgent(ctx context.Context, prov provi
 			}
 		}
 	})
+	// An expert step's output is rendered into the collaboration transcript, so
+	// it must be a real answer rather than a reasoning-only stop.
+	opts.RequireVisibleFinal = true
 	sub := agent.New(prov, reg, sess, opts, sink)
 	runErr := sub.Run(ctx, task)
 	answer := lastAssistantText(sess)

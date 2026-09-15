@@ -417,21 +417,23 @@ func TestParseImageDataURL(t *testing.T) {
 	}
 }
 
-// --- ImageParts ---
+// --- Message.Images / Message.Audio ---
 
-func TestImagePartsExtractsMultipleImages(t *testing.T) {
-	content := ImageContent("看看这三张图",
+func TestImageMessageCarriesTextAndImages(t *testing.T) {
+	m := ImageMessage(RoleUser, "看看这三张图",
 		"data:image/png;base64,aaa=",
 		"data:image/jpeg;base64,bbb=",
 		"data:image/gif;base64,ccc=",
 	)
-	imgs := ImageParts(content)
-	if len(imgs) != 3 {
-		t.Fatalf("ImageParts returned %d images, want 3", len(imgs))
+	if m.Content != "看看这三张图" {
+		t.Fatalf("Content = %q, want the prompt text", m.Content)
+	}
+	if !m.HasImages() || len(m.Images) != 3 {
+		t.Fatalf("Images = %d, want 3", len(m.Images))
 	}
 	wantMT := []string{"image/png", "image/jpeg", "image/gif"}
-	for i, img := range imgs {
-		mt, _, ok := ParseImageDataURL(img.ImageURL.URL)
+	for i, ref := range m.Images {
+		mt, _, ok := ParseImageDataURL(ref)
 		if !ok {
 			t.Errorf("image %d: ParseImageDataURL failed", i)
 		}
@@ -441,16 +443,45 @@ func TestImagePartsExtractsMultipleImages(t *testing.T) {
 	}
 }
 
-func TestImagePartsTextOnly(t *testing.T) {
-	imgs := ImageParts("just text")
-	if len(imgs) != 0 {
-		t.Errorf("ImageParts(text) returned %d images, want 0", len(imgs))
+func TestTextOnlyMessageHasNoMedia(t *testing.T) {
+	m := Message{Role: RoleUser, Content: "just text"}
+	if m.HasImages() || m.HasAudio() {
+		t.Errorf("text-only message reported media: images=%v audio=%v", m.Images, m.Audio)
 	}
 }
 
-func TestImagePartsNil(t *testing.T) {
-	imgs := ImageParts(nil)
-	if len(imgs) != 0 {
-		t.Errorf("ImageParts(nil) returned %d images, want 0", len(imgs))
+// Legacy session files stored content as a []ContentPart array. Loading one must
+// split it back into Content/Images/Audio rather than dropping the image data.
+func TestMessageUnmarshalLegacyContentParts(t *testing.T) {
+	raw := `{"role":"user","content":[
+		{"type":"text","text":"看看这张图"},
+		{"type":"image_url","image_url":{"url":"data:image/png;base64,aaa="}}
+	]}`
+	var m Message
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		t.Fatalf("unmarshal legacy message: %v", err)
+	}
+	if m.Content != "看看这张图" {
+		t.Errorf("Content = %q, want %q", m.Content, "看看这张图")
+	}
+	if len(m.Images) != 1 || m.Images[0] != "data:image/png;base64,aaa=" {
+		t.Errorf("Images = %v, want the legacy image URL", m.Images)
+	}
+}
+
+func TestMessageUnmarshalLegacyAudioParts(t *testing.T) {
+	raw := `{"role":"user","content":[
+		{"type":"text","text":"转写这段"},
+		{"type":"input_audio","input_audio":{"data":"AAAA","format":"wav"}}
+	]}`
+	var m Message
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		t.Fatalf("unmarshal legacy message: %v", err)
+	}
+	if m.Content != "转写这段" {
+		t.Errorf("Content = %q, want %q", m.Content, "转写这段")
+	}
+	if len(m.Audio) != 1 || m.Audio[0].Data != "AAAA" || m.Audio[0].Format != "wav" {
+		t.Errorf("Audio = %+v, want one wav block with data AAAA", m.Audio)
 	}
 }

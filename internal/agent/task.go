@@ -507,6 +507,11 @@ func RunSubAgentWithSession(ctx context.Context, prov provider.Provider, reg *to
 	if sess == nil {
 		return "", fmt.Errorf("sub-agent session is nil")
 	}
+	// A sub-agent's answer is consumed programmatically (parsed, summarized, or
+	// shown as a delivery), so it always requires a visible final answer — a
+	// reasoning-only clean stop would surface as an empty result. Mirrors the
+	// upstream Reasonix sub-agent contract.
+	opts.RequireVisibleFinal = true
 	sub := New(prov, reg, sess, opts, sink)
 	if err := sub.Run(ctx, prompt); err != nil {
 		return "", fmt.Errorf("sub-agent: %w", err)

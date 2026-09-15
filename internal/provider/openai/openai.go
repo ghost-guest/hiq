@@ -292,18 +292,16 @@ func (c *client) buildRequest(req provider.Request) chatRequest {
 			wire.Function.Arguments = tc.Arguments
 			cm.ToolCalls = append(cm.ToolCalls, wire)
 		}
-		if m.Role != provider.RoleAssistant || len(cm.ToolCalls) == 0 || provider.ContentString(m.Content) != "" {
+		if m.Role != provider.RoleAssistant || len(cm.ToolCalls) == 0 || m.Content != "" {
 			cm.Content = m.Content
-			// For vision-capable models, convert image content parts to the
-			// wire format with detail level. Audio (input_audio) parts convert
-			// unconditionally — they target models the user explicitly chose as
-			// voice_model, which are audio-capable by definition; there's no
-			// separate "audio" capability flag to gate on.
+			// For vision-capable models, convert image references to the
+			// multimodal wire format with detail level. Audio (input_audio)
+			// blocks convert unconditionally — they target models the user
+			// explicitly chose as voice_model, which are audio-capable by
+			// definition; there's no separate "audio" capability flag to gate on.
 			if m.Role == provider.RoleUser {
-				if parts, ok := m.Content.([]provider.ContentPart); ok {
-					if (ModelSupportsVision(c.model, c.vision) && hasImageParts(parts)) || hasAudioParts(parts) {
-						cm.Content = imageContentParts(parts, c.visionDetail)
-					}
+				if (ModelSupportsVision(c.model, c.vision) && len(m.Images) > 0) || len(m.Audio) > 0 {
+					cm.Content = imageContentParts(m.Content, m.Images, m.Audio, c.visionDetail)
 				}
 			}
 		}
@@ -678,22 +676,13 @@ type wireUsage struct {
 	} `json:"completion_tokens_details"`
 }
 
-// hasImageParts reports whether any part in the slice is an image_url.
-func hasImageParts(parts []provider.ContentPart) bool {
-	for _, p := range parts {
-		if p.Type == "image_url" && p.ImageURL != nil {
-			return true
-		}
-	}
-	return false
-}
-
 // chatContentPart is the wire format for a content part in the OpenAI API.
 type chatContentPart struct {
 	Type       string              `json:"type"`
 	Text       string              `json:"text,omitempty"`
 	ImageURL   *chatImageURLPart   `json:"image_url,omitempty"`
 	InputAudio *chatInputAudioPart `json:"input_audio,omitempty"`
+	FileID     string              `json:"file_id,omitempty"`
 }
 
 // chatImageURLPart is the wire format for an image_url content part.
@@ -710,49 +699,38 @@ type chatInputAudioPart struct {
 	Format string `json:"format,omitempty"`
 }
 
-// imageContentParts converts provider ContentParts to the OpenAI wire format,
-// applying the vision detail level to all images. Despite the legacy name it
-// now handles all multimodal part types — text, image_url, and input_audio —
-// so STT (which sends input_audio) routes through the same converter.
-func imageContentParts(parts []provider.ContentPart, detail string) []chatContentPart {
-	out := make([]chatContentPart, 0, len(parts))
-	for _, p := range parts {
-		switch p.Type {
-		case "text":
-			out = append(out, chatContentPart{Type: "text", Text: p.Text})
-		case "image_url":
-			if p.ImageURL != nil {
-				out = append(out, chatContentPart{
-					Type: "image_url",
-					ImageURL: &chatImageURLPart{
-						URL:    p.ImageURL.URL,
-						Detail: detail,
-					},
-				})
-			}
-		case "input_audio":
-			if p.InputAudio != nil {
-				out = append(out, chatContentPart{
-					Type: "input_audio",
-					InputAudio: &chatInputAudioPart{
-						Data:   p.InputAudio.Data,
-						Format: p.InputAudio.Format,
-					},
-				})
-			}
+// imageContentParts converts a message's text + vision references + inline
+// audio into the OpenAI multimodal wire format, applying the vision detail
+// level to every image. Text-only turns never reach here: buildRequest keeps
+// them as a plain string so the serialized bytes stay stable for prompt
+// caching. Audio parts are fairpeer-specific (upstream Reasonix has no STT
+// path) and route through the same converter as input_audio blocks.
+func imageContentParts(text string, images []string, audio []provider.InputAudio, detail string) []chatContentPart {
+	out := make([]chatContentPart, 0, 1+len(images)+len(audio))
+	if text != "" {
+		out = append(out, chatContentPart{Type: "text", Text: text})
+	}
+	for _, ref := range images {
+		switch provider.ClassifyImage(ref) {
+		case provider.ImageFileID:
+			out = append(out, chatContentPart{Type: "file", FileID: ref})
+		case provider.ImageDataURL, provider.ImageHTTPURL:
+			out = append(out, chatContentPart{
+				Type:     "image_url",
+				ImageURL: &chatImageURLPart{URL: ref, Detail: detail},
+			})
 		}
+	}
+	for _, a := range audio {
+		if a.Data == "" {
+			continue
+		}
+		out = append(out, chatContentPart{
+			Type:       "input_audio",
+			InputAudio: &chatInputAudioPart{Data: a.Data, Format: a.Format},
+		})
 	}
 	return out
-}
-
-// hasAudioParts reports whether any part in the slice is an input_audio block.
-func hasAudioParts(parts []provider.ContentPart) bool {
-	for _, p := range parts {
-		if p.Type == "input_audio" && p.InputAudio != nil {
-			return true
-		}
-	}
-	return false
 }
 
 // imageUnderstandPrompt and the in-conversation legacy image-degradation path were

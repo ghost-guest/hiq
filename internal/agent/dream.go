@@ -520,7 +520,7 @@ func runKind(ctx context.Context, sessionDir string, kind DreamKind, task string
 	// Usage keeps the tab's token accounting honest, TurnDone keeps the
 	// autosave, Notice keeps the distill-completion toast. Dream status is
 	// surfaced separately via DreamRunView.
-	sub := New(prov, reg, sess, Options{}, quietDreamSink{inner: sink})
+	sub := New(prov, reg, sess, Options{RequireVisibleFinal: true}, quietDreamSink{inner: sink})
 	err := sub.Run(bgCtx, task)
 	run.Duration = time.Since(run.StartedAt).Truncate(time.Second).String()
 	switch err {

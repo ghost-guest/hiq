@@ -87,7 +87,13 @@ func (a *App) triggerScreenshotSolve() {
 }
 
 func solveScreenshot(ctx context.Context, prov provider.Provider, entry *config.ProviderEntry, imageDataURL string, prompt string) (string, error) {
-	content := provider.ImageContent(prompt, imageDataURL)
+	// Turn input carrier: text plus one image reference. MessageFromInput (used
+	// by both the sub-agent and the one-shot path) flattens this into the
+	// provider-visible Message contract.
+	content := []provider.ContentPart{
+		{Type: "text", Text: prompt},
+		{Type: "image_url", ImageURL: &provider.ImageURL{URL: imageDataURL}},
+	}
 	if !webSearchKeyConfigured() {
 		return solveOneShot(ctx, prov, content)
 	}
@@ -96,7 +102,7 @@ func solveScreenshot(ctx context.Context, prov provider.Provider, entry *config.
 		return solveOneShot(ctx, prov, content)
 	}
 	sess := agent.NewSession(defaultSolveSystemPrompt)
-	opts := agent.Options{MaxSteps: 8, ContextWindow: entry.ContextWindow}
+	opts := agent.Options{MaxSteps: 8, ContextWindow: entry.ContextWindow, RequireVisibleFinal: true}
 	sink := event.FuncSink(func(e event.Event) { _ = e })
 	sub := agent.New(prov, reg, sess, opts, sink)
 	runErr := sub.Run(ctx, content)
@@ -114,7 +120,7 @@ func solveScreenshot(ctx context.Context, prov provider.Provider, entry *config.
 }
 
 func solveOneShot(ctx context.Context, prov provider.Provider, content any) (string, error) {
-	req := provider.Request{Messages: []provider.Message{{Role: provider.RoleUser, Content: content}}}
+	req := provider.Request{Messages: []provider.Message{provider.MessageFromInput(content)}}
 	ch, err := prov.Stream(ctx, req)
 	if err != nil {
 		return "", err

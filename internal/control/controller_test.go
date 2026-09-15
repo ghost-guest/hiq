@@ -28,7 +28,7 @@ type appendingRunner struct {
 }
 
 func (r appendingRunner) Run(_ context.Context, input any) error {
-	r.session.Add(provider.Message{Role: provider.RoleUser, Content: input})
+	r.session.Add(provider.MessageFromInput(input))
 	return nil
 }
 
@@ -614,7 +614,7 @@ type blockingRunner struct {
 }
 
 func (r blockingRunner) Run(_ context.Context, input any) error {
-	r.session.Add(provider.Message{Role: provider.RoleUser, Content: input})
+	r.session.Add(provider.MessageFromInput(input))
 	<-r.release
 	return nil
 }

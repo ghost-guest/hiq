@@ -49,7 +49,7 @@ func TestCallVLMProviderPath(t *testing.T) {
 			t.Errorf("model ref = %q, want test-provider/test-model-b", modelRef)
 		}
 		for _, m := range msgs {
-			if len(provider.ImageParts(m.Content)) > 0 {
+			if m.HasImages() {
 				t.Logf("✅ provider path: image_url part present, model=%s", modelRef)
 				return []provider.Message{{Role: provider.RoleAssistant, Content: "ok"}}, nil
 			}

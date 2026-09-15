@@ -27,7 +27,7 @@ func seedTopicTurn(t *testing.T, scope, root, topicID, profile string) {
 	}
 	name := "seeded-" + topicID + "-" + time.Now().Format("150405.000000000")
 	path := filepath.Join(dir, name+".jsonl")
-	msg := provider.Message{Role: provider.RoleUser, Content: provider.TextContent("seed turn")}
+	msg := provider.Message{Role: provider.RoleUser, Content: "seed turn"}
 	line, err := json.Marshal(msg)
 	if err != nil {
 		t.Fatal(err)

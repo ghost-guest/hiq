@@ -29,6 +29,7 @@ import (
 	"github.com/zzycxz/fairpeer/internal/notify"
 	"github.com/zzycxz/fairpeer/internal/provider"
 	"github.com/zzycxz/fairpeer/internal/provider/openai"
+	"github.com/zzycxz/fairpeer/internal/sandbox"
 	"github.com/zzycxz/fairpeer/internal/secret"
 	"github.com/zzycxz/fairpeer/internal/serve"
 	"time"
@@ -39,6 +40,15 @@ import (
 
 // Run is the CLI entry point; it returns a process exit code.
 func Run(args []string, version string) int {
+	// Windows command-sandbox helper dispatch. An enforced bash launch re-enters
+	// this same executable with a private argv marker so the native sandbox
+	// backend can run out-of-process; the route must be registered and matched
+	// before any normal startup work, or an enforced launch would silently fall
+	// through into an unconfined CLI process.
+	sandbox.RegisterHelperDispatch()
+	if len(args) > 0 && args[0] == sandbox.WindowsHelperCommand {
+		return sandbox.RunWindowsSandboxHelper(args[1:], os.Stdin, os.Stdout, os.Stderr)
+	}
 	// Pick the UI language up front so even pre-config paths (the first-run
 	// welcome banner) come through localized. Env-only first; if a config
 	// exists and pins a language, that wins.

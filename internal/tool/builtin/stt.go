@@ -66,9 +66,8 @@ func CallSTT(ctx context.Context, audioDataURL, language string) (string, error)
 	if lang := strings.TrimSpace(language); lang != "" && !strings.EqualFold(lang, "auto") {
 		prompt = fmt.Sprintf("请将这段语音准确转写为文字（语言：%s），只输出转写结果，不要添加任何解释。", lang)
 	}
-	content := provider.AudioContent(prompt, audioDataURL)
 	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: content},
+		provider.AudioMessage(provider.RoleUser, prompt, audioDataURL),
 	}
 	resp, err := runProviderChat(ctx, model, msgs)
 	if err != nil {

@@ -173,14 +173,14 @@ func (s *updateSink) replay(msgs []provider.Message) {
 	for _, m := range msgs {
 		switch m.Role {
 		case provider.RoleUser:
-			if m.Content != nil {
+			if m.Content != "" {
 				s.send(messageChunk{SessionUpdate: "user_message_chunk", Content: textBlock(provider.ContentString(m.Content))})
 			}
 		case provider.RoleAssistant:
 			if m.ReasoningContent != "" {
 				s.send(messageChunk{SessionUpdate: "agent_thought_chunk", Content: textBlock(m.ReasoningContent)})
 			}
-			if m.Content != nil {
+			if m.Content != "" {
 				s.send(messageChunk{SessionUpdate: "agent_message_chunk", Content: textBlock(provider.ContentString(m.Content))})
 			}
 			for _, tc := range m.ToolCalls {

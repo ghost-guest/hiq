@@ -574,17 +574,19 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	if home, err := os.UserHomeDir(); err == nil && home != "" {
 		writeRoots = append(writeRoots, filepath.Join(home, ".fairpeer"))
 	}
-	bashSpec := sandbox.Spec{Mode: cfg.BashMode(), WriteRoots: writeRoots, Network: cfg.Sandbox.Network, RequireAvailable: cfg.Sandbox.RequireAvailable, StrictWrites: cfg.Sandbox.StrictWrites}
+	// Spec shape follows the upstream Reasonix sandbox contract: the fail-closed
+	// decision now lives in the sandbox itself (a restricted preset refuses to
+	// run unconfined when no OS backend exists), so [sandbox] require_available
+	// no longer changes the outcome — enforce refuses either way. strict_writes
+	// maps onto the narrower MinimalWrites grant set.
+	bashSpec := sandbox.Spec{Mode: cfg.BashMode(), WriteRoots: writeRoots, Network: cfg.Sandbox.Network}
+	bashSpec.MinimalWrites = cfg.Sandbox.StrictWrites
 	if bashSpec.Mode == "enforce" && !sandbox.Available() {
 		sandboxEnforceWarnOnce.Do(func() {
-			if cfg.Sandbox.RequireAvailable {
-				fmt.Fprintln(stderr, "warning: bash sandbox 'enforce' requested with require_available=true, but no OS sandbox is available on this platform. bash commands will be REFUSED (fail-closed) until an OS sandbox is available or require_available is disabled.")
-			} else {
-				fmt.Fprintln(stderr, "warning: bash sandbox requested but unavailable on this platform; running bash unconfined (set [sandbox] require_available = true to refuse instead)")
-			}
+			fmt.Fprintln(stderr, "warning: "+sandbox.UnavailableMessage())
 		})
 	}
-	if sandbox.ResolveShell().Kind == sandbox.ShellPowerShell {
+	if sandbox.ResolveShell("", "", nil).Kind == sandbox.ShellPowerShell {
 		powershellWarnOnce.Do(func() {
 			fmt.Fprintln(stderr, "warning: bash not found on PATH; the shell tool will run commands under Windows PowerShell. Install Git for Windows or WSL to use bash.")
 		})
@@ -1507,6 +1509,12 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		CompactForceRatio:    cfg.Agent.CompactForceRatio,
 		ContextBudgetPercent: cfg.Agent.ContextBudgetPercent,
 		ArchiveDir:           config.ArchiveDir(),
+		// The interactive loop (CLI/TUI/desktop/serve/bot all build through
+		// here) keeps the visible-final guarantee: a turn that ends with no
+		// readable answer is re-prompted instead of silently landing as an
+		// empty bubble. Upstream Reasonix relaxes this for its interactive
+		// harness; fairpeer deliberately stays stricter.
+		RequireVisibleFinal: true,
 	}, sink)
 
 	// Custom slash commands (.fairpeer/commands + user dir). Best-effort: a malformed
@@ -1924,7 +1932,7 @@ func runProviderVLMChat(ctx context.Context, cfg *config.Config, modelRef string
 	// tokens alone), 8192 for STT transcripts (audio input), which are longer.
 	maxTokens := 4096
 	for _, m := range msgs {
-		if len(provider.AudioParts(m.Content)) > 0 {
+		if m.HasAudio() {
 			maxTokens = 8192
 			break
 		}

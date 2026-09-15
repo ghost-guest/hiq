@@ -27,10 +27,24 @@ const (
 )
 
 // Message is a single conversation message.
+//
+// Content is the provider-visible text. Multimodal payloads live in dedicated
+// fields — Images for vision references, Audio for speech-to-text input — so a
+// text-only turn serializes its content as a plain string and the
+// provider-visible wire bytes stay byte-stable for prompt caching. This matches
+// the upstream Reasonix contract (provider.Message.Content is a string there
+// too), so packages ported from upstream compile against it unchanged.
 type Message struct {
-	Role             Role   `json:"role"`
-	Content          any    `json:"content,omitempty"`           // string or []ContentPart (multimodal)
-	ReasoningContent string `json:"reasoning_content,omitempty"` // assistant: thinking-mode chain-of-thought, round-tripped on multi-turn
+	Role    Role   `json:"role"`
+	Content string `json:"content,omitempty"`
+	// Images holds vision references for this turn: inline data URLs
+	// ("data:image/png;base64,..."), http(s) image URLs, or provider file ids.
+	// Only embedded for vision-capable models.
+	Images []string `json:"images,omitempty"`
+	// Audio holds inline audio blocks for audio-capable models. This is
+	// fairpeer-specific: upstream Reasonix has no speech-to-text path.
+	Audio            []InputAudio `json:"audio,omitempty"`
+	ReasoningContent string       `json:"reasoning_content,omitempty"` // assistant: thinking-mode chain-of-thought, round-tripped on multi-turn
 	// ReasoningSignature is an opaque, provider-issued proof that ReasoningContent
 	// is genuine model output. Anthropic requires the signed thinking block be
 	// replayed on the next turn when a tool call followed thinking; providers
@@ -40,16 +54,20 @@ type Message struct {
 	ToolCalls          []ToolCall `json:"tool_calls,omitempty"`   // set by assistant
 	ToolCallID         string     `json:"tool_call_id,omitempty"` // links a tool result to its call
 	Name               string     `json:"name,omitempty"`         // tool message: tool name
+	// Original is the user prompt as originally typed, kept when the turn was
+	// edited inline. Local UI metadata; provider requests ignore it.
+	Original string `json:"original,omitempty"`
+	// MemoryCitations is local display metadata for memories that influenced an
+	// assistant turn. Provider implementations must not forward it to model APIs.
+	MemoryCitations []MemoryCitation `json:"memoryCitations,omitempty"`
 }
 
-// UnmarshalJSON restores Content as its concrete type. The field is `any`
-// (string for plain text, []ContentPart for multimodal). encoding/json has no
-// way to recover that from a generic []interface{} on reload, so without this
-// a saved multimodal message comes back as []interface{} — and every downstream
-// switch on `content.(type)` (ContentString, ContentLen, buildRequest) misses
-// its []ContentPart case, dumping the image data URL as plain text. We decode
-// content separately: a JSON string stays a string; a JSON array becomes
-// []ContentPart, fixing the type for the whole pipeline.
+// UnmarshalJSON restores a message from its on-disk JSON. Current files store
+// content as a plain string plus optional images/audio arrays, so the common
+// path is a straight decode. Files written by fairpeer ≤ v0.1 stored content as
+// a []ContentPart array instead (text + image_url + input_audio parts); those
+// are flattened into Content/Images/Audio so old sessions keep loading
+// losslessly rather than silently dropping their image data.
 func (m *Message) UnmarshalJSON(data []byte) error {
 	type alias Message
 	var raw struct {
@@ -62,7 +80,7 @@ func (m *Message) UnmarshalJSON(data []byte) error {
 	*m = Message(raw.alias)
 	trimmed := bytes.TrimSpace(raw.Content)
 	if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")) {
-		m.Content = nil
+		m.Content = ""
 		return nil
 	}
 	if trimmed[0] == '"' {
@@ -77,15 +95,38 @@ func (m *Message) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(trimmed, &parts); err != nil {
 		return err
 	}
-	m.Content = parts
+	m.setLegacyMultimodal(parts)
 	return nil
+}
+
+// setLegacyMultimodal flattens a legacy []ContentPart content value into the
+// Content/Images/Audio fields. Text parts concatenate; image and audio parts
+// move to their dedicated fields. A message that carried only non-text parts
+// keeps an empty Content, with the payload living in Images/Audio.
+func (m *Message) setLegacyMultimodal(parts []ContentPart) {
+	var b strings.Builder
+	for _, p := range parts {
+		switch p.Type {
+		case "text":
+			b.WriteString(p.Text)
+		case "image_url":
+			if p.ImageURL != nil && p.ImageURL.URL != "" {
+				m.Images = append(m.Images, p.ImageURL.URL)
+			}
+		case "input_audio":
+			if p.InputAudio != nil && p.InputAudio.Data != "" {
+				m.Audio = append(m.Audio, *p.InputAudio)
+			}
+		}
+	}
+	m.Content = b.String()
 }
 
 // ContentPart is one block in a multimodal message (OpenAI content parts format).
 type ContentPart struct {
-	Type       string      `json:"type"`                 // "text", "image_url", or "input_audio"
-	Text       string      `json:"text,omitempty"`       // for Type == "text"
-	ImageURL   *ImageURL   `json:"image_url,omitempty"`  // for Type == "image_url"
+	Type       string      `json:"type"`                  // "text", "image_url", or "input_audio"
+	Text       string      `json:"text,omitempty"`        // for Type == "text"
+	ImageURL   *ImageURL   `json:"image_url,omitempty"`   // for Type == "image_url"
 	InputAudio *InputAudio `json:"input_audio,omitempty"` // for Type == "input_audio"
 }
 
@@ -101,8 +142,8 @@ type ImageURL struct {
 // Data is the PURE base64 payload with no "data:...;base64," prefix; Format is
 // the bare container ("wav", "mp3").
 type InputAudio struct {
-	Data   string `json:"data"`              // pure base64 (no data: prefix)
-	Format string `json:"format,omitempty"`  // "wav", "mp3"
+	Data   string `json:"data"`             // pure base64 (no data: prefix)
+	Format string `json:"format,omitempty"` // "wav", "mp3"
 }
 
 // ContentString extracts the text portion of a Message.Content field.
@@ -159,46 +200,57 @@ func ContentLen(content any) int {
 	}
 }
 
-// IsTextOnly reports whether Content contains no image parts.
-func IsTextOnly(content any) bool {
-	_, ok := content.(string)
-	return ok
+// ImageMessage builds a message carrying text plus vision references
+// (inline data URLs or http(s) image URLs). Only vision-capable models receive
+// the images on the wire; adapters omit them otherwise.
+func ImageMessage(role Role, text string, imageURLs ...string) Message {
+	return Message{Role: role, Content: text, Images: append([]string(nil), imageURLs...)}
 }
 
-// TextContent creates a simple text-only Content value.
-func TextContent(text string) any {
-	return text
-}
-
-// ImageContent creates a multimodal Content value with text and image parts.
-func ImageContent(text string, imageURLs ...string) any {
-	parts := []ContentPart{{Type: "text", Text: text}}
-	for _, url := range imageURLs {
-		parts = append(parts, ContentPart{Type: "image_url", ImageURL: &ImageURL{URL: url}})
-	}
-	return parts
-}
-
-// AudioContent creates a multimodal Content value with a text prompt and one or
-// more audio parts. Each audioDataURL must be a "data:audio/wav;base64,..."
-// data URL; the prefix is split into a pure-base64 Data + a bare Format so the
-// OpenAI input_audio block is shaped correctly. Used by STT (CallSTT): the
-// model receives the audio plus a prompt asking it to transcribe, and returns
-// text. Non-parseable data URLs are silently skipped (defensive — the frontend
-// recorder always emits valid data URLs).
-func AudioContent(text string, audioDataURLs ...string) any {
-	parts := []ContentPart{{Type: "text", Text: text}}
+// AudioMessage builds a message carrying text plus inline audio. Each
+// audioDataURL must be a "data:audio/wav;base64,..." URL: the prefix is split
+// into a pure-base64 Data plus a bare Format so the OpenAI input_audio block is
+// shaped correctly. Used by STT (CallSTT) — the model receives the audio plus a
+// prompt asking it to transcribe, and returns text. Non-parseable data URLs are
+// silently skipped (defensive; the frontend recorder always emits valid ones).
+func AudioMessage(role Role, text string, audioDataURLs ...string) Message {
+	m := Message{Role: role, Content: text}
 	for _, url := range audioDataURLs {
 		mediaType, b64, ok := ParseImageDataURL(url) // ParseImageDataURL is a generic data-URL splitter
 		if !ok {
 			continue
 		}
-		parts = append(parts, ContentPart{
-			Type:       "input_audio",
-			InputAudio: &InputAudio{Data: b64, Format: audioFormatFromMime(mediaType)},
-		})
+		m.Audio = append(m.Audio, InputAudio{Data: b64, Format: audioFormatFromMime(mediaType)})
 	}
-	return parts
+	return m
+}
+
+// HasImages reports whether the message carries vision references.
+func (m Message) HasImages() bool { return len(m.Images) > 0 }
+
+// HasAudio reports whether the message carries inline audio blocks.
+func (m Message) HasAudio() bool { return len(m.Audio) > 0 }
+
+// MessageFromInput builds the user message for a turn from fairpeer's turn
+// input carrier, which is either plain text or a []ContentPart multimodal
+// payload (text + image_url + input_audio parts) assembled by the control
+// layer. It is the single conversion point between the turn plumbing, which
+// stays untyped so custom frontends can pass richer payloads, and the
+// provider-visible Message contract, which keeps text in Content and moves
+// non-text payloads to Images/Audio.
+func MessageFromInput(input any) Message {
+	switch v := input.(type) {
+	case nil:
+		return Message{Role: RoleUser}
+	case string:
+		return Message{Role: RoleUser, Content: v}
+	case []ContentPart:
+		m := Message{Role: RoleUser}
+		m.setLegacyMultimodal(v)
+		return m
+	default:
+		return Message{Role: RoleUser, Content: fmt.Sprintf("%v", input)}
+	}
 }
 
 // audioFormatFromMime maps an audio MIME type to the bare container name used
@@ -236,36 +288,15 @@ func ParseImageDataURL(dataURL string) (mediaType, base64Data string, ok bool) {
 	return mediaType, base64Data, true
 }
 
-// ImageParts extracts image ContentParts from a multimodal Content value.
-// Returns nil when Content is a plain string or contains no images.
-func ImageParts(content any) []ContentPart {
-	parts, ok := content.([]ContentPart)
-	if !ok {
-		return nil
-	}
-	var imgs []ContentPart
-	for _, p := range parts {
-		if p.Type == "image_url" && p.ImageURL != nil && p.ImageURL.URL != "" {
-			imgs = append(imgs, p)
-		}
-	}
-	return imgs
-}
-
-// AudioParts extracts audio ContentParts from a multimodal Content value.
-// Returns nil when Content is a plain string or contains no audio.
-func AudioParts(content any) []ContentPart {
-	parts, ok := content.([]ContentPart)
-	if !ok {
-		return nil
-	}
-	var auds []ContentPart
-	for _, p := range parts {
-		if p.Type == "input_audio" && p.InputAudio != nil && p.InputAudio.Data != "" {
-			auds = append(auds, p)
-		}
-	}
-	return auds
+// MemoryCitation is local display metadata for memories that influenced an
+// assistant turn. Provider implementations must never forward it to model APIs.
+type MemoryCitation struct {
+	ID        string `json:"id,omitempty"`
+	Source    string `json:"source"`
+	LineStart int    `json:"lineStart,omitempty"`
+	LineEnd   int    `json:"lineEnd,omitempty"`
+	Note      string `json:"note,omitempty"`
+	Kind      string `json:"kind,omitempty"`
 }
 
 // ToolCall is a tool invocation requested by the model. Arguments is raw JSON.
@@ -273,6 +304,13 @@ type ToolCall struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
+	// Diff/Added/Removed are local display metadata describing what a write or
+	// edit tool changed. They are persisted for replay/cards and deliberately
+	// never serialized on the wire, so they cannot perturb the prompt-cache
+	// prefix. Provider request builders must serialize only ID/Name/Arguments.
+	Diff    string `json:"diff,omitempty"`
+	Added   int    `json:"added,omitempty"`
+	Removed int    `json:"removed,omitempty"`
 }
 
 // ToolSchema is a tool definition exposed to the model. Parameters is JSON Schema.
@@ -478,11 +516,25 @@ type Usage struct {
 	PromptTokens     int
 	CompletionTokens int
 	TotalTokens      int
-	CacheHitTokens   int    // prompt tokens served from cache
-	CacheMissTokens  int    // pure uncached prompt tokens (not cached, not a cache write)
-	CacheWriteTokens int    // cache-creation writes (Anthropic cache_creation_input_tokens; billed above input)
-	ReasoningTokens  int    // subset of CompletionTokens spent on chain-of-thought
-	FinishReason     string // "stop", "tool_calls", "length", "content_filter", "repetition_truncation", …
+	CacheHitTokens   int // prompt tokens served from cache
+	CacheMissTokens  int // pure uncached prompt tokens (not cached, not a cache write)
+	CacheWriteTokens int // cache-creation writes (Anthropic cache_creation_input_tokens; billed above input)
+	// CacheWriteBilledTokens expresses those cache-creation writes in ordinary
+	// input-token equivalents, so cost math can replace the raw write count with
+	// the provider's real multiplier (Anthropic 5-minute writes bill at 1.25×
+	// input). Zero falls back to 1× for providers that do not report it.
+	CacheWriteBilledTokens float64
+	ReasoningTokens        int    // subset of CompletionTokens spent on chain-of-thought
+	FinishReason           string // "stop", "tool_calls", "length", "content_filter", "repetition_truncation", …
+	// Estimated marks usage the host derived rather than read from the provider.
+	Estimated bool
+	// RequestCount is the number of provider requests represented by this
+	// aggregate. Zero means one request, for backward compatibility; recovery
+	// paths that merge multiple attempts set the exact count.
+	RequestCount int
+	// Unknown is set when at least one request in the aggregate reported no
+	// provider usage at all.
+	Unknown bool
 }
 
 // Pricing is a provider's per-1M-token rates, used to estimate spend. Currency

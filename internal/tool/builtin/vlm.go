@@ -54,13 +54,12 @@ func CallVLM(ctx context.Context, imgDataURL string, prompt string) (string, err
 }
 
 // callProviderVLM uses the provider layer's multimodal chat (qwen/kimi/etc). The
-// provider supports image_url content parts (provider.ImageContent); we
+// provider supports image_url content parts (provider.ImageMessage); we
 // construct a multimodal user message and run it through the injected runner.
 // The model must be vision-capable (provider.Vision=true), enforced by boot.
 func callProviderVLM(ctx context.Context, model, imgDataURL, prompt string) (string, error) {
-	content := provider.ImageContent(prompt, imgDataURL)
 	msgs := []provider.Message{
-		{Role: provider.RoleUser, Content: content},
+		provider.ImageMessage(provider.RoleUser, prompt, imgDataURL),
 	}
 	resp, err := runProviderChat(ctx, model, msgs)
 	if err != nil {

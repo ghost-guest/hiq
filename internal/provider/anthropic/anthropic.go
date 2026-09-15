@@ -138,7 +138,7 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 	// message instead of silently dropping the audio and letting the model
 	// hallucinate a transcript from the text-only prompt.
 	for _, m := range req.Messages {
-		if len(provider.AudioParts(m.Content)) > 0 {
+		if m.HasAudio() {
 			return nil, fmt.Errorf("%s: Anthropic providers do not support audio input — set [cowork] voice_model to an OpenAI-compatible provider (e.g. mimo, zhipu)", c.name)
 		}
 	}
@@ -200,20 +200,23 @@ func (c *client) buildRequest(req provider.Request) anthRequest {
 	}
 
 	for _, m := range provider.SanitizeToolPairing(req.Messages) {
-		textContent := provider.ContentString(m.Content)
+		textContent := m.Content
 		switch m.Role {
 		case provider.RoleSystem:
 			if textContent != "" {
 				system = append(system, textBlock{Type: "text", Text: textContent})
 			}
 		case provider.RoleUser:
-			// Multimodal: extract image parts from []ContentPart if present.
-			if imgs := provider.ImageParts(m.Content); len(imgs) > 0 {
+			// Multimodal: replay vision references as image blocks. Text-only
+			// turns stay a single text block (byte-stable for prompt caching).
+			if len(m.Images) > 0 {
 				if textContent != "" {
 					appendBlocks("user", contentBlock{Type: "text", Text: textContent})
 				}
-				for _, img := range imgs {
-					if mt, data, ok := provider.ParseImageDataURL(img.ImageURL.URL); ok {
+				for _, ref := range m.Images {
+					// Anthropic takes inline base64 only; non-data-URL refs
+					// (http/file ids) are skipped rather than sent malformed.
+					if mt, data, ok := provider.ParseImageDataURL(ref); ok {
 						appendBlocks("user", contentBlock{Type: "image", Source: &imageSource{Type: "base64", MediaType: mt, Data: data}})
 					}
 				}

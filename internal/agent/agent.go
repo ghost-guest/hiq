@@ -148,6 +148,21 @@ type Agent struct {
 	temperature float64
 	pricing     *provider.Pricing
 
+	// modelRef is the canonical "provider/model" label for usage events and the
+	// prompt-cache key. Empty when the caller did not supply one.
+	modelRef string
+	// requireVisibleFinal, when set, retries a no-tool turn that produced no
+	// visible text instead of accepting it as the final answer.
+	requireVisibleFinal bool
+	// continuationPolicy opts this agent into a host-owned same-Run
+	// continuation flow. Reserved: the current run loop never branches on it,
+	// matching upstream, where nothing reads it either.
+	continuationPolicy ContinuationPolicy
+	// strictAlternatingRoles coalesces adjacent user turns on the provider
+	// projection so strict providers (which reject two user messages in a row)
+	// accept a repaired history.
+	strictAlternatingRoles bool
+
 	// sink receives the turn's typed event stream (reasoning/text deltas, tool
 	// dispatch/results, usage, notices). The agent no longer formats output
 	// itself — a frontend's Sink decides how to render. Never nil; New defaults
@@ -485,6 +500,13 @@ func midTurnSteerMessage(text string) string {
 // path); empty disables explicit routing.
 func (a *Agent) SetCacheKey(key string) { a.cacheKey = key }
 
+// ModelRef returns the canonical "provider/model" ref this agent's turns are
+// attributed to, or "" when the caller did not supply one. fairpeer's event
+// stream carries no model-ref field yet, so this is currently consumed by
+// callers that label their own diagnostics; upstream Reasonix threads the same
+// value into usage events and the prompt-cache key.
+func (a *Agent) ModelRef() string { return a.modelRef }
+
 // Steer queues a message for mid-turn injection.
 func (a *Agent) Steer(text string) {
 	a.steerMu.Lock()
@@ -719,6 +741,28 @@ type Options struct {
 
 	// ProjectChecks are host-observable structured checks extracted during boot.
 	ProjectChecks []instruction.VerifyCheck
+
+	// ModelRef names the canonical "provider/model" ref backing this agent's
+	// turns. It labels usage and seeds prompt-cache attribution upstream; empty
+	// is fine for callers that do not report model identity.
+	ModelRef string
+
+	// RequireVisibleFinal makes internal callers reject reasoning-only clean
+	// stops: a no-tool turn without visible text is retried (bounded) instead
+	// of being accepted as the final answer. Fairpeer's interactive loop,
+	// sub-agents, and the guardian all set it; leaving it off adopts upstream's
+	// harness-style termination, which accepts a reasoning-only clean stop.
+	RequireVisibleFinal bool
+
+	// ContinuationPolicy is the internal host policy for synthetic same-Run
+	// continuation. It is not a user configuration key. Reserved: nothing in
+	// the run loop branches on it yet, matching upstream.
+	ContinuationPolicy ContinuationPolicy
+
+	// StrictAlternatingRoles merges adjacent user turns on the outgoing
+	// request, for providers that reject two user messages in a row. The
+	// stored session keeps its logical turn boundaries.
+	StrictAlternatingRoles bool
 }
 
 // New constructs an Agent. MaxSteps <= 0 means no cap — the run loop continues
@@ -759,13 +803,17 @@ func New(prov provider.Provider, tools *tool.Registry, session *Session, opts Op
 		maxStepsKey = "agent.max_steps"
 	}
 	return &Agent{
-		prov:              prov,
-		tools:             tools,
-		session:           session,
-		maxSteps:          opts.MaxSteps,
-		maxStepsKey:       maxStepsKey,
-		temperature:       opts.Temperature,
-		pricing:           opts.Pricing,
+		prov:                   prov,
+		tools:                  tools,
+		session:                session,
+		maxSteps:               opts.MaxSteps,
+		maxStepsKey:            maxStepsKey,
+		temperature:            opts.Temperature,
+		pricing:                opts.Pricing,
+		modelRef:               strings.TrimSpace(opts.ModelRef),
+		requireVisibleFinal:    opts.RequireVisibleFinal,
+		continuationPolicy:     opts.ContinuationPolicy,
+		strictAlternatingRoles: opts.StrictAlternatingRoles,
 		// 4-1 dual-track: the agent's sink IS the item adapter, which
 		// forwards to the real sink AND emits structured ItemEvents. Every
 		// a.sink.Emit call produces both forms — old sinks see zero
@@ -816,7 +864,7 @@ func (a *Agent) Run(ctx context.Context, input any) error {
 		a.opGate.reset()
 	}
 	a.sink.Emit(event.Event{Kind: event.TurnStarted})
-	a.session.Add(provider.Message{Role: provider.RoleUser, Content: input})
+	a.session.Add(provider.MessageFromInput(input))
 
 	finalReadinessBlocks := 0
 	emptyFinalBlocks := 0
@@ -1294,16 +1342,15 @@ func (a *Agent) stream(ctx context.Context, turn int) (string, string, string, [
 				now.Format("2006-01-02 15:04:05"), weekdays[int(now.Weekday())])
 
 			lastMsg := msgs[lastIdx]
-			switch v := lastMsg.Content.(type) {
-			case string:
-				lastMsg.Content = v + timeNotice
-			case []provider.ContentPart:
-				blocks := append([]provider.ContentPart(nil), v...)
-				blocks = append(blocks, provider.ContentPart{Type: "text", Text: timeNotice})
-				lastMsg.Content = blocks
-			}
+			lastMsg.Content += timeNotice
 			msgs[lastIdx] = lastMsg
 		}
+	}
+
+	// Providers that reject two user turns in a row get a coalesced outbound
+	// copy; the stored session keeps its logical turn boundaries.
+	if a.strictAlternatingRoles {
+		msgs = coalesceProjectionUserRuns(msgs)
 	}
 
 	ch, err := a.prov.Stream(ctx, provider.Request{

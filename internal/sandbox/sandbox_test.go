@@ -1,12 +1,15 @@
 package sandbox
 
 import (
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
-// --- Spec.enforce ---
+// Spec.Enforce
 
 func TestEnforce(t *testing.T) {
 	cases := []struct {
@@ -21,17 +24,17 @@ func TestEnforce(t *testing.T) {
 	}
 	for _, c := range cases {
 		s := Spec{Mode: c.mode}
-		if got := s.enforce(); got != c.want {
-			t.Errorf("Spec{%q}.enforce() = %v, want %v", c.mode, got, c.want)
+		if got := s.Enforce(); got != c.want {
+			t.Errorf("Spec{%q}.Enforce() = %v, want %v", c.mode, got, c.want)
 		}
 	}
 }
 
-// --- Spec zero value ---
+// Spec zero value
 
 func TestSpecZeroValue(t *testing.T) {
 	var s Spec
-	if s.enforce() {
+	if s.Enforce() {
 		t.Error("zero-value Spec should not enforce")
 	}
 	if s.Network {
@@ -42,7 +45,26 @@ func TestSpecZeroValue(t *testing.T) {
 	}
 }
 
-// --- Command ---
+func TestUnavailableMessageIsActionable(t *testing.T) {
+	msg := UnavailableMessage()
+	want := []string{
+		"refusing to run unconfined",
+		"Full access",
+	}
+	if runtime.GOOS == "windows" {
+		// Windows ships no OS-level Bash backend and the effective mode is
+		// fixed to off, so the remediation states that fact instead of
+		// pointing at a config edit the platform would ignore.
+		want = []string{"refusing to run unconfined", "Full access"}
+	}
+	for _, w := range want {
+		if !strings.Contains(msg, w) {
+			t.Fatalf("UnavailableMessage() = %q, want %q", msg, w)
+		}
+	}
+}
+
+// Command
 
 func TestCommandNonEnforce(t *testing.T) {
 	spec := Spec{Mode: "off"}
@@ -120,17 +142,102 @@ func TestResolveShellDecisionTable(t *testing.T) {
 		{"no bash, only powershell", "windows", onPath("powershell"), gitBash, never, never, never, ShellPowerShell, ""},
 		{"windows, nothing found", "windows", onPath(), nil, never, never, never, ShellBash, ""},
 		{"linux, no bash → no PS fallback", "linux", onPath("powershell"), gitBash, always, always, never, ShellBash, ""},
+		{"macOS, no bash → zsh", "darwin", onPath("zsh", "sh"), nil, never, always, never, ShellZsh, `C:\fake\zsh.exe`},
+		{"macOS, no bash or zsh → sh", "darwin", onPath("sh"), nil, never, always, never, ShellSh, `C:\fake\sh.exe`},
 		{"wsl bash on PATH skipped for git-bash", "windows", onPath("bash", "powershell"), gitBash, always, always, wslIsPathBash, ShellBash, `C:\fake\Git\bin\bash.exe`},
 		{"wsl bash on PATH, no git → powershell not wsl", "windows", onPath("bash", "powershell"), gitBash, never, always, wslIsPathBash, ShellPowerShell, ""},
 	}
 	for _, c := range cases {
-		got := resolveShell(c.goos, c.lookPath, c.exists, c.candidates, c.probe, c.isWSL)
+		got := resolveShell("", "", nil, c.goos, c.lookPath, c.exists, c.candidates, nil, c.probe, c.isWSL)
 		if got.Kind != c.wantKind {
 			t.Errorf("%s: kind = %s, want %s (path=%s)", c.name, got.Kind, c.wantKind, got.Path)
 		}
 		if c.wantPath != "" && got.Path != c.wantPath {
 			t.Errorf("%s: path = %q, want %q", c.name, got.Path, c.wantPath)
 		}
+	}
+}
+
+func TestResolveShellPrefer(t *testing.T) {
+	onPath := func(names ...string) func(string) (string, error) {
+		set := map[string]bool{}
+		for _, n := range names {
+			set[n] = true
+		}
+		return func(name string) (string, error) {
+			if set[name] {
+				return `C:\fake\` + name + ".exe", nil
+			}
+			return "", exec.ErrNotFound
+		}
+	}
+	gitBash := []string{`C:\fake\Git\bin\bash.exe`}
+	always := func(string) bool { return true }
+	never := func(string) bool { return false }
+	noWSL := func(string) bool { return false }
+
+	// prefer=powershell forces PowerShell even when bash is present and probes ok.
+	got := resolveShell("powershell", "", nil, "windows", onPath("bash", "powershell", "pwsh"), never, gitBash, nil, always, noWSL)
+	if got.Kind != ShellPowerShell {
+		t.Errorf(`prefer="powershell": kind = %s, want powershell`, got.Kind)
+	}
+
+	// prefer=bash forces bash even on a host where PowerShell exists.
+	got = resolveShell("bash", "", nil, "windows", onPath("bash", "powershell"), never, gitBash, nil, always, noWSL)
+	if got.Kind != ShellBash {
+		t.Errorf(`prefer="bash": kind = %s, want bash`, got.Kind)
+	}
+
+	// An explicit path is honoured for the forced kind.
+	got = resolveShell("pwsh", `C:\custom\pwsh.exe`, nil, "windows", onPath(), always, gitBash, nil, never, noWSL)
+	if got.Kind != ShellPowerShell || got.Path != `C:\custom\pwsh.exe` {
+		t.Errorf(`prefer="pwsh" path: got {%s %q}, want {powershell "C:\custom\pwsh.exe"}`, got.Kind, got.Path)
+	}
+
+	// prefer=pwsh finds PowerShell 7 in its standard install path even when that
+	// directory has not been added to PATH.
+	got = resolveShell("pwsh", "", nil, "windows", onPath("powershell"), func(p string) bool {
+		return p == `C:/Program Files/PowerShell/7/pwsh.exe`
+	}, gitBash, []string{`C:/Program Files/PowerShell/7/pwsh.exe`}, never, noWSL)
+	if got.Kind != ShellPowerShell || got.Path != `C:/Program Files/PowerShell/7/pwsh.exe` {
+		t.Errorf(`prefer="pwsh" standard path: got {%s %q}, want {powershell "C:/Program Files/PowerShell/7/pwsh.exe"}`, got.Kind, got.Path)
+	}
+
+	// A forced shell that isn't installed warns and falls back to auto-detection.
+	var warn strings.Builder
+	got = resolveShell("powershell", "", &warn, "linux", onPath("bash"), never, gitBash, nil, always, noWSL)
+	if got.Kind != ShellBash {
+		t.Errorf("missing forced powershell should fall back to bash, got %s", got.Kind)
+	}
+	if !strings.Contains(warn.String(), "powershell") {
+		t.Errorf("fallback should warn about the missing shell, got %q", warn.String())
+	}
+
+	// An unrecognised value is treated as auto, not an error.
+	got = resolveShell("fish", "", nil, "windows", onPath("bash"), never, gitBash, nil, always, noWSL)
+	if got.Kind != ShellBash {
+		t.Errorf("unknown prefer should auto-detect, got %s", got.Kind)
+	}
+
+	// git-bash.exe is automatically rewritten to bin/bash.exe when present.
+	existsWithBash := func(p string) bool {
+		return strings.EqualFold(p, `C:\Git\bin\bash.exe`)
+	}
+	got = resolveShell("bash", `C:\Git\git-bash.exe`, nil, "windows", onPath(), existsWithBash, nil, nil, always, noWSL)
+	if got.Kind != ShellBash || got.Path != `C:\Git\bin\bash.exe` {
+		t.Errorf("git-bash.exe should redirect to bin/bash.exe, got %+v", got)
+	}
+}
+
+func TestSanitizeWindowsBashPath(t *testing.T) {
+	exists := func(p string) bool {
+		return strings.EqualFold(p, filepath.Join("C:", "Git", "bin", "bash.exe"))
+	}
+	raw := filepath.Join("C:", "Git", "git-bash.exe")
+	got := sanitizeWindowsBashPath(raw, exists)
+	want := filepath.Join("C:", "Git", "bin", "bash.exe")
+	if got != want {
+		t.Fatalf("sanitizeWindowsBashPath(%q) = %q, want %q", raw, got, want)
 	}
 }
 
@@ -180,7 +287,7 @@ func TestShellArgvDefaultsPath(t *testing.T) {
 	}
 }
 
-// --- Command (platform-specific) ---
+// platform-specific Command tests
 
 func TestCommandNonDarwin(t *testing.T) {
 	if runtime.GOOS == "darwin" {
@@ -188,8 +295,14 @@ func TestCommandNonDarwin(t *testing.T) {
 	}
 	spec := Spec{Mode: "enforce", WriteRoots: []string{"/tmp"}}
 	cmd, wrapped := Command(spec, Shell{Kind: ShellBash, Path: "sh"}, "echo hi")
+	if Available() {
+		if !wrapped || cmd[0] == "sh" {
+			t.Fatalf("non-darwin enforce with available sandbox should wrap: %v wrapped=%v", cmd, wrapped)
+		}
+		return
+	}
 	if wrapped {
-		t.Error("non-darwin should never wrap")
+		t.Error("non-darwin without sandbox should not wrap")
 	}
 	if len(cmd) != 3 || cmd[0] != "sh" || cmd[1] != "-c" || cmd[2] != "echo hi" {
 		t.Errorf("unexpected cmd: %v", cmd)
@@ -227,13 +340,37 @@ func TestCommandDarwinNonEnforce(t *testing.T) {
 	}
 }
 
-// --- Available ---
+// Available
 
 func TestAvailableNonDarwin(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("testing non-darwin path")
 	}
+	if runtime.GOOS == "windows" {
+		t.Skip("windows has its own helper-backed sandbox availability")
+	}
 	if Available() {
-		t.Error("non-darwin should report unavailable")
+		if _, err := exec.LookPath("bwrap"); err != nil {
+			t.Errorf("Available() = true, but bwrap lookup failed: %v", err)
+		}
+	}
+}
+
+func TestInstalledButUnusableBwrapIsUnavailable(t *testing.T) {
+	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
+		t.Skip("bubblewrap-only test")
+	}
+	dir := t.TempDir()
+	bwrap := filepath.Join(dir, "bwrap")
+	if err := os.WriteFile(bwrap, []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	if Available() {
+		t.Fatal("non-functional bwrap binary was reported available")
+	}
+	argv, wrapped := Command(Spec{Mode: "enforce"}, Shell{Kind: ShellBash, Path: "sh"}, "true")
+	if wrapped || len(argv) == 0 || argv[0] != "sh" {
+		t.Fatalf("Command with unusable bwrap = %v, wrapped=%v; want unwrapped shell for caller fail-closed", argv, wrapped)
 	}
 }

@@ -13,6 +13,17 @@ import (
 	"time"
 )
 
+func TestSetProcessGroupKillDetachesSession(t *testing.T) {
+	cmd := exec.Command("true")
+	SetProcessGroupKill(cmd)
+	if cmd.SysProcAttr == nil {
+		t.Fatal("SysProcAttr is nil")
+	}
+	if !cmd.SysProcAttr.Setsid {
+		t.Fatal("SetProcessGroupKill should detach the child into a new session")
+	}
+}
+
 func TestKillTreeTerminatesChild(t *testing.T) {
 	cmd := exec.Command("sleep", "30")
 	if err := cmd.Start(); err != nil {
@@ -53,7 +64,7 @@ func TestKillTrackedTerminatesChild(t *testing.T) {
 
 // A launcher (sh) that backgrounds a grandchild (sleep) and stays alive: with
 // the child in its own process group, KillTracked's negative-pid kill must reap
-// the grandchild too, not just sh — the codegraph node-daemon leak this guards.
+// the grandchild too, not just sh.
 func TestKillTrackedReapsProcessGroupGrandchild(t *testing.T) {
 	cmd := exec.Command("sh", "-c", "sleep 60 & echo $!; wait")
 	stdout, err := cmd.StdoutPipe()

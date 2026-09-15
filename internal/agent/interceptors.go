@@ -18,12 +18,12 @@ import (
 // preAnswerState is what the readiness/empty-answer interceptors see after a
 // stream completes with no tool calls — the "model is trying to finish" point.
 type preAnswerState struct {
-	Text       string
-	Reasoning  string
-	Usage      *provider.Usage
-	Step       int
-	finalBlocks  int
-	emptyBlocks  int
+	Text        string
+	Reasoning   string
+	Usage       *provider.Usage
+	Step        int
+	finalBlocks int
+	emptyBlocks int
 }
 
 // preAnswerVerdict is an interceptor's decision.
@@ -64,10 +64,15 @@ type emptyAnswerInterceptor struct {
 }
 
 func (ei emptyAnswerInterceptor) check(s preAnswerState) preAnswerVerdict {
-	if !hasVisibleFinalAnswer(s.Text) {
-		return preAnswerVerdict{BlockReason: "empty-final"}
+	// Harness-style termination accepts a reasoning-only clean stop. Only
+	// callers that require visible output — sub-agents whose result is parsed,
+	// the guardian, and fairpeer's interactive loop, which all set
+	// Options.RequireVisibleFinal — keep the bounded synthetic retry that
+	// re-prompts the model for an answer the user or caller can actually read.
+	if !ei.agent.requireVisibleFinal || hasVisibleFinalAnswer(s.Text) {
+		return proceed
 	}
-	return proceed
+	return preAnswerVerdict{BlockReason: "empty-final"}
 }
 
 // truncationInterceptor: a "length" finish means tool-call arguments may be

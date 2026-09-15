@@ -116,10 +116,7 @@ func TestCollabContextMessages(t *testing.T) {
 		t.Fatalf("non-collab tool result was mutated")
 	}
 	// The collab message's content is now a plain synthesis summary string.
-	proj, ok := out[1].Content.(string)
-	if !ok {
-		t.Fatalf("projected content is %T, want string", out[1].Content)
-	}
+	proj := out[1].Content
 	if !strings.Contains(proj, "综合：选A。") {
 		t.Fatalf("projection lost synthesis: %q", proj)
 	}

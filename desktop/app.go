@@ -819,17 +819,13 @@ func (a *App) runHeadlessScheduled(ctx context.Context, profileName, prompt stri
 }
 
 // assistantText extracts the text content of an assistant message (empty for
-// non-assistant or tool-call-only messages). Content is typed as any (string or
-// structured parts); we coerce the common string case. Used by the scheduler to
+// non-assistant or tool-call-only messages). Used by the scheduler to
 // summarize a fired prompt's result.
 func assistantText(m provider.Message) string {
 	if m.Role != provider.RoleAssistant {
 		return ""
 	}
-	if s, ok := m.Content.(string); ok {
-		return strings.TrimSpace(s)
-	}
-	return ""
+	return strings.TrimSpace(m.Content)
 }
 
 func (a *App) beforeClose(ctx context.Context) bool {

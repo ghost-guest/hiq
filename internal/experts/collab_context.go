@@ -35,7 +35,7 @@ func CollabContextMessages(msgs []provider.Message) []provider.Message {
 		if m.Name != ExpertCollabToolName {
 			continue
 		}
-		if s, ok := m.Content.(string); ok {
+		if s := m.Content; s != "" {
 			if rec, ok := ParseCollabRecord(s); ok {
 				out[i].Content = rec.ContextSummary()
 				rewrote = true

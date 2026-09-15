@@ -7,9 +7,11 @@ package encoding
 import (
 	"bytes"
 	"encoding/binary"
+	"os"
 	"unicode/utf8"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 )
 
@@ -98,7 +100,7 @@ func DetectUTF16NoBOM(b []byte) (Kind, bool) {
 	}
 	n &^= 1 // examine an even-length window so parity counts are comparable
 	var evenNUL, oddNUL int
-	for i := 0; i < n; i++ {
+	for i := range n {
 		if b[i] != 0 {
 			continue
 		}
@@ -143,6 +145,23 @@ func Decode(data []byte, enc Kind) []byte {
 	return data
 }
 
+// DecodeToUTF8 converts raw text-like file bytes to UTF-8 using Reasonix's
+// shared detection cascade. It is intended for user-editable structured files
+// (TOML, JSON, dotenv, Markdown) before handing the content to strict parsers.
+func DecodeToUTF8(data []byte) []byte {
+	enc, raw := Detect(data)
+	return Decode(raw, enc)
+}
+
+// ReadFileUTF8 reads path and decodes text-like content to UTF-8.
+func ReadFileUTF8(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return DecodeToUTF8(data), nil
+}
+
 // Decoder returns a streaming transform.Transformer for the given encoding,
 // suitable for wrapping an io.Reader via dec.Reader(r). Returns nil for UTF-8
 // and LossyUTF8 (no transformation needed — the caller should read directly).
@@ -154,10 +173,16 @@ func Decoder(enc Kind) transform.Transformer {
 		return nil
 	case GB18030:
 		return simplifiedchinese.GB18030.NewDecoder()
+	case UTF16LE:
+		return unicode.UTF16(unicode.LittleEndian, unicode.ExpectBOM).NewDecoder()
+	case UTF16BE:
+		return unicode.UTF16(unicode.BigEndian, unicode.ExpectBOM).NewDecoder()
+	case UTF16LENoBOM:
+		return unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewDecoder()
+	case UTF16BENoBOM:
+		return unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM).NewDecoder()
 	}
-	// UTF16LE/BE are not self-synchronising and cannot be streamed
-	// line-by-line without full-file buffering. Callers must handle
-	// them separately. UTF8 and LossyUTF8 need no transformation.
+	// UTF8 and LossyUTF8 need no transformation.
 	return nil
 }
 

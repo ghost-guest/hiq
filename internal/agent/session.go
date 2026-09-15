@@ -17,6 +17,9 @@ type Session struct {
 	mu             sync.RWMutex
 	Messages       []provider.Message
 	rewriteVersion int // bumped each time the log is rewritten (compact/fold)
+	// pendingContentReasons records why the provider-visible content changed
+	// since the last drain, for cache-diagnostics attribution.
+	pendingContentReasons []string
 }
 
 // NewSession initializes a session with an optional system prompt.
@@ -52,11 +55,48 @@ func (s *Session) Snapshot() []provider.Message {
 	return append([]provider.Message(nil), s.Messages...)
 }
 
+// Len reports the number of messages in the log.
+func (s *Session) Len() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.Messages)
+}
+
 // RewriteVersion returns the current rewrite version.
 func (s *Session) RewriteVersion() int { return s.rewriteVersion }
 
 // IncrementRewrite bumps the rewrite version by 1.
 func (s *Session) IncrementRewrite() { s.rewriteVersion++ }
+
+// Rewrite atomically replaces the message log and bumps the rewrite version —
+// the shape a caller must use when it changed provider-visible content in place
+// (a compaction fold, a guardian merge, a rewind truncation). reason names the
+// change and is queued for the next DrainContentRewriteReasons call, which
+// feeds cache-diagnostics attribution. Callers whose edit only touches
+// local-only display metadata must use Replace instead, so they never report a
+// cache-prefix change that did not happen.
+func (s *Session) Rewrite(msgs []provider.Message, reason string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Messages = msgs
+	s.rewriteVersion++
+	if reason != "" {
+		s.pendingContentReasons = append(s.pendingContentReasons, reason)
+	}
+}
+
+// DrainContentRewriteReasons returns the queued rewrite reasons and clears the
+// queue. It is safe to call on a session that never rewrote.
+func (s *Session) DrainContentRewriteReasons() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.pendingContentReasons) == 0 {
+		return nil
+	}
+	out := s.pendingContentReasons
+	s.pendingContentReasons = nil
+	return out
+}
 
 // HasContent returns true when the session carries at least one user,
 // assistant, or tool message — i.e. more than just a system prompt. An

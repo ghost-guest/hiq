@@ -135,7 +135,7 @@ func TestImageUnderstandEndToEndWithStub(t *testing.T) {
 	SetProviderChatRunner(func(ctx context.Context, modelRef string, msgs []provider.Message) ([]provider.Message, error) {
 		gotPrompt = provider.ContentString(msgs[0].Content)
 		// Verify the image part actually made it onto the wire.
-		if len(provider.ImageParts(msgs[0].Content)) == 0 {
+		if !msgs[0].HasImages() {
 			t.Error("VLM runner received no image part — image dropped before the call")
 		}
 		return []provider.Message{{Role: provider.RoleAssistant, Content: wantDesc}}, nil

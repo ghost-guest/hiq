@@ -44,7 +44,7 @@ func vlmStub(t *testing.T, wantText string) {
 	SetVLMModel("test-provider/test-vlm")
 	SetProviderChatRunner(func(ctx context.Context, modelRef string, msgs []provider.Message) ([]provider.Message, error) {
 		for _, m := range msgs {
-			if len(provider.ImageParts(m.Content)) > 0 {
+			if m.HasImages() {
 				return []provider.Message{{Role: provider.RoleAssistant, Content: wantText}}, nil
 			}
 		}
