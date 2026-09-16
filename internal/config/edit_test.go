@@ -788,7 +788,15 @@ func TestSaveToRoundTrips(t *testing.T) {
 }
 
 func TestSaveToScopesUserAndProjectFiles(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	// Isolate every platform's user-config resolution: os.UserConfigDir reads
+	// %AppData% on Windows (XDG_CONFIG_HOME alone does NOT isolate there), and
+	// HOME/USERPROFILE back os.UserHomeDir. Without all of these this test
+	// overwrote the real user config with a defaults-shaped one.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("AppData", filepath.Join(home, "AppData"))
 	c := Default()
 	c.Desktop.Theme = "dark"
 	c.Desktop.ThemeStyle = "graphite"
