@@ -133,6 +133,50 @@ func capabilitiesFor(vendor string) vendorCapabilities {
 	return vendorTable[vendor]
 }
 
+// deepSeekModelID reports whether the model ID itself names a DeepSeek SKU
+// (deepseek-flash, deepseek-v4.1-flash, ...). Vendor detection is host-based,
+// but some wire semantics are a property of the model family: relays and
+// gateways fronting DeepSeek (aiaaa, one-api style hosts) serve the same
+// upstream Responses behavior as the official endpoint even though their host
+// is unknown to DetectVendor.
+func deepSeekModelID(model string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(model)), "deepseek")
+}
+
+// familyCapabilities returns the wire traits a relay inherits from the model
+// family it fronts, for hosts DetectVendor does not know. Only traits that are
+// upstream-endpoint semantics are inherited — never output limits, headers or
+// vendor-specific defaults, which stay at the unknown-gateway zero value.
+//
+// DeepSeek's Responses API is stateless: it rejects previous_response_id and
+// requires the complete input history every turn (vendor.go's stateless row),
+// and it requires historical reasoning content on multi-turn tool calls.
+// Verified live against a relay: sending previous_response_id there answers
+// 400 "previous_response_id is not available for this user", so driving the
+// endpoint as stateful costs a doomed round trip per turn.
+func familyCapabilities(baseURL, model string) (vendorCapabilities, bool) {
+	if DetectVendor(baseURL) != "" {
+		return vendorCapabilities{}, false
+	}
+	if !deepSeekModelID(model) {
+		return vendorCapabilities{}, false
+	}
+	return vendorCapabilities{stateless: true, toolCallReasoning: true}, true
+}
+
+// resolveCapabilities is the single authority for a client's wire traits: host
+// detection first, then model-family inheritance for unknown gateways. Both
+// capability validation and serialization consume this one value so they can
+// never disagree about the effective endpoint semantics.
+func resolveCapabilities(baseURL, model string) vendorCapabilities {
+	cap := capabilitiesFor(DetectVendor(baseURL))
+	if family, ok := familyCapabilities(baseURL, model); ok {
+		cap.stateless = family.stateless
+		cap.toolCallReasoning = family.toolCallReasoning
+	}
+	return cap
+}
+
 // DetectVendor identifies endpoint behavior that affects the Responses wire.
 // Empty means an unknown OpenAI-compatible endpoint with default behavior.
 func DetectVendor(baseURL string) string {

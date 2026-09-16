@@ -81,6 +81,11 @@ func (c Config) mode() string {
 	if capabilitiesFor(DetectVendor(c.BaseURL)).stateless {
 		return "stateless"
 	}
+	// A relay fronting DeepSeek is stateless for the same reason the official
+	// host is: the upstream Responses API rejects previous_response_id.
+	if cap := resolveCapabilities(c.BaseURL, c.Model); cap.stateless {
+		return "stateless"
+	}
 	return "stateful"
 }
 
@@ -122,7 +127,7 @@ func New(cfg Config) provider.Provider {
 	resolved := applyOpenCodeGoContract(provider.Config{BaseURL: cfg.BaseURL, Model: cfg.Model, Extra: cfg.Extra})
 	cfg.Extra = resolved.Extra
 	vendor := DetectVendor(cfg.BaseURL)
-	cap := capabilitiesFor(vendor)
+	cap := resolveCapabilities(cfg.BaseURL, cfg.Model)
 	// Explicit replay contracts apply to compatible gateways as well as exact
 	// vendor hosts. Do not inherit endpoint defaults, headers, or output limits.
 	if protocol, _ := cfg.Extra["reasoning_protocol"].(string); strings.EqualFold(strings.TrimSpace(protocol), "deepseek") || strings.EqualFold(strings.TrimSpace(protocol), "mimo") {

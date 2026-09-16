@@ -1,22 +1,10 @@
 package responses
 
-import (
-	"strings"
+import "github.com/zzycxz/fairpeer/internal/provider"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
-)
-
-// deepSeekModelID reports whether the model ID itself names a DeepSeek SKU
-// (deepseek-flash, deepseek-v4.1-flash, ...). Vendor detection is host-based,
-// but the effort vocabulary is a property of the model family: relays and
-// gateways fronting DeepSeek (aiaaa, one-api style hosts) accept the same
-// efforts as the official endpoint even though their host is unknown to
-// DetectVendor. An explicit reasoning_protocol = "none" or a declared
-// supported_efforts list still wins.
-func deepSeekModelID(model string) bool {
-	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(model)), "deepseek")
-}
-
+// The effort vocabulary of a relayed DeepSeek SKU is resolved in
+// ReasoningForConfig below via deepSeekModelID (vendor.go), shared with the
+// stateless/tool-call-reasoning wire traits a relay inherits from the family.
 func ReasoningForConfig(cfg provider.Config) provider.ReasoningCapability {
 	cfg = applyOpenCodeGoContract(cfg)
 	protocol, _ := cfg.Extra["reasoning_protocol"].(string)

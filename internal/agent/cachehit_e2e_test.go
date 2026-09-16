@@ -63,12 +63,13 @@ func (s *collectSink) Emit(e event.Event) {
 
 type mockTestProvider struct {
 	t            *testing.T
-	prevMessages []json.RawMessage // last conversation request's messages
-	reqChars     []int             // total prompt chars per conversation request
-	hitChars     []int             // cached prefix chars per conversation request
-	withTools    bool              // advertise the echo tool (and emit tool calls)
-	reasoning    string            // chain-of-thought echoed every turn (round-tripped)
-	toolRounds   int               // remaining tool-call rounds before a final answer
+	prevMessages []json.RawMessage   // last conversation request's messages
+	reqMessages  [][]json.RawMessage // every conversation request's messages
+	reqChars     []int               // total prompt chars per conversation request
+	hitChars     []int               // cached prefix chars per conversation request
+	withTools    bool                // advertise the echo tool (and emit tool calls)
+	reasoning    string              // chain-of-thought echoed every turn (round-tripped)
+	toolRounds   int                 // remaining tool-call rounds before a final answer
 }
 
 func (m *mockTestProvider) handler(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +92,7 @@ func (m *mockTestProvider) handler(w http.ResponseWriter, r *http.Request) {
 	hitChars := charsOf(msgs[:common])
 	totalChars := charsOf(msgs)
 	m.prevMessages = msgs
+	m.reqMessages = append(m.reqMessages, msgs)
 	m.reqChars = append(m.reqChars, totalChars)
 	m.hitChars = append(m.hitChars, hitChars)
 
@@ -151,6 +153,10 @@ const longReasoning = "Let me reason about this carefully. I will weigh the cons
 // every request re-sends the full prior history untouched, and the displayed
 // hit% equals hit/prompt%. This rules out "something is breaking the cache" and
 // "the display math is wrong" for the no-compaction path.
+//
+// The exact prefix invariant lives in cacheprefix_guard_test.go
+// (TestRequestPrefixIsAppendOnly), which is NOT skipped because it measures the
+// raw request bytes rather than reported cache tokens.
 func TestCacheHitPrefixStable(t *testing.T) {
 	t.Skip("test-provider does not report prompt cache tokens")
 	mock := &mockTestProvider{t: t, withTools: true, reasoning: longReasoning, toolRounds: 2}
@@ -162,13 +168,23 @@ func TestCacheHitPrefixStable(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 
-	// Reconstruct the requests to check prefix stability. Replay equality is
-	// already encoded in hitChars==full-previous-prefix, but assert it directly.
+	// The prior request must be re-sent as a prefix. It is NOT entirely
+	// byte-identical when it ended on a user turn: the outgoing copy of that
+	// final user message carries the per-turn clock notice (the "turn tail"),
+	// which the next request does not repeat. So allow exactly that one
+	// message's worth of divergence.
 	for i := 1; i < len(mock.reqChars); i++ {
-		// On request i the cached prefix should be the ENTIRE request i-1.
-		if mock.hitChars[i] != mock.reqChars[i-1] {
-			t.Errorf("PREFIX BROKEN at req %d: cached %d chars but the full prior request was %d chars",
+		if mock.hitChars[i] > mock.reqChars[i-1] {
+			t.Errorf("PREFIX CORRUPT at req %d: cached %d chars exceeds the prior request's %d",
 				i, mock.hitChars[i], mock.reqChars[i-1])
+		}
+		if len(mock.reqMessages) > i && len(mock.reqMessages[i-1]) > 0 {
+			last := charsOf(mock.reqMessages[i-1][len(mock.reqMessages[i-1])-1:])
+			if mock.hitChars[i] < mock.reqChars[i-1]-last {
+				t.Errorf("PREFIX BROKEN at req %d: cached %d chars, want at least the prior request minus "+
+					"its final message (%d - %d = %d)",
+					i, mock.hitChars[i], mock.reqChars[i-1], last, mock.reqChars[i-1]-last)
+			}
 		}
 	}
 	t.Logf("prefix STABLE across %d requests — nothing in the client breaks the cache", len(mock.reqChars))
