@@ -2026,6 +2026,11 @@ func NewProviderWithProxy(e *config.ProviderEntry, proxy netclient.ProxySpec, ma
 			"thinking":           e.Thinking,
 			"effort":             config.EffectiveEffort(e),
 			"reasoning_protocol": config.ReasoningProtocolForEntry(e),
+			// Declared effort vocabulary (provider TOML supported_efforts /
+			// default_effort) reaches the adapters' DeclaredReasoning so an
+			// endpoint with non-standard levels can be described exactly.
+			"supported_efforts": e.SupportedEfforts,
+			"default_effort":    e.DefaultEffort,
 			"proxy_spec":         proxy,
 			"vision":             e.Vision,
 			"vision_detail":      e.VisionDetail,
