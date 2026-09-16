@@ -12,6 +12,7 @@
 package event
 
 import (
+	"github.com/zzycxz/fairpeer/internal/billing"
 	"github.com/zzycxz/fairpeer/internal/evidence"
 	"github.com/zzycxz/fairpeer/internal/nilutil"
 	"github.com/zzycxz/fairpeer/internal/provider"
@@ -113,6 +114,21 @@ const (
 	// review (Guardian payload: Outcome, RiskLevel, Rationale, review usage).
 	// Appended last to keep the Kind values before it wire-stable.
 	GuardianAssessment
+	// ToolStarted is persisted after policy/validation and before execution, so
+	// a run's durable ledger can distinguish "validated" from "finished".
+	ToolStarted
+	// StreamAttempt marks the local lifecycle of one sampling attempt within a
+	// model round (begin | discard | commit). Host-local; never user-visible.
+	StreamAttempt
+	// TurnStatusChanged is a content-free lifecycle transition of the top-level
+	// turn (Status carries the new event.TurnStatus; TurnID names the turn).
+	TurnStatusChanged
+	// PromptAnswered records that a durable Ask/approval item was answered and
+	// the same turn resumed; ItemID carries the stable prompt id and answer
+	// content remains in its purpose-built decision receipt.
+	PromptAnswered
+	// KindCount bounds the enum. Always the last entry.
+	KindCount
 )
 
 // Level classifies a Notice so sinks can style or filter it.
@@ -163,6 +179,21 @@ type Tool struct {
 	Attachments []Attachment
 	FileDiff
 	Profile *Profile // ToolDispatch: subagent model/effort (set for task/skill calls)
+	// AttemptID is the host-local stream_attempt id for speculative partials;
+	// TodoWritten/Todos carry todo-state transitions that ride on a terminal
+	// tool result so a durable ledger can reconstruct them.
+	AttemptID   string
+	TodoWritten bool
+	Todos       []Todo
+	// RunState is the host-local run state of the call; ResolvedName is the
+	// canonical tool name after alias resolution; CapabilityID names the
+	// capability that served the call (capability router). All host-local.
+	RunState     provider.ToolRunState
+	ResolvedName string
+	CapabilityID string
+	// StartedAt/EndedAt are unix-ms bounds of execution (zero when never run).
+	StartedAt int64
+	EndedAt   int64
 }
 
 // FileDiff is a previewed change carried on a writer tool's full ToolDispatch
@@ -301,23 +332,48 @@ type Collab struct {
 // Event is one increment in a turn's event stream. Read the field(s) documented
 // for Kind; the others are zero.
 type Event struct {
-	Kind             Kind
-	Text             string            // Reasoning / Text / Message / Notice / Phase
-	Reasoning        string            // Message: the full reasoning chain
-	Tool             Tool              // ToolDispatch / ToolResult
-	Usage            *provider.Usage   // Usage
-	Pricing          *provider.Pricing // Usage: for cost display (nil = omit cost)
+	Kind      Kind
+	MessageID string // local identity shared by streaming and persisted messages
+	AttemptID string // owning sampling attempt; never provider-visible
+	Source    string // optional display/event source (executor, planner, subagent, ...)
+	// TurnID is the stable id of the owning top-level turn; Sequence is the
+	// monotonic session-local event sequence; Status is the post-event lifecycle
+	// state. ItemID correlates durable session-inbox events (Steer/TurnDone).
+	TurnID   string
+	Sequence uint64
+	Status   TurnStatus
+	ItemID   string
+	// SessionID/RuntimeEpoch/SubmissionID stamp durable display routing and the
+	// originating controller incarnation; Recovery carries optional local recovery
+	// details; StreamAttempt carries a sampling-attempt lifecycle step.
+	SessionID     string
+	RuntimeEpoch  string
+	SubmissionID  string
+	Recovery      *RecoveryStatus
+	StreamAttempt StreamAttemptInfo
+	Text          string            // Reasoning / Text / Message / Notice / Phase
+	Reasoning     string            // Message: the full reasoning chain
+	Tool          Tool              // ToolDispatch / ToolResult
+	Usage         *provider.Usage   // Usage
+	Pricing       *provider.Pricing // Usage: for cost display (nil = omit cost)
+	// CostQuote is the host-side quote attached to a Usage event; sinks must not
+	// reprice. UsageSource names the billable call source (executor, planner,
+	// subagent, ...); empty means executor for compatibility.
+	CostQuote        *billing.CostQuote
+	UsageSource      string
 	CacheDiagnostics *CacheDiagnostics // Usage: cache-churn attribution (nil = N/A)
 	// SessionHit/SessionMiss carry cumulative cache tokens across the whole
 	// session (Usage events only), so a frontend can show the aggregate hit-rate
 	// — which doesn't crater on a short turn or after compaction — alongside
 	// Usage's single-turn numbers.
-	SessionHit   int        // Usage: cumulative cache-hit prompt tokens this session
-	SessionMiss  int        // Usage: cumulative cache-miss prompt tokens this session
-	Level        Level      // Notice
-	Approval     Approval   // ApprovalRequest
-	Ask          Ask        // AskRequest
-	Err          error      // TurnDone: non-nil on failure
+	SessionHit  int      // Usage: cumulative cache-hit prompt tokens this session
+	SessionMiss int      // Usage: cumulative cache-miss prompt tokens this session
+	Level       Level    // Notice
+	Approval    Approval // ApprovalRequest
+	Ask         Ask      // AskRequest
+	Err         error    // TurnDone: non-nil on failure
+	// Outcome is an optional machine-readable recoverable outcome on TurnDone.
+	Outcome      string
 	Compaction   Compaction // Compaction
 	RetryAttempt int        // Retrying: 1-based attempt about to be made
 	RetryMax     int        // Retrying: total attempts before giving up

@@ -60,6 +60,10 @@ type Message struct {
 	// MemoryCitations is local display metadata for memories that influenced an
 	// assistant turn. Provider implementations must not forward it to model APIs.
 	MemoryCitations []MemoryCitation `json:"memoryCitations,omitempty"`
+	// ToolRunState is the host-local run state of a tool result, used to
+	// reconstruct interrupted turns. Provider implementations must not forward
+	// it to model APIs.
+	ToolRunState ToolRunState `json:"tool_run_state,omitempty"`
 }
 
 // UnmarshalJSON restores a message from its on-disk JSON. Current files store
@@ -318,6 +322,14 @@ type ToolSchema struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	Parameters  json.RawMessage `json:"parameters"`
+	// Deferred marks a tool whose full schema is withheld from the first
+	// request and discovered on demand (tool search). Strict opts the schema
+	// into provider-side structured-output enforcement. Namespace groups
+	// dynamically-namespaced tools. All three are additive over the original
+	// wire shape and default to zero values.
+	Deferred  bool   `json:"deferred,omitempty"`
+	Strict    bool   `json:"strict,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // Request is a single completion request.

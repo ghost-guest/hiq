@@ -16,19 +16,31 @@ import (
 
 // Event is the JSON shape an event.Event takes across the wire.
 type Event struct {
-	Kind         string          `json:"kind"`
-	Text         string          `json:"text,omitempty"`
-	Reasoning    string          `json:"reasoning,omitempty"`
-	Level        string          `json:"level,omitempty"`
-	Tool         *Tool           `json:"tool,omitempty"`
-	Usage        *Usage          `json:"usage,omitempty"`
-	Approval     *Approval       `json:"approval,omitempty"`
-	Ask          *Ask            `json:"ask,omitempty"`
-	Compaction   *Compaction     `json:"compaction,omitempty"`
-	Err          string          `json:"err,omitempty"`
-	RetryAttempt int             `json:"retryAttempt,omitempty"`
-	RetryMax     int             `json:"retryMax,omitempty"`
-	RetryAfterMs int64           `json:"retryAfterMs,omitempty"`
+	Kind         string                `json:"kind"`
+	MessageID    string                `json:"messageId,omitempty"`
+	AttemptID    string                `json:"attemptId,omitempty"`
+	Source       string                `json:"source,omitempty"`
+	SessionID    string                `json:"sessionId,omitempty"`
+	RuntimeEpoch string                `json:"runtimeEpoch,omitempty"`
+	SubmissionID string                `json:"submissionId,omitempty"`
+	TurnID       string                `json:"turnId,omitempty"`
+	Sequence     uint64                `json:"seq,omitempty"`
+	Status       string                `json:"status,omitempty"`
+	ItemID       string                `json:"itemId,omitempty"`
+	Text         string                `json:"text,omitempty"`
+	Reasoning    string                `json:"reasoning,omitempty"`
+	Level        string                `json:"level,omitempty"`
+	Tool         *Tool                 `json:"tool,omitempty"`
+	Usage        *Usage                `json:"usage,omitempty"`
+	Approval     *Approval             `json:"approval,omitempty"`
+	Ask          *Ask                  `json:"ask,omitempty"`
+	Compaction   *Compaction           `json:"compaction,omitempty"`
+	Recovery     *event.RecoveryStatus `json:"recovery,omitempty"`
+	Err          string                `json:"err,omitempty"`
+	Outcome      string                `json:"outcome,omitempty"`
+	RetryAttempt int                   `json:"retryAttempt,omitempty"`
+	RetryMax     int                   `json:"retryMax,omitempty"`
+	RetryAfterMs int64                 `json:"retryAfterMs,omitempty"`
 }
 
 type Compaction struct {
@@ -44,32 +56,44 @@ type AskOption struct {
 }
 
 type AskQuestion struct {
-	ID      string          `json:"id"`
-	Header  string          `json:"header,omitempty"`
-	Prompt  string          `json:"prompt"`
-	Options []AskOption     `json:"options"`
-	Multi   bool            `json:"multi,omitempty"`
+	ID      string      `json:"id"`
+	Header  string      `json:"header,omitempty"`
+	Prompt  string      `json:"prompt"`
+	Options []AskOption `json:"options"`
+	Multi   bool        `json:"multi,omitempty"`
 }
 
 type Ask struct {
-	ID        string          `json:"id"`
-	Questions []AskQuestion   `json:"questions"`
+	ID        string        `json:"id"`
+	Questions []AskQuestion `json:"questions"`
 }
 
 type Tool struct {
-	ID          string           `json:"id,omitempty"`
-	Name        string           `json:"name"`
-	Args        string           `json:"args,omitempty"`
-	Output      string           `json:"output,omitempty"`
-	Err         string           `json:"err,omitempty"`
-	ReadOnly    bool             `json:"readOnly"`
-	Truncated   bool             `json:"truncated,omitempty"`
-	DurationMs  int64            `json:"durationMs,omitempty"`
-	Partial     bool             `json:"partial,omitempty"`
-	ParentID    string           `json:"parentId,omitempty"`
-	Profile     *Profile         `json:"profile,omitempty"`
-	Attachments []Attachment     `json:"attachments,omitempty"`
-	FileDiff    *FileDiff        `json:"fileDiff,omitempty"`
+	ID          string       `json:"id,omitempty"`
+	Name        string       `json:"name"`
+	Args        string       `json:"args,omitempty"`
+	Output      string       `json:"output,omitempty"`
+	Err         string       `json:"err,omitempty"`
+	ReadOnly    bool         `json:"readOnly"`
+	Truncated   bool         `json:"truncated,omitempty"`
+	DurationMs  int64        `json:"durationMs,omitempty"`
+	Partial     bool         `json:"partial,omitempty"`
+	ParentID    string       `json:"parentId,omitempty"`
+	Profile     *Profile     `json:"profile,omitempty"`
+	Attachments []Attachment `json:"attachments,omitempty"`
+	FileDiff    *FileDiff    `json:"fileDiff,omitempty"`
+	// Todos/TodoWritten let a durable ledger reconstruct todo state transitions
+	// that ride on terminal tool results. Additive over the original wire shape.
+	Todos       []event.Todo `json:"todos,omitempty"`
+	TodoWritten bool         `json:"todoWritten,omitempty"`
+	// RunState/AttemptID/ResolvedName/CapabilityID are host-local ledger facts.
+	RunState     provider.ToolRunState `json:"runState,omitempty"`
+	AttemptID    string                `json:"attemptId,omitempty"`
+	ResolvedName string                `json:"resolvedName,omitempty"`
+	CapabilityID string                `json:"capabilityId,omitempty"`
+	// StartedAt/EndedAt are unix-ms execution bounds (zero when never run).
+	StartedAt int64 `json:"startedAt,omitempty"`
+	EndedAt   int64 `json:"endedAt,omitempty"`
 }
 
 // FileDiff is the JSON form of event.FileDiff (empty Diff = nothing to show).
@@ -90,27 +114,27 @@ type Profile struct {
 }
 
 type Usage struct {
-	PromptTokens     int               `json:"promptTokens"`
-	CompletionTokens int               `json:"completionTokens"`
-	TotalTokens      int               `json:"totalTokens"`
-	CacheHitTokens   int               `json:"cacheHitTokens"`
-	CacheMissTokens  int               `json:"cacheMissTokens"`
-	CacheWriteTokens int               `json:"cacheWriteTokens"`
-	ReasoningTokens  int               `json:"reasoningTokens,omitempty"`
+	PromptTokens     int `json:"promptTokens"`
+	CompletionTokens int `json:"completionTokens"`
+	TotalTokens      int `json:"totalTokens"`
+	CacheHitTokens   int `json:"cacheHitTokens"`
+	CacheMissTokens  int `json:"cacheMissTokens"`
+	CacheWriteTokens int `json:"cacheWriteTokens"`
+	ReasoningTokens  int `json:"reasoningTokens,omitempty"`
 	// Session-cumulative cache tokens; mapped back onto event.Event's
 	// SessionHit/SessionMiss by FromWire.
-	SessionCacheHitTokens  int `json:"sessionCacheHitTokens"`
-	SessionCacheMissTokens int `json:"sessionCacheMissTokens"`
-	Cost     float64 `json:"cost,omitempty"`
-	Currency string  `json:"currency,omitempty"`
+	SessionCacheHitTokens  int     `json:"sessionCacheHitTokens"`
+	SessionCacheMissTokens int     `json:"sessionCacheMissTokens"`
+	Cost                   float64 `json:"cost,omitempty"`
+	Currency               string  `json:"currency,omitempty"`
 }
 
 type Approval struct {
-	ID      string         `json:"id"`
-	Tool    string         `json:"tool"`
-	Subject string         `json:"subject"`
-	Args    string         `json:"args,omitempty"`
-	Changes []FileChange   `json:"changes,omitempty"`
+	ID      string       `json:"id"`
+	Tool    string       `json:"tool"`
+	Subject string       `json:"subject"`
+	Args    string       `json:"args,omitempty"`
+	Changes []FileChange `json:"changes,omitempty"`
 }
 
 // FileChange is one file within a previewed multi-file approval.
@@ -143,6 +167,28 @@ var kindNames = map[event.Kind]string{
 	event.MCPSurfaceReady:   "mcp_surface_ready",
 	event.Retrying:          "retrying",
 	event.Steer:             "steer",
+	event.ToolStarted:       "tool_started",
+	event.StreamAttempt:     "stream_attempt",
+	event.TurnStatusChanged: "turn_status",
+	event.PromptAnswered:    "prompt_answered",
+}
+
+// KindName returns the stable wire name of one event kind, or false for a kind
+// outside the known set.
+func KindName(kind event.Kind) (string, bool) {
+	name, ok := kindNames[kind]
+	return name, ok
+}
+
+// KindNames returns every known wire kind name, bounded by event.KindCount.
+func KindNames() []string {
+	names := make([]string, 0, int(event.KindCount))
+	for kind := event.Kind(0); kind < event.KindCount; kind++ {
+		if name, ok := kindNames[kind]; ok {
+			names = append(names, name)
+		}
+	}
+	return names
 }
 
 // wireKinds is the reverse map, plus the few kinds that share no wire name and
@@ -159,7 +205,27 @@ var wireKinds = func() map[string]event.Kind {
 // ToWire converts an event.Event into its wire form. It matches desktop's
 // toWire, including the goal-marker strip on live Message text.
 func ToWire(e event.Event) Event {
-	w := Event{Kind: kindNames[e.Kind], Text: e.Text, Reasoning: e.Reasoning}
+	w := Event{
+		Kind:         kindNames[e.Kind],
+		MessageID:    e.MessageID,
+		AttemptID:    e.AttemptID,
+		Source:       e.Source,
+		SessionID:    e.SessionID,
+		RuntimeEpoch: e.RuntimeEpoch,
+		SubmissionID: e.SubmissionID,
+		TurnID:       e.TurnID,
+		Sequence:     e.Sequence,
+		ItemID:       e.ItemID,
+		Outcome:      e.Outcome,
+		Text:         e.Text,
+		Reasoning:    e.Reasoning,
+	}
+	if e.Status != "" {
+		w.Status = string(e.Status)
+	}
+	if e.Recovery != nil {
+		w.Recovery = e.Recovery
+	}
 	switch e.Kind {
 	case event.Notice:
 		if e.Level == event.LevelWarn {
@@ -170,13 +236,22 @@ func ToWire(e event.Event) Event {
 	case event.ToolArgsDelta:
 		w.Text = e.Text
 		w.Tool = &Tool{ID: e.Tool.ID, Name: e.Tool.Name, ReadOnly: true}
-	case event.ToolDispatch, event.ToolResult, event.ToolProgress:
+	case event.ToolDispatch, event.ToolStarted, event.ToolResult, event.ToolProgress:
 		wt := &Tool{
 			ID: e.Tool.ID, Name: e.Tool.Name, Args: e.Tool.Args,
 			Output: e.Tool.Output, Err: e.Tool.Err,
 			ReadOnly: e.Tool.ReadOnly, Truncated: e.Tool.Truncated,
 			DurationMs: e.Tool.DurationMs, Partial: e.Tool.Partial,
 			ParentID: e.Tool.ParentID,
+			// Host-local ledger facts carried so a durable ledger can rebuild
+			// todo state and run state from the wire record.
+			RunState: e.Tool.RunState, AttemptID: e.Tool.AttemptID,
+			ResolvedName: e.Tool.ResolvedName, CapabilityID: e.Tool.CapabilityID,
+			StartedAt: e.Tool.StartedAt, EndedAt: e.Tool.EndedAt,
+			TodoWritten: e.Tool.TodoWritten,
+		}
+		if len(e.Tool.Todos) > 0 {
+			wt.Todos = e.Tool.Todos
 		}
 		if len(e.Tool.Attachments) > 0 {
 			wt.Attachments = make([]Attachment, len(e.Tool.Attachments))
@@ -261,7 +336,26 @@ func fromWireAsk(a Ask) event.Ask {
 // precomputed into Usage.Cost on the wire) and a TurnDone error's type (a
 // string error is rebuilt).
 func FromWire(w Event) event.Event {
-	e := event.Event{Text: w.Text, Reasoning: w.Reasoning}
+	e := event.Event{
+		Text:         w.Text,
+		Reasoning:    w.Reasoning,
+		MessageID:    w.MessageID,
+		AttemptID:    w.AttemptID,
+		Source:       w.Source,
+		SessionID:    w.SessionID,
+		RuntimeEpoch: w.RuntimeEpoch,
+		SubmissionID: w.SubmissionID,
+		TurnID:       w.TurnID,
+		Sequence:     w.Sequence,
+		ItemID:       w.ItemID,
+		Outcome:      w.Outcome,
+	}
+	if w.Status != "" {
+		e.Status = event.TurnStatus(w.Status)
+	}
+	if w.Recovery != nil {
+		e.Recovery = w.Recovery
+	}
 	if k, ok := wireKinds[w.Kind]; ok {
 		e.Kind = k
 	}
@@ -276,12 +370,16 @@ func FromWire(w Event) event.Event {
 		if w.Tool != nil {
 			e.Tool = event.Tool{ID: w.Tool.ID, Name: w.Tool.Name, ReadOnly: true}
 		}
-	case event.ToolDispatch, event.ToolResult, event.ToolProgress:
+	case event.ToolDispatch, event.ToolStarted, event.ToolResult, event.ToolProgress:
 		if t := w.Tool; t != nil {
 			e.Tool = event.Tool{
 				ID: t.ID, Name: t.Name, Args: t.Args, Output: t.Output, Err: t.Err,
 				ReadOnly: t.ReadOnly, Truncated: t.Truncated, DurationMs: t.DurationMs,
 				Partial: t.Partial, ParentID: t.ParentID,
+				RunState: t.RunState, AttemptID: t.AttemptID,
+				ResolvedName: t.ResolvedName, CapabilityID: t.CapabilityID,
+				StartedAt: t.StartedAt, EndedAt: t.EndedAt,
+				TodoWritten: t.TodoWritten, Todos: t.Todos,
 			}
 			if len(t.Attachments) > 0 {
 				e.Tool.Attachments = make([]event.Attachment, len(t.Attachments))

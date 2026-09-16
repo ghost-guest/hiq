@@ -17,6 +17,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.11.7
 	github.com/chromedp/cdproto v0.0.0-20260321001828-e3e3800016bc
 	github.com/chromedp/chromedp v0.15.1
+	github.com/creack/pty v1.1.24
 	github.com/emersion/go-imap v1.2.1
 	github.com/emersion/go-message v0.18.2
 	github.com/go-ole/go-ole v1.3.0
