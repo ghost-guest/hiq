@@ -438,6 +438,12 @@ export interface AppBindings {
   // The 团长's planning step: decompose a goal into cards and route each to the
   // best-skilled member by capability matching.
   PlanTeamTasks(teamId: string, goal: string, model: string): Promise<TeamProjectView>;
+  // Execute a card as its assignee's own isolated sub-session (P2). The call
+  // returns once the card flips to running; progress arrives via team:changed.
+  RunTeamTask(teamId: string, taskId: string): Promise<TeamProjectView>;
+  CancelTeamTask(teamId: string, taskId: string): Promise<void>;
+  // Task IDs with an in-flight run, so a remounted board restores its spinners.
+  RunningTeamTasks(teamId: string): Promise<string[]>;
   SaveDoc(path: string, body: string): Promise<string>;
   PortraitProfile(): Promise<ProfileView>;
   ProfilePresets(): Promise<ProfilePresetsPayload>;
@@ -1556,6 +1562,8 @@ function mockInitialProfile(): "dev" | "cowork" | "netdev" {
 
 let mockTeams: TeamProjectView[] = [];
 let mockTeamSeq = 0;
+// Keys "teamId/taskId" with a simulated in-flight member run.
+const mockRunningTasks = new Set<string>();
 
 function mockTeamID(prefix: string): string {
   mockTeamSeq += 1;
@@ -5522,6 +5530,55 @@ function makeMockApp(): AppBindings {
         context: { ...t.context, goal: goal || t.context.goal, version: (t.context?.version ?? 0) + 1 },
         tasks: [...t.tasks, ...blocks],
       }));
+    },
+    async RunTeamTask(teamId: string, taskId: string) {
+      const tm = mockFindTeam(teamId);
+      if (!tm) throw new Error("团队不存在");
+      const updated = mockPatchTeam(teamId, (t) => ({
+        ...t,
+        tasks: t.tasks.map((tk) =>
+          tk.id === taskId
+            ? {
+                ...tk,
+                status: "running",
+                progress: "已启动…",
+                attempts: (tk.attempts ?? 0) + 1,
+                error: "",
+              }
+            : tk,
+        ),
+      }));
+      mockRunningTasks.add(`${teamId}/${taskId}`);
+      // Land a simulated delivery shortly after so `pnpm dev` mirrors the real
+      // start → progress → done flow (including the blackboard payoff).
+      window.setTimeout(() => {
+        if (!mockRunningTasks.has(`${teamId}/${taskId}`)) return;
+        mockRunningTasks.delete(`${teamId}/${taskId}`);
+        mockPatchTeam(teamId, (t) => ({
+          ...t,
+          tasks: t.tasks.map((tk) =>
+            tk.id === taskId
+              ? { ...tk, status: "succeeded", progress: "", error: "", deliverable: "（浏览器预览：模拟产出）" }
+              : tk,
+          ),
+        }));
+      }, 2500);
+      return updated;
+    },
+    async CancelTeamTask(teamId: string, taskId: string) {
+      mockRunningTasks.delete(`${teamId}/${taskId}`);
+      mockPatchTeam(teamId, (t) => ({
+        ...t,
+        tasks: t.tasks.map((tk) =>
+          tk.id === taskId ? { ...tk, status: "queued", progress: "", error: "" } : tk,
+        ),
+      }));
+    },
+    async RunningTeamTasks(teamId: string) {
+      const prefix = `${teamId}/`;
+      return [...mockRunningTasks]
+        .filter((k) => k.startsWith(prefix))
+        .map((k) => k.slice(prefix.length));
     },
   };
 }

@@ -4092,6 +4092,11 @@ export const en = {
   "team.planning": "Planning…",
   "team.planFailed": "Planning failed: {msg}",
   "team.planNoMembers": "Add at least one member first.",
+  "team.run": "Run task (executed by the assignee in its own context)",
+  "team.stop": "Stop run",
+  "team.running": "Member working…",
+  "team.runNoAssignee": "Assign an owner before running",
+  "team.runBlocked": "Waiting on unfinished prerequisites",
 };
 
 export type DictKey = keyof typeof en;

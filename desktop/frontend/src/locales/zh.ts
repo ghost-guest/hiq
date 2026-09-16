@@ -4074,4 +4074,9 @@ export const zh: Record<DictKey, string> = {
   "team.planning": "拆解中…",
   "team.planFailed": "拆解失败：{msg}",
   "team.planNoMembers": "请先至少添加一个团员。",
+  "team.run": "执行任务（由该团员以自己的独立上下文完成）",
+  "team.stop": "停止执行",
+  "team.running": "团员执行中…",
+  "team.runNoAssignee": "先给这张卡指派负责人再执行",
+  "team.runBlocked": "前置任务尚未完成，暂不能执行",
 };

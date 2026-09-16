@@ -1,0 +1,30 @@
+feat(team): P2 —— 团员以独立 sub-session 真正执行 + 编码模式侧栏直达「团队」
+
+修复：团队入口原先只挂在「办公」模式侧栏，用户停在「编码」模式找不到。
+现在编码模式侧栏底部（与「编码偏好 / 循环工程」同组）也直达「团队」，
+两处渲染同一个 TeamBoard；teamOpen 独占 main 区并隐藏 header/footer。
+
+P2（团员执行）：
+- internal/team/run.go：MemberRunPrompt（身份 + L0 黑板摘要 + 验收标准）、
+  TaskBrief、ResultArtifact、DefaultMemberMaxSteps / looksLikeFilename。纯函数，可测。
+- desktop/team_run.go：RunTeamTask / CancelTeamTask / RunningTeamTasks。
+  以 agent.NewSession(MemberRunPrompt(...)) + agent.New + Run 起独立会话，
+  后台 goroutine + cancel map（App.teamRuns）；进展 ≤2 次/秒回写 Task.Progress
+  并 emit team:changed；成功把产出挂到黑板 Artifacts，失败置 failed + Error；
+  取消回「待开始」（保留负责人）可重跑。
+- internal/control/controller.go：新增 ToolRegistry()（复用会话已配好的注册表，
+  含工作区绑定写入 / 沙箱 bash / 插件工具）与 HeadlessGate()（无头权限门控，
+  与内核 task 子代理同款语义：硬拒绝照常拦，无人值守时不弹审批）。
+- 前端：卡片 ▶ 执行 / ■ 停止、运行态转圈 + 实时进展；
+  无负责人或前置依赖未完成时按钮置灰并给出原因（把能力缺口/阻塞显式暴露）。
+
+不变式：
+- 黑板摘要只进团员的子 session，主会话 system prompt 字节稳定不受影响
+  （cacheprefix_guard 已回归通过）。
+- 团员走 background provider 优先级（mainProvider=false），尊重 reserve_main。
+- 委派工具经 agent.SubagentMetaTools() 排除，保持委派只深一层。
+- 名单外的模型回落默认模型；member.Effort 非空才覆盖 entry 副本。
+
+测试：internal/team/run_test.go（提示词组装 / 自定义身份优先 / 空黑板不出段 /
+路径提取 / 文件名判定）；team+control+config 全绿；desktop 双 module build/vet 干净；
+npx tsc --noEmit 通过；vite build 通过并核对新 asset 已内嵌 exe。

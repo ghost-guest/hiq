@@ -14,7 +14,7 @@
 // (including future leader-driven planning) without a manual refresh.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, Pencil, Users, LayoutDashboard, Sparkles, Wand2, Crown, ListChecks, X } from "lucide-react";
+import { Plus, Trash2, Pencil, Users, LayoutDashboard, Sparkles, Wand2, Crown, ListChecks, X, Play, Square } from "lucide-react";
 
 import { app, onTeamChanged } from "../../lib/bridge";
 import type {
@@ -158,8 +158,28 @@ export function TeamBoard() {
     }
   }, [team, confirm, applyTeam, showToast, t]);
 
-  const removeMember = useCallback(async (m: TeamMemberView) => {
+  // runTask dispatches a card to its assignee's own sub-session (P2). The backend
+  // flips the card to running and returns immediately; progress and the final
+  // state arrive through team:changed, so the board needs no polling.
+  const runTask = useCallback(async (task: TeamTaskView) => {
     if (!team) return;
+    try {
+      applyTeam(await app.RunTeamTask(team.id, task.id));
+    } catch (e) {
+      showToast(String((e as Error)?.message ?? e), "warn");
+    }
+  }, [team, applyTeam, showToast]);
+
+  const stopTask = useCallback(async (task: TeamTaskView) => {
+    if (!team) return;
+    try {
+      await app.CancelTeamTask(team.id, task.id);
+    } catch (e) {
+      showToast(String((e as Error)?.message ?? e), "error");
+    }
+  }, [team, showToast]);
+
+  const removeMember = useCallback(async (m: TeamMemberView) => {    if (!team) return;
     if (!(await confirm({ title: t("team.removeMember"), message: `${m.name} — ${t("team.removeMemberConfirm")}`, danger: true }))) return;
     try {
       applyTeam(await app.RemoveTeamMember(team.id, m.id));
@@ -270,6 +290,8 @@ export function TeamBoard() {
                       onDragEnd={() => { setDragTaskId(""); setDragOverCol(""); }}
                       onEdit={() => setTaskDraft(task)}
                       onRemove={() => void removeTask(task)}
+                      onRun={() => void runTask(task)}
+                      onStop={() => void stopTask(task)}
                     />
                   ))}
                   {col.tasks.length === 0 && <div className="team-col__blank" />}
@@ -338,7 +360,7 @@ export function TeamBoard() {
 // --- card --------------------------------------------------------------------
 
 function TeamCard({
-  task, team, dragging, onDragStart, onDragEnd, onEdit, onRemove,
+  task, team, dragging, onDragStart, onDragEnd, onEdit, onRemove, onRun, onStop,
 }: {
   task: TeamTaskView;
   team: TeamProjectView;
@@ -347,19 +369,43 @@ function TeamCard({
   onDragEnd: () => void;
   onEdit: () => void;
   onRemove: () => void;
+  onRun: () => void;
+  onStop: () => void;
 }) {
   const t = useT();
   const assignee = team.members.find((m) => m.id === task.assigneeId);
+  const isRunning = task.status === "running";
+  // A run needs an owner plus satisfied prerequisites. The leader's routing
+  // deliberately leaves a card unassigned when nobody covers its skills, so the
+  // disabled button is the visible capability gap rather than a silent no-op.
+  const depsReady = task.deps.every(
+    (id) => team.tasks.find((x) => x.id === id)?.status === "succeeded",
+  );
+  const canRun = !isRunning && !!task.assigneeId && depsReady;
+  const runHint = !task.assigneeId
+    ? t("team.runNoAssignee")
+    : !depsReady
+      ? t("team.runBlocked")
+      : t("team.run");
   return (
     <article
-      className={`team-card${dragging ? " team-card--dragging" : ""}`}
-      draggable
+      className={`team-card${dragging ? " team-card--dragging" : ""}${isRunning ? " team-card--running" : ""}`}
+      draggable={!isRunning}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
       <div className="team-card__top">
         <span className="team-card__title">{task.title}</span>
         <span className="team-card__actions">
+          {isRunning ? (
+            <button className="team-card__btn team-card__btn--stop" onClick={onStop} title={t("team.stop")}>
+              <Square size={12} />
+            </button>
+          ) : (
+            <button className="team-card__btn" onClick={onRun} disabled={!canRun} title={runHint}>
+              <Play size={12} />
+            </button>
+          )}
           <button className="team-card__btn" onClick={onEdit} title={t("team.editTask")}><Pencil size={12} /></button>
           <button className="team-card__btn team-card__btn--danger" onClick={onRemove} title={t("common.delete")}><Trash2 size={12} /></button>
         </span>
@@ -369,6 +415,12 @@ function TeamCard({
         <div className="team-card__tags">
           {task.requiredSkills.map((s) => <span key={s} className="team-chip team-chip--skill">{s}</span>)}
         </div>
+      )}
+      {isRunning && (
+        <p className="team-card__running">
+          <span className="team-card__spinner" aria-hidden="true" />
+          {t("team.running")}
+        </p>
       )}
       {task.progress && <p className="team-card__progress">{t("team.progress")}: {task.progress}</p>}
       {task.error && <p className="team-card__error">{t("team.error")}: {task.error}</p>}

@@ -291,8 +291,8 @@ type Options struct {
 	// compaction cards) to <session>.present.jsonl so a frontend can rebuild the
 	// exact transcript after a reload. The sidecar never feeds the LLM. Off by
 	// default; boot turns it on for desktop sessions that render a rich UI.
-	Present   bool
-	AutoPlan  string
+	Present  bool
+	AutoPlan string
 	// GoalJudge enables the independent goal judge: when the model reports
 	// [goal:complete], a separate LLM call verifies completion based on the
 	// transcript. nil disables the judge (model self-report is trusted).
@@ -357,37 +357,37 @@ func New(opts Options) *Controller {
 		})
 	}
 	c := &Controller{
-		runner:           opts.Runner,
-		executor:         opts.Executor,
-		dreamProvider:    opts.DreamProvider,
-		sink:             sink,
-		policy:           opts.Policy,
-		label:            opts.Label,
-		systemPrompt:     opts.SystemPrompt,
-		sessionDir:       opts.SessionDir,
-		sessionPath:      opts.SessionPath,
-		host:             opts.Host,
-		commands:         opts.Commands,
-		skills:           opts.Skills,
-		allSkills:        opts.AllSkills,
-		skillStore:       opts.SkillStore,
-		allSkillStore:    opts.AllSkillStore,
-		hooks:            opts.Hooks,
-		mem:              opts.Memory,
-		cleanup:          opts.Cleanup,
-		autoPlan:         normalizeAutoPlan(opts.AutoPlan),
-		goalJudge:        opts.GoalJudge,
-		classifier:       classifier,
-		onRemember:       opts.OnRemember,
-		onTurnEnd:        opts.OnTurnEnd,
-		ragContextFn:     opts.RAGContextFn,
-		jobs:             opts.Jobs,
-		reg:              opts.Registry,
-		pluginCtx:        pluginCtx,
-		cpRoot:           opts.WorkspaceRoot,
-		toolApprovalMode: ToolApprovalAsk,
-		approvals:        map[string]pendingApproval{},
-		asks:             map[string]pendingAsk{},
+		runner:             opts.Runner,
+		executor:           opts.Executor,
+		dreamProvider:      opts.DreamProvider,
+		sink:               sink,
+		policy:             opts.Policy,
+		label:              opts.Label,
+		systemPrompt:       opts.SystemPrompt,
+		sessionDir:         opts.SessionDir,
+		sessionPath:        opts.SessionPath,
+		host:               opts.Host,
+		commands:           opts.Commands,
+		skills:             opts.Skills,
+		allSkills:          opts.AllSkills,
+		skillStore:         opts.SkillStore,
+		allSkillStore:      opts.AllSkillStore,
+		hooks:              opts.Hooks,
+		mem:                opts.Memory,
+		cleanup:            opts.Cleanup,
+		autoPlan:           normalizeAutoPlan(opts.AutoPlan),
+		goalJudge:          opts.GoalJudge,
+		classifier:         classifier,
+		onRemember:         opts.OnRemember,
+		onTurnEnd:          opts.OnTurnEnd,
+		ragContextFn:       opts.RAGContextFn,
+		jobs:               opts.Jobs,
+		reg:                opts.Registry,
+		pluginCtx:          pluginCtx,
+		cpRoot:             opts.WorkspaceRoot,
+		toolApprovalMode:   ToolApprovalAsk,
+		approvals:          map[string]pendingApproval{},
+		asks:               map[string]pendingAsk{},
 		granted:            map[string]bool{},
 		present:            rec,
 		presentPath:        opts.SessionPath,
@@ -3375,6 +3375,22 @@ func (c *Controller) Label() string { return c.label }
 // (the directory that file-writers and @-references are scoped to).
 // Empty means no scoping is in effect.
 func (c *Controller) WorkspaceRoot() string { return c.cpRoot }
+
+// ToolRegistry exposes the live, fully-configured tool registry this session
+// runs with (workspace-bound writers, sandboxed bash, plugin/MCP tools). It lets
+// a satellite runner — e.g. a 团队 (team) member executing in its own isolated
+// sub-session — reuse the exact same tool environment as the main loop instead
+// of trying to reconstruct the sandbox/root configuration itself.
+func (c *Controller) ToolRegistry() *tool.Registry { return c.reg }
+
+// HeadlessGate returns the permission gate a satellite sub-session inherits: the
+// session's policy wired to a nil approver, matching how the kernel's `task`
+// sub-agents run (sub-agents always run headless — no UI to answer a prompt).
+// Hard-deny rules still bite in every mode; an "ask"-level call resolves without
+// a prompt because there is nobody attached to the run to ask.
+func (c *Controller) HeadlessGate() agent.Gate {
+	return permission.NewGate(c.policy, nil)
+}
 
 // Close stops plugin subprocesses and releases resources. A session that ever
 // started fires SessionEnd so a teardown hook runs.

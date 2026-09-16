@@ -20,6 +20,7 @@ import {
   Cpu,
   Palette,
   SlidersHorizontal,
+  SquareKanban,
 } from "lucide-react";
 import { useToast } from "./lib/toast";
 import { useConfirm } from "./lib/confirm";
@@ -47,6 +48,7 @@ import { TerminalPanel, loadTerminalOpen, saveTerminalOpen } from "./components/
 import logoSymbol from "./assets/logo-symbol.png";
 import { ContextMenu, type ContextMenuPoint } from "./components/ContextMenu";
 import { LoopPanel } from "./components/loop/LoopPanel";
+import { TeamBoard } from "./components/cowork/TeamBoard";
 import { ProfileSegmented } from "./components/AppChrome";
 import { SideSessionPane } from "./components/SideSessionPane";
 import { HistoryPanel } from "./components/HistoryPanel";
@@ -861,6 +863,10 @@ export default function App() {
   const [preferenceOpen, setPreferenceOpen] = useState(false);
   // 循环工程 panel (docs/loop-engineering-spec.md): sidebar entry under 编码偏好.
   const [loopOpen, setLoopOpen] = useState(false);
+  // 团队 panel (multi-agent: 团长 + 团员 + 看板). Rendered from the coding
+  // profile's sidebar too, so "团队开发项目" is reachable without a profile
+  // switch; it renders the SAME TeamBoard the 办公 profile hosts.
+  const [teamOpen, setTeamOpen] = useState(false);
   const [paletteSessions, setPaletteSessions] = useState<SessionMeta[]>([]);
   const [paletteCapabilities, setPaletteCapabilities] = useState<CapabilitiesView | null>(null);
   const { showToast } = useToast();
@@ -2204,6 +2210,7 @@ export default function App() {
       // profile and must not linger into cowork/netdev.
       setLoopOpen(false);
       setPreferenceOpen(false);
+      setTeamOpen(false);
     });
   }, [activeTabId, syncActiveTab]);
 
@@ -3082,7 +3089,7 @@ ${t("remote.uncPromptBody", { path: picked })}
   // project-tree topic context menu; exportSession/getSessionMarkdown below
   // remain the implementation and are wired through ProjectTree props.)
 
-  const headerNode = !preferenceOpen && (
+  const headerNode = !preferenceOpen && !teamOpen && (
     <header className="topicbar">
       <div className="topicbar__identity">
         <div className="topicbar__title-row">
@@ -3154,7 +3161,16 @@ ${t("remote.uncPromptBody", { path: picked })}
           onClose={() => setPreferenceOpen(false)}
         />
       )}
-      {sidebarImDetailConnection ? (
+      {/* 团队 surface for the coding profile: the shared TeamBoard, given the
+          whole main area. The chat Transcript below is skipped while it's open
+          (see the leading ternary guard) so the kanban never shares flex space
+          with the conversation. */}
+      {teamOpen && !coworkActive && !netdevActive && (
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%" }}>
+          <TeamBoard />
+        </div>
+      )}
+      {teamOpen && !coworkActive && !netdevActive ? null : sidebarImDetailConnection ? (
         <SidebarImConnectionDetail
           connection={sidebarImDetailConnection}
           sessions={sidebarImSessions}
@@ -3696,17 +3712,34 @@ ${t("remote.uncPromptBody", { path: picked })}
                 onClick={() => {
                   closeTransientOverlays();
                   setLoopOpen(false);
+                  setTeamOpen(false);
                   setPreferenceOpen(true);
                 }}
               >
                 <SlidersHorizontal size={14} />
                 <span>{t("preference.title") || "编码偏好"}</span>
               </button>
+              {/* 团队 (multi-agent: 团长 + 团员 + 看板). The coding profile's own
+                  entry to the SAME TeamBoard the 办公 profile hosts, so "团队开发
+                  项目" is one click away without a profile switch. */}
+              <button
+                className={`cowork-sidebar__item ${teamOpen ? "cowork-sidebar__item--active" : ""}`}
+                onClick={() => {
+                  closeTransientOverlays();
+                  setPreferenceOpen(false);
+                  setLoopOpen(false);
+                  setTeamOpen(true);
+                }}
+              >
+                <SquareKanban size={14} />
+                <span>{t("team.title")}</span>
+              </button>
               <button
                 className={`cowork-sidebar__item ${loopOpen ? "cowork-sidebar__item--active" : ""}`}
                 onClick={() => {
                   closeTransientOverlays();
                   setPreferenceOpen(false);
+                  setTeamOpen(false);
                   setLoopOpen(true);
                 }}
               >
@@ -3743,7 +3776,7 @@ ${t("remote.uncPromptBody", { path: picked })}
             <>
               {bannersNode}
               {mainNode}
-              {!preferenceOpen && footerNode}
+              {!preferenceOpen && !teamOpen && footerNode}
               {terminalNode}
             </>
           )}

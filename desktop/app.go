@@ -163,6 +163,12 @@ type App struct {
 	// data root so team projects follow the user's configured data location.
 	// Created at startup by initTeams; requireTeamStore lazily re-creates it.
 	teamStore *teampkg.Store
+	// teamRuns tracks in-flight member executions, keyed by teamID+"/"+taskID,
+	// so the board can show a spinner and cancel a run. Each entry owns the
+	// run's cancel func; the goroutine is independent of the frontend, so it
+	// survives a panel unmount or profile switch. Guarded by teamRunsMu.
+	teamRuns   map[string]context.CancelFunc
+	teamRunsMu sync.Mutex
 	// expertRuns tracks in-flight expert-team runs keyed by teamID, so a panel
 	// remounted after the CoWorkLayout was torn down (tab/profile switch) can
 	// query whether a run is still going and re-subscribe to its stream. The
