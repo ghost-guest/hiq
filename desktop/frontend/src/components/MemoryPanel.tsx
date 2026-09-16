@@ -3,7 +3,18 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { app } from "../lib/bridge";
 import { useT } from "../lib/i18n";
 import type { Translator } from "../lib/i18n";
-import type { DreamRunView, DreamStatusView, MemoryFact, MemoryView } from "../lib/types";
+import type {
+  DreamRunView,
+  DreamStatusView,
+  MemoryFact,
+  MemoryMigrationReport,
+  MemoryPromotionInput,
+  MemoryPromotionResult,
+  MemorySettings,
+  MemorySettingsInput,
+  MemoryView,
+  ProviderView,
+} from "../lib/types";
 import { ResizableDrawer } from "./ResizableDrawer";
 import { Tooltip } from "./Tooltip";
 import { ModalCloseButton } from "./ModalCloseButton";
@@ -38,6 +49,89 @@ function memoryTypeLabel(type: string, t: Translator): string {
     case "reference": return t("memory.typeReference");
     default: return t("memory.typeOther");
   }
+}
+
+// memoryLevelLabel maps a fact's level to a localized label. An absent level
+// means L1: memory.LevelOf infers one for records written before the hierarchy
+// existed (legacy `project: true` → L2, everything else → L1), so the panel
+// shows the same answer the injected index does.
+function memoryLevelLabel(level: string | undefined, t: Translator): string {
+  switch ((level || "l1").toLowerCase()) {
+    case "l2": return t("memory.levelL2");
+    case "l3": return t("memory.levelL3");
+    default: return t("memory.levelL1");
+  }
+}
+
+// memoryLevelShort is the compact chip form ("L1"/"L2"/"L3") shown on a fact row,
+// where the full label would crowd out the title.
+function memoryLevelShort(level: string | undefined): string {
+  switch ((level || "l1").toLowerCase()) {
+    case "l2": return "L2";
+    case "l3": return "L3";
+    default: return "L1";
+  }
+}
+
+// MemoryLevelFilter is the L1/L2/L3 scope filter shared by the drawer and the
+// settings page. Each chip carries its count, so a level with no facts reads as
+// empty instead of just filtering everything away.
+function MemoryLevelFilter({
+  counts,
+  value,
+  onChange,
+}: {
+  counts: Record<string, number>;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const t = useT();
+  const chips: Array<[string, string]> = [
+    ["all", t("memory.levelAll")],
+    ["l1", t("memory.levelL1")],
+    ["l2", t("memory.levelL2")],
+    ["l3", t("memory.levelL3")],
+  ];
+  return (
+    <div className="mem-filter mem-levels" role="tablist" aria-label={t("memory.levelFilter")}>
+      {chips.map(([id, label]) => (
+        <button
+          key={id}
+          className={"mem-filter__item" + (value === id ? " mem-filter__item--on" : "")}
+          onClick={() => onChange(id)}
+          type="button"
+          title={id === "all" ? t("memory.levelAllHint") : memoryLevelHint(id, t)}
+        >
+          {label}
+          {id !== "all" && counts[id] ? <small className="mem-filter__n">{counts[id]}</small> : null}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// memoryLevelHint explains what a level is for, shown as the chip's tooltip.
+function memoryLevelHint(level: string, t: Translator): string {
+  switch (level) {
+    case "l1": return t("memory.levelL1Hint");
+    case "l2": return t("memory.levelL2Hint");
+    case "l3": return t("memory.levelL3Hint");
+    default: return "";
+  }
+}
+
+// memoryFactHaystack is the searchable text of a fact: title, slug, type, body
+// and the v0.5 metadata (level, tags) — so "l2" or a tag finds the fact the way
+// the model's `recall` tool would.
+function memoryFactHaystack(fact: MemoryFact): string {
+  return [displayTitle(fact), fact.name, fact.description, fact.type, fact.body, memoryLevelShort(fact.level), (fact.tags ?? []).join(" ")]
+    .join(" ")
+    .toLowerCase();
+}
+
+// memoryFactTags returns the fact's tags, tolerating older payloads without them.
+function memoryFactTags(fact: MemoryFact): string[] {
+  return Array.isArray(fact.tags) ? fact.tags : [];
 }
 
 function uniqueLinks(body: string, names: Set<string>): LinkInfo[] {
@@ -203,6 +297,7 @@ export function MemoryPanel({
   const [highlight, setHighlight] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [levelFilter, setLevelFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirmForget, setConfirmForget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -222,21 +317,27 @@ export function MemoryPanel({
   );
   const normalizedQuery = query.trim().toLowerCase();
   const normalizedFilter = filter.trim().toLowerCase();
+  const levelCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const f of facts) {
+      const l = memoryLevelShort(f.level).toLowerCase();
+      out[l] = (out[l] ?? 0) + 1;
+    }
+    return out;
+  }, [facts]);
   const filteredFacts = useMemo(
     () =>
       facts.filter((f) => {
         if (typeFilter !== "all" && f.type !== typeFilter) return false;
+        if (levelFilter !== "all" && memoryLevelShort(f.level).toLowerCase() !== levelFilter) return false;
         if (normalizedFilter) {
           const hay = [f.name, f.description, f.body].join(" ").toLowerCase();
           if (!hay.includes(normalizedFilter)) return false;
         }
         if (!normalizedQuery) return true;
-        return [displayTitle(f), f.name, f.description, f.type, f.body]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery);
+        return memoryFactHaystack(f).includes(normalizedQuery);
       }),
-    [facts, normalizedQuery, normalizedFilter, typeFilter],
+    [facts, normalizedQuery, normalizedFilter, typeFilter, levelFilter],
   );
 
   const scrollToFact = (name: string) => {
@@ -256,6 +357,7 @@ export function MemoryPanel({
     if (!visible) {
       setQuery("");
       setTypeFilter("all");
+      setLevelFilter("all");
       window.setTimeout(() => scrollToFact(name), 0);
       return;
     }
@@ -391,7 +493,7 @@ export function MemoryPanel({
                 <div className="mem-filter" role="tablist" aria-label={t("memory.typeFilter")}>
                   <button
                     className={`mem-filter__item${typeFilter === "all" ? " mem-filter__item--on" : ""}`}
-                    onClick={() => setTypeFilter("all")}
+                    onClick={() => { setTypeFilter("all"); setLevelFilter("all"); }}
                     type="button"
                   >
                     {t("memory.allTypes")}
@@ -407,6 +509,7 @@ export function MemoryPanel({
                     </button>
                   ))}
                 </div>
+                <MemoryLevelFilter counts={levelCounts} value={levelFilter} onChange={setLevelFilter} />
               </div>
               {error && <div className="mem-error" role="alert">{error}</div>}
               {facts.length === 0 ? (
@@ -419,6 +522,7 @@ export function MemoryPanel({
                     onClick={() => {
                       setQuery("");
                       setTypeFilter("all");
+                      setLevelFilter("all");
                     }}
                     type="button"
                   >
@@ -452,8 +556,30 @@ export function MemoryPanel({
                           <span className="mem-fact__main">
                             <span className="mem-fact__title">{displayTitle(f)}</span>
                             <span className="mem-fact__meta">
+                              <span
+                                className="mem-fact__level"
+                                data-mem-level={memoryLevelShort(f.level).toLowerCase()}
+                                title={memoryLevelLabel(f.level, t)}
+                              >
+                                {memoryLevelShort(f.level)}
+                              </span>
                               {f.type && <span className="mem-fact__type" data-mem-type={f.type}>{memoryTypeLabel(f.type, t)}</span>}
                               <span className="mem-fact__slug">{f.name}</span>
+                              {memoryFactTags(f).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="mem-tag"
+                                  role="button"
+                                  tabIndex={-1}
+                                  title={t("memory.filterByTag", { tag })}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setQuery(tag);
+                                  }}
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
                             </span>
                             <span className="mem-fact__desc">{f.description}</span>
                           </span>
@@ -686,6 +812,7 @@ export function MemorySettingsPage() {
 	const [highlight, setHighlight] = useState<string | null>(null);
 	const [query, setQuery] = useState("");
 	const [typeFilter, setTypeFilter] = useState("all");
+	const [levelFilter, setLevelFilter] = useState("all");
 	const [expanded, setExpanded] = useState<string | null>(null);
 	const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
 	const [confirmForget, setConfirmForget] = useState<string | null>(null);
@@ -727,18 +854,24 @@ export function MemorySettingsPage() {
 		() => Array.from(new Set(facts.map((f) => f.type).filter(Boolean))).sort(),
 		[facts],
 	);
+	const levelCounts = useMemo(() => {
+		const out: Record<string, number> = {};
+		for (const f of facts) {
+			const l = memoryLevelShort(f.level).toLowerCase();
+			out[l] = (out[l] ?? 0) + 1;
+		}
+		return out;
+	}, [facts]);
 	const normalizedQuery = query.trim().toLowerCase();
 	const filteredFacts = useMemo(
 		() =>
 			facts.filter((f) => {
 				if (typeFilter !== "all" && f.type !== typeFilter) return false;
+				if (levelFilter !== "all" && memoryLevelShort(f.level).toLowerCase() !== levelFilter) return false;
 				if (!normalizedQuery) return true;
-				return [displayTitle(f), f.name, f.description, f.type, f.body]
-					.join(" ")
-					.toLowerCase()
-					.includes(normalizedQuery);
+				return memoryFactHaystack(f).includes(normalizedQuery);
 			}),
-		[facts, normalizedQuery, typeFilter],
+		[facts, normalizedQuery, typeFilter, levelFilter],
 	);
 
 	// historyFacts is the timeline view's data: the full bitemporal surface,
@@ -778,6 +911,7 @@ export function MemorySettingsPage() {
 		if (!visible) {
 			setQuery("");
 			setTypeFilter("all");
+			setLevelFilter("all");
 			window.setTimeout(() => scrollToFact(name), 0);
 			return;
 		}
@@ -905,6 +1039,8 @@ export function MemorySettingsPage() {
 
 	return (
 		<>
+			<MemoryStorageSection storeDir={view.storeDir} />
+			<MemoryPromotionSection facts={facts} />
 			<SelfEvolutionSection />
 			<div className="settings-subtabs" role="tablist" aria-label={t("settings.tab.memory")}>
 				<button
@@ -1000,7 +1136,8 @@ export function MemorySettingsPage() {
 									onClick={() => void submitNote()}
 									disabled={busy || !note.trim()}
 								>
-							</button>
+									{t("memory.remember")}
+								</button>
 							</div>
 						</div>
 					</div>
@@ -1017,7 +1154,7 @@ export function MemorySettingsPage() {
 					<div className="mem-filter" role="tablist" aria-label={t("memory.typeFilter")}>
 						<button
 							className={"mem-filter__item" + (typeFilter === "all" ? " mem-filter__item--on" : "")}
-							onClick={() => setTypeFilter("all")}
+							onClick={() => { setTypeFilter("all"); setLevelFilter("all"); }}
 							type="button"
 						>
 							{t("memory.allTypes")}
@@ -1033,6 +1170,7 @@ export function MemorySettingsPage() {
 									</button>
 								))}
 					</div>
+					<MemoryLevelFilter counts={levelCounts} value={levelFilter} onChange={setLevelFilter} />
 				</div>
 				{error && <div className="mem-error" role="alert">{error}</div>}
 				{facts.length === 0 ? (
@@ -1045,6 +1183,7 @@ export function MemorySettingsPage() {
 							onClick={() => {
 								setQuery("");
 								setTypeFilter("all");
+								setLevelFilter("all");
 							}}
 							type="button"
 						>
@@ -1078,8 +1217,30 @@ export function MemorySettingsPage() {
 										<span className="mem-fact__main">
 											<span className="mem-fact__title">{displayTitle(f)}</span>
 											<span className="mem-fact__meta">
+												<span
+													className="mem-fact__level"
+													data-mem-level={memoryLevelShort(f.level).toLowerCase()}
+													title={memoryLevelLabel(f.level, t)}
+												>
+													{memoryLevelShort(f.level)}
+												</span>
 												{f.type && <span className="mem-fact__type" data-mem-type={f.type}>{memoryTypeLabel(f.type, t)}</span>}
 												<span className="mem-fact__slug">{f.name}</span>
+												{memoryFactTags(f).map((tag) => (
+													<span
+														key={tag}
+														className="mem-tag"
+														role="button"
+														tabIndex={-1}
+														title={t("memory.filterByTag", { tag })}
+														onClick={(e) => {
+															e.stopPropagation();
+															setQuery(tag);
+														}}
+													>
+														#{tag}
+													</span>
+												))}
 											</span>
 											<span className="mem-fact__desc">{f.description}</span>
 										</span>
@@ -1513,6 +1674,496 @@ function MemoryTimelineCard({
 // project memory; Distill extracts repeated workflows into skills. Both run in
 // the background on a cadence; here the user can toggle them, set the cadence,
 // run them on demand, and see when they last ran.
+// MemoryStorageSection is the [memory] section's editor: WHERE the memory data
+// tree lives and WHICH model maintains it in the background.
+//
+// Both are USER-GLOBAL settings (the backend pins them out of any project
+// config, so a cloned repo cannot redirect someone's memory or their API spend),
+// which is why they are edited here rather than per project. Saving a root does
+// NOT move data — the migrate action copies the existing tree to the new root,
+// and the root itself takes effect on the next session, because the data root is
+// part of the boot snapshot the cache-stable prompt prefix is built from.
+function MemoryStorageSection({ storeDir }: { storeDir?: string }) {
+  const t = useT();
+  const [settings, setSettings] = useState<MemorySettings | null>(null);
+  const [providers, setProviders] = useState<ProviderView[]>([]);
+  const [root, setRoot] = useState("");
+  const [provider, setProvider] = useState("");
+  const [model, setModel] = useState("");
+  const [effort, setEffort] = useState("");
+  const [injectIndex, setInjectIndex] = useState(true);
+  const [indexMaxChars, setIndexMaxChars] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [report, setReport] = useState<MemoryMigrationReport | null>(null);
+  const [confirmMigrate, setConfirmMigrate] = useState(false);
+
+  const adopt = useCallback((s: MemorySettings) => {
+    setSettings(s);
+    setRoot(s.configuredRoot ?? "");
+    setProvider(s.provider ?? "");
+    setModel(s.model ?? "");
+    setEffort(s.effort ?? "");
+    setInjectIndex(s.injectIndex);
+    setIndexMaxChars(s.indexMaxChars);
+  }, []);
+
+  const reload = useCallback(async () => {
+    const view = await app.Memory().catch(() => null);
+    if (view?.settings) adopt(view.settings);
+  }, [adopt]);
+
+  useEffect(() => { void reload(); }, [reload]);
+  // Providers come from the settings payload so the maintenance model is picked
+  // from the models the user actually configured, not typed by hand.
+  useEffect(() => {
+    void app.Settings()
+      .then((s) => setProviders(s.providers ?? []))
+      .catch(() => setProviders([]));
+  }, []);
+
+  const modelOptions = useMemo(() => {
+    const list = providers.find((p) => p.name === provider)?.models ?? [];
+    // Keep an unknown/legacy value selectable instead of silently dropping it.
+    return model && !list.includes(model) ? [model, ...list] : list;
+  }, [providers, provider, model]);
+
+  const effortOptions = useMemo(() => {
+    const sup = providers.find((p) => p.name === provider)?.supportedEfforts ?? [];
+    return sup.length > 0 ? sup : ["low", "medium", "high", "max"];
+  }, [providers, provider]);
+
+  const save = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const input: MemorySettingsInput = { root, provider, model, effort, injectIndex, indexMaxChars };
+      adopt(await app.SaveMemorySettings(input));
+      setNotice(t("memory.saved"));
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const migrate = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    setReport(null);
+    try {
+      const rep = await app.MigrateMemoryRoot(root);
+      setReport(rep);
+      setConfirmMigrate(false);
+    } catch (e) {
+      setError(errorMessage(e));
+      setConfirmMigrate(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!settings) {
+    return (
+      <section className="mem-section">
+        <div className="mem-section__title">{t("memory.storageTitle")}</div>
+        <div className="mem-empty">{t("settings.loading")}</div>
+      </section>
+    );
+  }
+
+  const dirty =
+    root.trim() !== (settings.configuredRoot ?? "") ||
+    provider.trim() !== (settings.provider ?? "") ||
+    model.trim() !== (settings.model ?? "") ||
+    effort.trim() !== (settings.effort ?? "") ||
+    injectIndex !== settings.injectIndex ||
+    indexMaxChars !== settings.indexMaxChars;
+
+  return (
+    <section className="mem-section mem-storage">
+      <div className="mem-section__head">
+        <div>
+          <div className="mem-section__title">{t("memory.storageTitle")}</div>
+          <div className="mem-note">{t("memory.storageHint")}</div>
+        </div>
+      </div>
+
+      {error && <div className="mem-error" role="alert">{error}</div>}
+      {notice && <div className="mem-notice">{notice}</div>}
+
+      <div className="mem-field">
+        <label className="mem-field__label" htmlFor="mem-root">{t("memory.rootLabel")}</label>
+        <div className="mem-field__row">
+          <input
+            id="mem-root"
+            className="mem-input"
+            value={root}
+            spellCheck={false}
+            placeholder={settings.defaultRoot}
+            onChange={(e) => setRoot(e.target.value)}
+            disabled={settings.rootFromEnv}
+          />
+          {settings.configuredRoot && (
+            <button type="button" className="btn btn--small" onClick={() => setRoot("")} disabled={busy}>
+              {t("memory.rootReset")}
+            </button>
+          )}
+          <button type="button" className="btn btn--primary btn--small" onClick={() => void save()} disabled={busy || !dirty}>
+            {t("common.save")}
+          </button>
+        </div>
+        <div className="mem-hint">
+          {t("memory.rootEffective", { dir: settings.root })}
+        </div>
+        {settings.rootFromEnv && (
+          <div className="mem-warn">{t("memory.rootFromEnv", { env: "FAIRPEER_MEMORY_ROOT" })}</div>
+        )}
+        {!settings.configuredRoot && !settings.rootFromEnv && (
+          <div className="mem-hint">{t("memory.rootDefault", { dir: settings.defaultRoot })}</div>
+        )}
+      </div>
+
+      {/* The three level buckets, so "where does an L2 fact go?" is answerable
+          without reading the config file. */}
+      <div className="mem-buckets">
+        <div className="mem-bucket">
+          <span className="mem-bucket__tag" data-mem-level="l1">L1</span>
+          <span className="mem-bucket__label">{t("memory.levelL1")}</span>
+          <code className="mem-bucket__path" title={settings.globalDir}>{settings.globalDir}</code>
+        </div>
+        <div className="mem-bucket">
+          <span className="mem-bucket__tag" data-mem-level="l2">L2</span>
+          <span className="mem-bucket__label">{t("memory.levelL2")}</span>
+          <code className="mem-bucket__path" title={storeDir ?? ""}>{storeDir || "—"}</code>
+        </div>
+        <div className="mem-bucket">
+          <span className="mem-bucket__tag" data-mem-level="l3">L3</span>
+          <span className="mem-bucket__label">{t("memory.levelL3")}</span>
+          <code className="mem-bucket__path" title={settings.sessionDir}>{settings.sessionDir}</code>
+        </div>
+      </div>
+
+      {/* Migration: copy-only, destination wins, safe to re-run. */}
+      <div className="mem-field">
+        <div className="mem-field__row">
+          {confirmMigrate ? (
+            <>
+              <span className="mem-hint mem-hint--inline">{t("memory.migrateConfirm", { dir: root })}</span>
+              <button type="button" className="btn btn--primary btn--small" onClick={() => void migrate()} disabled={busy}>
+                {t("memory.migrateDo")}
+              </button>
+              <button type="button" className="btn btn--small" onClick={() => setConfirmMigrate(false)} disabled={busy}>
+                {t("common.cancel")}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="btn btn--small"
+                onClick={() => setConfirmMigrate(true)}
+                disabled={busy || !dirty || !root.trim()}
+                title={t("memory.migrateHint")}
+              >
+                {t("memory.migrate")}
+              </button>
+              <span className="mem-hint mem-hint--inline">{t("memory.migrateHint")}</span>
+            </>
+          )}
+        </div>
+        {report && (
+          <div className="mem-hint">
+            {t("memory.migrateDone", { files: report.files, bytes: report.bytes, to: report.to })}
+            {report.skipped.length > 0 && (
+              <ul className="mem-report">
+                {report.skipped.map((s) => <li key={s}>{s}</li>)}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Maintenance model: the cheap model the background Dream/Distill pass
+          runs on, so a periodic consolidation never spends main-model tokens. */}
+      <div className="mem-field mem-field--split">
+        <div className="mem-field__label">{t("memory.maintenanceTitle")}</div>
+        <div className="mem-field__row">
+          <Tooltip label={t("memory.maintenanceProviderHint")}>
+            <select className="mem-select" value={provider} onChange={(e) => setProvider(e.target.value)} disabled={busy}>
+              <option value="">{t("memory.maintenanceInherit")}</option>
+              {providers.map((p) => (
+                <option key={p.name} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </Tooltip>
+          <Tooltip label={t("memory.maintenanceModelHint")}>
+            <select className="mem-select" value={model} onChange={(e) => setModel(e.target.value)} disabled={busy}>
+              <option value="">{t("memory.maintenanceModelDefault")}</option>
+              {modelOptions.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </Tooltip>
+          <Tooltip label={t("memory.maintenanceEffortHint")}>
+            <select className="mem-select mem-select--narrow" value={effort} onChange={(e) => setEffort(e.target.value)} disabled={busy}>
+              <option value="">{t("memory.maintenanceEffortDefault")}</option>
+              {effortOptions.map((e) => (
+                <option key={e} value={e}>{e}</option>
+              ))}
+            </select>
+          </Tooltip>
+          <button type="button" className="btn btn--primary btn--small" onClick={() => void save()} disabled={busy || !dirty}>
+            {t("common.save")}
+          </button>
+        </div>
+        <div className="mem-hint">
+          {settings.refFromMemory
+            ? t("memory.maintenancePinned", { ref: settings.ref })
+            : settings.ref
+              ? t("memory.maintenanceInherited", { ref: settings.ref })
+              : t("memory.maintenanceNone")}
+        </div>
+      </div>
+
+      {/* The injected fact index — the "knowledge base index" that lets the model
+          see WHAT memory exists while the bodies stay on disk for `recall`. */}
+      <div className="mem-field mem-field--split">
+        <div className="mem-field__label">{t("memory.indexTitle")}</div>
+        <div className="mem-field__row">
+          <label className="cap-switch" aria-label={t("memory.indexTitle")}>
+            <input
+              type="checkbox"
+              checked={injectIndex}
+              disabled={busy}
+              onChange={(e) => setInjectIndex(e.target.checked)}
+            />
+            <span className="cap-switch__track" />
+          </label>
+          <span className="mem-hint mem-hint--inline">{injectIndex ? t("memory.indexOn") : t("memory.indexOff")}</span>
+          <input
+            className="mem-input mem-input--narrow"
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={indexMaxChars}
+            disabled={busy || !injectIndex}
+            onChange={(e) => setIndexMaxChars(Math.max(0, Math.floor(Number(e.target.value.replace(/[^\d]/g, "")) || 0)))}
+            aria-label={t("memory.indexMaxChars")}
+          />
+          <span className="mem-hint mem-hint--inline">{t("memory.indexMaxChars")}</span>
+          <button type="button" className="btn btn--primary btn--small" onClick={() => void save()} disabled={busy || !dirty}>
+            {t("common.save")}
+          </button>
+        </div>
+        <div className="mem-hint">{t("memory.indexHint")}</div>
+      </div>
+    </section>
+  );
+}
+
+// selectPromotionSources mirrors memory.selectPromotionSources: the same filter
+// the backend (and `recall`) applies, so the count shown before promoting is the
+// count that will actually be folded in.
+function selectPromotionSources(facts: MemoryFact[], level: string, tag: string, query: string): MemoryFact[] {
+  const lv = level.trim().toLowerCase();
+  const tg = tag.trim().toLowerCase();
+  const q = query.trim().toLowerCase();
+  if (!lv && !tg && !q) return [];
+  return facts.filter((f) => {
+    if (lv && memoryLevelShort(f.level).toLowerCase() !== lv) return false;
+    if (tg && !memoryFactTags(f).some((x) => x.toLowerCase() === tg)) return false;
+    if (q && !memoryFactHaystack(f).includes(q)) return false;
+    return true;
+  });
+}
+
+// MemoryPromotionSection turns accumulated memory into a reusable artifact — the
+// self-evolution half of the memory layer.
+//
+// What it writes is DATA: a SKILL.md the existing skill loader indexes and
+// run_skill runs, the source memories as references, and a plugin manifest whose
+// capabilities use the kernel's own extensioncontract key format. Nothing here
+// reaches into the agent kernel, so promoting can never break an agent update —
+// which is exactly why it is safe to expose as a button.
+function MemoryPromotionSection({ facts }: { facts: MemoryFact[] }) {
+  const t = useT();
+  const [kind, setKind] = useState<"skill" | "plugin">("plugin");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [notes, setNotes] = useState("");
+  const [level, setLevel] = useState("");
+  const [tag, setTag] = useState("");
+  const [query, setQuery] = useState("");
+  const [version, setVersion] = useState("");
+  const [overwrite, setOverwrite] = useState(false);
+  const [install, setInstall] = useState(true);
+  const [scope, setScope] = useState<"global" | "project">("global");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<MemoryPromotionResult | null>(null);
+
+  const selected = useMemo(() => selectPromotionSources(facts, level, tag, query), [facts, level, tag, query]);
+  const canRun = selected.length > 0 && name.trim() !== "" && !busy;
+
+  const run = async () => {
+    if (!canRun) return;
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    try {
+      const input: MemoryPromotionInput = {
+        kind,
+        name: name.trim(),
+        description: description.trim(),
+        level: level.trim(),
+        tag: tag.trim(),
+        query: query.trim(),
+        notes: notes.trim(),
+        version: version.trim(),
+        overwrite,
+        install,
+        scope,
+      };
+      setResult(await app.PromoteMemoryArtifact(input));
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="mem-section mem-promote">
+      <div className="mem-section__head">
+        <div>
+          <div className="mem-section__title">{t("memory.promoteTitle")}</div>
+          <div className="mem-note">{t("memory.promoteHint")}</div>
+        </div>
+      </div>
+
+      {error && <div className="mem-error" role="alert">{error}</div>}
+
+      <div className="mem-field">
+        <div className="mem-field__label">{t("memory.promoteSelect")}</div>
+        <div className="mem-field__row">
+          <MemoryLevelFilter
+            counts={{}}
+            value={level || "all"}
+            onChange={(v) => setLevel(v === "all" ? "" : v)}
+          />
+          <input
+            className="mem-input mem-input--narrow"
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+            placeholder={t("memory.promoteTagPlaceholder")}
+            aria-label={t("memory.promoteTag")}
+          />
+          <input
+            className="mem-input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("memory.promoteQueryPlaceholder")}
+            aria-label={t("memory.promoteQuery")}
+          />
+        </div>
+        <div className={selected.length > 0 ? "mem-hint" : "mem-warn"}>
+          {selected.length > 0
+            ? t("memory.promoteSelected", { n: selected.length })
+            : t("memory.promoteNoSelection")}
+        </div>
+      </div>
+
+      <div className="mem-field">
+        <div className="mem-field__row">
+          <Tooltip label={t("memory.promoteKindHint")}>
+            <select className="mem-select" value={kind} onChange={(e) => setKind(e.target.value as "skill" | "plugin")} disabled={busy}>
+              <option value="plugin">{t("memory.promoteKindPlugin")}</option>
+              <option value="skill">{t("memory.promoteKindSkill")}</option>
+            </select>
+          </Tooltip>
+          <input
+            className="mem-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t("memory.promoteNamePlaceholder")}
+            aria-label={t("memory.promoteName")}
+            spellCheck={false}
+          />
+          <input
+            className="mem-input mem-input--narrow"
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+            placeholder="1.0.0"
+            aria-label={t("memory.promoteVersion")}
+            spellCheck={false}
+          />
+        </div>
+        <input
+          className="mem-input"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={t("memory.promoteDescPlaceholder")}
+          aria-label={t("memory.promoteDesc")}
+        />
+        <textarea
+          className="mem-input"
+          style={{ minHeight: "52px", resize: "vertical" }}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder={t("memory.promoteNotesPlaceholder")}
+          aria-label={t("memory.promoteNotes")}
+        />
+      </div>
+
+      <div className="mem-field mem-field--split">
+        <div className="mem-field__row">
+          <label className="mem-check">
+            <input type="checkbox" checked={install} disabled={busy} onChange={(e) => setInstall(e.target.checked)} />
+            <span>{t("memory.promoteInstall")}</span>
+          </label>
+          <Tooltip label={t("memory.promoteScopeHint")}>
+            <select
+              className="mem-select"
+              value={scope}
+              disabled={busy || !install}
+              onChange={(e) => setScope(e.target.value as "global" | "project")}
+            >
+              <option value="global">{t("memory.promoteScopeGlobal")}</option>
+              <option value="project">{t("memory.promoteScopeProject")}</option>
+            </select>
+          </Tooltip>
+          <label className="mem-check">
+            <input type="checkbox" checked={overwrite} disabled={busy} onChange={(e) => setOverwrite(e.target.checked)} />
+            <span>{t("memory.promoteOverwrite")}</span>
+          </label>
+          <button type="button" className="btn btn--primary btn--small" onClick={() => void run()} disabled={!canRun}>
+            {busy ? t("memory.promoteRunning") : t("memory.promoteRun")}
+          </button>
+        </div>
+        <div className="mem-hint">{t("memory.promoteInstallHint")}</div>
+      </div>
+
+      {result && (
+        <div className="mem-notice">
+          <div>{t("memory.promoteDone", { n: result.sources.length, dir: result.dir })}</div>
+          <ul className="mem-report">
+            <li>{result.skill}</li>
+            {result.manifest && <li>{result.manifest}</li>}
+            {result.readme && <li>{result.readme}</li>}
+          </ul>
+          {result.installed && <div>{t("memory.promoteInstalled", { path: result.installed })}</div>}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function SelfEvolutionSection() {
 	const t = useT();
 	const [status, setStatus] = useState<DreamStatusView | null>(null);

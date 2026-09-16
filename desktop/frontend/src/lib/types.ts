@@ -1099,6 +1099,10 @@ export interface MemoryFact {
   name: string;
   body: string;
   type: string; // "user" | "feedback" | "project" | "reference" (panel tag)
+  // How far the fact reaches: "l1" global (user identity/preferences),
+  // "l2" project (this project's conventions/decisions), "l3" session (working
+  // memory for the current task — never injected into the prompt).
+  level?: string;
   // v0.4: title/description were removed from the store struct; the index label
   // is now derived from the body's first line. Kept optional here so older
   // payloads and the timeline UI don't type-error — they just read as empty.
@@ -1149,12 +1153,95 @@ export interface ProfilePresetsPayload {
   path: string;
 }
 
+// MemorySettings is the [memory] section as the panel needs it (desktop/app.go
+// MemorySettings): where the memory data tree actually lives, and which model
+// maintains it in the background.
+export interface MemorySettings {
+  root: string; // effective data root (profile/, memory/, projects/ live here)
+  defaultRoot: string; // what the root would be with no override
+  configuredRoot: string; // raw [memory] root ("" = default in use)
+  rootFromEnv: boolean; // $FAIRPEER_MEMORY_ROOT is overriding the config
+  globalDir: string; // L1 fact bucket
+  sessionDir: string; // L3 fact bucket
+  provider: string;
+  model: string;
+  effort: string;
+  ref: string; // resolved maintenance model reference actually in use
+  refFromMemory: boolean; // true = pinned in [memory], false = inherited
+  injectIndex: boolean;
+  indexMaxChars: number;
+}
+
+// MemorySettingsInput is the writable form of [memory] (desktop/app.go
+// MemorySettingsInput). IndexMaxChars <= 0 means "built-in default", not "off":
+// use injectIndex=false to switch the injected index off.
+export interface MemorySettingsInput {
+  root: string;
+  provider: string;
+  model: string;
+  effort: string;
+  injectIndex: boolean;
+  indexMaxChars: number;
+}
+
 export interface MemoryView {
   docs: MemoryDoc[];
   facts: MemoryFact[];
   scopes: MemoryScope[];
   storeDir: string;
   available: boolean;
+  settings?: MemorySettings;
+}
+
+// MemoryMigrationReport is the result of copying the memory tree to a new root
+// (desktop/app.go MigrateMemoryRoot). Copy-only: the source tree is left intact.
+export interface MemoryMigrationReport {
+  from: string;
+  to: string;
+  copied: string[];
+  skipped: string[];
+  files: number;
+  bytes: number;
+}
+
+// MemoryPromotionInput selects saved memories and describes the artifact to
+// build from them (desktop/app.go PromoteMemoryArtifact). Selection mirrors the
+// `recall` tool: explicit names, or a level/tag/query filter.
+export interface MemoryPromotionInput {
+  kind: "skill" | "plugin";
+  name: string;
+  description: string;
+  memories?: string[];
+  level?: string;
+  tag?: string;
+  query?: string;
+  notes?: string;
+  version?: string;
+  overwrite?: boolean;
+  // install also copies the generated playbook into a skill root the agent
+  // already scans, making the promoted capability live without a kernel change.
+  install?: boolean;
+  scope?: "global" | "project";
+}
+
+export interface PromotedSource {
+  name: string;
+  level: string;
+  tags?: string[];
+  hook?: string;
+}
+
+export interface MemoryPromotionResult {
+  kind: string;
+  name: string;
+  dir: string;
+  skill: string;
+  manifest?: string;
+  readme?: string;
+  refs: number;
+  sources: PromotedSource[];
+  version: string;
+  installed?: string;
 }
 
 // Dream / Distill self-evolution payloads (desktop/app.go DreamStatusView).

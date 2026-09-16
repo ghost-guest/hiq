@@ -65,6 +65,11 @@ import type {
   MCPRegistryView,
   MCPServerInput,
   MemoryView,
+  MemorySettings,
+  MemorySettingsInput,
+  MemoryMigrationReport,
+  MemoryPromotionInput,
+  MemoryPromotionResult,
   Meta,
   MobileModelInfo,
   MobileSessionInfo,
@@ -396,6 +401,9 @@ export interface AppBindings {
   Forget(name: string): Promise<void>;
   PromoteMemory(name: string): Promise<boolean>;
   RejectMemory(name: string): Promise<boolean>;
+  SaveMemorySettings(input: MemorySettingsInput): Promise<MemorySettings>;
+  MigrateMemoryRoot(to: string): Promise<MemoryMigrationReport>;
+  PromoteMemoryArtifact(input: MemoryPromotionInput): Promise<MemoryPromotionResult>;
   SaveDoc(path: string, body: string): Promise<string>;
   PortraitProfile(): Promise<ProfileView>;
   ProfilePresets(): Promise<ProfilePresetsPayload>;
@@ -1687,6 +1695,23 @@ function makeMockApp(): AppBindings {
     dreamInFlight: false,
     distillInFlight: false,
     history: [],
+  };
+  // Mutable [memory] settings so the Memory panel's storage/maintenance section
+  // is interactive in browser dev mode (no backend, no real config file).
+  let mockMemorySettings: MemorySettings = {
+    root: "~/.config/fairpeer",
+    defaultRoot: "~/.config/fairpeer",
+    configuredRoot: "",
+    rootFromEnv: false,
+    globalDir: "~/.config/fairpeer/memory/dev",
+    sessionDir: "~/.config/fairpeer/projects/-mock/dev/memory/session",
+    provider: "",
+    model: "",
+    effort: "",
+    ref: "yyqwen/Qwen3.6-35B-A3B-FP8",
+    refFromMemory: false,
+    injectIndex: true,
+    indexMaxChars: 1200,
   };
   // Mutable settings so the Settings panel's edits are observable in browser dev.
   // hookSettings holds the per-scope mock hooks payload (global + project).
@@ -4005,6 +4030,7 @@ function makeMockApp(): AppBindings {
           },
         ],
         scopes: [],
+        settings: mockMemorySettings,
       };
     },
     async Remember(scope: string, note: string) {
@@ -4021,6 +4047,42 @@ function makeMockApp(): AppBindings {
     async RejectMemory(name: string) {
       emit({ kind: "notice", level: "info", text: `rejected → ${name}` });
       return true;
+    },
+    async SaveMemorySettings(input: MemorySettingsInput) {
+      mockMemorySettings = {
+        ...mockMemorySettings,
+        configuredRoot: input.root,
+        root: input.root || mockMemorySettings.defaultRoot,
+        provider: input.provider,
+        model: input.model,
+        effort: input.effort,
+        injectIndex: input.injectIndex,
+        indexMaxChars: input.indexMaxChars > 0 ? input.indexMaxChars : 1200,
+        ref: input.provider ? (input.model ? `${input.provider}/${input.model}` : input.provider) : input.model,
+        refFromMemory: Boolean(input.provider || input.model),
+      };
+      emit({ kind: "notice", level: "info", text: `memory settings saved → ${mockMemorySettings.root}` });
+      return mockMemorySettings;
+    },
+    async MigrateMemoryRoot(to: string) {
+      emit({ kind: "notice", level: "info", text: `memory migrated → ${to}` });
+      return { from: mockMemorySettings.root, to, copied: ["profile/", "memory/", "projects/"], skipped: [], files: 3, bytes: 1024 };
+    },
+    async PromoteMemoryArtifact(input: MemoryPromotionInput) {
+      const dir = `${mockMemorySettings.root}/${input.kind === "plugin" ? "plugins" : "skills"}/${input.name}`;
+      emit({ kind: "notice", level: "info", text: `promoted memory → ${dir}` });
+      return {
+        kind: input.kind,
+        name: input.name,
+        dir,
+        skill: `${dir}/SKILL.md`,
+        manifest: input.kind === "plugin" ? `${dir}/plugin.json` : undefined,
+        readme: input.kind === "plugin" ? `${dir}/README.md` : undefined,
+        refs: (input.memories ?? []).length,
+        sources: (input.memories ?? []).map((name) => ({ name, level: "l2" })),
+        version: input.version || "1.0.0",
+        installed: input.install ? `${mockMemorySettings.root}/skills/${input.name}/SKILL.md` : undefined,
+      };
     },
     async SaveDoc(path: string, _body: string) {
       emit({ kind: "notice", level: "info", text: `saved → ${path}` });
