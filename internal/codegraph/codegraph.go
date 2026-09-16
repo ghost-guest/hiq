@@ -102,6 +102,16 @@ func bundledBaseDir() (string, bool) {
 	return filepath.Join(filepath.Dir(exe), BundleDirName), true
 }
 
+// Embedded reports whether this build carries the CodeGraph runtime inside the
+// binary (the codegraph_embed build tag). Such a build installs with zero
+// network — a local unpack — so boot can lay it down synchronously on first
+// launch instead of deferring to the background and forcing a restart. False
+// for ordinary dev/local builds, which fall back to the download chain.
+func Embedded() bool {
+	_, ok := embeddedBundle()
+	return ok
+}
+
 // launcherNames are the bundle-relative launcher paths to try, per OS. The unix
 // bundle ships a POSIX-sh launcher at bin/codegraph; the Windows zip ships a
 // batch / exe shim, so try the common names there.

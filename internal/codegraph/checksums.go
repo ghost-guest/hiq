@@ -9,5 +9,11 @@ var releaseAssetSHA256 = map[string]string{
 	"codegraph-linux-arm64.tar.gz":  "bfa23de555ab67bb2a6380a089b9f38a07388598f15d610276190de56292211a",
 	"codegraph-linux-x64.tar.gz":    "56cce751fe97d5464147e97f9679cc0d4de2ecccb696d579dd271cf6f551c976",
 	"codegraph-win32-arm64.zip":     "c5d3890d461783f294a5e2bb5e56e857dd98df7788b1891c0519290132ccab30",
-	"codegraph-win32-x64.zip":       "b06790570f581714ab87447af756c90004b1a11a99840aeab80447a9a88ad61c",
+	// win32-x64 is REBUILT from the self-contained @colbymchenry/codegraph-win32-x64
+	// npm bundle (node.exe + lib/ + bin/) and vendored as assets/codegraph_runtime.bin
+	// for the portable `-tags codegraph_embed` build. Its SHA256 is recorded here so
+	// the embed path passes the same integrity gate a download would — the shipped
+	// exe installs the runtime with zero network. Regenerate with
+	// .cache/build-codegraph-zip.py if the vendored bundle is refreshed.
+	"codegraph-win32-x64.zip": "4f5e5bd4c4074ffe67f172e368515ec485271932a29666be62be17ce07f56c42",
 }

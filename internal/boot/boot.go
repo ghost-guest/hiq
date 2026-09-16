@@ -916,6 +916,21 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		// Honor a custom download mirror for air-gapped/intranet deployments
 		// before any Resolve/Install attempt.
 		codegraph.SetDownloadBase(cfg.Codegraph.DownloadURL)
+		// An embedded build (portable/shipped exe) carries the runtime inside
+		// the binary, so it can be laid down synchronously — a local unpack
+		// with zero network, bounded below so a pathological filesystem can't
+		// stall startup. That makes code intelligence live on the FIRST launch
+		// instead of requiring a restart; a no-op once the cache exists.
+		if codegraph.Embedded() {
+			ictx, cancel := context.WithTimeout(ctx, 60*time.Second)
+			if _, err := codegraph.Install(ictx, func(msg string) {
+				sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: msg})
+			}); err != nil {
+				sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn,
+					Text: "codegraph: embedded runtime install failed (" + err.Error() + ") — falling back to download/grep"})
+			}
+			cancel()
+		}
 		bin, ok := codegraph.Resolve(cfg.Codegraph.Path)
 		switch {
 		case ok && !codegraph.IndexableRoot(root):

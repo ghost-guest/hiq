@@ -1653,8 +1653,11 @@ func Default() *Config {
 		// CodeGraph is opt-in everywhere (same policy as context7): default off,
 		// users enable it in Settings or via [codegraph] enabled = true. Explicit
 		// config keeps the user's choice. AutoInstall fetches the runtime into
-		// the cache when enabled and missing.
-		Codegraph: CodegraphConfig{Enabled: false, AutoInstall: true},
+		// the cache when enabled and missing. The ONE exception is an EMBEDDED
+		// build (codegraph_embed): it carries the runtime inside the binary, so
+		// it defaults ON — a copied/portable exe then works with zero network and
+		// zero setup. See codegraphDefaultEnabled.
+		Codegraph: CodegraphConfig{Enabled: codegraphDefaultEnabled(), AutoInstall: true},
 		// Background self-evolution (Dream/Distill) on by default; 7/30 day cadence.
 		Dream: DreamConfig{Enabled: true, DreamInterval: DefaultDreamInterval, DistillInterval: DefaultDistillInterval, SkillColdDays: DefaultSkillColdDays},
 		// [memory] defaults to "no override": the data tree stays in the OS user

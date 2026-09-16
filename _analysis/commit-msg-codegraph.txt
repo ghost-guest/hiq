@@ -1,0 +1,23 @@
+codegraph: embed the runtime so installs are portable and network-free
+
+The built-in CodeGraph MCP server could get stuck at "连接中" forever: its
+runtime was resolved from a machine-local [codegraph].path, and when that was
+reset to the default the resolver found nothing and the background installer
+tried to download from GitHub — which fails on locked-down networks — so the
+stdio server never started.
+
+Make the shipped binary self-sufficient instead:
+
+- Vendor the self-contained win32-x64 runtime (node.exe + lib/ + bin/) as
+  internal/codegraph/assets/codegraph_runtime.bin and record its SHA256 in
+  checksums.go. The existing embed path (go build -tags codegraph_embed) then
+  installs it with ZERO network — no GitHub, no machine-specific path.
+- Codegraph defaults ON in an embedded build (codegraphDefaultEnabled): a copied
+  exe dropped into a fresh folder comes up with code intelligence without any
+  config. Non-embedded builds keep the upstream opt-in default (off), so they
+  never trigger an unrequested download.
+- CacheDir prefers a portable location beside the executable when that directory
+  is writable (self-contained, writes nothing to the system drive) and falls
+  back to the OS cache otherwise.
+- Boot lays the embedded runtime down synchronously (bounded, local unpack) so
+  the tools are live on the FIRST launch rather than "available next session".

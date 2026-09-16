@@ -41,22 +41,59 @@ var customDownloadBase string
 // base (without the version or asset name); the installer appends those.
 func SetDownloadBase(url string) { customDownloadBase = strings.TrimSpace(url) }
 
-// CacheDir is where the CodeGraph bundle is unpacked on first use:
-// <user cache>/fairpeer/codegraph/<Version>. Versioned so a bump installs cleanly
-// beside the old one. FAIRPEER_CACHE_DIR overrides the base (relocate the cache,
-// or isolate it in tests). Empty when no cache/config dir resolves.
+// CacheDir is where the CodeGraph bundle is unpacked on first use. Versioned so a
+// bump installs cleanly beside the old one. Resolution order:
+//
+//  1. $FAIRPEER_CACHE_DIR — explicit override (relocate the cache, or isolate it
+//     in tests); the bundle lands at <override>/codegraph/<Version>.
+//  2. PORTABLE — in an embedded build (the shipped/portable exe carries the
+//     runtime), unpack beside the executable when that directory is writable, so
+//     a copied exe stays self-contained and writes nothing to the system drive.
+//     Falls through when the location is read-only (e.g. a managed install under
+//     Program Files) or for non-embedded builds.
+//  3. the OS user cache/config dir: <dir>/fairpeer/codegraph/<Version>.
+//
+// Empty when nothing resolves.
 func CacheDir() string {
-	base := os.Getenv("FAIRPEER_CACHE_DIR")
-	if base == "" {
-		var err error
-		if base, err = os.UserCacheDir(); err != nil {
-			if base, err = os.UserConfigDir(); err != nil {
-				return ""
-			}
-		}
-		base = filepath.Join(base, "fairpeer")
+	if base := strings.TrimSpace(os.Getenv("FAIRPEER_CACHE_DIR")); base != "" {
+		return filepath.Join(base, "codegraph", Version)
 	}
-	return filepath.Join(base, "codegraph", Version)
+	if _, ok := embeddedBundle(); ok {
+		if base, ok := portableCacheBase(); ok {
+			return filepath.Join(base, "codegraph", Version)
+		}
+	}
+	base, err := os.UserCacheDir()
+	if err != nil {
+		if base, err = os.UserConfigDir(); err != nil {
+			return ""
+		}
+	}
+	return filepath.Join(base, "fairpeer", "codegraph", Version)
+}
+
+// portableCacheBase returns the directory beside the executable under which an
+// embedded build should unpack its runtime, when that directory is writable.
+// Writing a probe file both proves writability and leaves nothing behind on
+// success (it is removed immediately); a read-only install location cleanly
+// reports false so CacheDir falls back to the OS cache.
+func portableCacheBase() (string, bool) {
+	exe, err := os.Executable()
+	if err != nil {
+		return "", false
+	}
+	if real, err := filepath.EvalSymlinks(exe); err == nil {
+		exe = real
+	}
+	dir := filepath.Dir(exe)
+	f, err := os.CreateTemp(dir, ".codegraph-w-*")
+	if err != nil {
+		return "", false
+	}
+	name := f.Name()
+	_ = f.Close()
+	_ = os.Remove(name)
+	return dir, true
 }
 
 // cached returns the launcher path inside CacheDir when the bundle is present.
