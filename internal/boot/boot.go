@@ -421,7 +421,14 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	// — they ride the controller's transient turn-injection and fold in on the
 	// next session. Profile partitions both the portrait and the store by mode
 	// (dev/cowork), so a mode switch rebuilds with a disjoint memory subtree.
-	mem := memory.Load(memory.Options{CWD: root, UserDir: config.MemoryUserDir(), Profile: profileName(opts.Profile), SkipProjectDocs: opts.Profile.SkipProjectInstructions()})
+	mem := memory.Load(memory.Options{
+		CWD:             root,
+		UserDir:         config.MemoryUserDir(),
+		Profile:         profileName(opts.Profile),
+		SkipProjectDocs: opts.Profile.SkipProjectInstructions(),
+		InjectIndex:     cfg.MemoryInjectIndex(),
+		IndexMaxChars:   cfg.MemoryIndexMaxChars(),
+	})
 	projectChecks := instruction.ExtractHostChecks(mem.Docs)
 	sysPrompt = memory.Compose(sysPrompt, mem)
 
@@ -1360,19 +1367,19 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 				return "", prepErr
 			}
 		}
-	defer run.Release()
-	// Step budget: a skill may declare its own cap (frontmatter max-steps:) for
-	// heavy subagents (ppt-auto); otherwise default to half the main loop's
-	// MaxSteps (floor 5), as before.
-	steps := maxSteps
-	if steps > 0 {
-		if steps /= 2; steps < 5 {
-			steps = 5
+		defer run.Release()
+		// Step budget: a skill may declare its own cap (frontmatter max-steps:) for
+		// heavy subagents (ppt-auto); otherwise default to half the main loop's
+		// MaxSteps (floor 5), as before.
+		steps := maxSteps
+		if steps > 0 {
+			if steps /= 2; steps < 5 {
+				steps = 5
+			}
 		}
-	}
-	if sk.MaxSteps > 0 {
-		steps = sk.MaxSteps
-	}
+		if sk.MaxSteps > 0 {
+			steps = sk.MaxSteps
+		}
 		answer, err := agent.RunSubAgentWithSession(sctx, prov, subReg, run.Session, task, agent.Options{
 			MaxSteps:      steps,
 			Temperature:   cfg.Agent.Temperature,
@@ -1475,22 +1482,27 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		agent.RegisterDistillComplete(nil) // dream disabled → no retirement
 	}
 
-	// Dream/distill provider: use the fast_task_model when configured so the
-	// background self-evolution runs on a cheaper model instead of the main
-	// model — keeping per-run cost negligible.
-	// Falls back to the main provider when fast_task_model is unset, so behaviour
-	// is unchanged for users who haven't configured one. This is the wire-up the
-	// FastTaskModel config field was always meant to have.
+	// Dream/distill provider: the background memory agents run on a cheaper
+	// model so a periodic maintenance pass costs almost nothing. Resolution
+	// order is [memory] provider/model (the dedicated memory channel the
+	// settings panel exposes), then agent.fast_task_model (the older knob
+	// [memory] falls back to), then the session's own provider — so an
+	// unconfigured setup behaves exactly as before this section existed.
 	dreamProv := execProv
-	if ft := strings.TrimSpace(cfg.Agent.FastTaskModel); ft != "" {
-		if fe, ok := cfg.ResolveModel(ft); ok {
+	if ref := cfg.MemoryMaintenanceRef(); ref != "" {
+		if fe, ok := cfg.ResolveModel(ref); ok {
+			// [memory] effort rides the same per-provider plumbing as
+			// [[providers]].effort — a cheap model usually wants a cheap effort.
+			if eff := cfg.MemoryEffort(); eff != "" {
+				fe.Effort = eff
+			}
 			if dp, err := NewProviderWithProxy(fe, proxySpec, false); err == nil {
 				dreamProv = dp
 			} else {
-				fmt.Fprintf(stderr, "warning: fast_task_model %q not built, dream falls back to main model: %v\n", ft, err)
+				fmt.Fprintf(stderr, "warning: memory maintenance model %q not built, dream falls back to main model: %v\n", ref, err)
 			}
 		} else {
-			fmt.Fprintf(stderr, "warning: fast_task_model %q unknown, dream falls back to main model\n", ft)
+			fmt.Fprintf(stderr, "warning: memory maintenance model %q unknown, dream falls back to main model\n", ref)
 		}
 	}
 
@@ -2031,9 +2043,9 @@ func NewProviderWithProxy(e *config.ProviderEntry, proxy netclient.ProxySpec, ma
 			// endpoint with non-standard levels can be described exactly.
 			"supported_efforts": e.SupportedEfforts,
 			"default_effort":    e.DefaultEffort,
-			"proxy_spec":         proxy,
-			"vision":             e.Vision,
-			"vision_detail":      e.VisionDetail,
+			"proxy_spec":        proxy,
+			"vision":            e.Vision,
+			"vision_detail":     e.VisionDetail,
 		},
 	})
 	if err != nil {
@@ -2158,7 +2170,7 @@ var netdevExcludedToolPrefixes = []string{
 // whitelist written before a rename keeps working instead of silently losing
 // its grip on the renamed skill.
 var legacySkillRenames = map[string]string{
-	"computer-auto": "desktop-auto", // renamed 2026-08: GUI-only scope
+	"computer-auto": "desktop-auto",   // renamed 2026-08: GUI-only scope
 	"rag-auto":      "knowledge-auto", // renamed 2026-08: name said the tech (RAG), not the job (knowledge base)
 }
 

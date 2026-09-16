@@ -61,10 +61,15 @@ type Config struct {
 	// NetDev ([netdev]) is pinned to the USER config after the project merge
 	// (pinNetDev in LoadForRoot): a cloned repo must never inject devices, hop
 	// chains, or scan scopes. See internal/config/netdev.go and NETDEV_SPEC §7.3.
-	NetDev     NetDevConfig     `toml:"netdev"`
-	Skills     SkillsConfig     `toml:"skills"`
-	Codegraph  CodegraphConfig  `toml:"codegraph"`
-	Dream      DreamConfig      `toml:"dream"`
+	NetDev    NetDevConfig    `toml:"netdev"`
+	Skills    SkillsConfig    `toml:"skills"`
+	Codegraph CodegraphConfig `toml:"codegraph"`
+	Dream     DreamConfig     `toml:"dream"`
+	// Memory ([memory]) is a USER-GLOBAL control: where the memory data tree
+	// lives and which model maintains it. Pinned to the user config by
+	// LoadForRoot (pinMemory) so a project file cannot redirect it. See
+	// internal/config/memory.go.
+	Memory     MemoryConfig     `toml:"memory"`
 	Statusline StatuslineConfig `toml:"statusline"`
 	LSP        LSPConfig        `toml:"lsp"`
 	Bot        BotConfig        `toml:"bot"`
@@ -1652,6 +1657,9 @@ func Default() *Config {
 		Codegraph: CodegraphConfig{Enabled: false, AutoInstall: true},
 		// Background self-evolution (Dream/Distill) on by default; 7/30 day cadence.
 		Dream: DreamConfig{Enabled: true, DreamInterval: DefaultDreamInterval, DistillInterval: DefaultDistillInterval, SkillColdDays: DefaultSkillColdDays},
+		// [memory] defaults to "no override": the data tree stays in the OS user
+		// config dir and the maintenance model falls back to fast_task_model.
+		Memory: MemoryConfig{},
 		// LSP tools on by default, but dormant until a language server is on PATH;
 		// a missing server yields an install hint rather than an error.
 		LSP:     LSPConfig{Enabled: true},
@@ -1855,6 +1863,9 @@ func LoadForRoot(root string) (*Config, error) {
 	if err := ValidateNetDev(cfg.NetDev); err != nil {
 		return nil, err
 	}
+	// [memory] is likewise user-global: a project file must not be able to
+	// relocate the memory tree or redirect the maintenance model.
+	pinMemory(cfg)
 	return cfg, nil
 }
 
@@ -2419,11 +2430,19 @@ func CacheDir() string {
 	return filepath.Join(dir, "cache")
 }
 
-// MemoryUserDir returns the fairpeer user config root (…/fairpeer), under which
-// the user-global fairpeer.md and the per-project auto-memory store live. Empty
-// when the user config dir can't be resolved, which disables user-scoped memory.
+// MemoryUserDir returns the root of fairpeer's user DATA tree — the parent of
+// the user-global fairpeer.md/AGENTS.md docs, the portrait layer (profile/),
+// the auto-memory store (memory/, projects/<slug>/memory) and per-project
+// session state (projects/<slug>/sessions). It is [memory] root when the user
+// configured one (or $FAIRPEER_MEMORY_ROOT is set), else the OS user config
+// dir based default. Empty when neither resolves, which disables user-scoped
+// memory.
+//
+// It is deliberately NOT the same thing as userDir(): config.toml, the
+// credential store and the cache stay in the OS config dir even when the data
+// tree is relocated — config.toml is what defines the relocation.
 func MemoryUserDir() string {
-	return userDir()
+	return MemoryRoot()
 }
 
 // ConventionDirs are the parent directories scanned for agent assets (skills,

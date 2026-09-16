@@ -51,8 +51,9 @@ func indexLockFor(dir string) *sync.Mutex {
 // injection (status/importance/decay/compact) had no remaining job. Same-name
 // save overwrites; history is the user's VCS.
 type Store struct {
-	Dir       string // .../fairpeer/projects/<slug>/<profile>/memory (mode-partitioned)
-	GlobalDir string // .../fairpeer/memory/<profile> (shared facts for this mode)
+	Dir        string // .../fairpeer/projects/<slug>/<profile>/memory (L2 project facts)
+	GlobalDir  string // .../fairpeer/memory/<profile> (L1 shared facts for this mode)
+	SessionDir string // .../fairpeer/projects/<slug>/<profile>/memory/session (L3 working memory)
 }
 
 // Type classifies a memory, mirroring the auto-memory taxonomy. It is kept as a
@@ -112,6 +113,8 @@ type Memory struct {
 	Body      string    `json:"body,omitempty"`       // the fact itself (Markdown)
 	Type      Type      `json:"type,omitempty"`       // user/feedback/project/reference (panel tag)
 	Profile   string    `json:"profile,omitempty"`    // "global" | "dev" | "cowork" | "project"
+	Level     Level     `json:"level,omitempty"`      // l1 global | l2 project | l3 session (see level.go)
+	Tags      []string  `json:"tags,omitempty"`       // retrieval keywords (see level.go)
 	CreatedAt time.Time `json:"created_at,omitempty"` // first write (immutable)
 }
 
@@ -132,34 +135,85 @@ func StoreFor(userDir, cwd, profile string) Store {
 		return Store{}
 	}
 	p := NormalizeProfile(profile)
+	projectDir := filepath.Join(userDir, "projects", slugify(absOf(cwd)), p, "memory")
 	return Store{
-		Dir:       filepath.Join(userDir, "projects", slugify(absOf(cwd)), p, "memory"),
-		GlobalDir: filepath.Join(userDir, "memory", p),
+		Dir:        projectDir,
+		GlobalDir:  filepath.Join(userDir, "memory", p),
+		SessionDir: filepath.Join(projectDir, sessionSubdir),
+	}
+}
+
+// sessionSubdir is the L3 bucket inside a project's memory dir. Keeping it as a
+// SUBdirectory (rather than a sibling) means List's non-recursive scan of the
+// project dir never picks up working memory, so a stale L3 note can never be
+// mistaken for a durable project fact.
+const sessionSubdir = "session"
+
+// DataRoot recovers the user data root the store lives under (…/fairpeer) from
+// its own layout: GlobalDir is <root>/memory/<profile>. Promoted artifacts
+// (skills/, plugins/) are written relative to it, so relocating the memory root
+// carries them along instead of leaving them on the old drive. Empty when the
+// store is disabled.
+func (s Store) DataRoot() string {
+	// GlobalDir is the most reliable anchor: it is always present in a live
+	// store and exactly two levels below the root.
+	if s.GlobalDir != "" {
+		return filepath.Dir(filepath.Dir(s.GlobalDir))
+	}
+	if s.Dir != "" {
+		return filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(s.Dir))))
+	}
+	return ""
+}
+
+// DirForLevel returns the directory a memory of the given level belongs in:
+// L1 → the shared profile bucket, L2 → the project bucket, L3 → the project's
+// session bucket. Missing directories degrade toward the project dir so a save
+// always has a concrete target.
+func (s Store) DirForLevel(level Level) string {
+	switch level {
+	case LevelSession:
+		if s.SessionDir != "" {
+			return s.SessionDir
+		}
+		return s.Dir
+	case LevelProject:
+		return s.Dir
+	default:
+		if s.GlobalDir != "" {
+			return s.GlobalDir
+		}
+		return s.Dir
 	}
 }
 
 // DirFor returns the directory a memory of the given profile should be stored
-// in. A "project" profile lands in the project-scoped Dir; everything else
-// (global/dev/cowork) lands in GlobalDir. When GlobalDir is empty, all facts
-// fall back to Dir.
+// in. Kept for the pre-level call sites and for reading legacy trees: a
+// "project" profile is L2, everything else is L1.
 func (s Store) DirFor(profile string) string {
-	if profile == "project" || s.GlobalDir == "" {
+	if strings.EqualFold(strings.TrimSpace(profile), "project") {
+		return s.DirForLevel(LevelProject)
+	}
+	if s.GlobalDir == "" {
 		return s.Dir
 	}
 	return s.GlobalDir
 }
 
-// dirs returns the directories to read from, in order: GlobalDir first (shared
-// memories), then Dir (project-specific). This is the read-side union that lets
-// List/Index see both the shared and project-scoped facts of the active mode.
+// dirs returns the directories to read from, in order: GlobalDir (L1) first, then
+// Dir (L2), then SessionDir (L3). This is the read-side union that lets
+// List/Index/recall see every level of the active project.
 func (s Store) dirs() []string {
-	if s.GlobalDir != "" && s.GlobalDir != s.Dir {
-		return []string{s.GlobalDir, s.Dir}
+	out := make([]string, 0, 3)
+	seen := map[string]bool{}
+	for _, d := range []string{s.GlobalDir, s.Dir, s.SessionDir} {
+		if d == "" || seen[d] {
+			continue
+		}
+		seen[d] = true
+		out = append(out, d)
 	}
-	if s.Dir != "" {
-		return []string{s.Dir}
-	}
-	return []string{s.GlobalDir}
+	return out
 }
 
 // indexFile is the human-readable index of saved memories.
@@ -183,12 +237,13 @@ var indexLineRe = regexp.MustCompile(`\]\(([^)]+)\.md\)`)
 // its global entry (global is the broader truth).
 func (s Store) Index() string {
 	type entry struct{ line string }
-	groups := [2]map[string]entry{{}, {}}
+	dirs := s.dirs()
+	groups := make([]map[string]entry, len(dirs))
+	for i := range groups {
+		groups[i] = map[string]entry{}
+	}
 	seen := map[string]int{}
-	for gi, dir := range s.dirs() {
-		if dir == "" || gi > 1 {
-			continue
-		}
+	for gi, dir := range dirs {
 		b, err := os.ReadFile(filepath.Join(dir, indexFile))
 		if err != nil {
 			continue
@@ -204,11 +259,15 @@ func (s Store) Index() string {
 			}
 		}
 	}
-	if len(groups[0])+len(groups[1]) == 0 {
+	total := 0
+	for _, g := range groups {
+		total += len(g)
+	}
+	if total == 0 {
 		return ""
 	}
 	var b strings.Builder
-	for gi := 0; gi < 2; gi++ {
+	for gi := range groups {
 		names := make([]string, 0, len(groups[gi]))
 		for n := range groups[gi] {
 			names = append(names, n)
@@ -254,7 +313,10 @@ func (s Store) Path(name string) string {
 // Same-name overwrite is a plain overwrite (no archive/supersede); prior
 // versions live in the user's VCS if tracked. Returns the path written.
 func (s Store) Save(m Memory) (string, error) {
-	dir := s.DirFor(m.Profile)
+	level := LevelOf(m)
+	m.Level = level
+	m.Tags = normalizeTags(m.Tags)
+	dir := s.DirForLevel(level)
 	if dir == "" {
 		return "", fmt.Errorf("memory store unavailable (no user config dir)")
 	}
@@ -459,6 +521,12 @@ func render(m Memory, name string) string {
 	if m.Profile != "" {
 		fmt.Fprintf(&b, "profile: %s\n", m.Profile)
 	}
+	if lvl := LevelOf(m); lvl != "" {
+		fmt.Fprintf(&b, "level: %s\n", lvl)
+	}
+	if len(m.Tags) > 0 {
+		fmt.Fprintf(&b, "tags: %s\n", strings.Join(normalizeTags(m.Tags), ", "))
+	}
 	if !m.CreatedAt.IsZero() {
 		fmt.Fprintf(&b, "created_at: %q\n", m.CreatedAt.UTC().Format(time.RFC3339))
 	}
@@ -486,6 +554,13 @@ func loadMemory(path string) (Memory, bool) {
 		Body:    strings.TrimSpace(body),
 		Type:    Type(strings.ToLower(strings.TrimSpace(fm["type"]))),
 		Profile: strings.ToLower(strings.TrimSpace(fm["profile"])),
+		Level:   Level(strings.ToLower(strings.TrimSpace(fm["level"]))),
+		Tags:    ParseTags(fm["tags"]),
+	}
+	// A record predating the level hierarchy carries no `level`; infer it from the
+	// legacy `project` profile so an existing memory tree keeps its reach.
+	if !validLevels[m.Level] {
+		m.Level = LevelOf(Memory{Profile: m.Profile})
 	}
 	if raw := strings.TrimSpace(fm["created_at"]); raw != "" {
 		// Tolerate quoted and unquoted RFC3339 / date-only values.
@@ -570,4 +645,96 @@ func displayTitle(fallback, name string) string {
 		return t
 	}
 	return strings.ReplaceAll(name, "-", " ")
+}
+
+// promptIndexLine renders one row of the injected memory index: level, name,
+// one-line hook, and the retrieval tags. Tags come last so a truncated index
+// still reads well.
+func promptIndexLine(m Memory, level Level) string {
+	hook := oneLine(firstLine(m.Body))
+	if hook == "" {
+		hook = oneLine(m.Body)
+	}
+	if len(hook) > 120 {
+		hook = string([]rune(hook)[:120]) + "…"
+	}
+	line := fmt.Sprintf("- [%s] %s — %s", level.Label(), m.Name, hook)
+	if len(m.Tags) > 0 {
+		line += "  #" + strings.Join(m.Tags, " #")
+	}
+	return line
+}
+
+// PromptIndex renders the compact memory map that rides the cache-stable system
+// prompt: one line per injected (L1/L2) fact — level, name, tags and a one-line
+// hook — so the model knows what memory exists without loading any of it, and can
+// pull a specific fact with `recall`. This is the "knowledge base index" side of
+// memory: identification is free, content is fetched on demand.
+//
+// L3 is deliberately excluded — it is working memory for the current task and
+// would be stale by the next session.
+//
+// The output is deterministic for the same files (sorted, no timestamps), which
+// is what keeps it a valid cache prefix: it changes only when memory changes, and
+// such a change rides the turn tail and folds into the prefix next session.
+// maxChars > 0 caps the block; truncation happens at a line boundary and leaves a
+// visible marker so the model knows to search instead of assuming nothing else
+// exists.
+func (s Store) PromptIndex(maxChars int) string {
+	if s.Dir == "" && s.GlobalDir == "" {
+		return ""
+	}
+	type row struct {
+		name string
+		line string
+	}
+	var rows []row
+	seen := map[string]bool{}
+	for _, dir := range s.dirs() {
+		if dir == "" || dir == s.SessionDir {
+			continue // L3 never enters the prompt
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == indexFile {
+				continue
+			}
+			m, ok := loadMemory(filepath.Join(dir, e.Name()))
+			if !ok {
+				continue
+			}
+			lvl := LevelOf(m)
+			if !lvl.Injected() {
+				continue
+			}
+			n := slug(m.Name)
+			if n == "" || seen[n] {
+				continue // broadest scope wins on a name collision
+			}
+			seen[n] = true
+			rows = append(rows, row{name: n, line: promptIndexLine(m, lvl)})
+		}
+	}
+	if len(rows) == 0 {
+		return ""
+	}
+	sort.Slice(rows, func(i, j int) bool { return rows[i].name < rows[j].name })
+	lines := make([]string, 0, len(rows))
+	for _, r := range rows {
+		lines = append(lines, r.line)
+	}
+	out := strings.Join(lines, "\n")
+	if maxChars > 0 {
+		if r := []rune(out); len(r) > maxChars {
+			cut := string(r[:maxChars])
+			if i := strings.LastIndex(cut, "\n"); i > 0 {
+				cut = cut[:i]
+			}
+			out = cut + "\n… (memory index truncated; call `recall` to search the rest)"
+		}
+	}
+	return out
 }

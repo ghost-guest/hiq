@@ -17,6 +17,7 @@ type Set struct {
 	Docs        []Source // fairpeer.md / AGENTS.md, ascending precedence
 	Store       Store    // auto-memory store (may be a zero/disabled Store)
 	Index       string   // MEMORY.md contents at load time
+	PromptIndex string   // compact L1/L2 fact index injected with the portrait
 	Profile     string   // rendered portrait text (global + active mode), injected each turn
 	ProfileName string   // raw active profile ("dev"|"cowork"), kept for reload
 	CWD         string   // project working dir used for discovery
@@ -38,6 +39,16 @@ type Options struct {
 	// operates on network devices, so a cloned repo's instruction files must
 	// not steer the session). See NETDEV_SPEC §7.3.
 	SkipProjectDocs bool
+
+	// InjectIndex controls whether the compact L1/L2 fact index is folded into
+	// the system prompt ([memory] inject_index, default on). It is the
+	// "knowledge base index" half of memory: the model sees that a fact exists
+	// and fetches its body with `recall`, instead of every fact riding every
+	// turn. Turning it off keeps the prompt smaller for users who never ask the
+	// model to recall anything.
+	InjectIndex bool
+	// IndexMaxChars caps the injected index (0 = DefaultPromptIndexMaxChars).
+	IndexMaxChars int
 }
 
 // Load discovers all memory for a session: the hierarchical docs, the
@@ -55,10 +66,19 @@ func Load(opts Options) *Set {
 	if opts.SkipProjectDocs {
 		docs = userDocsOnly(docs)
 	}
+	promptIndex := ""
+	if opts.InjectIndex {
+		max := opts.IndexMaxChars
+		if max <= 0 {
+			max = DefaultPromptIndexMaxChars
+		}
+		promptIndex = store.PromptIndex(max)
+	}
 	return &Set{
 		Docs:        docs,
 		Store:       store,
 		Index:       store.Index(),
+		PromptIndex: promptIndex,
 		Profile:     discoverProfile(opts.UserDir, p),
 		ProfileName: p,
 		CWD:         cwd,
@@ -111,7 +131,8 @@ func (s *Set) DocPath(scope Scope) string {
 // there is no memory at all. The portrait counts — a user with only a profile
 // portrait (and no docs) still gets it in the prefix.
 func (s *Set) Empty() bool {
-	return s == nil || (len(s.Docs) == 0 && strings.TrimSpace(s.Index) == "" && strings.TrimSpace(s.Profile) == "")
+	return s == nil || (len(s.Docs) == 0 && strings.TrimSpace(s.Index) == "" &&
+		strings.TrimSpace(s.Profile) == "" && strings.TrimSpace(s.PromptIndex) == "")
 }
 
 // docScopes are the scopes the panel can target for a quick-add or a new doc.
@@ -191,12 +212,11 @@ func (s *Set) WriteDoc(path, body string) (string, error) {
 // deterministic given the same files, which is what keeps it a stable cache
 // prefix across sessions that don't change their memory.
 //
-// Design (v0.4 rewrite): only the portrait + doc hierarchy are injected. The
-// scattered saved-memories index and the "how to use remember/forget" operating
-// instructions were removed — they diluted the actual memory with management
-// overhead and bloated every turn. Saved facts are no longer injected; the
-// model reaches them on demand via recall instead. This keeps the block small
-// and direct.
+// Design (v0.5): the portrait, the L1/L2 fact INDEX, and the doc hierarchy are
+// injected. The index is one line per saved fact (level · name · tags · hook) —
+// enough for the model to know a fact exists and ask `recall` for the body, which
+// is what keeps the block small while still making memory findable. L3 working
+// memory and the "how to use remember/forget" operating instructions stay out.
 func (s *Set) Block() string {
 	profile := strings.TrimSpace(s.Profile)
 	if s.Empty() {
@@ -206,6 +226,17 @@ func (s *Set) Block() string {
 	b.WriteString("# 记忆\n\n")
 	if profile != "" {
 		b.WriteString(profile)
+		b.WriteString("\n")
+	}
+	// The fact index rides right after the portrait: identification is
+	// deterministic and cheap, and the bodies stay on disk until `recall` asks
+	// for one. Only L1/L2 appear — see Store.PromptIndex.
+	if idx := strings.TrimSpace(s.PromptIndex); idx != "" {
+		if b.Len() > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString("## 已保存的记忆（索引；用 `recall` 读取正文）\n\n")
+		b.WriteString(idx)
 		b.WriteString("\n")
 	}
 	for _, d := range s.Docs {
@@ -248,6 +279,13 @@ const profileDir = "profile"
 // skill.IndexMaxChars. Truncation leaves a visible marker so the model knows
 // the portrait was clipped and can read the full file itself if it needs to.
 const profileMaxChars = 2000
+
+// DefaultPromptIndexMaxChars caps the injected L1/L2 fact index. It is a hard
+// backstop, not a target: a user with hundreds of saved facts still gets a
+// bounded, cache-stable prefix, with a truncation marker telling the model to
+// search instead of assuming the list is complete. Sized so a typical index
+// (a few dozen facts) fits whole while staying well under the portrait budget.
+const DefaultPromptIndexMaxChars = 1200
 
 // globalProfileFiles are the mode-agnostic portrait files, injected under every
 // profile. user.md is the stable identity/preferences ("who you are", changes

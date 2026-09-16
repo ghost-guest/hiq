@@ -36,12 +36,16 @@ func (rememberTool) Description() string {
 		"Use for things worth remembering long-term: who the user is and their preferences, " +
 		"guidance on how to work, ongoing goals or constraints not derivable from the code, " +
 		"or pointers to external resources. " +
+		"Set `level` to say how far the fact reaches: l1 = about the user / how they work, " +
+		"true everywhere; l2 = this project's conventions, decisions and constraints; " +
+		"l3 = working notes for the current task only (never shown automatically, and expected to go stale). " +
+		"Add `tags` so the fact can be found again by keyword. " +
 		"Do NOT save what the repo already records (code structure, git history) or facts that " +
 		"only matter to the current conversation. " +
 		"Reusing a name overwrites that memory — do that to update an existing fact rather than " +
 		"create a near-duplicate; use `forget` to drop one that is now wrong. " +
-		"The fact applies now; the portrait layer (maintained separately) is what loads into every turn. " +
-		"To read back a fact you saved earlier, use `recall` (saved facts are not injected automatically)."
+		"Saved facts appear as a one-line index (level · name · tags) in every session; use `recall` " +
+		"to read a fact's full body or to search by level, tag or keyword."
 }
 
 func (rememberTool) Schema() json.RawMessage {
@@ -50,8 +54,10 @@ func (rememberTool) Schema() json.RawMessage {
 		"properties": {
 			"name": {"type": "string", "description": "Short kebab-case slug identifying the fact, e.g. \"prefers-tabs\". Reusing a name overwrites that memory — do that to update an existing fact. Omit to derive one from the body's first line."},
 			"body": {"type": "string", "description": "The fact itself (Markdown). The first line doubles as the index label shown in the memory panel."},
-			"profile": {"type": "string", "enum": ["global", "dev", "cowork"], "description": "Which mode this fact belongs to. \"global\" (default) is shared across dev and cowork; \"dev\"/\"cowork\" are only visible in that mode. Omit when the fact is not mode-specific."},
-			"project": {"type": "boolean", "description": "When true, store under the current project instead of the shared profile bucket. Use for project-specific goals, constraints, and decisions. Omit (false) for facts about the user."}
+			"level": {"type": "string", "enum": ["l1", "l2", "l3"], "description": "How far the fact reaches. l1 (default) = about the user / how to work, shared across every project. l2 = specific to this project (conventions, decisions, constraints). l3 = working memory for the current task only: kept out of the automatic index, retrieved on demand."},
+			"tags": {"type": "string", "description": "Comma-separated retrieval keywords, e.g. \"build, toolchain, ci\". Used by the memory index and by recall's search."},
+			"profile": {"type": "string", "enum": ["global", "dev", "cowork"], "description": "Which product mode this fact belongs to. \"global\" (default) is shared across dev and cowork; \"dev\"/\"cowork\" are only visible in that mode. Omit when the fact is not mode-specific."},
+			"project": {"type": "boolean", "description": "Legacy shorthand for level \"l2\": store under the current project instead of the shared bucket. Prefer the level field."}
 		},
 		"required": ["body"]
 	}`)
@@ -61,6 +67,8 @@ func (t rememberTool) Execute(ctx context.Context, args json.RawMessage) (string
 	var in struct {
 		Name    string `json:"name"`
 		Body    string `json:"body"`
+		Level   string `json:"level"`
+		Tags    string `json:"tags"`
 		Profile string `json:"profile"`
 		Project bool   `json:"project"`
 	}
@@ -77,19 +85,30 @@ func (t rememberTool) Execute(ctx context.Context, args json.RawMessage) (string
 		name = firstLine(in.Body)
 	}
 
+	// Level decides the tree the fact lives in. An explicit level always wins;
+	// otherwise the legacy `project` flag still means "this project" so existing
+	// callers keep landing their facts where they always did.
+	level, explicit := ParseLevelArg(in.Level)
+	if !explicit && in.Project {
+		level = LevelProject
+	}
+
 	m := Memory{
 		Name:    name,
 		Body:    in.Body,
 		Profile: normalizeSaveProfile(in.Profile, in.Project),
+		Level:   level,
+		Tags:    ParseTags(in.Tags),
 	}
 	path, err := t.store.Save(m)
 	if err != nil {
 		return "", err
 	}
 	if q, ok := QueueFromContext(ctx); ok {
-		q.QueueMemory("Saved memory \"" + slug(name) + "\": " + oneLine(firstLine(in.Body)))
+		q.QueueMemory(fmt.Sprintf("Saved %s memory %q: %s", level.Label(), slug(name), oneLine(firstLine(in.Body))))
 	}
-	return fmt.Sprintf("Saved memory to %s (it applies now and is reachable via the memory panel in future sessions).", path), nil
+	return fmt.Sprintf("Saved %s memory to %s (it appears in the memory index and is readable via recall in future sessions).",
+		level.Label(), path), nil
 }
 
 func (rememberTool) ReadOnly() bool { return false }

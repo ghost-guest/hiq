@@ -310,6 +310,35 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	fmt.Fprintf(&b, "distill_interval = %d   # Distill 运行周期（天）；0 = 默认 %d\n", c.Dream.DistillIntervalDays(), DefaultDistillInterval)
 	b.WriteString("\n")
 
+	// [memory] relocated the user DATA tree and names the cheap model the
+	// background memory agents run on. User-global (pinned by LoadForRoot), so
+	// it is rendered only in the user/full scope.
+	if scope != RenderScopeProject {
+		b.WriteString("[memory]\n")
+		if c.Memory.Root != "" {
+			fmt.Fprintf(&b, "root = %q   # 记忆数据根目录（profile/memory/projects 全跟随）；留空 = 系统用户配置目录\n", c.Memory.Root)
+		} else {
+			b.WriteString("# root     = \"D:/fairpeer-data\"   # 记忆数据根目录（profile/memory/projects 全跟随）；留空 = 系统用户配置目录\n")
+		}
+		if c.Memory.Provider != "" || c.Memory.Model != "" {
+			fmt.Fprintf(&b, "provider = %q   # 记忆维护（Dream/Distill）使用的渠道\n", c.Memory.Provider)
+			fmt.Fprintf(&b, "model    = %q   # 记忆维护使用的模型（用便宜模型，不烧主模型 token）\n", c.Memory.Model)
+		} else {
+			b.WriteString("# provider = \"yyqwen\"   # 记忆维护使用的渠道；留空 = agent.fast_task_model → 主模型\n")
+			b.WriteString("# model    = \"Qwen3.6-35B-A3B-FP8\"   # 记忆维护使用的模型\n")
+		}
+		if c.Memory.Effort != "" {
+			fmt.Fprintf(&b, "effort   = %q   # 记忆维护推理强度 low|medium|high|max；留空 = 渠道默认\n", c.Memory.Effort)
+		}
+		if c.Memory.InjectIndex != nil && !*c.Memory.InjectIndex {
+			b.WriteString("inject_index = false   # 不把 L1/L2 记忆索引注入系统提示词（默认 true）\n")
+		}
+		if c.Memory.IndexMaxChars > 0 {
+			fmt.Fprintf(&b, "index_max_chars = %d   # 注入索引的字符上限；0 = 默认 1200\n", c.Memory.IndexMaxChars)
+		}
+		b.WriteString("\n")
+	}
+
 	// [cowork] section: PPT, mail (SMTP/IMAP/email_accounts), screenshot, RAG.
 	b.WriteString("[cowork]\n")
 	if c.Cowork.PPTActiveTemplate != "" {

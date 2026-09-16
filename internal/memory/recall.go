@@ -30,8 +30,9 @@ func NewRecallTool(store Store) tool.Tool { return recallTool{store: store} }
 func (recallTool) Name() string { return "recall" }
 
 func (recallTool) Description() string {
-	return "Look up a fact previously saved with `remember`. Saved facts are NOT loaded into context automatically (only the portrait is), so use this when you need something you remember recording — a preference, a decision, a constraint. " +
-		"Call with no name (or empty) to list everything you have saved (name + one-line hook); call with a `name` to read one fact's full body. " +
+	return "Look up a fact previously saved with `remember` — memory works like a small knowledge base: every session shows a one-line index of saved facts, and this tool fetches the content. " +
+		"Call with a `name` to read one fact's full body. " +
+		"Call with no name to list saved facts; narrow the list with `level` (l1 global, l2 project, l3 session), `tag`, or `query` (keyword search over name, tags and body). " +
 		"This is a local file read — it costs nothing and never calls a model."
 }
 
@@ -39,14 +40,20 @@ func (recallTool) Schema() json.RawMessage {
 	return json.RawMessage(`{
 		"type": "object",
 		"properties": {
-			"name": {"type": "string", "description": "The slug of a saved memory to read in full. Omit or leave empty to list all saved memories (name + first line)."}
+			"name": {"type": "string", "description": "The slug of a saved memory to read in full. Omit to list/search instead."},
+			"level": {"type": "string", "enum": ["l1", "l2", "l3"], "description": "When listing, show only facts at this level. l1 = global (user identity/preferences), l2 = this project, l3 = session working memory."},
+			"tag": {"type": "string", "description": "When listing, show only facts carrying this tag."},
+			"query": {"type": "string", "description": "When listing, keep only facts whose name, tags or body contain this text (case-insensitive keyword search)."}
 		}
 	}`)
 }
 
 func (t recallTool) Execute(ctx context.Context, args json.RawMessage) (string, error) {
 	var in struct {
-		Name string `json:"name"`
+		Name  string `json:"name"`
+		Level string `json:"level"`
+		Tag   string `json:"tag"`
+		Query string `json:"query"`
 	}
 	if len(args) > 0 {
 		if err := json.Unmarshal(args, &in); err != nil {
@@ -69,24 +76,69 @@ func (t recallTool) Execute(ctx context.Context, args json.RawMessage) (string, 
 		if body == "" {
 			return fmt.Sprintf("(memory %q is empty)", name), nil
 		}
-		return body, nil
+		return fmt.Sprintf("[%s] %s\n\n%s", LevelOf(m).Label(), m.Name, body), nil
 	}
 
-	// List mode: name + first line for every visible memory.
+	// List/search mode: level + tag + keyword narrowed.
 	facts := t.store.List()
 	if len(facts) == 0 {
 		return "No saved memories yet. Use `remember` to save a durable fact.", nil
 	}
-	var b strings.Builder
-	fmt.Fprintf(&b, "%d saved memor%s:\n", len(facts), pluralMem(len(facts)))
+	levelFilter, hasLevel := ParseLevelArg(in.Level)
+	tagFilter := strings.ToLower(strings.TrimSpace(in.Tag))
+	query := strings.ToLower(strings.TrimSpace(in.Query))
+	matched := make([]Memory, 0, len(facts))
 	for _, m := range facts {
-		hook := oneLine(firstLine(m.Body))
-		if hook == "" {
-			hook = oneLine(m.Body)
+		if hasLevel && LevelOf(m) != levelFilter {
+			continue
 		}
-		fmt.Fprintf(&b, "- %s — %s\n", m.Name, hook)
+		if tagFilter != "" && !hasTag(m, tagFilter) {
+			continue
+		}
+		if query != "" && !matchesQuery(m, query) {
+			continue
+		}
+		matched = append(matched, m)
+	}
+	if len(matched) == 0 {
+		return fmt.Sprintf("No saved memory matched level=%q tag=%q query=%q (%d saved in total). Call recall with no filters to list everything.",
+			in.Level, in.Tag, in.Query, len(facts)), nil
+	}
+	var b strings.Builder
+	if len(matched) == len(facts) {
+		fmt.Fprintf(&b, "%d saved memor%s:\n", len(facts), pluralMem(len(facts)))
+	} else {
+		fmt.Fprintf(&b, "%d of %d saved memories:\n", len(matched), len(facts))
+	}
+	for _, m := range matched {
+		b.WriteString(promptIndexLine(m, LevelOf(m)))
+		b.WriteString("\n")
 	}
 	return strings.TrimSpace(b.String()), nil
+}
+
+// hasTag reports whether m carries tag (compared against its normalized tags).
+func hasTag(m Memory, tag string) bool {
+	for _, t := range m.Tags {
+		if strings.EqualFold(t, tag) {
+			return true
+		}
+	}
+	return false
+}
+
+// matchesQuery reports whether q (already lower-cased) occurs in the memory's
+// name, tags or body.
+func matchesQuery(m Memory, q string) bool {
+	if strings.Contains(strings.ToLower(m.Name), q) || strings.Contains(strings.ToLower(m.Body), q) {
+		return true
+	}
+	for _, t := range m.Tags {
+		if strings.Contains(strings.ToLower(t), q) {
+			return true
+		}
+	}
+	return false
 }
 
 func (recallTool) ReadOnly() bool { return true }

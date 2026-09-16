@@ -6386,6 +6386,7 @@ type MemoryFact struct {
 	Description  string   `json:"description"`
 	Type         string   `json:"type"`
 	Body         string   `json:"body"`
+	Level        string   `json:"level,omitempty"` // l1 global | l2 project | l3 session
 	ValidFrom    string   `json:"validFrom,omitempty"`
 	ValidTo      string   `json:"validTo,omitempty"`
 	Status       string   `json:"status,omitempty"`
@@ -6403,13 +6404,68 @@ type MemoryScope struct {
 }
 
 // MemoryView is the whole memory panel payload: hierarchical docs, saved facts,
-// and the writable scopes for the quick-add selector.
+// the writable scopes for the quick-add selector, and where the memory tree lives.
 type MemoryView struct {
 	Docs      []MemoryDoc   `json:"docs"`
 	Facts     []MemoryFact  `json:"facts"`
 	Scopes    []MemoryScope `json:"scopes"`
 	StoreDir  string        `json:"storeDir"`
 	Available bool          `json:"available"`
+
+	// Storage + maintenance settings, so the panel can show and edit them
+	// without a second round-trip (see MemorySettings).
+	Settings MemorySettings `json:"settings"`
+}
+
+// MemorySettings is the [memory] section as the panel needs it: the effective
+// data root (and where it came from), and the model the background memory agents
+// run on.
+type MemorySettings struct {
+	// Root is the effective data-tree root — where profile/, memory/ and
+	// projects/ actually live right now.
+	Root string `json:"root"`
+	// DefaultRoot is what the root would be with no override, so the panel can
+	// offer "reset to default".
+	DefaultRoot string `json:"defaultRoot"`
+	// ConfiguredRoot is the raw [memory] root value ("" = default in use).
+	ConfiguredRoot string `json:"configuredRoot"`
+	// RootFromEnv is true when $FAIRPEER_MEMORY_ROOT overrode the config, in
+	// which case the panel must say so instead of pretending the field is empty.
+	RootFromEnv bool `json:"rootFromEnv"`
+	// StoreDir / GlobalDir / SessionDir are the resolved fact buckets, shown as
+	// the L2 / L1 / L3 destinations.
+	GlobalDir  string `json:"globalDir"`
+	SessionDir string `json:"sessionDir"`
+
+	// Maintenance model for Dream/Distill. Provider/Model are the raw [memory]
+	// values; Ref is the resolved reference actually in use (which falls back to
+	// agent.fast_task_model), and RefFromMemory distinguishes "pinned here" from
+	// "inherited".
+	Provider      string `json:"provider"`
+	Model         string `json:"model"`
+	Effort        string `json:"effort"`
+	Ref           string `json:"ref"`
+	RefFromMemory bool   `json:"refFromMemory"`
+
+	// InjectIndex / IndexMaxChars describe the injected L1/L2 fact index.
+	InjectIndex   bool `json:"injectIndex"`
+	IndexMaxChars int  `json:"indexMaxChars"`
+}
+
+// MemorySettingsInput is the WRITABLE form of the [memory] section — one struct
+// instead of a long positional argument list, so adding a knob later cannot
+// silently shift an argument at the call site (the frontend is TypeScript, where
+// a 5th parameter would compile fine and be ignored).
+//
+// IndexMaxChars <= 0 means "use the built-in default" rather than "no index":
+// the cap is a safety backstop, not a switch. InjectIndex false is the switch.
+type MemorySettingsInput struct {
+	Root          string `json:"root"`
+	Provider      string `json:"provider"`
+	Model         string `json:"model"`
+	Effort        string `json:"effort"`
+	InjectIndex   bool   `json:"injectIndex"`
+	IndexMaxChars int    `json:"indexMaxChars"`
 }
 
 // writableScopes are the quick-add targets the panel offers, broad → specific.
@@ -6434,6 +6490,7 @@ func (a *App) Memory() MemoryView {
 	}
 	view.StoreDir = set.Store.Dir
 	view.Available = true
+	view.Settings = memorySettings(set.Store)
 	for _, d := range set.Docs {
 		view.Docs = append(view.Docs, MemoryDoc{Path: d.Path, Scope: string(d.Scope), Body: d.Body})
 	}
@@ -6456,12 +6513,50 @@ func (a *App) Memory() MemoryView {
 // JSON side). CreatedAt is still carried so the timeline can sort entries.
 func memoryFactView(f memory.Memory) MemoryFact {
 	out := MemoryFact{
-		Name: f.Name,
-		Type: string(f.Type),
-		Body: f.Body,
+		Name:  f.Name,
+		Type:  string(f.Type),
+		Body:  f.Body,
+		Level: string(memory.LevelOf(f)),
+		Tags:  f.Tags,
 	}
 	if !f.CreatedAt.IsZero() {
 		out.CreatedAt = f.CreatedAt.UTC().Format(time.RFC3339)
+	}
+	return out
+}
+
+// memorySettings resolves the [memory] section for the panel: the effective data
+// root (and its provenance) plus the maintenance model actually in use. It reads
+// the live config so a change made elsewhere is reflected without a restart.
+func memorySettings(store memory.Store) MemorySettings {
+	out := configMemorySettings()
+	out.GlobalDir = store.GlobalDir
+	out.SessionDir = store.SessionDir
+	return out
+}
+
+// configMemorySettings resolves the live [memory] section with no store in hand —
+// used after a save, when the panel needs the refreshed values but the caller has
+// no session context.
+func configMemorySettings() MemorySettings {
+	out := MemorySettings{
+		Root:        config.MemoryRoot(),
+		DefaultRoot: config.DefaultMemoryRoot(),
+	}
+	out.ConfiguredRoot = config.ConfiguredMemoryRoot()
+	out.RootFromEnv = config.MemoryRootFromEnv()
+
+	if cfg, err := config.Load(); err == nil {
+		out.Provider = cfg.Memory.Provider
+		out.Model = cfg.Memory.Model
+		out.Effort = cfg.MemoryEffort()
+		out.Ref = cfg.MemoryMaintenanceRef()
+		out.RefFromMemory = strings.TrimSpace(cfg.Memory.Provider) != "" || strings.TrimSpace(cfg.Memory.Model) != ""
+		out.InjectIndex = cfg.MemoryInjectIndex()
+		out.IndexMaxChars = cfg.MemoryIndexMaxChars()
+		if out.IndexMaxChars <= 0 {
+			out.IndexMaxChars = memory.DefaultPromptIndexMaxChars
+		}
 	}
 	return out
 }
@@ -6485,10 +6580,250 @@ func (a *App) MemoryHistory() MemoryView {
 	}
 	view.StoreDir = set.Store.Dir
 	view.Available = true
+	view.Settings = memorySettings(set.Store)
 	for _, f := range set.Store.List() {
 		view.Facts = append(view.Facts, memoryFactView(f))
 	}
 	return view
+}
+
+// SaveMemorySettings persists the [memory] section: where the memory data tree
+// lives and which model maintains it. Saving a root does NOT move any data — the
+// panel offers MigrateMemoryRoot for that — so a user can point at a new drive
+// and decide afterwards whether to copy. It takes effect on the NEXT session,
+// like every other memory edit: the data root is part of the boot snapshot that
+// the cache-stable prefix is built from, so rewriting it mid-session would break
+// the prefix for no benefit.
+func (a *App) SaveMemorySettings(in MemorySettingsInput) (MemorySettings, error) {
+	cfg, path, err := a.loadDesktopUserConfigForEdit()
+	if err != nil {
+		return MemorySettings{}, err
+	}
+	raw := strings.TrimSpace(in.Root)
+	if raw != "" {
+		probe := config.Default()
+		probe.Memory = config.MemoryConfig{Root: raw}
+		resolved := probe.MemoryRootPath()
+		if resolved == "" {
+			return MemorySettings{}, fmt.Errorf("memory root %q could not be resolved", raw)
+		}
+		if err := config.MemoryRootError(resolved); err != nil {
+			return MemorySettings{}, err
+		}
+	}
+	cfg.Memory.Root = raw
+	cfg.Memory.Provider = strings.TrimSpace(in.Provider)
+	cfg.Memory.Model = strings.TrimSpace(in.Model)
+	cfg.Memory.Effort = strings.ToLower(strings.TrimSpace(in.Effort))
+	// The fact index is the "knowledge base index" half of memory: it is what
+	// lets the model know a fact exists without every body riding every turn.
+	// Stored explicitly so the panel's toggle round-trips (a nil pointer would
+	// otherwise be written back as "unset" and silently re-enable it).
+	inject := in.InjectIndex
+	cfg.Memory.InjectIndex = &inject
+	if in.IndexMaxChars > 0 {
+		cfg.Memory.IndexMaxChars = in.IndexMaxChars
+	} else {
+		cfg.Memory.IndexMaxChars = 0
+	}
+	if err := cfg.SaveTo(path); err != nil {
+		return MemorySettings{}, err
+	}
+	return configMemorySettings(), nil
+}
+
+// MigrateMemoryRoot copies the existing memory data — the portrait layer, the
+// saved facts at every level, and per-project sessions/state — from the
+// currently effective root to `to`.
+//
+// It COPIES, never moves: the source tree is left intact so an interrupted run,
+// a wrong destination or a change of mind costs nothing, and the user deletes the
+// old tree once they have verified the new one. Files already present at the
+// destination win, which makes the operation safe to re-run.
+func (a *App) MigrateMemoryRoot(to string) (config.MemoryMigrationReport, error) {
+	raw := strings.TrimSpace(to)
+	if raw == "" {
+		return config.MemoryMigrationReport{}, fmt.Errorf("no destination given")
+	}
+	probe := config.Default()
+	probe.Memory = config.MemoryConfig{Root: raw}
+	dest := probe.MemoryRootPath()
+	if dest == "" {
+		return config.MemoryMigrationReport{}, fmt.Errorf("destination %q could not be resolved", raw)
+	}
+	if err := config.MemoryRootError(dest); err != nil {
+		return config.MemoryMigrationReport{}, err
+	}
+	from := config.MemoryRoot()
+	if from == "" {
+		return config.MemoryMigrationReport{}, fmt.Errorf("the current memory root could not be resolved")
+	}
+	if from == dest {
+		return config.MemoryMigrationReport{}, fmt.Errorf("the destination is already the active memory root")
+	}
+	return config.MigrateMemoryTree(from, dest)
+}
+
+// MemoryPromotionInput is the panel's "promote memory into a skill/plugin"
+// request. Selection mirrors the `recall` tool (explicit names, or a
+// level/tag/query filter) so the panel and the model address memory the same way.
+type MemoryPromotionInput struct {
+	Kind        string   `json:"kind"` // "skill" | "plugin"
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Memories    []string `json:"memories,omitempty"`
+	Level       string   `json:"level,omitempty"`
+	Tag         string   `json:"tag,omitempty"`
+	Query       string   `json:"query,omitempty"`
+	Notes       string   `json:"notes,omitempty"`
+	Version     string   `json:"version,omitempty"`
+	Overwrite   bool     `json:"overwrite,omitempty"`
+	// Install also copies the generated playbook into a skill root the agent
+	// already scans, so the promoted capability is live in the next session with
+	// no kernel change. Scope picks which root: "project" (the workspace's
+	// .fairpeer/skills) or anything else for the global one.
+	Install bool   `json:"install,omitempty"`
+	Scope   string `json:"scope,omitempty"`
+}
+
+// MemoryPromotionResult is what the promotion produced. Paths, not content: the
+// panel links to the artifact and the user's editor does the rest.
+type MemoryPromotionResult struct {
+	Kind      string                  `json:"kind"`
+	Name      string                  `json:"name"`
+	Dir       string                  `json:"dir"`
+	Skill     string                  `json:"skill"`
+	Manifest  string                  `json:"manifest,omitempty"`
+	Readme    string                  `json:"readme,omitempty"`
+	Refs      int                     `json:"refs"`
+	Sources   []memory.PromotedSource `json:"sources"`
+	Version   string                  `json:"version"`
+	Installed string                  `json:"installed,omitempty"`
+}
+
+// PromoteMemoryArtifact turns saved memories into a reusable artifact — the step that
+// makes memory self-evolving instead of merely accumulating.
+//
+// The artifact is DATA in the documented layout memory.PromoteMemory emits: a
+// SKILL.md the existing skill loader indexes and `run_skill` runs, source
+// memories under references/, and (for the plugin kind) a manifest whose
+// capabilities use the kernel's extensioncontract key format. Nothing here
+// touches the agent kernel, so a promotion can never break an agent iteration —
+// which is the property that makes this safe to do from the UI.
+func (a *App) PromoteMemoryArtifact(input MemoryPromotionInput) (MemoryPromotionResult, error) {
+	a.mu.RLock()
+	ctrl := a.activeCtrlLocked()
+	a.mu.RUnlock()
+	if ctrl == nil {
+		return MemoryPromotionResult{}, fmt.Errorf("no active session to read memory from")
+	}
+	set := ctrl.Memory()
+	if set == nil {
+		return MemoryPromotionResult{}, fmt.Errorf("memory is unavailable in this session")
+	}
+	got, err := memory.PromoteMemory(set.Store, memory.PromoteRequest{
+		Kind:        memory.PromoteKind(strings.TrimSpace(input.Kind)),
+		Name:        input.Name,
+		Description: input.Description,
+		Memories:    input.Memories,
+		Level:       input.Level,
+		Tag:         input.Tag,
+		Query:       input.Query,
+		Notes:       input.Notes,
+		Version:     input.Version,
+		Overwrite:   input.Overwrite,
+	})
+	if err != nil {
+		return MemoryPromotionResult{}, err
+	}
+	out := MemoryPromotionResult{
+		Kind:     string(got.Kind),
+		Name:     got.Name,
+		Dir:      got.Dir,
+		Skill:    got.Skill,
+		Manifest: got.Manifest,
+		Readme:   got.Readme,
+		Refs:     len(got.Refs),
+		Sources:  got.Sources,
+		Version:  got.Version,
+	}
+	if !input.Install {
+		return out, nil
+	}
+	installed, err := installPromotedSkill(got, input.Scope)
+	if err != nil {
+		// The artifact exists on disk either way; report the install failure with
+		// the paths so the user can wire it up by hand instead of losing the work.
+		return out, fmt.Errorf("promoted to %s, but installing the skill failed: %w", got.Dir, err)
+	}
+	out.Installed = installed
+	return out, nil
+}
+
+// installPromotedSkill copies a promoted playbook into a skill root so the agent
+// picks it up through its normal discovery (name + description enter the pinned
+// skills index; the body loads on invoke).
+//
+// Re-installing refreshes the file IN PLACE, but only when the existing skill of
+// that name actually lives in the target root — a same-named skill from another
+// scope (project overriding global, or a hand-written one) is never clobbered.
+func installPromotedSkill(got memory.Promotion, scopeName string) (string, error) {
+	content, err := os.ReadFile(got.Skill)
+	if err != nil {
+		return "", err
+	}
+	cwd, _ := os.Getwd()
+	cfg, _ := config.Load()
+	var custom, excluded []string
+	maxDepth := 3
+	if cfg != nil {
+		custom = cfg.SkillCustomPaths()
+		excluded = cfg.SkillExcludedPaths()
+		maxDepth = cfg.SkillMaxDepth()
+	}
+	scope := skill.ScopeGlobal
+	if strings.EqualFold(strings.TrimSpace(scopeName), "project") {
+		scope = skill.ScopeProject
+	}
+	st := skill.New(skill.Options{
+		ProjectRoot:     cwd,
+		CustomPaths:     custom,
+		ExcludedPaths:   excluded,
+		MaxDepth:        maxDepth,
+		DisableBuiltins: true,
+		Stderr:          io.Discard,
+	})
+	if existing, ok := st.Read(got.Name); ok {
+		home, _ := os.UserHomeDir()
+		target := skillRootFor(scope, cwd, home)
+		if target == "" || !strings.HasPrefix(config.CanonicalSkillPath(existing.Path), config.CanonicalSkillPath(target)) {
+			return "", fmt.Errorf("a skill named %q already exists outside the %s skill root (%s); rename the artifact or install it manually", got.Name, scope, existing.Path)
+		}
+		if filepath.Base(existing.Path) != skill.SkillFile {
+			return "", fmt.Errorf("skill %q is a flat %s file; install the promoted copy manually from %s", got.Name, filepath.Base(existing.Path), got.Skill)
+		}
+		if err := os.WriteFile(existing.Path, content, 0o644); err != nil {
+			return "", err
+		}
+		return existing.Path, nil
+	}
+	return st.CreateWithContent(got.Name, scope, string(content))
+}
+
+// skillRootFor is the directory a scope's promoted skills land in — the same
+// convention the skill loader discovers (.fairpeer/skills under the workspace or
+// the home dir).
+func skillRootFor(scope skill.Scope, cwd, home string) string {
+	if scope == skill.ScopeProject {
+		if cwd == "" {
+			return ""
+		}
+		return filepath.Join(cwd, ".fairpeer", skill.SkillsDirname)
+	}
+	if home == "" {
+		return ""
+	}
+	return filepath.Join(home, ".fairpeer", skill.SkillsDirname)
 }
 
 // Remember quick-adds a one-line note to the doc-memory file for scope — the

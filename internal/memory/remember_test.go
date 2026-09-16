@@ -25,13 +25,16 @@ func TestRememberToolSaves(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
-	if !strings.Contains(out, "Saved memory") {
-		t.Fatalf("unexpected tool output: %q", out)
+	if !strings.Contains(out, "Saved L1/global memory") {
+		t.Fatalf("a level-less save must land at L1/global; got %q", out)
 	}
 
 	list := store.List()
 	if len(list) != 1 || list[0].Name != "likes-go" {
 		t.Fatalf("memory not saved correctly: %+v", list)
+	}
+	if LevelOf(list[0]) != LevelGlobal {
+		t.Fatalf("expected the saved fact to be L1, got %q", list[0].Level)
 	}
 	if !strings.Contains(list[0].Body, "Default to Go") {
 		t.Fatalf("body not persisted: %q", list[0].Body)
