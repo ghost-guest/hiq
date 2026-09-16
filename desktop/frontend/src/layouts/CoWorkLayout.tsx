@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { BookOpen, CalendarDays, PanelLeft, Users, SlidersHorizontal } from "lucide-react";
+import { BookOpen, CalendarDays, PanelLeft, Users, SlidersHorizontal, SquareKanban } from "lucide-react";
 
 import { ProfileSegmented } from "../components/AppChrome";
 import { useT } from "../lib/i18n";
@@ -9,10 +9,11 @@ import logoSymbol from "../assets/logo-symbol.png";
 import { RagPanel } from "../components/cowork/RagPanel";
 import { PreferencePanel } from "../components/cowork/PreferencePanel";
 import { ExpertPanel } from "../components/cowork/ExpertPanel";
+import { TeamBoard } from "../components/cowork/TeamBoard";
 import { CoworkDock } from "../components/cowork/CoworkDock";
 import type { ContextInfo } from "../lib/types";
 
-export type CoWorkPanel = "taskCenter" | "preference" | "calendarTask" | "rag" | "experts";
+export type CoWorkPanel = "taskCenter" | "preference" | "calendarTask" | "rag" | "experts" | "team";
 
 export interface CoWorkLayoutProps {
   mainNode?: ReactNode;
@@ -242,6 +243,18 @@ export function CoWorkLayout({
             <Users size={14} />
             <span>{t("cowork.expert") || "专家团"}</span>
           </button>
+          {/* 团队 = leader + members + kanban. Distinct from 专家团 (one-shot
+              multi-model collaboration): a team is a persistent project. */}
+          <button
+            className={`cowork-sidebar__item ${activePanel === "team" ? "cowork-sidebar__item--active" : ""}`}
+            onClick={() => {
+              setActivePanel("team");
+              if (dockOnClose) dockOnClose();
+            }}
+          >
+            <SquareKanban size={14} />
+            <span>{t("team.title")}</span>
+          </button>
           <button
             className={`cowork-sidebar__item ${activePanel === "calendarTask" ? "cowork-sidebar__item--active" : ""}`}
             onClick={() => {
@@ -291,6 +304,12 @@ export function CoWorkLayout({
             conversation state survives panel switches. */}
         <div style={{ display: activePanel === "experts" ? "flex" : "none", flex: 1, minHeight: 0, flexDirection: "column" }}>
           <ExpertPanel />
+        </div>
+
+        {/* TeamBoard stays mounted (hidden when inactive) so an in-flight board
+            state / drag interaction isn't torn down on a panel peek. */}
+        <div style={{ display: activePanel === "team" ? "flex" : "none", flex: 1, minHeight: 0, flexDirection: "column" }}>
+          <TeamBoard />
         </div>
 
         {activePanel === "rag" && (

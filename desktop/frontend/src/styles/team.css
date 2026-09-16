@@ -1,0 +1,146 @@
+/* team.css — 团队 (team) panel: leader + members + kanban board.
+   Scoped to .team / .team-*; reuses the shared .btn and cowork-taskform tokens,
+   so it inherits every theme (including the wallpaper variants) for free. */
+
+.team { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 10px; padding: 12px 14px; }
+.team__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.team__head-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.team__head-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.team__title { font-size: 13px; font-weight: 600; color: var(--fg); }
+.team__select {
+  background: var(--bg-elev); color: var(--fg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 3px 6px; font-size: 12px; max-width: 220px;
+}
+.team__empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; color: var(--fg-faint); font-size: 13px;
+}
+.team__body { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+.team__board {
+  flex: 1; min-height: 0; display: flex; gap: 10px;
+  overflow-x: auto; overflow-y: hidden; padding-bottom: 6px;
+}
+
+/* Columns — horizontal scroll keeps all 7 lanes reachable on a narrow panel. */
+.team-col {
+  flex: 0 0 232px; display: flex; flex-direction: column; min-height: 0;
+  background: var(--bg-soft); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md); padding: 8px;
+}
+.team-col--over { border-color: var(--accent); background: var(--accent-soft); }
+.team-col__head { display: flex; align-items: center; gap: 6px; padding: 2px 2px 8px; }
+.team-col__dot { width: 7px; height: 7px; border-radius: var(--radius-pill); background: var(--fg-faint); }
+.team-col__dot--backlog { background: var(--fg-faint); }
+.team-col__dot--ready { background: var(--accent); }
+.team-col__dot--doing { background: var(--warn); }
+.team-col__dot--blocked { background: var(--danger); }
+.team-col__dot--done { background: var(--ok); }
+.team-col__dot--failed { background: var(--danger); }
+.team-col__dot--cancelled { background: var(--fg-dim); }
+.team-col__label { font-size: 12px; font-weight: 600; color: var(--fg-dim); }
+.team-col__count { margin-left: auto; font-size: 11px; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
+.team-col__cards { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.team-col__blank { min-height: 40px; }
+
+/* Cards */
+.team-card {
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--bg-elev); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm); padding: 7px 8px; cursor: grab;
+}
+.team-card:hover { border-color: var(--border); }
+.team-card--dragging { opacity: 0.45; cursor: grabbing; }
+.team-card__top { display: flex; align-items: flex-start; gap: 6px; }
+.team-card__title { flex: 1; font-size: 12.5px; color: var(--fg); line-height: 1.35; word-break: break-word; }
+.team-card__actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.12s; }
+.team-card:hover .team-card__actions { opacity: 1; }
+.team-card__btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: none; color: var(--fg-faint);
+  padding: 2px; border-radius: var(--radius-xs); cursor: pointer;
+}
+.team-card__btn:hover { color: var(--fg); background: var(--bg-soft); }
+.team-card__btn--danger:hover { color: var(--danger); background: var(--danger-soft); }
+.team-card__desc { margin: 0; font-size: 11.5px; color: var(--fg-dim); line-height: 1.4; }
+.team-card__tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.team-card__progress { margin: 0; font-size: 11px; color: var(--accent); }
+.team-card__error { margin: 0; font-size: 11px; color: var(--danger); }
+.team-card__foot { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--fg-faint); }
+.team-card__who { color: var(--fg-dim); }
+.team-card__who--none { color: var(--fg-faint); font-style: italic; }
+.team-card__dep, .team-card__attempts { margin-left: auto; }
+.team-card__attempts + .team-card__dep { margin-left: 0; }
+
+/* Chips */
+.team-chip {
+  display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
+  font-size: 10px; padding: 1px 6px; border-radius: var(--radius-pill);
+  background: var(--bg-soft); color: var(--fg-dim); border: 1px solid var(--border-soft);
+}
+.team-chip--skill { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.team-chip--leader { background: var(--warn); color: var(--bg); border-color: transparent; font-weight: 600; }
+
+/* Members roster */
+.team-members { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.team-member {
+  display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px;
+  border: 1px solid var(--border-soft); border-radius: var(--radius-md);
+}
+.team-member--leader { border-left: 2px solid var(--accent); }
+.team-member__avatar { font-size: 16px; line-height: 1.4; }
+.team-member__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.team-member__name { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--fg); }
+.team-member__role { font-size: 11.5px; color: var(--fg-dim); }
+.team-member__skills { display: flex; flex-wrap: wrap; gap: 3px; }
+.team-member__ops { display: flex; gap: 2px; }
+
+/* Tabs — the manual / natural-language switch inside the member + team modals. */
+.team-tabs { display: flex; gap: 4px; padding: 0 14px 4px; }
+.team-tabs__btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: transparent; border: 1px solid var(--border-soft); color: var(--fg-dim);
+  border-radius: var(--radius-pill); padding: 3px 10px; font-size: 11.5px; cursor: pointer;
+}
+.team-tabs__btn--active { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+
+.team-hint { margin: 0 0 4px; font-size: 11px; color: var(--fg-faint); line-height: 1.45; }
+.team-textarea { resize: vertical; font-family: inherit; line-height: 1.45; }
+.team-row { display: flex; align-items: flex-end; gap: 6px; flex-wrap: wrap; }
+.team-row__half { flex: 1 1 90px; min-width: 90px; }
+.team-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-dim); }
+.team-modal--wide { width: min(680px, 92vw); }
+
+/* Natural-language draft preview */
+.team-draft {
+  margin-top: 6px; padding: 8px 10px; border: 1px dashed var(--accent);
+  border-radius: var(--radius-md); background: var(--accent-soft);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.team-draft__head { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--fg); }
+.team-draft__avatar { font-size: 16px; }
+.team-draft__role { font-size: 11px; color: var(--fg-dim); }
+.team-draft__tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.team-draft__prompt {
+  margin: 0; font-size: 11px; color: var(--fg-dim); white-space: pre-wrap;
+  font-family: inherit; line-height: 1.5; max-height: 180px; overflow: auto;
+}
+
+/* Assignment suggestions (capability routing) */
+.team-suggest { display: flex; flex-direction: column; gap: 4px; }
+.team-suggest__list { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.team-suggest__pick {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--bg-elev); border: 1px solid var(--border-soft); color: var(--fg);
+  border-radius: var(--radius-sm); padding: 4px 8px; font-size: 11.5px; cursor: pointer; text-align: left;
+}
+.team-suggest__pick:hover { border-color: var(--accent); }
+.team-suggest__stat { color: var(--fg-faint); font-size: 11px; }
+
+/* Blackboard list editors */
+.team-list { display: flex; flex-direction: column; gap: 4px; }
+.team-list ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.team-list li {
+  display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg);
+  padding: 3px 6px; border: 1px solid var(--border-soft); border-radius: var(--radius-sm);
+}
+.team-list li > span:first-child { flex: 1; word-break: break-word; }

@@ -1,0 +1,38 @@
+feat(team): 团队功能（团长 + 团员 + 看板 + 自然语言建团）
+
+多智能体协同的新能力：internal/team 领域包 + desktop 绑定 + 桌面端「团队」面板与看板。
+与既有 experts（专家团，一次性多模型协作）职责区分：team 是带团长与看板的长期协同项目。
+
+理论依据（开源）：
+- Magentic-One：团长=Orchestrator，规划/跟踪/再规划，双台账
+- Claude Agent Teams：lead + teammates，各自独立 context window + 共享任务管理
+- CrewAI：role/skills + hierarchical manager 按能力路由
+- MetaGPT：SOP + 可验收的结构化工件
+
+后端
+- internal/team/types.go：Team/Member/Task/TeamContext/Policy；单一团长不变式
+- internal/team/store.go：JSON 原子持久化（temp+rename），团队/成员/任务 CRUD、黑板版本号
+- internal/team/board.go：看板投影，复用 taskmonitor.TaskState（不新造状态机）；
+  Backlog=queued+未分配，Ready=queued+已分配，依赖未满足→阻塞；MoveTaskToColumn 处理派生列与失败返工
+- internal/team/route.go：能力路由 RankCandidates（能力覆盖 > 低负载 > 非团长 > 名称）
+- internal/team/draft.go：自然语言出团员/出团队（严格 JSON + 围栏/散文容错）；黑板索引摘要
+- internal/team/plan.go：团长拆解（WBS → 卡片 → 能力路由分派 → 黑板记录目标）；无对口能力的卡留在待分配以暴露缺口
+- 测试：store/board/route/draft/plan 全覆盖（含派生化列落卡、依赖阻塞、路由、解析容错、原子批量）
+
+桌面绑定（desktop/team_app.go，19 个方法 + team:changed 事件）
+- 团队/成员/任务 CRUD、MoveTeamTask、TeamBoard、SuggestTeamAssignee、SetTeamContext
+- DraftTeamMember / DraftTeamProject：模型出草案 → 用户确认 → 落库（不自动写）
+- PlanTeamTasks：团长拆解并分派
+- 存储跟随记忆数据根（<root>/teams/team_projects.json），不写系统盘
+
+前端
+- components/cowork/TeamBoard.tsx：看板（拖拽改状态）、成员名册、任务编辑器、黑板编辑、自然语言建团员/建团队、团长拆解
+- CoWorkLayout 新增「团队」侧栏入口；types/bridge（含浏览器 dev mock）；zh/en 文案；styles/team.css
+
+验证
+- 双 module build/vet 干净；go test ./internal/team 全绿；tsc --noEmit 通过；vite build 通过
+- 真实路径实测：MemoryUserDir()=D:\work\reasonix-self\fairpeer-data，库存到 <root>/teams/team_projects.json，建团→加团员→重开→读回 一致
+- 内嵌前端与 codegraph 的桌面 exe 已重编（-tags desktop,production,codegraph_embed），启动无团队相关错误
+
+注：P2（用 agent.TaskTool/runSubSession 以独立 sub-session 真正执行团员任务）待续；
+黑板摘要只能进子 session 的 system prompt，不得进主会话，以守住缓存前缀铁律。

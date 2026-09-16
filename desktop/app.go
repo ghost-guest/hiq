@@ -52,6 +52,7 @@ import (
 	ragpkg "github.com/zzycxz/fairpeer/internal/rag"
 	schedulerpkg "github.com/zzycxz/fairpeer/internal/scheduler"
 	"github.com/zzycxz/fairpeer/internal/skill"
+	teampkg "github.com/zzycxz/fairpeer/internal/team"
 	"github.com/zzycxz/fairpeer/internal/tool/builtin"
 )
 
@@ -157,6 +158,11 @@ type App struct {
 	// multi-model collaboration with persistent team rosters.
 	expertStore        *expertspkg.Store
 	expertOrchestrator *expertspkg.Orchestrator
+	// teamStore powers the 团队 (team) panel: a persistent project with a 团长
+	// (leader) + 团员 (members) and a kanban board. Persists under the memory
+	// data root so team projects follow the user's configured data location.
+	// Created at startup by initTeams; requireTeamStore lazily re-creates it.
+	teamStore *teampkg.Store
 	// expertRuns tracks in-flight expert-team runs keyed by teamID, so a panel
 	// remounted after the CoWorkLayout was torn down (tab/profile switch) can
 	// query whether a run is still going and re-subscribe to its stream. The
@@ -438,6 +444,7 @@ func (a *App) startup(ctx context.Context) {
 	a.initCalendar()
 	a.initRAG()
 	a.initExperts()
+	a.initTeams()
 	a.StartScreenshotHotkey()
 	// Start the emergency-stop hotkey AFTER the screenshot hotkey so both
 	// global combos are registered before the app reports ready. E-stop is the

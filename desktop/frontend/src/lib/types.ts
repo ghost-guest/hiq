@@ -2854,3 +2854,122 @@ export interface NetDevHumanTTYRecording {
   at: string;
   bytes: number;
 }
+
+// --- 团队 (team) --------------------------------------------------------------
+// Multi-agent collaboration: a 团长 (leader) plans + assigns work, 团员
+// (members) each own an independent context, and a kanban board tracks every
+// card. Mirrors desktop/team_app.go. Distinct from TeamView above, which is the
+// 专家团 (one-shot multi-model collaboration) roster.
+
+export interface TeamMemberView {
+  id: string;
+  name: string;
+  role: string;
+  model: string;
+  effort: string;
+  skills: string[];
+  tools: string[];
+  systemPrompt: string;
+  isLeader: boolean;
+  avatar: string;
+}
+
+export interface TeamCriterionView {
+  text: string;
+  done: boolean;
+}
+
+export interface TeamTaskView {
+  id: string;
+  title: string;
+  desc: string;
+  assigneeId: string;
+  assigneeName: string;
+  requiredSkills: string[];
+  status: string;
+  // column is derived server-side from status + assignee + deps.
+  column: string;
+  deps: string[];
+  parentId: string;
+  acceptance: TeamCriterionView[];
+  deliverable: string;
+  attempts: number;
+  evidence: string[];
+  progress: string;
+  error: string;
+  order: number;
+}
+
+export interface TeamDecisionView {
+  id: string;
+  text: string;
+  by: string;
+  at?: string;
+}
+
+export interface TeamArtifactView {
+  id: string;
+  title: string;
+  path: string;
+  taskId: string;
+  kind: string;
+}
+
+export interface TeamContextView {
+  goal: string;
+  constraints: string;
+  decisions: TeamDecisionView[];
+  artifacts: TeamArtifactView[];
+  openQuestions: string[];
+  version: number;
+}
+
+export interface TeamPolicyView {
+  maxRounds: number;
+  maxParallel: number;
+  autoAssign: boolean;
+  autoReplan: boolean;
+}
+
+export interface TeamProjectView {
+  id: string;
+  name: string;
+  goal: string;
+  members: TeamMemberView[];
+  tasks: TeamTaskView[];
+  context: TeamContextView;
+  policy: TeamPolicyView;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TeamColumnView {
+  key: string;
+  label: string;
+  states: string[];
+  tasks: TeamTaskView[];
+}
+
+export interface TeamBoardView {
+  teamId: string;
+  columns: TeamColumnView[];
+  counts: Record<string, number>;
+  total: number;
+}
+
+export interface TeamCandidateView {
+  memberId: string;
+  name: string;
+  score: number;
+  matched: string[];
+  missing: string[];
+  load: number;
+  isLeader: boolean;
+}
+
+export interface TeamDraftInput {
+  teamId: string;
+  instruction: string;
+  model: string;
+  adopt: boolean;
+}

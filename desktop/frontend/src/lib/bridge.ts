@@ -137,6 +137,15 @@ import type {
 
   BudgetStatusView,
   WallpaperView,
+  TeamProjectView,
+  TeamBoardView,
+  TeamMemberView,
+  TeamTaskView,
+  TeamColumnView,
+  TeamPolicyView,
+  TeamCandidateView,
+  TeamContextView,
+  TeamDraftInput,
 } from "./types";
 
 
@@ -404,6 +413,31 @@ export interface AppBindings {
   SaveMemorySettings(input: MemorySettingsInput): Promise<MemorySettings>;
   MigrateMemoryRoot(to: string): Promise<MemoryMigrationReport>;
   PromoteMemoryArtifact(input: MemoryPromotionInput): Promise<MemoryPromotionResult>;
+  // 团队 (team): persistent leader + members project with a kanban board.
+  // Distinct from the 专家团 team methods above (ListExpertTeams/…).
+  ListTeamProjects(): Promise<TeamProjectView[]>;
+  GetTeamProject(id: string): Promise<TeamProjectView>;
+  CreateTeamProject(tv: TeamProjectView): Promise<TeamProjectView>;
+  UpdateTeamProject(tv: TeamProjectView): Promise<TeamProjectView>;
+  DeleteTeamProject(id: string): Promise<void>;
+  AddTeamMember(teamId: string, mv: TeamMemberView): Promise<TeamProjectView>;
+  UpdateTeamMember(teamId: string, mv: TeamMemberView): Promise<TeamProjectView>;
+  RemoveTeamMember(teamId: string, memberId: string): Promise<TeamProjectView>;
+  AddTeamTask(teamId: string, tv: TeamTaskView): Promise<TeamProjectView>;
+  UpdateTeamTask(teamId: string, tv: TeamTaskView): Promise<TeamProjectView>;
+  MoveTeamTask(teamId: string, taskId: string, column: string): Promise<TeamProjectView>;
+  RemoveTeamTask(teamId: string, taskId: string): Promise<TeamProjectView>;
+  TeamBoard(teamId: string): Promise<TeamBoardView>;
+  SuggestTeamAssignee(teamId: string, taskId: string): Promise<TeamCandidateView[]>;
+  SetTeamContext(teamId: string, ctx: TeamContextView): Promise<TeamProjectView>;
+  TeamBlackboardDigest(teamId: string, maxChars: number): Promise<string>;
+  // Natural-language creation: draft a member (needs teamId) or a whole team
+  // (empty teamId). Adopt=false returns a preview for confirmation.
+  DraftTeamMember(input: TeamDraftInput): Promise<TeamMemberView>;
+  DraftTeamProject(input: TeamDraftInput): Promise<TeamProjectView>;
+  // The 团长's planning step: decompose a goal into cards and route each to the
+  // best-skilled member by capability matching.
+  PlanTeamTasks(teamId: string, goal: string, model: string): Promise<TeamProjectView>;
   SaveDoc(path: string, body: string): Promise<string>;
   PortraitProfile(): Promise<ProfileView>;
   ProfilePresets(): Promise<ProfilePresetsPayload>;
@@ -922,6 +956,24 @@ function getMock(): AppBindings {
   return mockSingleton;
 }
 
+// onTeamChanged subscribes to 团队 mutations; the payload is the refreshed team
+// (or {id, deleted:"1"} on removal). The panel uses it to re-render without a
+// follow-up round-trip.
+export function onTeamChanged(cb: (tv: Partial<TeamProjectView> & { id?: string; deleted?: string }) => void): () => void {
+  if (realApp() && typeof window !== "undefined" && window.runtime) {
+    return window.runtime.EventsOn("team:changed", (...data: unknown[]) => {
+      cb((data?.[0] ?? {}) as Partial<TeamProjectView> & { id?: string; deleted?: string });
+    });
+  }
+  mockTeamListeners.add(cb);
+  return () => mockTeamListeners.delete(cb);
+}
+
+// subscribeMockTeamEvents fans a team mutation out to the mock listeners.
+function emitMockTeam(tv: Partial<TeamProjectView> & { id?: string; deleted?: string }) {
+  mockTeamListeners.forEach((l) => l(tv));
+}
+
 // onEvent subscribes to the agent's typed event stream; returns an unsubscribe.
 // Loop status stream (real: wails "loop:round" event; mock: simulator).
 export function onLoopStatus(cb: (s: import("./types").LoopRunStatus) => void): () => void {
@@ -1375,6 +1427,9 @@ export function openExternal(url: string): void {
 // --- browser dev mock --------------------------------------------------------
 
 const listeners = new Set<(e: WireEvent) => void>();
+// mockTeamListeners backs onTeamChanged in the browser dev seam (the Wails
+// runtime event is unavailable outside the shell).
+const mockTeamListeners = new Set<(tv: Partial<TeamProjectView> & { id?: string; deleted?: string }) => void>();
 let mockScopedTabId: string | undefined;
 
 function mockSubscribe(cb: (e: WireEvent) => void): () => void {
@@ -1492,6 +1547,125 @@ function mockInitialProfile(): "dev" | "cowork" | "netdev" {
   if (typeof window === "undefined") return "dev";
   const value = new URLSearchParams(window.location.search).get("profile")?.trim().toLowerCase();
   return value === "cowork" || value === "netdev" ? value : "dev";
+}
+
+// ── 团队 (team) mock store ────────────────────────────────────────────────────
+// A small in-memory implementation so the kanban / roster / natural-language
+// drafting flows are demoable in `pnpm dev` without the Go backend. It mirrors
+// the server's derived-column rule (status + assignee + deps).
+
+let mockTeams: TeamProjectView[] = [];
+let mockTeamSeq = 0;
+
+function mockTeamID(prefix: string): string {
+  mockTeamSeq += 1;
+  return `${prefix}_${Date.now()}_${mockTeamSeq}`;
+}
+
+function mockEmptyContext(goal = ""): TeamContextView {
+  return { goal, constraints: "", decisions: [], artifacts: [], openQuestions: [], version: 1 };
+}
+
+function mockPolicy(): TeamPolicyView {
+  return { maxRounds: 12, maxParallel: 3, autoAssign: true, autoReplan: false };
+}
+
+// emptyMockTask is the zero card the team mock mutates into real cards.
+function emptyMockTask(): TeamTaskView {
+  return {
+    id: "", title: "", desc: "", assigneeId: "", assigneeName: "", requiredSkills: [],
+    status: "queued", column: "backlog", deps: [], parentId: "", acceptance: [],
+    deliverable: "", attempts: 0, evidence: [], progress: "", error: "", order: 0,
+  };
+}
+
+function mockColumnOf(team: TeamProjectView, task: TeamTaskView): string {
+  switch (task.status) {
+    case "running": return "doing";
+    case "waiting": return "blocked";
+    case "succeeded": return "done";
+    case "failed":
+    case "stale": return "failed";
+    case "cancelled": return "cancelled";
+    default: {
+      if (!task.assigneeId) return "backlog";
+      const deps = task.deps ?? [];
+      const ok = deps.every((d) => team.tasks.find((x) => x.id === d)?.status === "succeeded");
+      return ok ? "ready" : "blocked";
+    }
+  }
+}
+
+function mockBoardOf(team: TeamProjectView): TeamBoardView {
+  const order = ["backlog", "ready", "doing", "blocked", "done", "failed", "cancelled"];
+  const labels: Record<string, string> = {
+    backlog: "待分配", ready: "待开始", doing: "进行中", blocked: "阻塞",
+    done: "已完成", failed: "失败", cancelled: "已取消",
+  };
+  const counts: Record<string, number> = {};
+  const columns: TeamColumnView[] = order.map((key) => ({ key, label: labels[key], states: [], tasks: [] }));
+  const byKey: Record<string, TeamColumnView> = {};
+  columns.forEach((c) => { byKey[c.key] = c; });
+  team.tasks.forEach((tk) => {
+    const col = mockColumnOf(team, tk);
+    const withCol: TeamTaskView = {
+      ...tk,
+      column: col,
+      assigneeName: team.members.find((m) => m.id === tk.assigneeId)?.name ?? "",
+    };
+    (byKey[col] ?? byKey.backlog).tasks.push(withCol);
+    counts[col] = (counts[col] ?? 0) + 1;
+  });
+  return { teamId: team.id, columns, counts, total: team.tasks.length };
+}
+
+function mockFindTeam(id: string): TeamProjectView | undefined {
+  return mockTeams.find((x) => x.id === id);
+}
+
+// mockPatchTeam applies a mutator to one team, persists it and emits team:changed.
+function mockPatchTeam(id: string, mut: (tm: TeamProjectView) => TeamProjectView): TeamProjectView {
+  const idx = mockTeams.findIndex((x) => x.id === id);
+  if (idx < 0) throw new Error("团队不存在");
+  const next = mut({ ...mockTeams[idx] });
+  next.updatedAt = new Date().toISOString();
+  mockTeams = mockTeams.map((x, i) => (i === idx ? next : x));
+  emitMockTeam(next);
+  return { ...next };
+}
+
+// mockDraftMemberFrom stands in for the LLM draft so the confirm-then-create
+// flow is exercisable offline: it derives a plausible name/skills from the text.
+function mockDraftMemberFrom(instruction: string): TeamMemberView {
+  const text = instruction.trim();
+  const hints: Array<[string, string[]]> = [
+    ["后端", ["backend", "go", "sql"]],
+    ["前端", ["frontend", "react"]],
+    ["测试", ["testing", "api"]],
+    ["调研", ["research", "analysis"]],
+    ["文档", ["docs", "writing"]],
+    ["设计", ["design", "ux"]],
+    ["运维", ["ops", "linux"]],
+    ["数据", ["data", "sql"]],
+  ];
+  let skills = ["general"];
+  let avatar = "🙂";
+  for (const [hint, s] of hints) {
+    if (text.includes(hint)) { skills = s; avatar = "🛠"; break; }
+  }
+  const name = text.replace(/^(帮我|请|麻烦)?(新增|加|添加|创建|要)?(一个|个)?/, "").slice(0, 8) || "新团员";
+  return {
+    id: "",
+    name,
+    role: text.slice(0, 40) || "承担指派的任务",
+    model: "",
+    effort: "",
+    skills,
+    tools: [],
+    systemPrompt: `你就是「${name}」。${text}`,
+    isLeader: false,
+    avatar,
+  };
 }
 
 function makeMockApp(): AppBindings {
@@ -5155,5 +5329,199 @@ function makeMockApp(): AppBindings {
     async RagRenameCollection(_oldName: string, _newName: string) {},
     async SetDesktopMetrics(_enabled: boolean) {},
     async SetPlannerModel(_model: string) {},
+    // --- 团队 (team) mock ---
+    async ListTeamProjects() {
+      return mockTeams.map((x) => ({ ...x }));
+    },
+    async GetTeamProject(id: string) {
+      const tm = mockFindTeam(id);
+      if (!tm) throw new Error("团队不存在");
+      return { ...tm };
+    },
+    async CreateTeamProject(tv: TeamProjectView) {
+      const now = new Date().toISOString();
+      const team: TeamProjectView = {
+        ...tv,
+        id: tv.id || mockTeamID("team"),
+        members: (tv.members ?? []).map((m) => ({ ...m, id: m.id || mockTeamID("mem") })),
+        tasks: (tv.tasks ?? []).map((t) => ({ ...t, id: t.id || mockTeamID("task"), status: t.status || "queued" })),
+        context: tv.context ?? mockEmptyContext(tv.goal),
+        policy: tv.policy ?? mockPolicy(),
+        createdAt: now,
+        updatedAt: now,
+      };
+      mockTeams = [...mockTeams, team];
+      emitMockTeam(team);
+      return { ...team };
+    },
+    async UpdateTeamProject(tv: TeamProjectView) {
+      return mockPatchTeam(tv.id, (tm) => ({ ...tm, ...tv }));
+    },
+    async DeleteTeamProject(id: string) {
+      mockTeams = mockTeams.filter((x) => x.id !== id);
+      emitMockTeam({ id, deleted: "1" });
+    },
+    async AddTeamMember(teamId: string, mv: TeamMemberView) {
+      return mockPatchTeam(teamId, (tm) => {
+        const members = mv.isLeader ? tm.members.map((m) => ({ ...m, isLeader: false })) : tm.members;
+        return { ...tm, members: [...members, { ...mv, id: mv.id || mockTeamID("mem") }] };
+      });
+    },
+    async UpdateTeamMember(teamId: string, mv: TeamMemberView) {
+      return mockPatchTeam(teamId, (tm) => ({
+        ...tm,
+        members: tm.members.map((m) => {
+          if (m.id !== mv.id) return mv.isLeader ? { ...m, isLeader: false } : m;
+          return { ...mv };
+        }),
+      }));
+    },
+    async RemoveTeamMember(teamId: string, memberId: string) {
+      return mockPatchTeam(teamId, (tm) => ({
+        ...tm,
+        members: tm.members.filter((m) => m.id !== memberId),
+        tasks: tm.tasks.map((t) => (t.assigneeId === memberId ? { ...t, assigneeId: "" } : t)),
+      }));
+    },
+    async AddTeamTask(teamId: string, tv: TeamTaskView) {
+      return mockPatchTeam(teamId, (tm) => ({
+        ...tm,
+        tasks: [...tm.tasks, { ...tv, id: tv.id || mockTeamID("task"), status: tv.status || "queued" }],
+      }));
+    },
+    async UpdateTeamTask(teamId: string, tv: TeamTaskView) {
+      return mockPatchTeam(teamId, (tm) => ({
+        ...tm,
+        tasks: tm.tasks.map((t) => (t.id === tv.id ? { ...t, ...tv } : t)),
+      }));
+    },
+    async MoveTeamTask(teamId: string, taskId: string, column: string) {
+      const statusOf: Record<string, string> = {
+        backlog: "queued", ready: "queued", doing: "running", blocked: "waiting",
+        done: "succeeded", failed: "failed", cancelled: "cancelled",
+      };
+      return mockPatchTeam(teamId, (tm) => {
+        const task = tm.tasks.find((t) => t.id === taskId);
+        let assignee = task?.assigneeId ?? "";
+        if (column === "backlog") assignee = "";
+        if (column === "ready" && !assignee) {
+          const best = tm.members.find((m) => !m.isLeader) ?? tm.members[0];
+          assignee = best?.id ?? "";
+        }
+        return {
+          ...tm,
+          tasks: tm.tasks.map((t) =>
+            t.id === taskId ? { ...t, status: statusOf[column] ?? t.status, assigneeId: assignee } : t,
+          ),
+        };
+      });
+    },
+    async RemoveTeamTask(teamId: string, taskId: string) {
+      return mockPatchTeam(teamId, (tm) => ({
+        ...tm,
+        tasks: tm.tasks.filter((t) => t.id !== taskId).map((t) => ({ ...t, deps: (t.deps ?? []).filter((d) => d !== taskId) })),
+      }));
+    },
+    async TeamBoard(teamId: string) {
+      const tm = mockFindTeam(teamId);
+      if (!tm) throw new Error("团队不存在");
+      return mockBoardOf(tm);
+    },
+    async SuggestTeamAssignee(teamId: string, taskId: string) {
+      const tm = mockFindTeam(teamId);
+      if (!tm) throw new Error("团队不存在");
+      const task = tm.tasks.find((t) => t.id === taskId);
+      return tm.members
+        .map((m) => {
+          const owned = m.skills.map((s) => s.toLowerCase());
+          const matched = (task?.requiredSkills ?? []).filter((s) => owned.includes(s.toLowerCase()));
+          return {
+            memberId: m.id,
+            name: m.name,
+            score: matched.length,
+            matched,
+            missing: (task?.requiredSkills ?? []).filter((s) => !owned.includes(s.toLowerCase())),
+            load: tm.tasks.filter((t) => t.assigneeId === m.id && !["succeeded", "failed", "cancelled", "stale"].includes(t.status)).length,
+            isLeader: m.isLeader,
+          };
+        })
+        .sort((a, b) => b.score - a.score || a.load - b.load || Number(a.isLeader) - Number(b.isLeader));
+    },
+    async SetTeamContext(teamId: string, ctx: TeamContextView) {
+      return mockPatchTeam(teamId, (tm) => ({ ...tm, context: { ...ctx, version: (tm.context?.version ?? 0) + 1 } }));
+    },
+    async TeamBlackboardDigest(teamId: string) {
+      const tm = mockFindTeam(teamId);
+      if (!tm) return "";
+      const parts = [`【团队目标】${tm.context?.goal || tm.goal}`];
+      if (tm.context?.constraints) parts.push(`【约束】${tm.context.constraints}`);
+      if (tm.members.length) parts.push(`【成员】${tm.members.map((m) => m.name).join("、")}`);
+      return parts.join("\n");
+    },
+    async DraftTeamMember(input: TeamDraftInput) {
+      const draft = mockDraftMemberFrom(input.instruction);
+      if (!input.adopt) return draft;
+      const tm = mockFindTeam(input.teamId);
+      if (!tm) throw new Error("团队不存在");
+      const created = { ...draft, id: mockTeamID("mem") };
+      await this.AddTeamMember(input.teamId, created);
+      return created;
+    },
+    async DraftTeamProject(input: TeamDraftInput) {
+      const now = new Date().toISOString();
+      const leader: TeamMemberView = {
+        id: mockTeamID("mem"), name: "团长", role: "拆解目标、分派任务、跟踪进度",
+        model: "", effort: "", skills: ["planning", "architecture"], tools: [],
+        systemPrompt: "你就是团长。负责分析目标、拆解任务、按能力分派并跟踪进展，不亲自包办所有执行。",
+        isLeader: true, avatar: "🧭",
+      };
+      const worker = { ...mockDraftMemberFrom(input.instruction), id: mockTeamID("mem") };
+      const team: TeamProjectView = {
+        id: mockTeamID("team"),
+        name: input.instruction.trim().slice(0, 10) || "新团队",
+        goal: input.instruction.trim(),
+        members: [leader, worker],
+        tasks: [],
+        context: mockEmptyContext(input.instruction.trim()),
+        policy: mockPolicy(),
+        createdAt: now,
+        updatedAt: now,
+      };
+      if (!input.adopt) return team;
+      mockTeams = [...mockTeams, team];
+      emitMockTeam(team);
+      return { ...team };
+    },
+    async PlanTeamTasks(teamId: string, goal: string) {
+      const tm = mockFindTeam(teamId);
+      if (!tm) throw new Error("团队不存在");
+      // Stand in for the leader's WBS: one card per member, routed by the
+      // member's own top skill, plus a closing acceptance card.
+      const blocks: TeamTaskView[] = tm.members.map((m, i) => ({
+        ...emptyMockTask(),
+        id: mockTeamID("task"),
+        title: `${m.name}：完成${goal || tm.goal}`,
+        desc: `由${m.name}负责的部分（${m.role || "按能力分派"}）`,
+        requiredSkills: m.skills.slice(0, 1),
+        assigneeId: m.isLeader ? "" : m.id,
+        acceptance: [{ text: "产出可复核", done: false }],
+        order: i,
+      }));
+      blocks.push({
+        ...emptyMockTask(),
+        id: mockTeamID("task"),
+        title: `整体验收：${goal || tm.goal}`,
+        desc: "端到端验收，确认目标达成",
+        requiredSkills: [],
+        acceptance: [{ text: "验收结论明确", done: false }],
+        deps: blocks.map((b) => b.id),
+        order: blocks.length,
+      });
+      return mockPatchTeam(teamId, (t) => ({
+        ...t,
+        context: { ...t.context, goal: goal || t.context.goal, version: (t.context?.version ?? 0) + 1 },
+        tasks: [...t.tasks, ...blocks],
+      }));
+    },
   };
 }
