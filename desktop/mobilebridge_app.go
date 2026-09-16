@@ -590,7 +590,10 @@ func (a *App) MobileBridgeSetPairNic(ip string) error {
 	if mb == nil {
 		return fmt.Errorf("mobile bridge not initialized")
 	}
-	c := config.LoadForEdit(config.UserConfigPath())
+	c, err := config.LoadForEditStrict(config.UserConfigPath())
+	if err != nil {
+		return fmt.Errorf("load user config: %w", err)
+	}
 	c.MobileBridge.PairAddress = ip
 	if err := c.WriteFile(config.UserConfigPath()); err != nil {
 		return fmt.Errorf("save pair_address: %w", err)
@@ -606,7 +609,10 @@ func (a *App) MobileBridgeSetKnock(enabled bool, server string) error {
 	if mb == nil {
 		return fmt.Errorf("mobile bridge not initialized")
 	}
-	c := config.LoadForEdit(config.UserConfigPath())
+	c, err := config.LoadForEditStrict(config.UserConfigPath())
+	if err != nil {
+		return fmt.Errorf("load user config: %w", err)
+	}
 	c.MobileBridge.UDPKnock = enabled
 	c.MobileBridge.KnockServer = server
 	if err := c.WriteFile(config.UserConfigPath()); err != nil {
@@ -624,7 +630,10 @@ func (a *App) MobileBridgeSetCloudRelay(enabled bool, url string) error {
 	if mb == nil {
 		return fmt.Errorf("mobile bridge not initialized")
 	}
-	c := config.LoadForEdit(config.UserConfigPath())
+	c, err := config.LoadForEditStrict(config.UserConfigPath())
+	if err != nil {
+		return fmt.Errorf("load user config: %w", err)
+	}
 	if enabled {
 		c.MobileBridge.CloudSignalURL = url
 	} else {
@@ -649,7 +658,10 @@ func (a *App) MobileBridgeSetKMode(mode, externalURL string) (string, error) {
 	default:
 		return "", fmt.Errorf("mode must be embedded|external|cloud")
 	}
-	c := config.LoadForEdit(config.UserConfigPath())
+	c, err := config.LoadForEditStrict(config.UserConfigPath())
+	if err != nil {
+		return "", fmt.Errorf("load user config: %w", err)
+	}
 	switch mode {
 	case "embedded":
 		c.MobileBridge.SignalURL = ""
@@ -678,7 +690,10 @@ func (a *App) MobileBridgeParseTurnCred(paste string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("未找到凭据（需含 user:pass@host[:port]）")
 	}
-	c := config.LoadForEdit(config.UserConfigPath())
+	c, err := config.LoadForEditStrict(config.UserConfigPath())
+	if err != nil {
+		return "", fmt.Errorf("load user config: %w", err)
+	}
 	c.MobileBridge.TURNEnabled = true
 	c.MobileBridge.TURNServers = []string{
 		fmt.Sprintf("turn:%s:%d?transport=udp", host, port),

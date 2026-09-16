@@ -79,6 +79,9 @@
   --shadow-2: 0 6px 16px rgba(0, 0, 0, 0.28);
 
   /* z-index scale */
+  /* Application backdrop (custom wallpaper). The lowest layer by definition: it
+     must paint under every layout surface, so it cannot reuse --z-local-raised. */
+  --z-app-backdrop: 0;
   --z-local-raised: 2;
   --z-local-handle: 4;
   --z-local-handle-active: 5;

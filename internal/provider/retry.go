@@ -24,10 +24,16 @@ const maxAuthRetries = 2
 
 // SendOptions configures SendWithRetry's behaviour.
 type SendOptions struct {
-	ProvName   string // provider instance name for error messages
-	KeyEnv     string // api_key_env for AuthError
-	KeyPresent bool   // a non-empty key was configured
-	RetryAuth  bool   // retry 401/403 up to maxAuthRetries (key previously worked)
+	ProvName string // provider instance name for error messages (legacy field; Provider preferred)
+	// Provider/ProviderDisplayName/Protocol/KeySource are the richer identity
+	// fields the Responses adapter fills; ProvName stays for existing callers.
+	Provider            string // stable provider instance id
+	ProviderDisplayName string // user-editable display label
+	Protocol            string // configured wire adapter id
+	KeyEnv              string // api_key_env for AuthError
+	KeySource           string // human-readable source of KeyEnv, when known
+	KeyPresent          bool   // a non-empty key was configured
+	RetryAuth           bool   // retry 401/403 up to maxAuthRetries (key previously worked)
 }
 
 const maxBackoff = 15 * time.Second
@@ -147,6 +153,9 @@ func parseRetryAfter(resp *http.Response) time.Duration {
 // failures are not retried (the model has already emitted tokens).
 func SendWithRetry(ctx context.Context, httpClient *http.Client, opts SendOptions, newReq func(context.Context) (*http.Request, error)) (*http.Response, error) {
 	provName := opts.ProvName
+	if provName == "" {
+		provName = opts.Provider
+	}
 	keyEnv := opts.KeyEnv
 	notify := retryNotifyFromContext(ctx)
 	var lastErr error

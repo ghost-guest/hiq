@@ -1,6 +1,7 @@
 package openai
 
 import (
+	"github.com/zzycxz/fairpeer/internal/provider"
 	"net/url"
 	"strings"
 )
@@ -37,4 +38,32 @@ func matchesVendorHost(baseURL, apex string, canonical ...string) bool {
 // `minimax` — to avoid clashing with any future minimax-branded gateway.
 func IsMiniMax(baseURL string) bool {
 	return matchesVendorHost(baseURL, "minimaxi.com", "api.minimaxi.com")
+}
+
+// IsDeepSeek reports whether baseURL points at DeepSeek's API
+// (api.deepseek.com or any *.deepseek.com subdomain).
+func IsDeepSeek(baseURL string) bool {
+	return matchesVendorHost(baseURL, "deepseek.com", "api.deepseek.com")
+}
+
+// IsOfficialDeepSeekImageModel delegates to the provider-package model list.
+func IsOfficialDeepSeekImageModel(model string) bool {
+	return provider.IsOfficialDeepSeekImageModel(model)
+}
+
+// IsOfficialDeepSeekTextModel delegates to the provider-package model list.
+func IsOfficialDeepSeekTextModel(model string) bool {
+	return provider.IsOfficialDeepSeekTextModel(model)
+}
+
+// DeepSeekImageInputAllowed applies the official endpoint hard limit after a
+// provider has resolved its configured or catalog-derived image capability.
+func DeepSeekImageInputAllowed(officialBase bool, requestURL, model string, metadataProvided, enabled bool) bool {
+	if !officialBase && !IsDeepSeek(requestURL) {
+		return enabled
+	}
+	if IsOfficialDeepSeekTextModel(model) {
+		return false
+	}
+	return enabled || (!metadataProvided && IsOfficialDeepSeekImageModel(model))
 }

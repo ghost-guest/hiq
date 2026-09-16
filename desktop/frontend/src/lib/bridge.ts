@@ -131,6 +131,7 @@ import type {
   NetDevWeakCredResult,
 
   BudgetStatusView,
+  WallpaperView,
 } from "./types";
 
 
@@ -699,6 +700,13 @@ export interface AppBindings {
   SetDisplayMode(mode: string): Promise<void>;
   SetDesktopLanguage(lang: string): Promise<void>;
   SetDesktopAppearance(theme: string, style: string): Promise<void>;
+  // Custom desktop wallpaper (wallpaper_app.go). The chosen image is copied into
+  // the app wallpaper directory and loaded through a local asset route, so it
+  // survives the original file being moved. UI-only — never model-visible.
+  WallpaperInfo(): Promise<WallpaperView>;
+  PickWallpaper(): Promise<WallpaperView>;
+  ClearWallpaper(): Promise<void>;
+  SetWallpaperOptions(blur: number, dim: number, fit: string): Promise<void>;
   SetDesktopCheckUpdates(enabled: boolean): Promise<void>;
   SetDesktopTelemetry(enabled: boolean): Promise<void>;
   SetExpandThinking(on: boolean): Promise<void>;
@@ -1701,6 +1709,11 @@ function makeMockApp(): AppBindings {
       hooks: [],
     },
   };
+  // Wallpaper state for the browser dev mock. The real implementation lives in
+  // desktop/wallpaper_app.go; here we keep just enough state for the appearance
+  // settings to be exercised without the Wails shell (no native file picker).
+  let mockWallpaper: WallpaperView = { active: false, url: "", name: "", blur: 14, dim: 40, fit: "cover" };
+
   const settings: SettingsView = {
     defaultModel: "",
     fastTaskModel: "",
@@ -4251,6 +4264,20 @@ function makeMockApp(): AppBindings {
         async SetDesktopAppearance(theme: string, style: string) {
           settings.desktopTheme = theme === "auto" || theme === "light" ? theme : "dark";
           settings.desktopThemeStyle = style;
+        },
+        async WallpaperInfo(): Promise<WallpaperView> {
+          return { ...mockWallpaper };
+        },
+        async PickWallpaper(): Promise<WallpaperView> {
+          // No native picker outside the shell: return the current state so
+          // callers still receive a well-formed view.
+          return { ...mockWallpaper };
+        },
+        async ClearWallpaper() {
+          mockWallpaper = { active: false, url: "", name: "", blur: mockWallpaper.blur, dim: mockWallpaper.dim, fit: mockWallpaper.fit };
+        },
+        async SetWallpaperOptions(blur: number, dim: number, fit: string) {
+          mockWallpaper = { ...mockWallpaper, blur, dim, fit };
         },
         async SetDesktopCheckUpdates(enabled: boolean) {
           settings.checkUpdates = enabled;

@@ -13,3 +13,6 @@
 @import "./styles/cowork.css";
 @import "./styles/misc.css";
 @import "./styles/loop.css";
+/* Last: the wallpaper layer must win over the opaque surface backgrounds it
+   intentionally makes translucent under [data-wallpaper="on"]. */
+@import "./styles/wallpaper.css";

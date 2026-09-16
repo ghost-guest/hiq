@@ -1,0 +1,317 @@
+/* wallpaper.css — optional custom background image for the desktop shell.
+ *
+ * Architecture (foundation first):
+ *   1. Variables      — :root --app-bg-* tokens, written by lib/wallpaper.ts.
+ *   2. Backdrop layer — a fixed, non-interactive layer painted behind the app.
+ *   3. Surface lift   — under [data-wallpaper="on"] the large layout surfaces
+ *                       become translucent so the image is actually visible.
+ *   4. Legibility     — a theme-tinted scrim, backed by a surface-opacity floor
+ *                       enforced when the tokens are written (lib/wallpaper.ts),
+ *                       keeps UI text readable over any photo.
+ *
+ * Perf note: tokens.css forbids backdrop-filter (slow and inconsistent on Linux
+ * WebKitGTK). Blur is therefore applied to this one static image layer with
+ * `filter: blur()`, which the compositor can keep on its own GPU layer — no
+ * per-frame background re-sampling. Every rule below is gated behind
+ * [data-wallpaper="on"], so a user without a wallpaper gets byte-identical
+ * rendering to before this feature existed.
+ */
+
+/* ── 1. Foundation tokens ─────────────────────────────────────────────────
+ *
+ * Values are unitless numbers so they can do arithmetic in calc(); the unit is
+ * added at the point of use. Defaults describe "no wallpaper": zero blur, zero
+ * scrim, full-opacity surfaces.
+ */
+:root {
+  --app-bg-image: none; /* url("…") — set by lib/wallpaper.ts */
+  --app-bg-dim-pct: 0; /* 0-85   scrim opacity % over the image */
+  --app-bg-blur-px: 0; /* 0-40   gaussian sigma, in px */
+  --app-bg-surface-pct: 100; /* 62-100 UI surface opacity % over the image */
+  --app-bg-size: cover; /* cover | contain | auto */
+  --app-bg-repeat: no-repeat; /* no-repeat | repeat */
+  /* Light shells need a denser scrim than dark ones to reach the same perceived
+     contrast: dark text over a bright photo degrades faster than light text
+     over a dark one. */
+  --app-bg-dim-scale: 1;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --app-bg-dim-scale: 1.15;
+  }
+}
+
+:root[data-theme="light"] {
+  --app-bg-dim-scale: 1.15;
+}
+
+/* ── 2. Backdrop layer ───────────────────────────────────────────────────
+ *
+ * Rendered as the first child of .app. Fixed to the viewport, it sits below
+ * every other positioned sibling (same stacking level, earlier in DOM order)
+ * and never receives pointer events or assistive-tech attention.
+ */
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-app-backdrop);
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  /* layout+paint containment only — size containment would make the box size
+     independent of the viewport, which is not what a fixed full-bleed layer
+     wants. The paint half gives us the edge crop for free. */
+  contain: layout paint;
+  /* Base colour shows wherever the image does not reach (contain / tile
+     letterboxing) and during the image's first paint. */
+  background: var(--bg);
+}
+
+/* The image is a background rather than an <img> so one layer can serve cover,
+ * contain and tile without extra markup.
+ *
+ * The layer is over-sized by 3× the blur sigma on every edge. A CSS blur uses
+ * the given length as its standard deviation, so it fades out over roughly 3σ;
+ * extending the box by that much puts the soft, semi-transparent border land
+ * entirely outside the visible area instead of leaking in as a washed-out
+ * frame. */
+.app-backdrop__image {
+  position: absolute;
+  inset: calc(var(--app-bg-blur-px) * -3px);
+  background-image: var(--app-bg-image);
+  background-position: center;
+  background-size: var(--app-bg-size);
+  background-repeat: var(--app-bg-repeat);
+  /* Promote to its own compositor layer: the blur is expensive to rasterise
+     once and cheap to reuse, and it must not re-rasterise while scrolling. */
+  will-change: filter;
+  transform: translateZ(0);
+}
+
+/* Blur is skipped entirely at 0 so an unblurred wallpaper stays pixel-true. */
+:root[data-wallpaper="on"]:not([data-wallpaper-blur="0"]) .app-backdrop__image {
+  filter: blur(calc(var(--app-bg-blur-px) * 1px));
+}
+
+/* ── 3. Surface lift ─────────────────────────────────────────────────────
+ *
+ * The layout surfaces are opaque by design, so a wallpaper behind them would be
+ * invisible. Under [data-wallpaper="on"] they are re-tinted to their own theme
+ * colour at --app-bg-surface-pct opacity, which lets the image through while
+ * preserving each theme direction's hue.
+ *
+ * color-mix against `transparent` is alpha-correct (the blend happens in
+ * premultiplied space), so the result is the theme colour at the requested
+ * opacity — not a darkened version of it.
+ */
+:root[data-wallpaper="on"] .layout {
+  background: color-mix(in srgb, var(--bg) calc(var(--app-bg-surface-pct) * 1%), transparent);
+}
+
+:root[data-wallpaper="on"] .sidebar {
+  background: color-mix(in srgb, var(--sidebar-bg) calc(var(--app-bg-surface-pct) * 1%), transparent);
+}
+
+:root[data-wallpaper="on"] .chat-pane,
+:root[data-wallpaper="on"] .topbar {
+  background: color-mix(in srgb, var(--chat-bg) calc(var(--app-bg-surface-pct) * 1%), transparent);
+}
+
+/* ── 4. Legibility scrim ─────────────────────────────────────────────────
+ *
+ * A theme-coloured veil between the image and the UI — the primary readability
+ * control. At 0% the photo shows at full strength; at 85% it is a faint texture.
+ * Sits above the image, below the layout.
+ */
+.app-backdrop__scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(
+    in srgb,
+    var(--bg) calc(var(--app-bg-dim-pct) * var(--app-bg-dim-scale) * 1%),
+    transparent
+  );
+}
+
+/* ── 5. Settings preview ─────────────────────────────────────────────────
+ *
+ * A framed thumbnail in Settings > Appearance driven by the exact same tokens
+ * as the live backdrop, so what the user tunes is what they get.
+ */
+.wallpaper-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 200px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-l, 11px);
+  background: var(--bg-soft);
+}
+
+.wallpaper-preview__image {
+  position: absolute;
+  inset: calc(var(--app-bg-blur-px) * -3px);
+  background-image: var(--app-bg-image);
+  background-position: center;
+  background-size: var(--app-bg-size);
+  background-repeat: var(--app-bg-repeat);
+  transform: translateZ(0);
+  filter: blur(calc(var(--app-bg-blur-px) * 1px));
+}
+
+:root[data-wallpaper-blur="0"] .wallpaper-preview__image {
+  filter: none;
+}
+
+.wallpaper-preview__scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(
+    in srgb,
+    var(--bg) calc(var(--app-bg-dim-pct) * var(--app-bg-dim-scale) * 1%),
+    transparent
+  );
+}
+
+/* A stand-in for the chat surface, so the preview communicates how much of the
+   image survives behind real UI — not just how the raw photo looks. */
+.wallpaper-preview__surface {
+  position: absolute;
+  inset: 14% 12%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: var(--r, 8px);
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--bg) calc(var(--app-bg-surface-pct) * 1%), transparent);
+}
+
+.wallpaper-preview__caption {
+  color: var(--fg-dim);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Empty state: no image chosen yet, so mirror the real app background. */
+.wallpaper-preview--empty .wallpaper-preview__image {
+  display: none;
+}
+
+/* ── 6. Settings controls ─────────────────────────────────────────────── */
+
+.wallpaper-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* The stored file name is a long unbreakable string; clamp it so it can never
+   push the buttons out of the row. */
+.wallpaper-actions__name {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--fg-faint);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wallpaper-error {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  border-radius: var(--r);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--fg);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+/* The live value beside a slider label. Tabular figures keep it from jittering
+   as the number changes while dragging. */
+.wallpaper-value {
+  margin-left: 8px;
+  color: var(--fg-faint);
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
+/* Slider. `accent-color` alone renders inconsistently on WebKitGTK, so the
+   track and thumb are styled explicitly against the theme tokens. */
+.wallpaper-slider {
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.wallpaper-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.wallpaper-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px; /* centre the 14px thumb on the 4px track */
+  border: 2px solid var(--bg-elev);
+  border-radius: 50%;
+  background: var(--accent);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.wallpaper-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+
+.wallpaper-slider:focus-visible {
+  border-radius: 999px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Firefox/Gecko fallback — harmless where unsupported. */
+.wallpaper-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.wallpaper-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--bg-elev);
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Readability advisory under the scrim slider. Three graded levels so the
+   feedback escalates visibly rather than reading as one flat sentence. */
+.wallpaper-note {
+  margin-top: 6px;
+  font-size: var(--text-2xs);
+  line-height: 1.5;
+}
+
+.wallpaper-note--ok {
+  color: var(--fg-faint);
+}
+
+.wallpaper-note--soft {
+  color: var(--fg-dim);
+}
+
+.wallpaper-note--risky {
+  color: var(--danger);
+}

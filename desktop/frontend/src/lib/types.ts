@@ -1534,6 +1534,18 @@ export interface BotDockStatusView {
   recentCount: number;
 }
 
+// WallpaperView is the desktop custom-background contract (wallpaper_app.go).
+// `url` is empty when no wallpaper is active; when present it always carries a
+// version query so replacing an image is never served from a stale cache.
+export interface WallpaperView {
+  active: boolean;
+  url: string;
+  name: string;
+  blur: number;
+  dim: number;
+  fit: string;
+}
+
 export interface BotConnectionDiagnostic {
   id: string;
   label: string;

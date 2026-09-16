@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -170,5 +172,41 @@ func TestSetDesktopCheckUpdatesPersistsToUserConfig(t *testing.T) {
 	}
 	if cfg.DesktopCheckUpdates() {
 		t.Fatal("DesktopCheckUpdates() = true, want false")
+	}
+}
+
+// TestSaveProviderFailsClosedOnBrokenConfig is the regression test for the
+// provider-wipe incident: a user config that exists but cannot be parsed must
+// make any settings save fail with an error instead of silently persisting a
+// defaults-shaped config (which erased all [[providers]] and default_model).
+func TestSaveProviderFailsClosedOnBrokenConfig(t *testing.T) {
+	isolateDesktopUserDirs(t)
+
+	userPath := config.UserConfigPath()
+	if err := os.MkdirAll(filepath.Dir(userPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	broken := []byte("default_model = \"x\"\n[[providers]\nname = \"y\"\n")
+	if err := os.WriteFile(userPath, broken, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	app := NewApp()
+	err := app.SaveProvider(ProviderView{
+		Name:    "evil",
+		Kind:    "openai",
+		BaseURL: "https://x",
+		Models:  []string{"m"},
+	})
+	if err == nil {
+		t.Fatal("SaveProvider over a broken user config must fail (fail closed)")
+	}
+
+	got, readErr := os.ReadFile(userPath)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if string(got) != string(broken) {
+		t.Fatalf("broken user config must be left untouched, got:\n%s", got)
 	}
 }

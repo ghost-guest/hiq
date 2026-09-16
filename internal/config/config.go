@@ -152,6 +152,15 @@ type DesktopConfig struct {
 	Metrics        *bool    `toml:"metrics"`         // opt-in aggregate agent metrics (anonymous signal/bucket counts; no content); nil = disabled
 	ProviderAccess []string `toml:"provider_access"` // desktop-only list of provider entries shown in Settings > Model > Access
 	ExpandThinking bool     `toml:"expand_thinking"` // true = show reasoning text expanded by default; false = collapsed
+
+	// Wallpaper controls the optional custom background image. Like the other
+	// desktop fields it is UI-only: it never affects prompts, requests, or CLI
+	// behaviour. The image itself lives in the desktop wallpaper directory and
+	// is served to the webview over a local asset route.
+	WallpaperPath string `toml:"wallpaper_path"` // absolute path of the active image; empty = no wallpaper
+	WallpaperBlur *int   `toml:"wallpaper_blur"` // 0-40 px gaussian blur on the wallpaper layer; nil keeps the default
+	WallpaperDim  *int   `toml:"wallpaper_dim"`  // 0-85 percent theme scrim over the wallpaper; readability guard
+	WallpaperFit  string `toml:"wallpaper_fit"`  // cover|contain|tile
 }
 
 // NotificationsConfig controls optional system notifications for CLI chat/run.
@@ -301,6 +310,74 @@ func (c *Config) DesktopMetrics() bool {
 		return false
 	}
 	return *c.Desktop.Metrics
+}
+
+// DesktopWallpaperPath returns the active wallpaper image path, or "" when no
+// wallpaper is configured. The path is validated for existence at serve time,
+// not here, so a user moving their config between machines degrades to the
+// default background instead of failing to load.
+func (c *Config) DesktopWallpaperPath() string {
+	if c == nil {
+		return ""
+	}
+	return strings.TrimSpace(c.Desktop.WallpaperPath)
+}
+
+// Wallpaper blur, dim and fit bounds. Blur is capped low enough that the image
+// stays recognisable; dim keeps a floor so the UI text never sits on a busy
+// photo at full contrast.
+const (
+	DesktopWallpaperBlurDefault = 14
+	DesktopWallpaperBlurMax     = 40
+	DesktopWallpaperDimDefault  = 40
+	DesktopWallpaperDimMax      = 85
+)
+
+// DesktopWallpaperBlur normalizes desktop.wallpaper_blur into [0, BlurMax].
+// Unset values resolve to the default so existing configs get a soft-focus
+// wallpaper rather than a harsh full-contrast photo.
+func (c *Config) DesktopWallpaperBlur() int {
+	if c == nil || c.Desktop.WallpaperBlur == nil {
+		return DesktopWallpaperBlurDefault
+	}
+	return clampInt(*c.Desktop.WallpaperBlur, 0, DesktopWallpaperBlurMax)
+}
+
+// DesktopWallpaperDim normalizes desktop.wallpaper_dim into [0, DimMax]. This is
+// the theme-tinted scrim between the wallpaper and the UI; it is what keeps the
+// interface readable over a photo.
+func (c *Config) DesktopWallpaperDim() int {
+	if c == nil || c.Desktop.WallpaperDim == nil {
+		return DesktopWallpaperDimDefault
+	}
+	return clampInt(*c.Desktop.WallpaperDim, 0, DesktopWallpaperDimMax)
+}
+
+// DesktopWallpaperFit normalizes desktop.wallpaper_fit to cover|contain|tile,
+// defaulting to cover.
+func (c *Config) DesktopWallpaperFit() string {
+	if c == nil {
+		return "cover"
+	}
+	switch strings.ToLower(strings.TrimSpace(c.Desktop.WallpaperFit)) {
+	case "contain":
+		return "contain"
+	case "tile", "repeat":
+		return "tile"
+	default:
+		return "cover"
+	}
+}
+
+// clampInt bounds v to [lo, hi].
+func clampInt(v, lo, hi int) int {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
 }
 
 // LSPConfig governs the optional Language Server Protocol tools (lsp_definition,
@@ -1928,7 +2005,35 @@ func mergeTOMLPlugins(paths []string) ([]PluginEntry, error) {
 // reconfigure preserves the user's existing providers and agent settings instead
 // of resetting to defaults. .env is loaded so api_key_env resolution works while
 // the wizard decides which keys are still missing.
+//
+// Read-path resilience: when the file exists but cannot be parsed this falls
+// back to defaults with a warning instead of failing. Never use it before a
+// save — a defaults-shaped config written back over a file we failed to read
+// destroys the user's providers and settings. Write paths must use
+// LoadForEditStrict.
 func LoadForEdit(path string) *Config {
+	cfg, _, err := loadForEditFile(path)
+	if err != nil {
+		slog.Warn("config: load for edit failed, using defaults", "path", path, "err", err)
+	}
+	return cfg
+}
+
+// LoadForEditStrict is the write-path counterpart of LoadForEdit: it returns
+// an error when the config file exists but cannot be parsed, instead of
+// silently degrading to defaults. Anything that loads a config in order to
+// persist it back (settings mutations, migrations, project overrides) must use
+// this — failing closed beats writing a defaults-shaped config over a file we
+// could not read.
+func LoadForEditStrict(path string) (*Config, error) {
+	cfg, _, err := loadForEditFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+func loadForEditFile(path string) (*Config, bool, error) {
 	loadDotEnv()
 	cfg := Default()
 	if _, err := os.Stat(path); err == nil {
@@ -1938,7 +2043,7 @@ func LoadForEdit(path string) *Config {
 	}
 	defined, err := mergeFile(cfg, path)
 	if err != nil {
-		slog.Warn("config: load for edit failed, using defaults", "path", path, "err", err)
+		return cfg, defined, err
 	}
 	if !defined {
 		// Mirror Load: no user-defined [[providers]] → seed the keyless local
@@ -1952,7 +2057,7 @@ func LoadForEdit(path string) *Config {
 	normalizeLocalProviderNoProxy(cfg)
 	normalizeDesktopOfficialProviderAccess(cfg)
 	normalizeEffortConfig(cfg)
-	return cfg
+	return cfg, defined, nil
 }
 
 // mergeFile decodes a TOML file onto cfg if it exists. An absent file is not an

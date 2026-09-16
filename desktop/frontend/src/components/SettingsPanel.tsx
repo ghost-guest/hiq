@@ -20,7 +20,18 @@ import {
 import { TEXT_SIZES, applyTextSize, getTextSize, type TextSize } from "../lib/textSize";
 import { FONT_FAMILIES, applyFontFamily, getFontFamily, type FontFamily } from "../lib/fontFamily";
 import { getDisplayMode, onDisplayModeChange, setDisplayMode as setLocalDisplayMode } from "../lib/displayMode";
-import type { BotConnectionView, BotInstallStartResult, BotSettingsView, CoWorkSettingsView, HookConfigView, HooksSettingsView, MailProbeResult, ManagedBrowserStatus, NetworkView, ProviderTemplate, ProviderView, RegistryStatus, SecretStoreStatus, SettingsTab, SettingsView } from "../lib/types";
+import type { BotConnectionView, BotInstallStartResult, BotSettingsView, CoWorkSettingsView, HookConfigView, HooksSettingsView, MailProbeResult, ManagedBrowserStatus, NetworkView, ProviderTemplate, ProviderView, RegistryStatus, SecretStoreStatus, SettingsTab, SettingsView, WallpaperView } from "../lib/types";
+import {
+  WALLPAPER_BLUR_MAX,
+  WALLPAPER_DIM_MAX,
+  WALLPAPER_FITS,
+  broadcastWallpaper,
+  clampWallpaperBlur,
+  clampWallpaperDim,
+  normalizeWallpaperFit,
+  wallpaperLegibilityHint,
+  type WallpaperFit,
+} from "../lib/wallpaper";
 import { InlineConfirmButton } from "./InlineConfirmButton";
 import { Tooltip } from "./Tooltip";
 import { AnchoredPopover } from "./AnchoredPopover";
@@ -985,6 +996,12 @@ export function protocolLabel(kind: string, t: ReturnType<typeof useI18n>["t"]):
   switch (kind) {
     case "openai":
       return t("settings.protocolOpenai");
+    case "responses":
+      return t("settings.protocolResponses");
+    case "dashscope-responses":
+      return t("settings.protocolDashscopeResponses");
+    case "anthropic":
+      return t("settings.protocolAnthropic");
     default:
       return kind;
   }
@@ -3730,7 +3747,7 @@ function ProviderEditor({
 }) {
   const t = useT();
   const [name, setName] = useState(initial?.name ?? "");
-  const [kind, setKind] = useState(initial?.kind ?? kinds[0] ?? "openai");
+  const [kind, setKind] = useState(initial?.kind ?? (kinds.includes("openai") ? "openai" : kinds[0] ?? "openai"));
   const [baseUrl, setBaseUrl] = useState(initial?.baseUrl ?? "");
   const [models, setModels] = useState((initial?.models ?? []).join(", "));
   const [modelsUrl] = useState(initial?.modelsUrl ?? "");
@@ -3883,17 +3900,19 @@ function ProviderEditor({
     .filter(Boolean);
   const canFetch = Boolean(name.trim() && baseUrl.trim() && (keyDraft.trim() || apiKeyEnv.trim()));
 
-  const protocolField = initial ? (
-    <select className="mem-select" value={kind} onChange={(e) => setKind(e.target.value)}>
+  // New custom providers pick a protocol too (chat-completions / responses /
+  // anthropic messages). Built-in templates keep their fixed protocol readonly.
+  const protocolField = !builtIn && kindOptions.length > 1 ? (
+    <select className="mem-select" value={kind} onChange={(e) => setKind(e.target.value)} disabled={busy}>
       {kindOptions.map((k) => (
         <option key={k} value={k}>
-          {k === "openai" ? t("settings.providerProtocolOpenAI") : k}
+          {protocolLabel(k, t)}
         </option>
       ))}
     </select>
   ) : (
     <div className="provider-readonly-field provider-readonly-field--stacked" aria-readonly="true">
-      <strong>{t("settings.providerProtocolOpenAI")}</strong>
+      <strong>{protocolLabel(kind || "openai", t)}</strong>
       <span>{t("settings.providerProtocolOpenAIHint")}</span>
     </div>
   );
@@ -4408,8 +4427,231 @@ function AppearanceSection({
           ))}
         </div>
       </SettingsField>
+      <WallpaperSettings />
     </SettingsSection>
   );
+}
+
+// WallpaperSettings — custom background image for the desktop shell.
+//
+// The image lives in the app wallpaper directory (desktop/wallpaper_app.go) and
+// is served to the webview over a local asset route, so it keeps working after
+// the original file is moved or deleted.
+//
+// Blur and scrim are pure CSS values, so a slider drag repaints the backdrop
+// immediately via broadcastWallpaper; only the settled value is persisted, and
+// only after the user stops moving (see `persist`). That keeps a drag from
+// rewriting config.toml dozens of times.
+function WallpaperSettings() {
+  const t = useT();
+  const [info, setInfo] = useState<WallpaperView | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [blur, setBlur] = useState(14);
+  const [dim, setDim] = useState(40);
+  const [fit, setFit] = useState<WallpaperFit>("cover");
+  const saveTimer = useRef<number | null>(null);
+
+  // adopt takes a view from the Go side as the new truth: it syncs the sliders,
+  // pushes the CSS values to the document, and lets the app root know whether to
+  // mount the backdrop layer.
+  const adopt = useCallback((view: WallpaperView | null) => {
+    setInfo(view);
+    if (view) {
+      setBlur(clampWallpaperBlur(view.blur));
+      setDim(clampWallpaperDim(view.dim));
+      setFit(normalizeWallpaperFit(view.fit));
+    }
+    broadcastWallpaper(view);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void app
+      .WallpaperInfo()
+      .then((view) => {
+        if (!cancelled) adopt(view);
+      })
+      .catch(() => {
+        /* no wallpaper is a valid state — keep the plain themed background */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [adopt]);
+
+  const persist = useCallback((nextBlur: number, nextDim: number, nextFit: WallpaperFit) => {
+    if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      saveTimer.current = null;
+      void app.SetWallpaperOptions(nextBlur, nextDim, nextFit).catch(() => {
+        /* tuning is best-effort: the live CSS already reflects the new value */
+      });
+    }, 300);
+  }, []);
+
+  // Drop a pending write when the panel closes, so a closing drag can't be
+  // persisted against a stale view.
+  useEffect(
+    () => () => {
+      if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
+    },
+    [],
+  );
+
+  const tune = (nextBlur: number, nextDim: number, nextFit: WallpaperFit) => {
+    setBlur(nextBlur);
+    setDim(nextDim);
+    setFit(nextFit);
+    broadcastWallpaper({
+      active: Boolean(info?.active),
+      url: info?.url ?? "",
+      name: info?.name ?? "",
+      blur: nextBlur,
+      dim: nextDim,
+      fit: nextFit,
+    });
+    persist(nextBlur, nextDim, nextFit);
+  };
+
+  const pick = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      adopt(await app.PickWallpaper());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await app.ClearWallpaper();
+      adopt({ active: false, url: "", name: "", blur, dim, fit });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const active = Boolean(info?.active && info.url);
+  const legibility = wallpaperLegibilityHint(dim);
+  const legibilityKey: DictKey =
+    legibility === "ok"
+      ? "settings.wallpaperLegibilityOk"
+      : legibility === "soft"
+        ? "settings.wallpaperLegibilitySoft"
+        : "settings.wallpaperLegibilityRisky";
+
+  return (
+    <SettingsSection title={t("settings.wallpaper")} description={t("settings.wallpaperHint")}>
+      <SettingsField label={t("settings.wallpaperPreview")} stacked>
+        <div className={`wallpaper-preview${active ? "" : " wallpaper-preview--empty"}`}>
+          <div className="wallpaper-preview__image" />
+          <div className="wallpaper-preview__scrim" />
+          <div className="wallpaper-preview__surface">
+            <span className="wallpaper-preview__caption">
+              {active ? t("settings.wallpaperPreview") : t("settings.wallpaperEmpty")}
+            </span>
+          </div>
+        </div>
+      </SettingsField>
+
+      <SettingsField label={t("settings.wallpaper")}>
+        <div className="wallpaper-actions">
+          <button type="button" className="btn btn--secondary btn--small" disabled={busy} onClick={() => void pick()}>
+            {active ? t("settings.wallpaperChange") : t("settings.wallpaperPick")}
+          </button>
+          {active && (
+            <button type="button" className="btn btn--small" disabled={busy} onClick={() => void remove()}>
+              {t("settings.wallpaperRemove")}
+            </button>
+          )}
+          {active && info?.name && <span className="wallpaper-actions__name" title={info.name}>{info.name}</span>}
+        </div>
+      </SettingsField>
+
+      {error && <div className="wallpaper-error">{error}</div>}
+
+      <SettingsField
+        stacked
+        label={
+          <>
+            {t("settings.wallpaperBlur")}
+            <span className="wallpaper-value">{blur}px</span>
+          </>
+        }
+      >
+        <input
+          type="range"
+          className="wallpaper-slider"
+          min={0}
+          max={WALLPAPER_BLUR_MAX}
+          step={1}
+          value={blur}
+          aria-label={t("settings.wallpaperBlur")}
+          onChange={(e) => tune(clampWallpaperBlur(Number(e.target.value)), dim, fit)}
+        />
+      </SettingsField>
+
+      <SettingsField
+        stacked
+        label={
+          <>
+            {t("settings.wallpaperDim")}
+            <span className="wallpaper-value">{dim}%</span>
+          </>
+        }
+      >
+        <input
+          type="range"
+          className="wallpaper-slider"
+          min={0}
+          max={WALLPAPER_DIM_MAX}
+          step={1}
+          value={dim}
+          aria-label={t("settings.wallpaperDim")}
+          onChange={(e) => tune(blur, clampWallpaperDim(Number(e.target.value)), fit)}
+        />
+        {/* Readability guard: the scrim is what keeps text legible over a busy
+            photo, so a low value is called out rather than silently accepted. */}
+        <div className={`wallpaper-note wallpaper-note--${legibility}`} role="status">
+          {t(legibilityKey)}
+        </div>
+      </SettingsField>
+
+      <SettingsField label={t("settings.wallpaperFit")}>
+        <div className="set-seg">
+          {WALLPAPER_FITS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={`set-seg__btn${fit === option ? " set-seg__btn--on" : ""}`}
+              onClick={() => tune(blur, dim, option)}
+            >
+              {t(wallpaperFitName(option))}
+            </button>
+          ))}
+        </div>
+      </SettingsField>
+    </SettingsSection>
+  );
+}
+
+function wallpaperFitName(fit: WallpaperFit): DictKey {
+  switch (fit) {
+    case "contain":
+      return "settings.wallpaperFitContain";
+    case "tile":
+      return "settings.wallpaperFitTile";
+    default:
+      return "settings.wallpaperFitCover";
+  }
 }
 
 function themeName(theme: Theme, t: ReturnType<typeof useT>): string {

@@ -555,18 +555,31 @@ func (a *App) loadDesktopUserConfigForEdit() (*config.Config, string, error) {
 	if userPath == "" {
 		return nil, "", fmt.Errorf("cannot resolve user config directory")
 	}
+	// Strict load: these configs are loaded in order to be saved back. If the
+	// file exists but cannot be parsed, refusing to save (fail closed) is the
+	// only safe move — silently persisting a defaults-shaped config would wipe
+	// the user's providers and every other setting.
 	if _, err := os.Stat(userPath); err == nil {
-		cfg := config.LoadForEdit(userPath)
+		cfg, err := config.LoadForEditStrict(userPath)
+		if err != nil {
+			return nil, "", err
+		}
 		normalizeLegacyDesktopProviderAccessForSettings(cfg, userPath)
 		return cfg, userPath, nil
 	}
-	cfg := config.LoadForEdit(userPath)
+	cfg, err := config.LoadForEditStrict(userPath)
+	if err != nil {
+		return nil, "", err
+	}
 	legacyPath := config.SourcePathForRoot(a.activeWorkspaceRoot())
 	if legacyPath == "" || sameConfigPath(legacyPath, userPath) {
 		normalizeLegacyDesktopProviderAccessForSettings(cfg, userPath)
 		return cfg, userPath, nil
 	}
-	legacyCfg := config.LoadForEdit(legacyPath)
+	legacyCfg, err := config.LoadForEditStrict(legacyPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("seed from legacy config: %w", err)
+	}
 	normalizeLegacyDesktopProviderAccessForSettings(legacyCfg, legacyPath)
 	legacyCfg.ConfigVersion = config.Default().ConfigVersion
 	return legacyCfg, userPath, nil

@@ -50,10 +50,23 @@ type Message struct {
 	// replayed on the next turn when a tool call followed thinking; providers
 	// without signed reasoning (e.g. the openai-compatible ones) leave it empty.
 	// Round-tripped alongside ReasoningContent.
-	ReasoningSignature string     `json:"reasoning_signature,omitempty"`
-	ToolCalls          []ToolCall `json:"tool_calls,omitempty"`   // set by assistant
-	ToolCallID         string     `json:"tool_call_id,omitempty"` // links a tool result to its call
-	Name               string     `json:"name,omitempty"`         // tool message: tool name
+	ReasoningSignature string `json:"reasoning_signature,omitempty"`
+	// ReasoningID is the provider-issued reasoning-item id (OpenAI Responses:
+	// Reasoning.id is required on input items), captured from the streamed
+	// output item and round-tripped back into later inputs.
+	ReasoningID string `json:"reasoning_id,omitempty"`
+	// ReasoningStatus is the final status of the reasoning item
+	// ("in_progress" | "completed") as issued by the server's done event,
+	// round-tripped back into the input alongside ReasoningID.
+	ReasoningStatus string     `json:"reasoning_status,omitempty"`
+	ToolCalls       []ToolCall `json:"tool_calls,omitempty"` // set by assistant
+	// ResponsesItems preserves provider-issued Responses API output items for
+	// stateless replay. omitempty keeps old session files byte-compatible.
+	ResponsesItems []json.RawMessage `json:"responses_items,omitempty"`
+	// ServerSearch preserves provider-executed search calls (cards + replay).
+	ServerSearch []ServerSearchCall `json:"server_search,omitempty"`
+	ToolCallID   string             `json:"tool_call_id,omitempty"` // links a tool result to its call
+	Name         string             `json:"name,omitempty"`         // tool message: tool name
 	// Original is the user prompt as originally typed, kept when the turn was
 	// edited inline. Local UI metadata; provider requests ignore it.
 	Original string `json:"original,omitempty"`
@@ -352,6 +365,13 @@ type Request struct {
 	// SchemaName labels the schema in the wire format (required by OpenAI's
 	// json_schema response format; defaults to "result").
 	SchemaName string
+	// EffortOverride temporarily overrides the provider's configured reasoning
+	// effort for this one request. Empty = keep the configured effort. Only
+	// kinds with a reasoning ladder read it.
+	EffortOverride string
+	// ToolSearch opts into a native tool-search experiment on adapters that
+	// support it; nil (the default) never serializes anything.
+	ToolSearch *ToolSearch `json:"-"`
 }
 
 // interruptedToolResult stands in for a tool result that never landed — an
@@ -513,6 +533,13 @@ const (
 	ChunkUsage                          // token usage for the completion
 	ChunkDone                           // completion finished normally
 	ChunkError                          // an error occurred
+	// ChunkResponsesItem carries one complete provider-issued Responses API
+	// output item for stateless replay (Responses kind only; appended at the
+	// end so the legacy enum values stay stable).
+	ChunkResponsesItem
+	// ChunkServerSearch reports a provider-executed web_search; not a client
+	// tool call.
+	ChunkServerSearch
 )
 
 // Usage reports token accounting for a completion. Cache hit/miss come from
@@ -621,11 +648,20 @@ func currencySymbol(code string) string {
 // Chunk is a single streamed event. Read the field matching Type.
 type Chunk struct {
 	Type      ChunkType
-	Text      string    // ChunkText, ChunkReasoning
-	Signature string    // ChunkReasoning: opaque proof for the reasoning (Anthropic thinking signature), when issued
-	ToolCall  *ToolCall // ChunkToolCallStart (ID+Name only), ChunkToolCall (complete)
-	Usage     *Usage    // ChunkUsage
-	Err       error     // ChunkError
+	Text      string // ChunkText, ChunkReasoning
+	Signature string // ChunkReasoning: opaque proof for the reasoning (Anthropic thinking signature), when issued
+	// ReasoningID/ReasoningStatus ride the final ChunkReasoning of a turn
+	// (empty Text): the provider-issued reasoning item id/status captured from
+	// the SSE stream, so the agent can persist them into the session and the
+	// next turn's input reasoning item round-trips them (OpenAI Responses
+	// schema marks Reasoning.id required).
+	ReasoningID     string            // ChunkReasoning: provider-issued reasoning item id
+	ReasoningStatus string            // ChunkReasoning: final reasoning item status ("completed")
+	ToolCall        *ToolCall         // ChunkToolCallStart (ID+Name only), ChunkToolCall (complete)
+	ResponsesItem   json.RawMessage   // ChunkResponsesItem: opaque validated Responses API output item
+	ServerSearch    *ServerSearchCall // ChunkServerSearch: display card + replay payload
+	Usage           *Usage            // ChunkUsage
+	Err             error             // ChunkError
 }
 
 // StreamInterruptedError marks a recoverable transport cut that happened after
@@ -681,9 +717,15 @@ type Config struct {
 // return this (rather than a generic status error) for auth failures.
 type AuthError struct {
 	Provider string // the provider instance name, e.g. "openai"
-	KeyEnv   string // the api_key_env the key is read from, when known
-	Status   int    // the HTTP status (401 or 403)
-	HasKey   bool   // a non-empty key was sent vs. no key configured
+	// ProviderDisplayName/Protocol/KeySource are optional richer identity the
+	// Responses adapter fills; zero values leave the message unchanged.
+	ProviderDisplayName string // user-editable display label, when known
+	Protocol            string // configured wire adapter id, when known
+	KeyEnv              string // the api_key_env the key is read from, when known
+	KeySource           string // human-readable source of KeyEnv, when known
+	Status              int    // the HTTP status (401 or 403)
+	HasKey              bool   // a non-empty key was sent vs. no key configured
+	Body                string // trimmed response-body snippet, when captured
 }
 
 func (e *AuthError) Error() string {

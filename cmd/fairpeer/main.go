@@ -9,6 +9,7 @@ import (
 	// Blank imports wire compile-time built-ins into their registries.
 	_ "github.com/zzycxz/fairpeer/internal/provider/anthropic"
 	_ "github.com/zzycxz/fairpeer/internal/provider/openai"
+	_ "github.com/zzycxz/fairpeer/internal/provider/responses"
 	_ "github.com/zzycxz/fairpeer/internal/tool/builtin"
 )
 

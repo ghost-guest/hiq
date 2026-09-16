@@ -22,6 +22,7 @@ import (
 	// cmd/fairpeer does — boot.Build resolves providers/tools from these registries.
 	_ "github.com/zzycxz/fairpeer/internal/provider/anthropic"
 	_ "github.com/zzycxz/fairpeer/internal/provider/openai"
+	_ "github.com/zzycxz/fairpeer/internal/provider/responses"
 	"github.com/zzycxz/fairpeer/internal/sandbox"
 	_ "github.com/zzycxz/fairpeer/internal/tool/builtin"
 )
@@ -107,7 +108,13 @@ func main() {
 		// Match the light UI shell so the initial webview background doesn't flash
 		// dark before CSS loads — particularly visible on WebKitGTK.
 		BackgroundColour:   &options.RGBA{R: 244, G: 243, B: 239, A: 255},
-		AssetServer:        &assetserver.Options{Assets: assets, Middleware: app.workspaceMediaMiddleware()},
+		AssetServer: &assetserver.Options{
+			Assets: assets,
+			// Both routes are served from the local AssetServer: workspace media
+			// (tokenised, short-lived) and the user's wallpaper (stable, single
+			// file). Every other path falls through to the embedded frontend.
+			Middleware: assetserver.ChainMiddleware(app.workspaceMediaMiddleware(), app.wallpaperMiddleware()),
+		},
 		OnStartup:          app.startup,
 		OnDomReady:         app.domReady,
 		OnBeforeClose:      app.beforeClose,

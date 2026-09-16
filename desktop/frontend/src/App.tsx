@@ -30,6 +30,7 @@ import { app, onEvent, onProjectTreeChanged, onSchedulerNotice,
   onRemoteStatus, onBrowserMirror,
 } from "./lib/bridge";
 import { browserMirrorSnapshot, pushBrowserMirrorFrame, requestBrowserMirrorFocus } from "./lib/browserMirror";
+import { loadWallpaper, subscribeWallpaper } from "./lib/wallpaper";
 import { onFairpeerDeepLink, onProfileChanged } from "./lib/bridge";
 import { CoWorkLayout } from "./layouts/CoWorkLayout";
 import { NetDevLayout, NetdevTitleBar } from "./layouts/NetDevLayout";
@@ -51,6 +52,7 @@ import { SideSessionPane } from "./components/SideSessionPane";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { SidebarSessions } from "./components/SidebarSessions";
 import { CommandPalette, type PaletteItem } from "./components/CommandPalette";
+import { AppBackdrop } from "./components/AppBackdrop";
 import { AgentDashboard } from "./components/AgentDashboard";
 import { BranchTree } from "./components/BranchTree";
 import { SettingsPanel, SETTINGS_TABS } from "./components/SettingsPanel";
@@ -889,6 +891,24 @@ export default function App() {
   const [rightDockTreeWidth, setRightDockTreeWidth] = useState(loadRightDockTreeWidth);
   const [rightDockPreviewWidth, setRightDockPreviewWidth] = useState(loadRightDockPreviewWidth);
   const [workspacePreviewActive, setWorkspacePreviewActive] = useState(false);
+  // Custom wallpaper. This state exists only so the decorative layer mounts and
+  // unmounts; the actual CSS values are written by lib/wallpaper.ts, which keeps
+  // the settings preview and the live backdrop reading the same tokens.
+  const [wallpaperActive, setWallpaperActive] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void loadWallpaper().then((view) => {
+      if (!cancelled) setWallpaperActive(Boolean(view?.active));
+    });
+    // The settings panel changes the wallpaper in a different subtree, so it
+    // announces the change rather than lifting state through every parent.
+    const unsubscribe = subscribeWallpaper((view) => setWallpaperActive(Boolean(view?.active)));
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
+
   // Bump dockRefreshKey after each turn so WorkspacePanel/ContextPanel re-fetch
   // workspace changes, git history, and session metadata after AI tool writes.
   useEffect(() => {
@@ -3492,6 +3512,9 @@ ${t("remote.uncPromptBody", { path: picked })}
         .join(" ")}
       style={layoutStyle}
     >
+      {/* Decorative wallpaper layer. Rendered first (and fixed beneath) so it
+          paints under .layout, which turns translucent while it is active. */}
+      <AppBackdrop active={wallpaperActive} />
       <div
         className={[
           "layout",

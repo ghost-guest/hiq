@@ -4850,7 +4850,10 @@ func (a *App) removeProjectMCPOverride(name string) (bool, error) {
 		}
 		return false, err
 	}
-	cfg := config.LoadForEdit(path)
+	cfg, err := config.LoadForEditStrict(path)
+	if err != nil {
+		return false, err
+	}
 	if !cfg.RemovePlugin(name) {
 		return false, nil
 	}
@@ -4872,7 +4875,10 @@ func (a *App) syncProjectCodegraphOverride(c config.CodegraphConfig) error {
 		}
 		return err
 	}
-	cfg := config.LoadForEdit(path)
+	cfg, err := config.LoadForEditStrict(path)
+	if err != nil {
+		return err
+	}
 	cfg.Codegraph = c
 	return cfg.SaveTo(path)
 }

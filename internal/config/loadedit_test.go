@@ -79,3 +79,52 @@ model = "m"
 		t.Fatalf("migration should preserve ordinary config:\n%s", updated)
 	}
 }
+
+// TestLoadForEditStrictFailsClosed pins the write-path contract: a config file
+// that exists but cannot be parsed must make LoadForEditStrict return an error,
+// while read-path LoadForEdit keeps its resilient defaults fallback. This is
+// what stops a settings save from persisting a defaults-shaped config over a
+// file we failed to read (which had wiped the user's providers once).
+func TestLoadForEditStrictFailsClosed(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "fairpeer.toml")
+	broken := `default_model = "custom"
+[[providers]
+name = "custom"
+`
+	if err := os.WriteFile(path, []byte(broken), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := LoadForEditStrict(path); err == nil {
+		t.Fatal("LoadForEditStrict on a broken file must return an error")
+	} else if !strings.Contains(err.Error(), "fairpeer.toml") {
+		t.Errorf("error should name the file, got: %v", err)
+	}
+
+	// The read path keeps its defaults fallback (rendering must not break).
+	cfg := LoadForEdit(path)
+	if cfg == nil {
+		t.Fatal("LoadForEdit should still return a usable defaults-shaped config")
+	}
+
+	// A valid file passes strict load with its values preserved.
+	good := `default_model = "custom"
+[[providers]]
+name = "custom"
+kind = "openai"
+base_url = "https://x"
+model = "m"
+api_key_env = "X_KEY"
+`
+	if err := os.WriteFile(path, []byte(good), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadForEditStrict(path)
+	if err != nil {
+		t.Fatalf("strict load of a valid file: %v", err)
+	}
+	if cfg.DefaultModel != "custom" || len(cfg.Providers) != 1 {
+		t.Errorf("strict load lost values: model=%q providers=%d", cfg.DefaultModel, len(cfg.Providers))
+	}
+}

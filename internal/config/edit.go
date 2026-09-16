@@ -197,6 +197,42 @@ func (c *Config) SetDesktopAppearance(theme, style string) error {
 	return nil
 }
 
+// SetDesktopWallpaper stores the desktop wallpaper preference. path may be
+// empty to mean "no wallpaper yet"; blur and dim are clamped into their
+// supported ranges and fit is normalized to cover|contain|tile. Like the other
+// desktop appearance fields this is UI-only — it must not affect CLI output or
+// provider-visible request data.
+func (c *Config) SetDesktopWallpaper(path string, blur, dim int, fit string) error {
+	c.Desktop.WallpaperPath = strings.TrimSpace(path)
+
+	b := clampInt(blur, 0, DesktopWallpaperBlurMax)
+	d := clampInt(dim, 0, DesktopWallpaperDimMax)
+	c.Desktop.WallpaperBlur = &b
+	c.Desktop.WallpaperDim = &d
+
+	switch strings.ToLower(strings.TrimSpace(fit)) {
+	case "contain":
+		c.Desktop.WallpaperFit = "contain"
+	case "tile", "repeat":
+		c.Desktop.WallpaperFit = "tile"
+	case "", "cover":
+		c.Desktop.WallpaperFit = "cover"
+	default:
+		return fmt.Errorf("wallpaper fit %q: must be cover|contain|tile", fit)
+	}
+	return nil
+}
+
+// ClearDesktopWallpaper removes the wallpaper preference, returning the desktop
+// to its plain themed background. Tuning values are dropped too so a later
+// wallpaper starts from the defaults rather than inheriting stale settings.
+func (c *Config) ClearDesktopWallpaper() {
+	c.Desktop.WallpaperPath = ""
+	c.Desktop.WallpaperBlur = nil
+	c.Desktop.WallpaperDim = nil
+	c.Desktop.WallpaperFit = ""
+}
+
 // SetDesktopCloseBehavior sets the desktop close-window preference. It is
 // intentionally UI-only and must not affect model prompts or provider-visible
 // request data.
