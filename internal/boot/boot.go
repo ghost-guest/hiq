@@ -40,6 +40,7 @@ import (
 	"github.com/zzycxz/fairpeer/internal/outputstyle"
 	"github.com/zzycxz/fairpeer/internal/permission"
 	"github.com/zzycxz/fairpeer/internal/plugin"
+	"github.com/zzycxz/fairpeer/internal/projectkb"
 	"github.com/zzycxz/fairpeer/internal/provider"
 	"github.com/zzycxz/fairpeer/internal/rag"
 	runtimepkg "github.com/zzycxz/fairpeer/internal/runtime"
@@ -431,6 +432,16 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	})
 	projectChecks := instruction.ExtractHostChecks(mem.Docs)
 	sysPrompt = memory.Compose(sysPrompt, mem)
+
+	// Project knowledge hub (项目知识地图): a compact pointer to the project's
+	// modules, docs, saved memory and team progress, rendered from whatever the
+	// hub last persisted. Folded into the same cache-stable prefix for the same
+	// reason as memory — it is deterministic for a given kb.json, so it costs
+	// nothing per turn; a mid-session kb_sync folds in on the NEXT session, and
+	// the full map is always fetched on demand via kb_map / kb_search. Renders
+	// to "" (leaving the prompt byte-identical) until the project first syncs.
+	sysPrompt = projectkb.ComposeIndex(sysPrompt, config.MemoryUserDir(), root,
+		profileName(opts.Profile), cfg.MemoryIndexMaxChars())
 
 	// Skills: discover playbooks (built-in + project/custom/global) and fold their
 	// one-liner index into the same cache-stable prefix — names + descriptions
@@ -1314,6 +1325,17 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	reg.Add(memory.NewRememberTool(mem.Store))
 	reg.Add(memory.NewForgetTool(mem.Store))
 	reg.Add(memory.NewRecallTool(mem.Store))
+
+	// Project knowledge hub tools (kb_sync / kb_map / kb_search / kb_history /
+	// kb_rollback). The hub itself is injected by the desktop app via
+	// builtin.SetKnowledgeHub; boot registers the surface so a headless run
+	// still resolves the names (they report "not available" when unbound).
+	// Unlike the rag tools these are NOT hidden: surveying a long-running
+	// project is a first-class agent job, so the model is meant to reach for
+	// them directly.
+	for _, t := range builtin.KnowledgeTools() {
+		reg.Add(t)
+	}
 
 	// The `ask` tool puts structured multiple-choice questions to the user. It
 	// reaches them through the Asker on the call context, which interactive

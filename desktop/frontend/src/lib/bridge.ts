@@ -146,6 +146,11 @@ import type {
   TeamCandidateView,
   TeamContextView,
   TeamDraftInput,
+
+  KBView,
+  KBSourceView,
+  KBSearchHitView,
+  KBRevisionView,
 } from "./types";
 
 
@@ -444,6 +449,16 @@ export interface AppBindings {
   CancelTeamTask(teamId: string, taskId: string): Promise<void>;
   // Task IDs with an in-flight run, so a remounted board restores its spinners.
   RunningTeamTasks(teamId: string): Promise<string[]>;
+  // 项目知识中枢 (project knowledge hub): unifies code/docs/memory/team into a
+  // self-maintaining project map with revision history.
+  KnowledgeStatus(): Promise<KBView>;
+  KnowledgeSync(note: string): Promise<KBView>;
+  KnowledgeMap(kind: string): Promise<string>;
+  KnowledgeSearch(query: string, kind: string, limit: number): Promise<KBSearchHitView[]>;
+  KnowledgeHistory(limit: number): Promise<KBRevisionView[]>;
+  KnowledgeRollback(revision: string): Promise<KBView>;
+  KnowledgeSetSource(kind: string, enabled: boolean): Promise<KBView>;
+  KnowledgeOpenDir(): Promise<void>;
   SaveDoc(path: string, body: string): Promise<string>;
   PortraitProfile(): Promise<ProfileView>;
   ProfilePresets(): Promise<ProfilePresetsPayload>;
@@ -980,6 +995,49 @@ function emitMockTeam(tv: Partial<TeamProjectView> & { id?: string; deleted?: st
   mockTeamListeners.forEach((l) => l(tv));
 }
 
+// onTeamTask subscribes to the lightweight single-card progress channel
+// (team:task) emitted while a member's sub-session runs. Distinct from
+// team:changed (full-team refresh): the board patches one card in place, so a
+// streaming run doesn't re-fetch and re-render the whole team on every tick.
+export interface TeamTaskProgressEvent {
+  teamId: string;
+  taskId: string;
+  status: string;
+  column: string;
+  progress: string;
+  error: string;
+  attempts: number;
+  assigneeId: string;
+  assignee: string;
+}
+export function onTeamTask(cb: (ev: TeamTaskProgressEvent) => void): () => void {
+  if (realApp() && typeof window !== "undefined" && window.runtime) {
+    return window.runtime.EventsOn("team:task", (...data: unknown[]) => {
+      cb((data?.[0] ?? {}) as TeamTaskProgressEvent);
+    });
+  }
+  mockTeamTaskListeners.add(cb);
+  return () => mockTeamTaskListeners.delete(cb);
+}
+
+// subscribeMockTeamTask fans a single-card progress update to the mock listeners.
+function emitMockTeamTask(ev: TeamTaskProgressEvent) {
+  mockTeamTaskListeners.forEach((l) => l(ev));
+}
+
+// onKBChanged subscribes to 项目知识中枢 mutations. The payload is the refreshed
+// status view (or {} when only a sync finished), so the panel can re-render
+// without a follow-up round-trip.
+export function onKBChanged(cb: (view: Partial<KBView>) => void): () => void {
+  if (realApp() && typeof window !== "undefined" && window.runtime) {
+    return window.runtime.EventsOn("kb:changed", (...data: unknown[]) => {
+      cb((data?.[0] ?? {}) as Partial<KBView>);
+    });
+  }
+  mockKBListeners.add(cb);
+  return () => mockKBListeners.delete(cb);
+}
+
 // onEvent subscribes to the agent's typed event stream; returns an unsubscribe.
 // Loop status stream (real: wails "loop:round" event; mock: simulator).
 export function onLoopStatus(cb: (s: import("./types").LoopRunStatus) => void): () => void {
@@ -1436,6 +1494,10 @@ const listeners = new Set<(e: WireEvent) => void>();
 // mockTeamListeners backs onTeamChanged in the browser dev seam (the Wails
 // runtime event is unavailable outside the shell).
 const mockTeamListeners = new Set<(tv: Partial<TeamProjectView> & { id?: string; deleted?: string }) => void>();
+// mockTeamTaskListeners backs onTeamTask (single-card progress, dev seam).
+const mockTeamTaskListeners = new Set<(ev: TeamTaskProgressEvent) => void>();
+// mockKBListeners backs onKBChanged in the browser dev seam.
+const mockKBListeners = new Set<(view: Partial<KBView>) => void>();
 let mockScopedTabId: string | undefined;
 
 function mockSubscribe(cb: (e: WireEvent) => void): () => void {
@@ -1564,6 +1626,55 @@ let mockTeams: TeamProjectView[] = [];
 let mockTeamSeq = 0;
 // Keys "teamId/taskId" with a simulated in-flight member run.
 const mockRunningTasks = new Set<string>();
+
+// ── 项目知识中枢 (project knowledge hub) mock store ──────────────────────────
+// A tiny in-memory stand-in so the hub panel is demoable in `pnpm dev`. It
+// reports the four sources and a couple of revisions; sync bumps the digest.
+let mockKBSyncedAt = "";
+let mockKBRevisionSeq = 0;
+const mockKBRevisions: KBRevisionView[] = [];
+const mockKBSources: KBSourceView[] = [
+  { kind: "code", label: "代码", enabled: true, count: 42, note: "模块与包清单" },
+  { kind: "doc", label: "文档", enabled: true, count: 18, note: "仓库 Markdown" },
+  { kind: "memory", label: "记忆", enabled: true, count: 9, note: "L1/L2 记忆" },
+  { kind: "team", label: "团队", enabled: true, count: 6, note: "看板与进度" },
+];
+const mockKBNodes: KBSearchHitView[] = [
+  { id: "code:internal/agent", kind: "code", label: "代码", title: "internal/agent", ref: "internal/agent", summary: "回合循环、工具调度与上下文维护", status: "active", score: 8 },
+  { id: "doc:README.md", kind: "doc", label: "文档", title: "README.md", ref: "README.md", summary: "fairpeer 项目说明", status: "active", score: 8 },
+  { id: "doc:团队功能设计.md", kind: "doc", label: "文档", title: "团队功能设计.md", ref: "团队功能设计.md", summary: "多智能体协同与看板设计", status: "active", score: 8 },
+  { id: "memory:project-conventions", kind: "memory", label: "记忆", title: "项目约定", ref: "project-conventions", summary: "缓存前缀铁律、双 module、测试隔离", status: "saved", score: 8 },
+  { id: "team:team_1", kind: "team", label: "团队", title: "fairpeer 内核融合", ref: "team_1", summary: "3 进行中 · 1 完成", status: "active", score: 8 },
+];
+function mockKBView(): KBView {
+  const counts: Record<string, number> = {};
+  for (const s of mockKBSources) counts[s.kind] = s.enabled ? s.count : 0;
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  return {
+    dir: "D:/work/reasonix-self/fairpeer-data/projectkb/demo",
+    cwd: "D:/work/reasonix-self/fairpeer",
+    total,
+    counts,
+    sources: mockKBSources.map((s) => ({ ...s })),
+    updated: mockKBSyncedAt,
+    digest: mockKBSyncedAt ? `d${mockKBRevisionSeq}` : "",
+    revisions: mockKBRevisions.length,
+    note: "",
+  };
+}
+function mockKBFind(query: string, kind: string, limit: number): KBSearchHitView[] {
+  const q = query.trim().toLowerCase();
+  const toks = q ? q.split(/\s+/) : [];
+  return mockKBNodes
+    .filter((n) => !kind || n.kind === kind)
+    .filter((n) => {
+      if (!toks.length) return true;
+      const hay = `${n.title} ${n.ref} ${n.summary}`.toLowerCase();
+      return toks.every((tk) => hay.includes(tk));
+    })
+    .slice(0, limit > 0 ? limit : mockKBNodes.length)
+    .map((n) => ({ ...n }));
+}
 
 function mockTeamID(prefix: string): string {
   mockTeamSeq += 1;
@@ -5549,6 +5660,12 @@ function makeMockApp(): AppBindings {
         ),
       }));
       mockRunningTasks.add(`${teamId}/${taskId}`);
+      const started = updated.tasks.find((t) => t.id === taskId);
+      emitMockTeamTask({
+        teamId, taskId, status: "running", column: "doing", progress: "已启动…",
+        error: "", attempts: started?.attempts ?? 1,
+        assigneeId: started?.assigneeId ?? "", assignee: started?.assigneeName ?? "",
+      });
       // Land a simulated delivery shortly after so `pnpm dev` mirrors the real
       // start → progress → done flow (including the blackboard payoff).
       window.setTimeout(() => {
@@ -5562,6 +5679,11 @@ function makeMockApp(): AppBindings {
               : tk,
           ),
         }));
+        emitMockTeamTask({
+          teamId, taskId, status: "succeeded", column: "done", progress: "",
+          error: "", attempts: started?.attempts ?? 1,
+          assigneeId: started?.assigneeId ?? "", assignee: started?.assigneeName ?? "",
+        });
       }, 2500);
       return updated;
     },
@@ -5580,5 +5702,48 @@ function makeMockApp(): AppBindings {
         .filter((k) => k.startsWith(prefix))
         .map((k) => k.slice(prefix.length));
     },
+    // --- 项目知识中枢 (project knowledge hub) mock ---
+    async KnowledgeStatus() {
+      return mockKBView();
+    },
+    async KnowledgeSync(note: string) {
+      mockKBSyncedAt = new Date().toISOString();
+      mockKBRevisionSeq += 1;
+      mockKBRevisions.unshift({
+        id: `rev-${mockKBRevisionSeq}`,
+        at: mockKBSyncedAt,
+        trigger: "manual",
+        note: note || "",
+        nodes: mockKBView().total,
+      });
+      const view = mockKBView();
+      mockKBListeners.forEach((l) => l(view));
+      return view;
+    },
+    async KnowledgeMap(kind: string) {
+      const nodes = mockKBFind("", kind, 0);
+      if (!nodes.length) return "（暂无内容，先同步一次）";
+      return `# 项目地图\n\n## ${kind || "全部"}（${nodes.length}）\n` +
+        nodes.map((n) => `- ${n.title}${n.summary ? ` — ${n.summary}` : ""}`).join("\n");
+    },
+    async KnowledgeSearch(query: string, kind: string, limit: number) {
+      return mockKBFind(query, kind, limit);
+    },
+    async KnowledgeHistory(limit: number) {
+      return mockKBRevisions.slice(0, limit > 0 ? limit : mockKBRevisions.length).map((r) => ({ ...r }));
+    },
+    async KnowledgeRollback(_revision: string) {
+      const view = mockKBView();
+      mockKBListeners.forEach((l) => l(view));
+      return view;
+    },
+    async KnowledgeSetSource(kind: string, enabled: boolean) {
+      const src = mockKBSources.find((s) => s.kind === kind);
+      if (src) src.enabled = enabled;
+      const view = mockKBView();
+      mockKBListeners.forEach((l) => l(view));
+      return view;
+    },
+    async KnowledgeOpenDir() {},
   };
 }

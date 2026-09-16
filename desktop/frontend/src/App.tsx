@@ -21,6 +21,8 @@ import {
   Palette,
   SlidersHorizontal,
   SquareKanban,
+  Network,
+  BookOpen,
 } from "lucide-react";
 import { useToast } from "./lib/toast";
 import { useConfirm } from "./lib/confirm";
@@ -49,6 +51,8 @@ import logoSymbol from "./assets/logo-symbol.png";
 import { ContextMenu, type ContextMenuPoint } from "./components/ContextMenu";
 import { LoopPanel } from "./components/loop/LoopPanel";
 import { TeamBoard } from "./components/cowork/TeamBoard";
+import { KnowledgeHub } from "./components/cowork/KnowledgeHub";
+import { RagPanel } from "./components/cowork/RagPanel";
 import { ProfileSegmented } from "./components/AppChrome";
 import { SideSessionPane } from "./components/SideSessionPane";
 import { HistoryPanel } from "./components/HistoryPanel";
@@ -867,6 +871,12 @@ export default function App() {
   // profile's sidebar too, so "团队开发项目" is reachable without a profile
   // switch; it renders the SAME TeamBoard the 办公 profile hosts.
   const [teamOpen, setTeamOpen] = useState(false);
+  // 项目知识中枢 panel (code/docs/memory/team → one project map). Reachable
+  // from the coding profile so "看清项目全貌与进度" needs no profile switch.
+  const [kbOpen, setKbOpen] = useState(false);
+  // 知识库 (RAG document/entity graph) panel. Previously cowork-only; the
+  // coding profile now hosts the SAME RagPanel so it isn't lockable-in-office.
+  const [ragOpen, setRagOpen] = useState(false);
   const [paletteSessions, setPaletteSessions] = useState<SessionMeta[]>([]);
   const [paletteCapabilities, setPaletteCapabilities] = useState<CapabilitiesView | null>(null);
   const { showToast } = useToast();
@@ -2211,6 +2221,8 @@ export default function App() {
       setLoopOpen(false);
       setPreferenceOpen(false);
       setTeamOpen(false);
+      setKbOpen(false);
+      setRagOpen(false);
     });
   }, [activeTabId, syncActiveTab]);
 
@@ -3089,7 +3101,7 @@ ${t("remote.uncPromptBody", { path: picked })}
   // project-tree topic context menu; exportSession/getSessionMarkdown below
   // remain the implementation and are wired through ProjectTree props.)
 
-  const headerNode = !preferenceOpen && !teamOpen && (
+  const headerNode = !preferenceOpen && !teamOpen && !kbOpen && !ragOpen && (
     <header className="topicbar">
       <div className="topicbar__identity">
         <div className="topicbar__title-row">
@@ -3170,7 +3182,21 @@ ${t("remote.uncPromptBody", { path: picked })}
           <TeamBoard />
         </div>
       )}
-      {teamOpen && !coworkActive && !netdevActive ? null : sidebarImDetailConnection ? (
+      {/* 项目知识中枢 surface for the coding profile: the same KnowledgeHub the
+          办公 profile hosts. Full-area, and the transcript is skipped below. */}
+      {kbOpen && !coworkActive && !netdevActive && (
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%" }}>
+          <KnowledgeHub />
+        </div>
+      )}
+      {/* 知识库 (RAG graph) surface for the coding profile — previously cowork-
+          only. Same full-area treatment. */}
+      {ragOpen && !coworkActive && !netdevActive && (
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%" }}>
+          <RagPanel />
+        </div>
+      )}
+      {(teamOpen || kbOpen || ragOpen) && !coworkActive && !netdevActive ? null : sidebarImDetailConnection ? (
         <SidebarImConnectionDetail
           connection={sidebarImDetailConnection}
           sessions={sidebarImSessions}
@@ -3713,11 +3739,45 @@ ${t("remote.uncPromptBody", { path: picked })}
                   closeTransientOverlays();
                   setLoopOpen(false);
                   setTeamOpen(false);
+                  setKbOpen(false);
+                  setRagOpen(false);
                   setPreferenceOpen(true);
                 }}
               >
                 <SlidersHorizontal size={14} />
                 <span>{t("preference.title") || "编码偏好"}</span>
+              </button>
+              {/* 项目知识中枢 (project map: code/docs/memory/team → one map +
+                  revisions). Mirrors the 办公 profile's entry to the same panel. */}
+              <button
+                className={`cowork-sidebar__item ${kbOpen ? "cowork-sidebar__item--active" : ""}`}
+                onClick={() => {
+                  closeTransientOverlays();
+                  setPreferenceOpen(false);
+                  setLoopOpen(false);
+                  setTeamOpen(false);
+                  setRagOpen(false);
+                  setKbOpen(true);
+                }}
+              >
+                <Network size={14} />
+                <span>{t("cowork.knowledgeHub")}</span>
+              </button>
+              {/* 知识库 (RAG document/entity graph) — same RagPanel the 办公
+                  profile hosts, so it's no longer lockable inside office mode. */}
+              <button
+                className={`cowork-sidebar__item ${ragOpen ? "cowork-sidebar__item--active" : ""}`}
+                onClick={() => {
+                  closeTransientOverlays();
+                  setPreferenceOpen(false);
+                  setLoopOpen(false);
+                  setTeamOpen(false);
+                  setKbOpen(false);
+                  setRagOpen(true);
+                }}
+              >
+                <BookOpen size={14} />
+                <span>{t("cowork.knowledgeBase") || "知识库"}</span>
               </button>
               {/* 团队 (multi-agent: 团长 + 团员 + 看板). The coding profile's own
                   entry to the SAME TeamBoard the 办公 profile hosts, so "团队开发
@@ -3728,6 +3788,8 @@ ${t("remote.uncPromptBody", { path: picked })}
                   closeTransientOverlays();
                   setPreferenceOpen(false);
                   setLoopOpen(false);
+                  setKbOpen(false);
+                  setRagOpen(false);
                   setTeamOpen(true);
                 }}
               >
@@ -3740,6 +3802,8 @@ ${t("remote.uncPromptBody", { path: picked })}
                   closeTransientOverlays();
                   setPreferenceOpen(false);
                   setTeamOpen(false);
+                  setKbOpen(false);
+                  setRagOpen(false);
                   setLoopOpen(true);
                 }}
               >
@@ -3776,7 +3840,7 @@ ${t("remote.uncPromptBody", { path: picked })}
             <>
               {bannersNode}
               {mainNode}
-              {!preferenceOpen && !teamOpen && footerNode}
+              {!preferenceOpen && !teamOpen && !kbOpen && !ragOpen && footerNode}
               {terminalNode}
             </>
           )}

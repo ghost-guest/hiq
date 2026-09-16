@@ -49,6 +49,7 @@ import (
 	"github.com/zzycxz/fairpeer/internal/plugin"
 	"github.com/zzycxz/fairpeer/internal/present"
 	"github.com/zzycxz/fairpeer/internal/provider"
+	projectkbpkg "github.com/zzycxz/fairpeer/internal/projectkb"
 	ragpkg "github.com/zzycxz/fairpeer/internal/rag"
 	schedulerpkg "github.com/zzycxz/fairpeer/internal/scheduler"
 	"github.com/zzycxz/fairpeer/internal/skill"
@@ -169,6 +170,11 @@ type App struct {
 	// survives a panel unmount or profile switch. Guarded by teamRunsMu.
 	teamRuns   map[string]context.CancelFunc
 	teamRunsMu sync.Mutex
+	// kbHubs caches the project knowledge hub per workspace root — each
+	// workspace has its own project map — and backs the resolver the agent's
+	// kb_* tools call through. Guarded by kbMu.
+	kbHubs map[string]*projectkbpkg.Hub
+	kbMu   sync.Mutex
 	// expertRuns tracks in-flight expert-team runs keyed by teamID, so a panel
 	// remounted after the CoWorkLayout was torn down (tab/profile switch) can
 	// query whether a run is still going and re-subscribe to its stream. The
@@ -451,6 +457,7 @@ func (a *App) startup(ctx context.Context) {
 	a.initRAG()
 	a.initExperts()
 	a.initTeams()
+	a.initProjectKB()
 	a.StartScreenshotHotkey()
 	// Start the emergency-stop hotkey AFTER the screenshot hotkey so both
 	// global combos are registered before the app reports ready. E-stop is the

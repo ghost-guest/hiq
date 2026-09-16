@@ -219,6 +219,15 @@ func (t *Team) normalize() {
 	if strings.TrimSpace(t.Context.Goal) == "" {
 		t.Context.Goal = t.Goal
 	}
+	// A team that never expressed a policy at all (every field at its zero
+	// value) gets the collaborative defaults, including auto-replan so a failed
+	// card self-heals instead of sitting still on the board. A team that DID
+	// express a policy keeps it verbatim — that is what makes an explicit
+	// `auto_replan = false` stick.
+	if t.Policy.MaxRounds <= 0 && t.Policy.MaxParallel <= 0 &&
+		!t.Policy.AutoAssign && !t.Policy.AutoReplan {
+		t.Policy.AutoReplan = true
+	}
 	if t.Policy.MaxRounds <= 0 {
 		t.Policy.MaxRounds = defaultMaxRounds
 	}

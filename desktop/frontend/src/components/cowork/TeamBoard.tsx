@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, Pencil, Users, LayoutDashboard, Sparkles, Wand2, Crown, ListChecks, X, Play, Square } from "lucide-react";
 
-import { app, onTeamChanged } from "../../lib/bridge";
+import { app, onTeamChanged, onTeamTask } from "../../lib/bridge";
 import type {
   TeamProjectView,
   TeamMemberView,
@@ -117,6 +117,39 @@ export function TeamBoard() {
         if (!list.some((x) => x.id === full.id)) return [...list, full];
         return list.map((x) => (x.id === full.id ? full : x));
       });
+    });
+  }, []);
+
+  // team:task → fine-grained single-card progress (status / progress / column /
+  // attempts) emitted while a member's sub-session runs. Patching one card in
+  // place avoids the full-team refresh that team:changed would trigger on every
+  // tick. team:changed still lands the authoritative snapshot at run end.
+  useEffect(() => {
+    return onTeamTask((ev) => {
+      if (!ev?.teamId || !ev.taskId) return;
+      setTeams((prev) =>
+        (prev ?? []).map((tm) =>
+          tm.id !== ev.teamId
+            ? tm
+            : {
+                ...tm,
+                tasks: tm.tasks.map((tk) =>
+                  tk.id !== ev.taskId
+                    ? tk
+                    : {
+                        ...tk,
+                        status: ev.status || tk.status,
+                        column: ev.column || tk.column,
+                        progress: ev.progress,
+                        error: ev.error,
+                        attempts: ev.attempts || tk.attempts,
+                        assigneeId: ev.assigneeId || tk.assigneeId,
+                        assigneeName: ev.assignee || tk.assigneeName,
+                      },
+                ),
+              },
+        ),
+      );
     });
   }, []);
 

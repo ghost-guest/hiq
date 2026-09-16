@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/zzycxz/fairpeer/internal/agent"
 	"github.com/zzycxz/fairpeer/internal/boot"
 	"github.com/zzycxz/fairpeer/internal/control"
@@ -105,8 +106,69 @@ func (a *App) RunTeamTask(teamID, taskID string) (TeamProjectView, error) {
 		return TeamProjectView{}, err
 	}
 
-	go a.runTeamMember(ctx, cancel, key, teamID, started, member, tk)
+	go func() {
+		a.runTeamMember(ctx, cancel, key, teamID, started, member, tk)
+		// The run slot is released by now (runTeamMember's defer), so if the
+		// card failed, a re-plan is free to start its retry immediately.
+		a.replanFailedTeamTask(teamID, taskID)
+	}()
 	return toTeamProjectView(started), nil
+}
+
+// TeamTaskProgress is the payload of the lightweight `team:task` event. Progress
+// streams several times a second, so the board patches one card from this
+// instead of re-rendering the whole project on every tick.
+type TeamTaskProgress struct {
+	TeamID     string `json:"teamId"`
+	TaskID     string `json:"taskId"`
+	Status     string `json:"status"`
+	Column     string `json:"column"`
+	Progress   string `json:"progress"`
+	Error      string `json:"error"`
+	Attempts   int    `json:"attempts"`
+	AssigneeID string `json:"assigneeId"`
+	Assignee   string `json:"assignee"`
+}
+
+// replanFailedTeamTask is the "跟踪 + 再规划" step of P3. It runs after a member
+// finishes: a failed card is re-planned by the leader — reassigned to another
+// capable member and retried, or escalated into 阻塞 with the reason recorded on
+// the blackboard. Policy.MaxRounds (via the card's attempt count) caps the
+// loop, so a card that keeps failing escalates instead of churning forever.
+//
+// It must run only after the run slot is free, otherwise the retry it starts
+// would be rejected as "already running".
+func (a *App) replanFailedTeamTask(teamID, taskID string) {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return
+	}
+	tm, ok := store.Get(teamID)
+	if !ok {
+		return
+	}
+	tk, ok := tm.Task(taskID)
+	if !ok || !teamTaskFailed(tk.Status) {
+		return
+	}
+	updated, res, err := store.ApplyReplan(teamID, taskID)
+	if err != nil || !res.Attempted() {
+		return
+	}
+	a.emitTeamChanged(updated)
+	if res.Outcome != teampkg.ReplanReassign {
+		return
+	}
+	// Retry on the new assignee. A failure to start (e.g. a dependency
+	// disappeared) leaves the card queued and assigned, which is still a better
+	// resting state than failed, so the reason is surfaced as the progress line.
+	if _, err := a.RunTeamTask(teamID, taskID); err != nil {
+		a.setTeamTaskProgress(store, teamID, taskID, "已改派，待启动："+res.Reason)
+	}
+}
+
+func teamTaskFailed(s taskmonitor.TaskState) bool {
+	return s == taskmonitor.TaskStateFailed || s == taskmonitor.TaskStateStale
 }
 
 // CancelTeamTask stops an in-flight member run. The card returns to 待开始
@@ -280,7 +342,9 @@ func addTeamTool(reg *tool.Registry, t tool.Tool) {
 }
 
 // setTeamTaskProgress writes the live progress line onto a card and pushes the
-// refreshed team to the board.
+// card to the board. It deliberately uses the light `team:task` event rather
+// than `team:changed`: progress fires several times a second, and the board only
+// needs to patch one card.
 func (a *App) setTeamTaskProgress(store *teampkg.Store, teamID, taskID, line string) {
 	tm, err := store.Update(teamID, func(t *teampkg.Team) {
 		for i := range t.Tasks {
@@ -292,7 +356,29 @@ func (a *App) setTeamTaskProgress(store *teampkg.Store, teamID, taskID, line str
 	if err != nil {
 		return
 	}
-	a.emitTeamChanged(tm)
+	a.emitTeamTask(tm, taskID)
+}
+
+// emitTeamTask pushes one card's current state.
+func (a *App) emitTeamTask(tm teampkg.Team, taskID string) {
+	if a.ctx == nil {
+		return
+	}
+	tk, ok := tm.Task(taskID)
+	if !ok {
+		return
+	}
+	runtime.EventsEmit(a.ctx, "team:task", TeamTaskProgress{
+		TeamID:     tm.ID,
+		TaskID:     tk.ID,
+		Status:     string(tk.Status),
+		Column:     teampkg.ColumnFor(tm, tk),
+		Progress:   tk.Progress,
+		Error:      tk.Error,
+		Attempts:   tk.Attempts,
+		AssigneeID: tk.AssigneeID,
+		Assignee:   tm.MemberName(tk.AssigneeID),
+	})
 }
 
 // finishTeamTask records a terminal outcome. Success stores the delivery and

@@ -2973,3 +2973,46 @@ export interface TeamDraftInput {
   model: string;
   adopt: boolean;
 }
+
+// --- 项目知识中枢 (project knowledge hub) -------------------------------
+// desktop/projectkb_app.go mirrors these shapes. The hub unifies four sources
+// (code / docs / memory / team) into a self-maintaining project map with a
+// revision history, so long-running work stays oriented.
+export interface KBSourceView {
+  kind: string;
+  label: string;
+  enabled: boolean;
+  count: number;
+  note: string;
+}
+
+export interface KBView {
+  dir: string;
+  cwd: string;
+  total: number;
+  counts: Record<string, number>;
+  sources: KBSourceView[];
+  updated: string;
+  digest: string;
+  revisions: number;
+  note?: string;
+}
+
+export interface KBSearchHitView {
+  id: string;
+  kind: string;
+  label: string;
+  title: string;
+  ref: string;
+  summary: string;
+  status: string;
+  score: number;
+}
+
+export interface KBRevisionView {
+  id: string;
+  at: string;
+  trigger: string;
+  note: string;
+  nodes: number;
+}

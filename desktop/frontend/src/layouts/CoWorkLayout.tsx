@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { BookOpen, CalendarDays, PanelLeft, Users, SlidersHorizontal, SquareKanban } from "lucide-react";
+import { BookOpen, CalendarDays, Network, PanelLeft, Users, SlidersHorizontal, SquareKanban } from "lucide-react";
 
 import { ProfileSegmented } from "../components/AppChrome";
 import { useT } from "../lib/i18n";
@@ -10,10 +10,11 @@ import { RagPanel } from "../components/cowork/RagPanel";
 import { PreferencePanel } from "../components/cowork/PreferencePanel";
 import { ExpertPanel } from "../components/cowork/ExpertPanel";
 import { TeamBoard } from "../components/cowork/TeamBoard";
+import { KnowledgeHub } from "../components/cowork/KnowledgeHub";
 import { CoworkDock } from "../components/cowork/CoworkDock";
 import type { ContextInfo } from "../lib/types";
 
-export type CoWorkPanel = "taskCenter" | "preference" | "calendarTask" | "rag" | "experts" | "team";
+export type CoWorkPanel = "taskCenter" | "preference" | "calendarTask" | "rag" | "experts" | "team" | "knowledgeHub";
 
 export interface CoWorkLayoutProps {
   mainNode?: ReactNode;
@@ -255,6 +256,18 @@ export function CoWorkLayout({
             <SquareKanban size={14} />
             <span>{t("team.title")}</span>
           </button>
+          {/* 项目知识中枢 = a self-maintaining project map unifying code/docs/
+              memory/team; distinct from 知识库 (RAG document/entity graph). */}
+          <button
+            className={`cowork-sidebar__item ${activePanel === "knowledgeHub" ? "cowork-sidebar__item--active" : ""}`}
+            onClick={() => {
+              setActivePanel("knowledgeHub");
+              if (dockOnClose) dockOnClose();
+            }}
+          >
+            <Network size={14} />
+            <span>{t("cowork.knowledgeHub")}</span>
+          </button>
           <button
             className={`cowork-sidebar__item ${activePanel === "calendarTask" ? "cowork-sidebar__item--active" : ""}`}
             onClick={() => {
@@ -311,6 +324,12 @@ export function CoWorkLayout({
         <div style={{ display: activePanel === "team" ? "flex" : "none", flex: 1, minHeight: 0, flexDirection: "column" }}>
           <TeamBoard />
         </div>
+
+        {/* KnowledgeHub mounted only while active: it has no in-flight stream to
+            preserve, and a fresh mount re-reads status on entry. */}
+        {activePanel === "knowledgeHub" && (
+          <KnowledgeHub />
+        )}
 
         {activePanel === "rag" && (
           <RagPanel />
