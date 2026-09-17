@@ -789,6 +789,7 @@ export const en = {
   "status.effortAutoTitle": "Reasoning effort: auto (model default: {def})",
   "status.switchFolder": "{cwd}\nClick to switch project folder",
   "status.tokens": "tokens",
+  "status.cache": "cache",
   "status.retrying": "retrying ({attempt}/{max})…",
   "status.jobs": "{n} running",
   "status.jobsTitle": "Background jobs",

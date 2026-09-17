@@ -178,6 +178,63 @@
   justify-content: flex-end;
 }
 
+/* Equalizer "music beat" strip filling the idle space left of the run pill.
+   Bars pulse on beat-clustered durations (rhythm, not noise); --hot brightens
+   the strip while output tokens are actively streaming, --paused freezes it. */
+.composer-runviz {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 30px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-evenly;
+  gap: 3px;
+  overflow: hidden;
+  padding: 0 8px 2px;
+  --runviz-color: var(--accent);
+}
+
+.composer-runviz i {
+  flex: 0 1 3px;
+  min-width: 2px;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, var(--runviz-color) 0%, color-mix(in srgb, var(--runviz-color) 15%, transparent) 100%);
+  transform-origin: bottom;
+  transform: scaleY(0.15);
+  opacity: 0.55;
+  animation: runviz-beat var(--dur, 1s) ease-in-out var(--del, 0s) infinite alternate;
+  will-change: transform, opacity;
+}
+
+.composer-runviz--hot i {
+  opacity: 1;
+  filter: brightness(1.3) saturate(1.15);
+}
+
+.composer-runviz--paused i {
+  animation-play-state: paused;
+}
+
+@keyframes runviz-beat {
+  from {
+    transform: scaleY(0.1);
+    opacity: 0.35;
+  }
+  to {
+    transform: scaleY(var(--amp, 1));
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composer-runviz i {
+    animation: none;
+    transform: scaleY(0.3);
+    opacity: 0.5;
+  }
+}
+
 .composer-runstatus {
   --wails-draggable: no-drag;
   flex: 0 1 auto;

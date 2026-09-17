@@ -791,6 +791,7 @@ export const zh: Record<DictKey, string> = {
   "status.effortAutoTitle": "推理力度：auto（模型默认：{def}）",
   "status.switchFolder": "{cwd}\n点击切换项目目录",
   "status.tokens": "tokens",
+  "status.cache": "缓存",
   "status.retrying": "正在重试 ({attempt}/{max})…",
   "status.jobs": "{n} 个运行中",
   "status.jobsTitle": "后台作业",

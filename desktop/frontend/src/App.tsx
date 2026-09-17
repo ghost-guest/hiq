@@ -3341,6 +3341,7 @@ ${t("remote.uncPromptBody", { path: picked })}
         ready={state.meta?.ready === true}
         turnStartAt={state.turnStartAt}
         turnTokens={state.turnTokens}
+        turnUsage={state.usage}
         retry={state.retry}
         transientDismissSignal={transientOverlayDismissSignal}
       />

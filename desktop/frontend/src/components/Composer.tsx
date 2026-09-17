@@ -364,6 +364,7 @@ export function Composer({
   ready,
   turnStartAt,
   turnTokens,
+  turnUsage,
   retry,
   transientDismissSignal,
   placeholderOverride,
@@ -434,6 +435,9 @@ export function Composer({
   ready?: boolean;
   turnStartAt?: number;
   turnTokens?: number;
+  // Latest usage event of the in-flight turn — feeds the status line's
+  // tok/s and cache hit-rate readouts alongside turnTokens.
+  turnUsage?: WireUsage;
   retry?: { attempt: number; max: number };
   transientDismissSignal?: number;
   // Mode-specific placeholder (netdev): falls back to composer.placeholder.
@@ -1747,10 +1751,56 @@ export function Composer({
           const elapsedMs = Math.max(0, now - turnStartAt);
           const words = SPINNER_WORDS[locale];
           const word = words[Math.floor(elapsedMs / 3000) % words.length];
-          const tok = turnTokens && turnTokens > 0 ? ` · ↓ ${fmtTokens(turnTokens)} ${t("status.tokens")}` : "";
+          const parts: string[] = [];
+          if (turnTokens && turnTokens > 0) {
+            parts.push(`↓ ${fmtTokens(turnTokens)} ${t("status.tokens")}`);
+            // Average output speed over the turn; shown once the turn has
+            // run long enough for the number to mean anything.
+            if (elapsedMs > 3000) {
+              parts.push(`${fmtTokens(Math.round(turnTokens / (elapsedMs / 1000)))} tok/s`);
+            }
+          }
+          // Cache hit-rate: prefer the session-cumulative aggregate, fall
+          // back to the single-turn figures. Providers that don't report
+          // cache tokens leave both at 0, in which case the readout hides.
+          if (turnUsage) {
+            const sessHit = turnUsage.sessionCacheHitTokens + turnUsage.sessionCacheMissTokens;
+            const turnHit = turnUsage.cacheHitTokens + turnUsage.cacheMissTokens;
+            const hit = sessHit > 0 ? turnUsage.sessionCacheHitTokens / sessHit : turnHit > 0 ? turnUsage.cacheHitTokens / turnHit : 0;
+            if (hit > 0) parts.push(`${t("status.cache")} ${Math.round(hit * 100)}%`);
+          }
+          const tok = parts.length > 0 ? ` · ${parts.join(" · ")}` : "";
           return `${word}… ${fmtElapsed(elapsedMs)}${tok}`;
         })()
       : null;
+
+  // Equalizer strip state: "hot" while output tokens are actively streaming
+  // (bars brighten), frozen while the turn is gracefully paused.
+  const [runVizHot, setRunVizHot] = useState(false);
+  const prevTurnTokensRef = useRef(0);
+  useEffect(() => {
+    const cur = turnTokens ?? 0;
+    if (cur > prevTurnTokensRef.current) {
+      setRunVizHot(true);
+      const tm = window.setTimeout(() => setRunVizHot(false), 1500);
+      prevTurnTokensRef.current = cur;
+      return () => window.clearTimeout(tm);
+    }
+    prevTurnTokensRef.current = cur;
+  }, [turnTokens]);
+
+  // Deterministic per-bar timing: durations cluster on beat multiples so the
+  // strip reads as a rhythm (music "踩点") rather than random noise, with a
+  // pseudo-random amplitude and phase per bar.
+  const runVizBars = useMemo(() => {
+    const beats = [0.72, 0.96, 1.2, 1.44];
+    return Array.from({ length: 64 }, (_, i) => ({
+      key: i,
+      dur: beats[(i * 7 + 3) % beats.length],
+      del: -(((i * 137) % 100) / 100) * beats[(i * 7 + 3) % beats.length],
+      amp: 0.4 + (((i * 53) % 100) / 100) * 0.6,
+    }));
+  }, []);
   const composerMetaClass = [
     "composer-meta",
     hasEffort ? "composer-meta--has-effort" : "composer-meta--no-effort",
@@ -1979,6 +2029,14 @@ export function Composer({
       )}
       {runActivity && (
         <div className="composer-toolbar composer-toolbar--status-only">
+          <div
+            className={"composer-runviz" + (runVizHot ? " composer-runviz--hot" : "") + (paused ? " composer-runviz--paused" : "")}
+            aria-hidden="true"
+          >
+            {runVizBars.map((b) => (
+              <i key={b.key} style={{ "--dur": `${b.dur}s`, "--del": `${b.del}s`, "--amp": b.amp } as CSSProperties} />
+            ))}
+          </div>
           <div className="composer-runstatus" role="status" aria-live="polite">
             <span className="composer-runstatus__dot" />
             <span className="composer-runstatus__text">{runActivity}</span>
