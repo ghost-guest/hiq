@@ -17,11 +17,17 @@ const (
 	maxRevisions = 60
 )
 
-// snapshot is one revision's payload: everything needed to restore the map.
+// snapshot is one revision's payload: everything needed to restore the map,
+// plus the incremental summary of what this snapshot introduced.
 type snapshot struct {
 	Revision Revision `json:"revision"`
 	Nodes    []Node   `json:"nodes"`
 	Map      string   `json:"map"`
+	// Summary is the rendered 增量摘要 of the change this snapshot captured.
+	// It lives in the snapshot (not in the index) so the revision index stays
+	// small while a reader can still ask "what changed in THIS one?".
+	Summary string `json:"summary,omitempty"`
+	Diff    Diff   `json:"diff,omitempty"`
 }
 
 func (h *Hub) revDir() string { return filepath.Join(h.Dir(), revDirName) }
@@ -40,9 +46,22 @@ func (h *Hub) History() []Revision {
 	return out
 }
 
+// RevisionSummary returns the 增量摘要 recorded with one revision, so the panel
+// can show what a snapshot changed without loading its whole payload.
+func (h *Hub) RevisionSummary(revisionID string) (string, error) {
+	snap, err := h.loadSnapshot(revisionID)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(snap.Summary) != "" {
+		return snap.Summary, nil
+	}
+	return snap.Diff.Markdown(0), nil
+}
+
 // writeRevision snapshots the current map and prunes the oldest snapshots past
 // the cap. Callers must hold h.mu (Sync does).
-func (h *Hub) writeRevision(trigger, note string) (string, error) {
+func (h *Hub) writeRevision(trigger, note string, diff Diff) (string, error) {
 	st := h.state
 	when := st.Updated
 	if when.IsZero() {
@@ -56,8 +75,17 @@ func (h *Hub) writeRevision(trigger, note string) (string, error) {
 		Nodes:   len(st.Nodes),
 		Digest:  st.Digest,
 		Counts:  Counts(st.Nodes),
+		Added:   len(diff.Added),
+		Changed: len(diff.Changed),
+		Removed: len(diff.Removed),
 	}
-	snap := snapshot{Revision: rev, Nodes: st.Nodes, Map: RenderMap(st)}
+	snap := snapshot{
+		Revision: rev,
+		Nodes:    st.Nodes,
+		Map:      RenderMap(st),
+		Summary:  diff.Markdown(0),
+		Diff:     diff,
+	}
 	b, err := json.MarshalIndent(snap, "", "  ")
 	if err != nil {
 		return "", err
@@ -100,11 +128,25 @@ func (h *Hub) Rollback(revisionID string) error {
 	if err != nil {
 		return err
 	}
+	// Diff the outgoing state against the restored one FIRST, so the rollback's
+	// own revision records what it undid (a rollback that can't say what it
+	// changed is just as opaque as the sync it reverts).
+	prev := make(map[string]Node, len(h.state.Nodes))
+	for _, n := range h.state.Nodes {
+		prev[n.ID] = n
+	}
+	diff := buildDiff(prev, snap.Nodes)
+
 	h.state.Nodes = snap.Nodes
 	h.state.Digest = digestOf(snap.Nodes)
 	h.state.Updated = time.Now().UTC()
 	h.state.CWD = h.cwd
 	h.state.Profile = h.profile
+	if !diff.IsEmpty() {
+		d := diff
+		h.state.LastDiff = &d
+		h.state.LastChangeAt = h.state.Updated
+	}
 	// Recompute per-source counts so the panel agrees with the restored map.
 	counts := Counts(snap.Nodes)
 	for i := range h.state.Sources {
@@ -115,7 +157,7 @@ func (h *Hub) Rollback(revisionID string) error {
 	if err := h.persist(); err != nil {
 		return err
 	}
-	_, err = h.writeRevision("rollback", "回滚到 "+revisionID)
+	_, err = h.writeRevision("rollback", "回滚到 "+revisionID, diff)
 	return err
 }
 

@@ -94,6 +94,16 @@ func RenderIndex(st State, maxChars int) string {
 	}); len(failed) > 0 {
 		lines = append(lines, "待关注："+strings.Join(failed, "、"))
 	}
+	// The incremental summary's one-line gist: the single most useful thing to
+	// tell a session that just resumed — what moved last time. Reading it needs
+	// no scan (it is persisted in kb.json), so it costs nothing at boot.
+	if gist := st.LastChangeLine(); gist != "" {
+		when := ""
+		if !st.LastChangeAt.IsZero() {
+			when = "（" + st.LastChangeAt.Local().Format("01-02 15:04") + "）"
+		}
+		lines = append(lines, "上次变更："+gist+when)
+	}
 	if !st.Updated.IsZero() {
 		lines = append(lines, "同步于 "+st.Updated.Local().Format("2006-01-02 15:04"))
 	}

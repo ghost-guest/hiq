@@ -73,8 +73,26 @@ func MemberRunPrompt(t Team, m Member, tk Task) string {
 		}
 	}
 	b.WriteString("\n完成后按验收标准逐条自检，并在正文中给出你的产出；如果产出的是文件，写出文件的完整路径。\n")
+	b.WriteString(SharedNotesInstruction)
 	return b.String()
 }
+
+// SharedNotesInstruction teaches a member how to contribute to the team's shared
+// context (P4 共享上下文). It is deliberately part of the run prompt rather than a
+// tool: publishing a note needs no write access to the team store, works on
+// every provider, and costs the member nothing but a paragraph.
+const SharedNotesInstruction = `
+## 向团队共享上下文投稿（可选，但强烈建议）
+如果你在干活时发现了**别的成员需要知道**的信息——关键结论、踩到的坑、接口/字段约定、
+没做完的遗留点——请在正文最后另起一节，标题就写【共享笔记】，每条一行：
+
+【共享笔记】
+- 结论/坑/约定，一条一句话
+- 需要别人接手的事也写在这里
+
+没有要补充的就整节省略；不要为了凑数而写，也不要写只有你自己才看得懂的流水账。
+这一节会被系统摘出来放进团队共享上下文，**你后面接手的成员都会读到它**。
+注意：这一节必须是正文的最后一部分。`
 
 // TaskBrief is the user message handed to a member's sub-session. The system
 // prompt already carries the identity and blackboard, so this stays a focused
@@ -133,19 +151,59 @@ func memberIdentity(m Member) string {
 }
 
 // ResultArtifact turns a finished task into a blackboard artifact entry, so the
-// next member sees what was already produced (the shared-context payoff).
+// next member sees what was already produced (the shared-context payoff). The
+// one-line Summary is the gist of the deliverable, so a later member can judge
+// relevance without opening the file.
 func ResultArtifact(tk Task, summary string) Artifact {
 	title := strings.TrimSpace(tk.Title)
 	if title == "" {
 		title = "任务产出"
 	}
 	return Artifact{
-		ID:     newID("art"),
-		Title:  title,
-		TaskID: tk.ID,
-		Kind:   "deliverable",
-		Path:   firstLinePath(summary),
+		ID:      newID("art"),
+		Title:   title,
+		TaskID:  tk.ID,
+		Kind:    "deliverable",
+		Path:    firstLinePath(summary),
+		Summary: artifactSummary(summary),
 	}
+}
+
+// artifactSummary reduces a deliverable body to one useful line: the first
+// prose line that is neither the path nor a heading, so the 已产出 index reads
+// like a table of contents rather than a list of filenames.
+func artifactSummary(body string) string {
+	path := firstLinePath(body)
+	var fallback string
+	for _, line := range strings.Split(body, "\n") {
+		t := strings.TrimSpace(strings.Trim(line, "`*#>-\" "))
+		if t == "" || len([]rune(t)) > 200 {
+			continue
+		}
+		if t == path || strings.HasPrefix(t, "#") {
+			continue
+		}
+		if fallback == "" {
+			fallback = t
+		}
+		// Prefer a sentence-like line over a bare token.
+		if strings.ContainsAny(t, "。．.！!？?：:，,") || len([]rune(t)) >= 12 {
+			return clipTeam(t, 160)
+		}
+	}
+	return clipTeam(fallback, 160)
+}
+
+// clipTeam truncates s to max runes, appending an ellipsis when it cut.
+func clipTeam(s string, max int) string {
+	r := []rune(strings.TrimSpace(s))
+	if len(r) <= max {
+		return string(r)
+	}
+	if max <= 1 {
+		return string(r[:max])
+	}
+	return string(r[:max-1]) + "…"
 }
 
 // firstLinePath extracts a likely file path from a result body, so the artifact

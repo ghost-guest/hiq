@@ -388,6 +388,16 @@ func assignMissingIDs(t *Team) {
 			t.Members[i].CreatedAt = time.Now().UTC()
 		}
 	}
+	// Shared-context notes can be appended inside a transaction (a member's run
+	// result), so they get their identity here rather than in AddNote.
+	for i := range t.Context.Notes {
+		if t.Context.Notes[i].ID == "" {
+			t.Context.Notes[i].ID = newID("note")
+		}
+		if t.Context.Notes[i].At.IsZero() {
+			t.Context.Notes[i].At = time.Now().UTC()
+		}
+	}
 	for i := range t.Tasks {
 		if t.Tasks[i].ID == "" {
 			t.Tasks[i].ID = newID("task")

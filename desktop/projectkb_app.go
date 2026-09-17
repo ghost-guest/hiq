@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -34,6 +35,14 @@ type KBView struct {
 	Updated   string         `json:"updated"`
 	Digest    string         `json:"digest"`
 	Revisions int            `json:"revisions"`
+	// Watching / WatchSyncs report the 变更即同步 watcher's live state.
+	Watching   bool `json:"watching"`
+	WatchSyncs int  `json:"watchSyncs"`
+	// LastChange is the one-line gist of the most recent real change and
+	// LastChangeAt when it happened. Both survive a no-op sync, so the panel can
+	// always answer 自上次以来有什么变化.
+	LastChange   string `json:"lastChange,omitempty"`
+	LastChangeAt string `json:"lastChangeAt,omitempty"`
 	// Note carries a one-line outcome of the last action (sync report /
 	// rollback confirmation) so the panel can show it without a second call.
 	Note string `json:"note,omitempty"`
@@ -84,6 +93,13 @@ func (a *App) initProjectKB() {
 	// the very first kb_map/kb_search has something to show. Cheap on repeat
 	// runs because a persisted map is simply re-read, but we still avoid
 	// blocking startup.
+	// 变更即同步 is on by default: the whole point is that the map keeps up
+	// while you work, not that you remember to press 同步.
+	a.kbMu.Lock()
+	a.kbWatchEnabled = true
+	a.kbMu.Unlock()
+	a.ensureKBWatcher()
+
 	go func() {
 		h, err := a.knowledgeHub()
 		if err != nil {
@@ -97,6 +113,55 @@ func (a *App) initProjectKB() {
 		}
 		a.emitKBChanged()
 	}()
+}
+
+// ensureKBWatcher (re)targets the 变更即同步 watcher at the ACTIVE workspace: it
+// starts polling when enabled and stops when not. It runs at startup and from
+// every status read, so a tab switch re-binds the watcher lazily instead of
+// leaking one watcher per workspace.
+func (a *App) ensureKBWatcher() {
+	h, err := a.knowledgeHub()
+	if err != nil {
+		return
+	}
+	key := h.Dir()
+
+	a.kbMu.Lock()
+	if !a.kbWatchEnabled {
+		old := a.kbWatch
+		a.kbWatch, a.kbWatchKey = nil, ""
+		a.kbMu.Unlock()
+		if old != nil {
+			old.Stop()
+		}
+		return
+	}
+	if a.kbWatchKey == key && a.kbWatch != nil && a.kbWatch.Running() {
+		a.kbMu.Unlock()
+		return
+	}
+	old := a.kbWatch
+	w := h.Watch(projectkbpkg.WatchOptions{Roots: a.kbWatchRoots(h)}, func(projectkbpkg.Report) {
+		a.emitKBChanged()
+	})
+	a.kbWatch, a.kbWatchKey = w, key
+	a.kbMu.Unlock()
+
+	if old != nil {
+		old.Stop()
+	}
+	w.Start()
+}
+
+// kbWatchRoots is what the watcher polls: the project tree itself (code + docs)
+// plus the team store, so finishing a card also refreshes the map. The memory
+// tree is deliberately out of it — memory writes already go through the app.
+func (a *App) kbWatchRoots(h *projectkbpkg.Hub) []string {
+	roots := []string{h.CWD()}
+	if root := config.MemoryUserDir(); strings.TrimSpace(root) != "" {
+		roots = append(roots, filepath.Join(root, "teams"))
+	}
+	return roots
 }
 
 // knowledgeHub resolves (and caches) the hub for the active workspace. The hub
@@ -169,7 +234,44 @@ func (a *App) KnowledgeStatus() (KBView, error) {
 		// special-case.
 		return KBView{Sources: emptyKBSources()}, nil
 	}
+	// Reading the status is also the cheapest place to notice a workspace
+	// switch, so the auto-sync watcher follows the active tab from here.
+	a.ensureKBWatcher()
 	return a.kbView(h), nil
+}
+
+// KnowledgeWatch turns 变更即同步 on or off for the active workspace. With it on,
+// the project map re-syncs itself (debounced) as the tree changes, so a long dev
+// session can never leave the map stale.
+func (a *App) KnowledgeWatch(enable bool) (KBView, error) {
+	a.kbMu.Lock()
+	a.kbWatchEnabled = enable
+	a.kbMu.Unlock()
+	a.ensureKBWatcher()
+	return a.KnowledgeStatus()
+}
+
+// KnowledgeSummary returns the incremental summary (增量摘要) of the most recent
+// change, or of one revision when an ID is given — the "what moved?" counterpart
+// to KnowledgeMap's "what is there?".
+func (a *App) KnowledgeSummary(revision string) (string, error) {
+	h, err := a.knowledgeHub()
+	if err != nil {
+		return "", err
+	}
+	if id := strings.TrimSpace(revision); id != "" {
+		return h.RevisionSummary(id)
+	}
+	st := h.State()
+	if st.LastDiff == nil || st.LastDiff.IsEmpty() {
+		return "", nil
+	}
+	var b strings.Builder
+	if !st.LastChangeAt.IsZero() {
+		b.WriteString("最近一次变更：" + st.LastChangeAt.Local().Format("2006-01-02 15:04") + "\n\n")
+	}
+	b.WriteString(st.LastDiff.Markdown(0))
+	return b.String(), nil
 }
 
 // KnowledgeSync refreshes the map from every enabled source and pushes the
@@ -331,16 +433,38 @@ func (a *App) kbView(h *projectkbpkg.Hub) KBView {
 	if !st.Updated.IsZero() {
 		updated = st.Updated.Local().Format("2006-01-02 15:04")
 	}
-	return KBView{
-		Dir:       h.Dir(),
-		CWD:       st.CWD,
-		Total:     len(st.Nodes),
-		Counts:    counts,
-		Sources:   srcs,
-		Updated:   updated,
-		Digest:    st.Digest,
-		Revisions: len(h.History()),
+	lastAt := ""
+	if !st.LastChangeAt.IsZero() {
+		lastAt = st.LastChangeAt.Local().Format("2006-01-02 15:04")
 	}
+	watching, syncs := a.kbWatchState()
+	return KBView{
+		Dir:          h.Dir(),
+		CWD:          st.CWD,
+		Total:        len(st.Nodes),
+		Counts:       counts,
+		Sources:      srcs,
+		Updated:      updated,
+		Digest:       st.Digest,
+		Revisions:    len(h.History()),
+		Watching:     watching,
+		WatchSyncs:   syncs,
+		LastChange:   st.LastChangeLine(),
+		LastChangeAt: lastAt,
+	}
+}
+
+// kbWatchState reports the watcher's liveness without holding kbMu while the
+// watcher might call back into the app.
+func (a *App) kbWatchState() (bool, int) {
+	a.kbMu.Lock()
+	w := a.kbWatch
+	a.kbMu.Unlock()
+	if w == nil {
+		return false, 0
+	}
+	running, syncs, _ := w.Stats()
+	return running, syncs
 }
 
 // emptyKBSources lists the known sources as disabled, so the panel can render

@@ -76,6 +76,57 @@ type Criterion struct {
 	Done bool   `json:"done"`
 }
 
+// ApprovalMode declares where a card's human-in-the-loop (HITL) gate sits. The
+// gate is expressed as card state only (Task.ApprovalState), so the shared
+// taskmonitor lifecycle is never forked; the board derives a 待确认 column from
+// it instead (see ColumnFor).
+type ApprovalMode string
+
+const (
+	// ApprovalNone runs the card unattended (the default).
+	ApprovalNone ApprovalMode = ""
+	// ApprovalBefore requires a human to confirm before the card may run.
+	ApprovalBefore ApprovalMode = "before"
+	// ApprovalAfter lets the member run, but requires a human to confirm the
+	// deliverable before the card counts as done.
+	ApprovalAfter ApprovalMode = "after"
+)
+
+// Valid reports whether m is a known gate.
+func (m ApprovalMode) Valid() bool {
+	switch m {
+	case ApprovalNone, ApprovalBefore, ApprovalAfter:
+		return true
+	default:
+		return false
+	}
+}
+
+// ApprovalState is a card's live gate status.
+type ApprovalState string
+
+const (
+	ApprovalStateNone     ApprovalState = ""
+	ApprovalStatePending  ApprovalState = "pending"
+	ApprovalStateApproved ApprovalState = "approved"
+	ApprovalStateRejected ApprovalState = "rejected"
+)
+
+// Note is one member-contributed entry on the shared context (P4 共享上下文):
+// a finding, a caveat or a hand-off hint posted while a member works. Unlike a
+// Decision (a settled call made by the leader) a note is raw working state any
+// member may write, and every later member reads it in its blackboard digest —
+// so knowledge flows sideways between contexts that never meet.
+type Note struct {
+	ID string `json:"id"`
+	// Author is the posting member's ID ("" = the user, via the panel).
+	Author string `json:"author,omitempty"`
+	// TaskID is the card the note came from, when known.
+	TaskID string    `json:"task_id,omitempty"`
+	Text   string    `json:"text"`
+	At     time.Time `json:"at"`
+}
+
 // Task is a single kanban card (R3/R4). Its Status is the SAME state machine the
 // rest of the kernel already speaks (taskmonitor.TaskState) so the board does
 // not fork a second lifecycle — see Board() for the state→column mapping.
@@ -106,6 +157,14 @@ type Task struct {
 	Progress string `json:"progress,omitempty"`
 	// Error holds the last failure reason (state == failed/stale).
 	Error string `json:"error,omitempty"`
+	// Approval declares this card's HITL gate ("" = unattended).
+	Approval ApprovalMode `json:"approval,omitempty"`
+	// ApprovalState is the live gate status (pending/approved/rejected). It is
+	// what the board's 待确认 column keys off, and it never touches the
+	// taskmonitor state machine.
+	ApprovalState ApprovalState `json:"approval_state,omitempty"`
+	// ApprovalNote carries the human's confirmation/rejection reason.
+	ApprovalNote string `json:"approval_note,omitempty"`
 	// Order is the manual sort key within a column (ascending).
 	Order     int       `json:"order,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
@@ -128,11 +187,19 @@ type Artifact struct {
 	Path   string `json:"path,omitempty"`
 	TaskID string `json:"task_id,omitempty"`
 	Kind   string `json:"kind,omitempty"`
+	// Summary is a one-line excerpt of the deliverable, so a later member sees
+	// the gist of what was produced without opening the file — the shared-context
+	// payoff of 团队.
+	Summary string `json:"summary,omitempty"`
 }
 
 // TeamContext is the L0 shared blackboard (R6): goal + constraints + decisions +
 // artifact index + open questions. The leader writes it; members read a compact
 // projection of it before每个 task so they stay aligned with the team direction.
+//
+// P4 adds Notes: the member-writable half of "共享上下文". Decisions/artifacts are
+// the leader's settled state; notes are the working chatter members contribute
+// sideways (see Note).
 //
 // Version is monotonic so downstream consumers (and prompt caches) can tell
 // when the blackboard changed.
@@ -142,6 +209,7 @@ type TeamContext struct {
 	Decisions     []Decision `json:"decisions,omitempty"`
 	Artifacts     []Artifact `json:"artifacts,omitempty"`
 	OpenQuestions []string   `json:"open_questions,omitempty"`
+	Notes         []Note     `json:"notes,omitempty"`
 	Version       int        `json:"version"`
 }
 
@@ -237,6 +305,24 @@ func (t *Team) normalize() {
 	ensureSingleLeader(t.Members)
 	if t.Context.Version == 0 {
 		t.Context.Version = 1
+	}
+	// A card without a gate can never be sitting in 待确认: repair any stale gate
+	// state so the board's approval column is always honest (e.g. after a
+	// hand-edited store file or an upgrade).
+	repairApprovals(t.Tasks)
+}
+
+// repairApprovals enforces the HITL invariant that gate state only exists while
+// a gate is declared: an unknown mode degrades to ApprovalNone, and a card with
+// no gate carries no pending/approved/rejected state.
+func repairApprovals(tasks []Task) {
+	for i := range tasks {
+		if !tasks[i].Approval.Valid() {
+			tasks[i].Approval = ApprovalNone
+		}
+		if tasks[i].Approval == ApprovalNone {
+			tasks[i].ApprovalState = ApprovalStateNone
+		}
 	}
 }
 

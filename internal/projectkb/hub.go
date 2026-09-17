@@ -70,6 +70,10 @@ func (h *Hub) Dir() string {
 	return filepath.Join(h.root, subdir, slugify(h.cwd))
 }
 
+// CWD is the working directory this hub describes. Exported so a caller can
+// watch the same tree the map is built from.
+func (h *Hub) CWD() string { return h.cwd }
+
 func (h *Hub) statePath() string { return filepath.Join(h.Dir(), stateFile) }
 func (h *Hub) mapPath() string   { return filepath.Join(h.Dir(), mapFile) }
 
@@ -177,6 +181,10 @@ func (h *Hub) SetSource(kind Kind, enabled bool) error {
 // Sync collects every enabled source, diffs against the persisted node set and
 // rewrites the map. When the map genuinely moved it also writes a revision
 // snapshot, which is what makes the history (and Rollback) meaningful.
+//
+// The returned Report carries both the counters and the structured Diff (+ its
+// rendered summary), so every caller — the panel, a tool, the watcher — can say
+// WHAT changed, not merely that something did.
 func (h *Hub) Sync(trigger string) (Report, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -204,8 +212,15 @@ func (h *Hub) Sync(trigger string) (Report, error) {
 	}
 	sortNodes(nodes)
 
-	rep := Report{At: time.Now().UTC(), Total: len(nodes)}
+	diff := buildDiff(prev, nodes)
+	rep := Report{
+		At:    time.Now().UTC(),
+		Total: len(nodes),
+		Diff:  diff,
+	}
+	seen := make(map[string]bool, len(nodes))
 	for _, n := range nodes {
+		seen[n.ID] = true
 		old, ok := prev[n.ID]
 		switch {
 		case !ok:
@@ -216,10 +231,6 @@ func (h *Hub) Sync(trigger string) (Report, error) {
 			rep.Unchanged++
 		}
 	}
-	seen := make(map[string]bool, len(nodes))
-	for _, n := range nodes {
-		seen[n.ID] = true
-	}
 	for id := range prev {
 		if !seen[id] {
 			rep.Removed++
@@ -229,6 +240,9 @@ func (h *Hub) Sync(trigger string) (Report, error) {
 	digest := digestOf(nodes)
 	rep.Digest = digest
 	moved := digest != h.state.Digest
+	if moved {
+		rep.Summary = diff.Markdown(0)
+	}
 
 	h.state.Nodes = nodes
 	h.state.Sources = sources
@@ -236,12 +250,19 @@ func (h *Hub) Sync(trigger string) (Report, error) {
 	h.state.CWD = h.cwd
 	h.state.Profile = h.profile
 	h.state.Updated = rep.At
+	// Only a sync that actually moved the map updates the "last change" record,
+	// so a no-op poll cannot erase what the reader still needs to see.
+	if moved {
+		d := diff
+		h.state.LastDiff = &d
+		h.state.LastChangeAt = rep.At
+	}
 
 	if err := h.persist(); err != nil {
 		return rep, err
 	}
 	if moved {
-		if id, err := h.writeRevision(trigger, ""); err == nil {
+		if id, err := h.writeRevision(trigger, "", diff); err == nil {
 			rep.Revision = id
 		}
 	}

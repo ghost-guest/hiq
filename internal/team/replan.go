@@ -66,6 +66,12 @@ func Replan(t Team, tk Task) ReplanResult {
 	if !isFailed(tk.Status) {
 		return ReplanResult{Outcome: ReplanDisabled, Reason: "卡片不是失败状态"}
 	}
+	// A human rejection is a decision, not a failure: re-planning it would
+	// immediately undo the person's call (P4 HITL). The card waits for a new
+	// human instruction instead.
+	if tk.ApprovalState == ApprovalStateRejected {
+		return ReplanResult{Outcome: ReplanDisabled, Reason: "已被人工驳回，等待人工处理"}
+	}
 	if !t.Policy.AutoReplan {
 		return ReplanResult{Outcome: ReplanDisabled, Reason: "未开启自动再规划"}
 	}

@@ -13,6 +13,7 @@ const (
 	ColumnBacklog   = "backlog"
 	ColumnReady     = "ready"
 	ColumnDoing     = "doing"
+	ColumnApproval  = "approval"
 	ColumnBlocked   = "blocked"
 	ColumnDone      = "done"
 	ColumnFailed    = "failed"
@@ -45,15 +46,18 @@ var ColumnLabels = map[string]string{
 	ColumnBacklog:   "待分配",
 	ColumnReady:     "待开始",
 	ColumnDoing:     "进行中",
+	ColumnApproval:  "待确认",
 	ColumnBlocked:   "阻塞",
 	ColumnDone:      "已完成",
 	ColumnFailed:    "失败",
 	ColumnCancelled: "已取消",
 }
 
-// boardColumnOrder is the fixed left-to-right column order.
+// boardColumnOrder is the fixed left-to-right column order. 待确认 sits between
+// 待开始 and 进行中 because that is exactly where a human's attention is needed:
+// after routing, before (or right at the end of) execution.
 var boardColumnOrder = []string{
-	ColumnBacklog, ColumnReady, ColumnDoing, ColumnBlocked, ColumnDone, ColumnFailed, ColumnCancelled,
+	ColumnBacklog, ColumnReady, ColumnApproval, ColumnDoing, ColumnBlocked, ColumnDone, ColumnFailed, ColumnCancelled,
 }
 
 // BoardOf projects a team's tasks onto kanban columns.
@@ -95,6 +99,13 @@ func BoardOf(t Team) Board {
 
 // ColumnFor returns the column key a card belongs to.
 func ColumnFor(t Team, tk Task) string {
+	// A pending HITL gate owns the card regardless of its lifecycle state: 待确认
+	// is precisely where a human's attention is required (P4). This is why the
+	// gate lives on the card rather than as a new taskmonitor state — the board
+	// can surface "waiting on you" without forking the shared lifecycle.
+	if tk.ApprovalState == ApprovalStatePending {
+		return ColumnApproval
+	}
 	switch tk.Status {
 	case taskmonitor.TaskStateRunning:
 		return ColumnDoing
@@ -193,11 +204,29 @@ func (s *Store) MoveTaskToColumn(teamID, taskID, column string) (Team, error) {
 			return // unknown card: no-op
 		}
 		cur := t.Tasks[idx]
+		// Dragging a card out of 待确认 IS the human's decision — a board gesture is
+		// as explicit as clicking 通过 — so the gate resolves here. For a
+		// before-gate that means "放行" (the card returns to 待开始/进行中); for an
+		// after-gate it means the deliverable is accepted.
+		if column != ColumnApproval && cur.ApprovalState == ApprovalStatePending {
+			cur.ApprovalState = ApprovalStateApproved
+			cur.ApprovalNote = ""
+		}
 		switch column {
+		case ColumnApproval:
+			// Parking a card for review. A card with no gate gets an after-gate:
+			// "hold this and let me look at the result" is the natural intent.
+			if cur.Approval == ApprovalNone {
+				cur.Approval = ApprovalAfter
+			}
+			cur.ApprovalState = ApprovalStatePending
+			cur.Status = taskmonitor.TaskStateWaiting
+			cur.Progress, cur.Error = "", ""
 		case ColumnBacklog:
 			cur.Status = taskmonitor.TaskStateQueued
 			cur.AssigneeID = ""
 			cur.Progress, cur.Error = "", ""
+			cur.ApprovalState = ApprovalStateNone // a reset forgets the decision
 		case ColumnReady:
 			cur.Status = taskmonitor.TaskStateQueued
 			cur.Progress, cur.Error = "", ""
@@ -223,6 +252,8 @@ func (s *Store) MoveTaskToColumn(teamID, taskID, column string) (Team, error) {
 			}
 			if next == taskmonitor.TaskStateSucceeded {
 				cur.Progress, cur.Error = "", ""
+				// Landing in 已完成 resolves an outstanding after-gate.
+				cur.ApprovalState = ApprovalStateNone
 			}
 		}
 		cur.UpdatedAt = time.Now().UTC()

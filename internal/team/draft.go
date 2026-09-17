@@ -260,6 +260,27 @@ func BlackboardDigest(t Team, maxChars int) string {
 				b.WriteString(a.Path)
 				b.WriteString("）")
 			}
+			if s := strings.TrimSpace(a.Summary); s != "" {
+				b.WriteString(" — ")
+				b.WriteString(s)
+			}
+			b.WriteString("\n")
+		}
+	}
+	// The shared scratchpad (P4 共享上下文): the most recent member-contributed
+	// notes, newest last so the freshest knowledge sits next to the task frame.
+	if len(t.Context.Notes) > 0 {
+		notes := t.Context.Notes
+		if len(notes) > notesDigestMax {
+			notes = notes[len(notes)-notesDigestMax:]
+		}
+		b.WriteString("【共享笔记（其他成员留下）】\n")
+		for _, n := range notes {
+			b.WriteString("- ")
+			if who := t.ResolveNoteAuthor(n.Author); who != "" {
+				b.WriteString("[" + who + "] ")
+			}
+			b.WriteString(n.Text)
 			b.WriteString("\n")
 		}
 	}

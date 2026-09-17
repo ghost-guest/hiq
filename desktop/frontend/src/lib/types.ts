@@ -2897,6 +2897,11 @@ export interface TeamTaskView {
   evidence: string[];
   progress: string;
   error: string;
+  // HITL gate (P4 人在回路): "" | "before" | "after"; approvalState is the live
+  // status ("", "pending", "approved", "rejected") the 待确认 column keys off.
+  approval: string;
+  approvalState: string;
+  approvalNote: string;
   order: number;
 }
 
@@ -2907,12 +2912,26 @@ export interface TeamDecisionView {
   at?: string;
 }
 
+// TeamNoteView is one shared-context entry (P4 共享上下文) posted by a member
+// from its run output, or by the user from the panel.
+export interface TeamNoteView {
+  id: string;
+  author: string;
+  authorName: string;
+  taskId: string;
+  text: string;
+  at?: string;
+}
+
 export interface TeamArtifactView {
   id: string;
   title: string;
   path: string;
   taskId: string;
   kind: string;
+  // summary is a one-line gist of the deliverable, so a later member sees what
+  // was produced without opening the file.
+  summary: string;
 }
 
 export interface TeamContextView {
@@ -2921,6 +2940,7 @@ export interface TeamContextView {
   decisions: TeamDecisionView[];
   artifacts: TeamArtifactView[];
   openQuestions: string[];
+  notes: TeamNoteView[];
   version: number;
 }
 
@@ -2995,6 +3015,12 @@ export interface KBView {
   updated: string;
   digest: string;
   revisions: number;
+  // watching / watchSyncs report the 变更即同步 watcher; lastChange is the
+  // one-line gist of the most recent real change (survives a no-op sync).
+  watching: boolean;
+  watchSyncs: number;
+  lastChange?: string;
+  lastChangeAt?: string;
   note?: string;
 }
 

@@ -107,6 +107,12 @@ type Revision struct {
 	Nodes   int            `json:"nodes"`
 	Digest  string         `json:"digest"`
 	Counts  map[string]int `json:"counts,omitempty"`
+	// Added/Changed/Removed are what this snapshot introduced versus the one
+	// before it — the per-revision half of 增量摘要 (the prose lives in the
+	// snapshot payload, not in this index, so the index stays small).
+	Added   int `json:"added,omitempty"`
+	Changed int `json:"changed,omitempty"`
+	Removed int `json:"removed,omitempty"`
 }
 
 // Report summarises one Sync.
@@ -118,6 +124,10 @@ type Report struct {
 	Unchanged int       `json:"unchanged"`
 	Total     int       `json:"total"`
 	Digest    string    `json:"digest"`
+	// Diff is the structured change list behind Added/Changed/Removed.
+	Diff Diff `json:"diff,omitempty"`
+	// Summary is the rendered 增量摘要 of this sync ("" when nothing moved).
+	Summary string `json:"summary,omitempty"`
 	// Revision is the snapshot ID written by this sync, or "" when nothing
 	// changed (so no snapshot was needed).
 	Revision string `json:"revision,omitempty"`
@@ -132,6 +142,11 @@ type State struct {
 	Sources []Source  `json:"sources"`
 	Digest  string    `json:"digest,omitempty"`
 	Updated time.Time `json:"updated,omitempty"`
+	// LastDiff / LastChangeAt record the most recent sync that actually moved
+	// something, so "what changed since I last looked" survives a no-op sync
+	// (and is answerable at boot without re-scanning).
+	LastDiff     *Diff     `json:"last_diff,omitempty"`
+	LastChangeAt time.Time `json:"last_change_at,omitempty"`
 }
 
 // Counts tallies nodes per kind.
@@ -141,6 +156,16 @@ func Counts(nodes []Node) map[string]int {
 		out[string(n.Kind)]++
 	}
 	return out
+}
+
+// LastChangeLine renders the persisted last change as a one-line gist ("" when
+// the hub has never recorded a change). Reading it costs nothing and needs no
+// scan, so it is safe to fold into the prompt index and the boot path.
+func (s State) LastChangeLine() string {
+	if s.LastDiff == nil || s.LastDiff.IsEmpty() {
+		return ""
+	}
+	return s.LastDiff.Line()
 }
 
 // digestOf fingerprints a node set so a sync can tell whether the map moved.

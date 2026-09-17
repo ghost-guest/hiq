@@ -23,8 +23,9 @@ describe("KnowledgeHub（项目知识中枢）", () => {
     expect(screen.getByText("Project Knowledge Hub")).toBeTruthy();
 
     // Four source chips, each with a stable kind order (code/doc/memory/team).
-    await waitFor(() => expect(container.querySelectorAll(".kb-chip").length).toBe(4));
-    const labels = [...container.querySelectorAll(".kb-chip")].map((el) => el.textContent ?? "");
+    // Scoped to .kb__sources — the header also carries a watch-status chip.
+    await waitFor(() => expect(container.querySelectorAll(".kb__sources .kb-chip").length).toBe(4));
+    const labels = [...container.querySelectorAll(".kb__sources .kb-chip")].map((el) => el.textContent ?? "");
     expect(labels.join(" ")).toMatch(/代码|Code/);
     expect(labels.join(" ")).toMatch(/团队|Team/);
 
@@ -53,13 +54,36 @@ describe("KnowledgeHub（项目知识中枢）", () => {
 
   it("toggling a source chip flips its enabled class", async () => {
     const { container } = mount();
-    await waitFor(() => expect(container.querySelectorAll(".kb-chip").length).toBe(4));
-    const chip = container.querySelector(".kb-chip") as HTMLElement;
+    const chipSel = ".kb__sources .kb-chip";
+    await waitFor(() => expect(container.querySelectorAll(chipSel).length).toBe(4));
+    const chip = container.querySelector(chipSel) as HTMLElement;
     const wasOn = chip.classList.contains("kb-chip--on");
     fireEvent.click(chip);
     await waitFor(() => {
-      const now = (container.querySelector(".kb-chip") as HTMLElement).classList.contains("kb-chip--on");
+      const now = (container.querySelector(chipSel) as HTMLElement).classList.contains("kb-chip--on");
       expect(now).toBe(!wasOn);
     });
+  });
+
+  it("watch toggle (变更即同步) reflects and flips the watching state", async () => {
+    const { container } = mount();
+    const btn = await waitFor(() => {
+      const b = container.querySelector(".kb__watch") as HTMLElement | null;
+      expect(b).toBeTruthy();
+      return b as HTMLElement;
+    });
+    // Mock starts watching=true → the toggle carries the active modifier.
+    expect(btn.classList.contains("kb__watch--on")).toBe(true);
+    fireEvent.click(btn);
+    await waitFor(() => {
+      expect((container.querySelector(".kb__watch") as HTMLElement).classList.contains("kb__watch--on")).toBe(false);
+    });
+  });
+
+  it("renders the incremental-summary panel", async () => {
+    const { container } = mount();
+    await waitFor(() => expect(container.querySelector(".kb__summary")).toBeTruthy());
+    // The panel always renders a body (bullets or the "no changes" note).
+    expect(container.querySelector(".kb__summary-body")?.textContent ?? "").not.toBe("");
   });
 });

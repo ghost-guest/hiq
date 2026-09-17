@@ -167,6 +167,15 @@ func (a *App) replanFailedTeamTask(teamID, taskID string) {
 	}
 }
 
+// gateReason explains why a before-gate card is parked, so the board's 待确认
+// column says something more useful than a bare "pending".
+func gateReason(tk teampkg.Task) string {
+	if s := strings.TrimSpace(tk.ApprovalNote); s != "" {
+		return s
+	}
+	return "执行前需要人工确认（卡片已设为「执行前确认」）"
+}
+
 func teamTaskFailed(s taskmonitor.TaskState) bool {
 	return s == taskmonitor.TaskStateFailed || s == taskmonitor.TaskStateStale
 }
@@ -390,6 +399,11 @@ func (a *App) finishTeamTask(teamID, taskID, answer string, runErr error) {
 		return
 	}
 	failed := runErr != nil
+	// P4 共享上下文: a member publishes notes by ending its answer with a
+	// 【共享笔记】 section. They are peeled off here and posted to the team's
+	// blackboard, so the NEXT member — a different context window entirely —
+	// reads them in its run prompt. The stored deliverable keeps the clean body.
+	notes, body := teampkg.ExtractSharedNotes(answer)
 	tm, err := store.Update(teamID, func(t *teampkg.Team) {
 		for i := range t.Tasks {
 			if t.Tasks[i].ID != taskID {
@@ -406,14 +420,30 @@ func (a *App) finishTeamTask(teamID, taskID, answer string, runErr error) {
 			}
 			card.Status = taskmonitor.TaskStateSucceeded
 			card.Error = ""
-			if answer != "" {
-				card.Deliverable = answer
+			if body != "" {
+				card.Deliverable = body
 				card.Evidence = append(card.Evidence,
 					"团员「"+t.MemberName(card.AssigneeID)+"」以独立上下文执行完成")
 			}
+			before := len(t.Context.Notes)
+			for _, txt := range notes {
+				t.Context.Notes = teampkg.AddNoteTo(t.Context.Notes, teampkg.Note{
+					Author: card.AssigneeID,
+					TaskID: card.ID,
+					Text:   txt,
+				})
+			}
+			if len(t.Context.Notes) != before {
+				t.Context.Version++
+			}
+			// P4 HITL: an after-gate card does not complete on the member's word
+			// alone — the deliverable is held until a human accepts it.
+			if card.GateAfter() {
+				teampkg.GateDeliverable(&card, "产出待人工确认")
+			}
 			t.Tasks[i] = card
 			if !teamHasArtifact(t.Context.Artifacts, card.ID) {
-				t.Context.Artifacts = append(t.Context.Artifacts, teampkg.ResultArtifact(card, answer))
+				t.Context.Artifacts = append(t.Context.Artifacts, teampkg.ResultArtifact(card, body))
 				t.Context.Version++
 			}
 		}

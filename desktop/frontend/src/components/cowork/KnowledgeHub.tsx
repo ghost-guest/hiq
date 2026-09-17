@@ -13,7 +13,7 @@
 // sync, a tool call) re-renders this panel without a manual refresh.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Ban, FolderOpen, GitBranch, History, Network, RefreshCw, RotateCcw, Search } from "lucide-react";
+import { Ban, Eye, EyeOff, FolderOpen, GitCompare, GitBranch, History, Network, RefreshCw, RotateCcw, Search } from "lucide-react";
 
 import { app, onKBChanged } from "../../lib/bridge";
 import type { KBView, KBSearchHitView, KBRevisionView } from "../../lib/types";
@@ -45,6 +45,8 @@ export function KnowledgeHub() {
   const [mapLoading, setMapLoading] = useState(false);
 
   const [revisions, setRevisions] = useState<KBRevisionView[]>([]);
+  const [summary, setSummary] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -54,6 +56,20 @@ export function KnowledgeHub() {
       setView(null);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  // loadSummary pulls the diff-based incremental summary: entries added /
+  // changed / removed by the latest sync versus the one before it. It is cheap
+  // (bounded bullets) and survives no-op syncs, so we refresh it on every change.
+  const loadSummary = useCallback(async (revision = "") => {
+    setSummaryLoading(true);
+    try {
+      setSummary(await app.KnowledgeSummary(revision));
+    } catch {
+      setSummary("");
+    } finally {
+      setSummaryLoading(false);
     }
   }, []);
 
@@ -77,21 +93,33 @@ export function KnowledgeHub() {
     }
   }, []);
 
-  // Initial load: status + history + the full map.
+  // Initial load: status + history + the full map + the incremental summary.
   useEffect(() => {
     void refresh();
     void refreshHistory();
     void loadMap("");
-  }, [refresh, refreshHistory, loadMap]);
+    void loadSummary();
+  }, [refresh, refreshHistory, loadMap, loadSummary]);
 
-  // kb:changed → adopt the pushed view; refresh history too (a sync appends one).
+  // kb:changed → adopt the pushed view; refresh history + summary too (a sync
+  // appends a revision and rewrites the last-change summary).
   useEffect(() => {
     return onKBChanged((v) => {
       if (v && typeof v.total === "number") setView(v as KBView);
       else void refresh();
       void refreshHistory();
+      void loadSummary();
     });
-  }, [refresh, refreshHistory]);
+  }, [refresh, refreshHistory, loadSummary]);
+
+  const toggleWatch = useCallback(async () => {
+    try {
+      const v = await app.KnowledgeWatch(!(view?.watching ?? false));
+      setView(v);
+    } catch (e) {
+      showToast(String((e as Error)?.message ?? e), "error");
+    }
+  }, [view, showToast]);
 
   const doSync = useCallback(async () => {
     setSyncing(true);
@@ -101,13 +129,14 @@ export function KnowledgeHub() {
       setNote("");
       await refreshHistory();
       await loadMap(mapKind);
+      await loadSummary();
       showToast(t("kb.synced"), "info");
     } catch (e) {
       showToast(String((e as Error)?.message ?? e), "error");
     } finally {
       setSyncing(false);
     }
-  }, [note, mapKind, loadMap, refreshHistory, showToast, t]);
+  }, [note, mapKind, loadMap, loadSummary, refreshHistory, showToast, t]);
 
   const toggleSource = useCallback(async (kind: string, enabled: boolean) => {
     try {
@@ -134,11 +163,12 @@ export function KnowledgeHub() {
       setView(v);
       await refreshHistory();
       await loadMap(mapKind);
+      await loadSummary();
       showToast(t("kb.rolledBack"), "info");
     } catch (e) {
       showToast(String((e as Error)?.message ?? e), "error");
     }
-  }, [confirm, mapKind, loadMap, refreshHistory, showToast, t]);
+  }, [confirm, mapKind, loadMap, loadSummary, refreshHistory, showToast, t]);
 
   const copyRef = useCallback((ref: string) => {
     const cp = typeof navigator !== "undefined" ? navigator.clipboard : undefined;
@@ -164,6 +194,16 @@ export function KnowledgeHub() {
               {view.updated ? ` · ${t("kb.updated", { at: view.updated })}` : ""}
             </span>
           )}
+          {view && (
+            <span
+              className={`kb-chip ${view.watching ? "kb-chip--on" : "kb-chip--off"}`}
+              title={view.watching ? t("kb.watching") : t("kb.watchOff")}
+            >
+              {view.watching ? <Eye size={10} /> : <EyeOff size={10} />}
+              <span>{view.watching ? t("kb.watching") : t("kb.watchOff")}</span>
+              {view.watchSyncs > 0 && <span className="kb-chip__n">{view.watchSyncs}</span>}
+            </span>
+          )}
         </div>
         <div className="kb__head-right">
           <input
@@ -172,6 +212,14 @@ export function KnowledgeHub() {
             onChange={(e) => setNote(e.target.value)}
             placeholder={t("kb.syncNotePlaceholder")}
           />
+          <button
+            className={`btn btn--ghost kb__watch${view?.watching ? " kb__watch--on" : ""}`}
+            onClick={() => void toggleWatch()}
+            title={view?.watching ? t("kb.watchOff") : t("kb.watch")}
+          >
+            {view?.watching ? <Eye size={12} /> : <EyeOff size={12} />}
+            <span>{t("kb.watch")}</span>
+          </button>
           <button className="btn btn--ghost kb__sync" onClick={() => void doSync()} disabled={syncing}>
             <RefreshCw size={12} className={syncing ? "kb__spin" : undefined} />
             <span>{syncing ? t("kb.syncing") : t("kb.sync")}</span>
@@ -242,6 +290,27 @@ export function KnowledgeHub() {
               )}
             </ul>
           )}
+
+          <div className="kb__summary">
+            <div className="kb__panel-title">
+              <GitCompare size={12} /> {t("kb.summary")}
+              <span className="kb__summary-at">
+                {view?.lastChangeAt ? `${t("kb.lastChange")} · ${view.lastChangeAt}` : t("kb.lastChangeNone")}
+              </span>
+              <button
+                className="btn btn--ghost kb__summary-refresh"
+                onClick={() => void loadSummary()}
+                disabled={summaryLoading}
+                title={t("kb.summary")}
+              >
+                <RefreshCw size={10} className={summaryLoading ? "kb__spin" : undefined} />
+              </button>
+            </div>
+            <p className="kb__summary-hint">{t("kb.summaryHint")}</p>
+            <pre className="kb__summary-body">
+              {summaryLoading && !summary ? t("kb.loading") : (summary || t("kb.summaryEmpty"))}
+            </pre>
+          </div>
 
           <div className="kb__body">
             <div className="kb__map">

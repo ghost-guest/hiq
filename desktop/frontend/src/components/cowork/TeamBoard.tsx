@@ -14,7 +14,7 @@
 // (including future leader-driven planning) without a manual refresh.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, Pencil, Users, LayoutDashboard, Sparkles, Wand2, Crown, ListChecks, X, Play, Square } from "lucide-react";
+import { Plus, Trash2, Pencil, Users, LayoutDashboard, Sparkles, Wand2, Crown, ListChecks, X, Play, Square, Check, ShieldQuestion } from "lucide-react";
 
 import { app, onTeamChanged, onTeamTask } from "../../lib/bridge";
 import type {
@@ -23,19 +23,21 @@ import type {
   TeamTaskView,
   TeamColumnView,
   TeamDraftInput,
+  TeamNoteView,
 } from "../../lib/types";
 import { useT } from "../../lib/i18n";
 import { useToast } from "../../lib/toast";
 import { useConfirm } from "../../lib/confirm";
 
 // Column order + the state each column maps to on drop (mirrors the Go board).
-const COLUMN_ORDER = ["backlog", "ready", "doing", "blocked", "done", "failed", "cancelled"] as const;
+const COLUMN_ORDER = ["backlog", "ready", "approval", "doing", "blocked", "done", "failed", "cancelled"] as const;
 
 // COLUMN_LABEL maps a column key to its translation key. The literal union (not
 // a computed `team.col.${key}` template) keeps t()'s DictKey typing satisfied.
-const COLUMN_LABEL: Record<string, "team.col.backlog" | "team.col.ready" | "team.col.doing" | "team.col.blocked" | "team.col.done" | "team.col.failed" | "team.col.cancelled"> = {
+const COLUMN_LABEL: Record<string, "team.col.backlog" | "team.col.ready" | "team.col.approval" | "team.col.doing" | "team.col.blocked" | "team.col.done" | "team.col.failed" | "team.col.cancelled"> = {
   backlog: "team.col.backlog",
   ready: "team.col.ready",
+  approval: "team.col.approval",
   doing: "team.col.doing",
   blocked: "team.col.blocked",
   done: "team.col.done",
@@ -54,7 +56,8 @@ function emptyTask(): TeamTaskView {
   return {
     id: "", title: "", desc: "", assigneeId: "", assigneeName: "", requiredSkills: [],
     status: "queued", column: "backlog", deps: [], parentId: "", acceptance: [],
-    deliverable: "", attempts: 0, evidence: [], progress: "", error: "", order: 0,
+    deliverable: "", attempts: 0, evidence: [], progress: "", error: "",
+    approval: "", approvalState: "", approvalNote: "", order: 0,
   };
 }
 
@@ -203,6 +206,29 @@ export function TeamBoard() {
     }
   }, [team, applyTeam, showToast]);
 
+  // Approve/reject is the P4 HITL payoff: a card parked in 待确认 resumes (or
+  // fails) on the human's word, and the reason is recorded either way.
+  const approveTask = useCallback(async (task: TeamTaskView, note: string) => {
+    if (!team) return;
+    try {
+      applyTeam(await app.ApproveTeamTask(team.id, task.id, note));
+      showToast(t("team.approval.approved"), "info");
+    } catch (e) {
+      showToast(String((e as Error)?.message ?? e), "error");
+    }
+  }, [team, applyTeam, showToast, t]);
+
+  const rejectTask = useCallback(async (task: TeamTaskView, note: string) => {
+    if (!team) return;
+    if (!(await confirm({ title: t("team.approval.reject"), message: task.title, danger: true }))) return;
+    try {
+      applyTeam(await app.RejectTeamTask(team.id, task.id, note));
+      showToast(t("team.approval.rejected"), "info");
+    } catch (e) {
+      showToast(String((e as Error)?.message ?? e), "error");
+    }
+  }, [team, confirm, applyTeam, showToast, t]);
+
   const stopTask = useCallback(async (task: TeamTaskView) => {
     if (!team) return;
     try {
@@ -325,6 +351,8 @@ export function TeamBoard() {
                       onRemove={() => void removeTask(task)}
                       onRun={() => void runTask(task)}
                       onStop={() => void stopTask(task)}
+                      onApprove={(note) => void approveTask(task, note)}
+                      onReject={(note) => void rejectTask(task, note)}
                     />
                   ))}
                   {col.tasks.length === 0 && <div className="team-col__blank" />}
@@ -394,6 +422,7 @@ export function TeamBoard() {
 
 function TeamCard({
   task, team, dragging, onDragStart, onDragEnd, onEdit, onRemove, onRun, onStop,
+  onApprove, onReject,
 }: {
   task: TeamTaskView;
   team: TeamProjectView;
@@ -404,6 +433,8 @@ function TeamCard({
   onRemove: () => void;
   onRun: () => void;
   onStop: () => void;
+  onApprove: (note: string) => void;
+  onReject: (note: string) => void;
 }) {
   const t = useT();
   const assignee = team.members.find((m) => m.id === task.assigneeId);
@@ -414,7 +445,9 @@ function TeamCard({
   const depsReady = task.deps.every(
     (id) => team.tasks.find((x) => x.id === id)?.status === "succeeded",
   );
-  const canRun = !isRunning && !!task.assigneeId && depsReady;
+  const pending = task.approvalState === "pending";
+  // A card waiting on a human is not "runnable" — the gate is the action.
+  const canRun = !isRunning && !pending && !!task.assigneeId && depsReady;
   const runHint = !task.assigneeId
     ? t("team.runNoAssignee")
     : !depsReady
@@ -422,7 +455,7 @@ function TeamCard({
       : t("team.run");
   return (
     <article
-      className={`team-card${dragging ? " team-card--dragging" : ""}${isRunning ? " team-card--running" : ""}`}
+      className={`team-card${dragging ? " team-card--dragging" : ""}${isRunning ? " team-card--running" : ""}${pending ? " team-card--pending" : ""}`}
       draggable={!isRunning}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -457,14 +490,57 @@ function TeamCard({
       )}
       {task.progress && <p className="team-card__progress">{t("team.progress")}: {task.progress}</p>}
       {task.error && <p className="team-card__error">{t("team.error")}: {task.error}</p>}
+      {pending && <GateActions task={task} onApprove={onApprove} onReject={onReject} />}
       <div className="team-card__foot">
         <span className={`team-card__who${assignee ? "" : " team-card__who--none"}`}>
           {assignee ? `${assignee.avatar || "👤"} ${assignee.name}` : t("team.task.unassigned")}
         </span>
         {task.deps.length > 0 && <span className="team-card__dep">⇢ {task.deps.length}</span>}
+        {task.approval && (
+          <span className="team-chip team-chip--gate" title={t("team.approval.hint")}>
+            <ShieldQuestion size={10} />
+            {task.approval === "before" ? t("team.approval.before") : t("team.approval.after")}
+          </span>
+        )}
         {task.attempts > 0 && <span className="team-card__attempts">{t("team.attempts", { n: task.attempts })}</span>}
       </div>
     </article>
+  );
+}
+
+// GateActions is the human's half of a HITL gate: the note is optional, but it
+// is what makes a rejection actionable (the reason lands on the card AND the
+// blackboard's open questions).
+function GateActions({
+  task, onApprove, onReject,
+}: {
+  task: TeamTaskView;
+  onApprove: (note: string) => void;
+  onReject: (note: string) => void;
+}) {
+  const t = useT();
+  const [note, setNote] = useState("");
+  return (
+    <div className="team-gate">
+      <p className="team-gate__ask">
+        <ShieldQuestion size={12} /> {t("team.approval.awaiting")}
+      </p>
+      {task.approvalNote && <p className="team-gate__why">{task.approvalNote}</p>}
+      <input
+        className="team-gate__input"
+        value={note}
+        placeholder={t("team.approval.notePlaceholder")}
+        onChange={(e) => setNote(e.target.value)}
+      />
+      <div className="team-gate__btns">
+        <button className="btn btn--small btn--primary" onClick={() => onApprove(note.trim())}>
+          <Check size={12} /> {t("team.approval.approve")}
+        </button>
+        <button className="btn btn--small btn--danger" onClick={() => onReject(note.trim())}>
+          <X size={12} /> {t("team.approval.reject")}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -796,6 +872,16 @@ function TaskEditor({
               placeholder={t("team.task.acceptancePlaceholder")} onChange={(e) => setAcceptText(e.target.value)} />
           </label>
           <label className="cowork-taskform__label">
+            <span className="cowork-taskform__labeltext">{t("team.task.approval")}</span>
+            <select className="cowork-taskform__input" value={form.approval}
+              onChange={(e) => set("approval", e.target.value)}>
+              <option value="">{t("team.approval.none")}</option>
+              <option value="before">{t("team.approval.before")}</option>
+              <option value="after">{t("team.approval.after")}</option>
+            </select>
+            <span className="team-hint">{t("team.approval.hint")}</span>
+          </label>
+          <label className="cowork-taskform__label">
             <span className="cowork-taskform__labeltext">{t("team.task.deliverable")}</span>
             <textarea className="cowork-taskform__input team-textarea" rows={2} value={form.deliverable}
               onChange={(e) => set("deliverable", e.target.value)} />
@@ -852,10 +938,20 @@ function BlackboardModal({
   const [constraints, setConstraints] = useState(team.context?.constraints ?? "");
   const [decisions, setDecisions] = useState(team.context?.decisions ?? []);
   const [openQuestions, setOpenQuestions] = useState(team.context?.openQuestions ?? []);
+  const [notes, setNotes] = useState<TeamNoteView[]>(team.context?.notes ?? []);
   const [dText, setDText] = useState("");
   const [qText, setQText] = useState("");
   const [digest, setDigest] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Pull the freshest shared notes (P4) — the view may be a cached copy.
+  useEffect(() => {
+    let alive = true;
+    app.TeamNotes(team.id)
+      .then((ns) => { if (alive) setNotes(Array.isArray(ns) ? ns : []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [team.id]);
 
   const preview = async () => {
     try {
@@ -874,6 +970,7 @@ function BlackboardModal({
         decisions,
         artifacts: team.context?.artifacts ?? [],
         openQuestions,
+        notes: team.context?.notes ?? [],
         version: team.context?.version ?? 0,
       });
       onUpdate(updated);
@@ -938,6 +1035,22 @@ function BlackboardModal({
               setOpenQuestions((xs) => [...xs, qText.trim()]);
               setQText("");
             }} placeholder={t("team.itemPlaceholder")} addLabel={t("team.addItem")} />
+          </div>
+
+          <div className="team-list">
+            <span className="cowork-taskform__labeltext">{t("team.notes")}</span>
+            <p className="team-hint">{t("team.notes.hint")}</p>
+            {notes.length === 0 ? (
+              <p className="team-hint">{t("team.notes.empty")}</p>
+            ) : (
+              <ul>
+                {notes.map((n) => (
+                  <li key={n.id}>
+                    <span><b>{n.authorName || n.author || "?"}</b>：{n.text}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="team-list">
@@ -1101,7 +1214,7 @@ function NewTeamModal({
     try {
       const created = await app.CreateTeamProject({
         id: "", name: name.trim(), goal: goal.trim(), members: [], tasks: [],
-        context: { goal: goal.trim(), constraints: "", decisions: [], artifacts: [], openQuestions: [], version: 1 },
+        context: { goal: goal.trim(), constraints: "", decisions: [], artifacts: [], openQuestions: [], notes: [], version: 1 },
         policy: { maxRounds: 12, maxParallel: 3, autoAssign: true, autoReplan: false },
       });
       onCreated(created);

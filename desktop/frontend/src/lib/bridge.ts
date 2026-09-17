@@ -146,6 +146,7 @@ import type {
   TeamCandidateView,
   TeamContextView,
   TeamDraftInput,
+  TeamNoteView,
 
   KBView,
   KBSourceView,
@@ -436,6 +437,16 @@ export interface AppBindings {
   SuggestTeamAssignee(teamId: string, taskId: string): Promise<TeamCandidateView[]>;
   SetTeamContext(teamId: string, ctx: TeamContextView): Promise<TeamProjectView>;
   TeamBlackboardDigest(teamId: string, maxChars: number): Promise<string>;
+  // P4 共享上下文 (shared context): a member-writable scratchpad every later
+  // member reads in its run prompt. Members publish from their run output; this
+  // is the user's way in.
+  AddTeamNote(teamId: string, taskId: string, text: string): Promise<TeamProjectView>;
+  TeamNotes(teamId: string): Promise<TeamNoteView[]>;
+  // P4 HITL: a card may declare a gate ("before" = confirm before running,
+  // "after" = confirm the deliverable). Pending cards land in 待确认.
+  SetTeamTaskApproval(teamId: string, taskId: string, mode: string): Promise<TeamProjectView>;
+  ApproveTeamTask(teamId: string, taskId: string, note: string): Promise<TeamProjectView>;
+  RejectTeamTask(teamId: string, taskId: string, note: string): Promise<TeamProjectView>;
   // Natural-language creation: draft a member (needs teamId) or a whole team
   // (empty teamId). Adopt=false returns a preview for confirmation.
   DraftTeamMember(input: TeamDraftInput): Promise<TeamMemberView>;
@@ -458,6 +469,10 @@ export interface AppBindings {
   KnowledgeHistory(limit: number): Promise<KBRevisionView[]>;
   KnowledgeRollback(revision: string): Promise<KBView>;
   KnowledgeSetSource(kind: string, enabled: boolean): Promise<KBView>;
+  // 变更即同步: poll the workspace and re-sync the map when it changes.
+  KnowledgeWatch(enable: boolean): Promise<KBView>;
+  // 增量摘要: what changed in the last sync (or in one revision) — item by item.
+  KnowledgeSummary(revision: string): Promise<string>;
   KnowledgeOpenDir(): Promise<void>;
   SaveDoc(path: string, body: string): Promise<string>;
   PortraitProfile(): Promise<ProfileView>;
@@ -1632,6 +1647,9 @@ const mockRunningTasks = new Set<string>();
 // reports the four sources and a couple of revisions; sync bumps the digest.
 let mockKBSyncedAt = "";
 let mockKBRevisionSeq = 0;
+let mockKBWatching = true;
+let mockKBSyncs = 0;
+let mockKBLastChange = "";
 const mockKBRevisions: KBRevisionView[] = [];
 const mockKBSources: KBSourceView[] = [
   { kind: "code", label: "代码", enabled: true, count: 42, note: "模块与包清单" },
@@ -1659,6 +1677,10 @@ function mockKBView(): KBView {
     updated: mockKBSyncedAt,
     digest: mockKBSyncedAt ? `d${mockKBRevisionSeq}` : "",
     revisions: mockKBRevisions.length,
+    watching: mockKBWatching,
+    watchSyncs: mockKBSyncs,
+    lastChange: mockKBLastChange,
+    lastChangeAt: mockKBLastChange ? mockKBSyncedAt : "",
     note: "",
   };
 }
@@ -1682,7 +1704,7 @@ function mockTeamID(prefix: string): string {
 }
 
 function mockEmptyContext(goal = ""): TeamContextView {
-  return { goal, constraints: "", decisions: [], artifacts: [], openQuestions: [], version: 1 };
+  return { goal, constraints: "", decisions: [], artifacts: [], openQuestions: [], notes: [], version: 1 };
 }
 
 function mockPolicy(): TeamPolicyView {
@@ -1694,11 +1716,14 @@ function emptyMockTask(): TeamTaskView {
   return {
     id: "", title: "", desc: "", assigneeId: "", assigneeName: "", requiredSkills: [],
     status: "queued", column: "backlog", deps: [], parentId: "", acceptance: [],
-    deliverable: "", attempts: 0, evidence: [], progress: "", error: "", order: 0,
+    deliverable: "", attempts: 0, evidence: [], progress: "", error: "",
+    approval: "", approvalState: "", approvalNote: "", order: 0,
   };
 }
 
 function mockColumnOf(team: TeamProjectView, task: TeamTaskView): string {
+  // A pending HITL gate owns the card (mirrors ColumnFor in the Go board).
+  if (task.approvalState === "pending") return "approval";
   switch (task.status) {
     case "running": return "doing";
     case "waiting": return "blocked";
@@ -1716,10 +1741,10 @@ function mockColumnOf(team: TeamProjectView, task: TeamTaskView): string {
 }
 
 function mockBoardOf(team: TeamProjectView): TeamBoardView {
-  const order = ["backlog", "ready", "doing", "blocked", "done", "failed", "cancelled"];
+  const order = ["backlog", "ready", "approval", "doing", "blocked", "done", "failed", "cancelled"];
   const labels: Record<string, string> = {
-    backlog: "待分配", ready: "待开始", doing: "进行中", blocked: "阻塞",
-    done: "已完成", failed: "失败", cancelled: "已取消",
+    backlog: "待分配", ready: "待开始", approval: "待确认", doing: "进行中",
+    blocked: "阻塞", done: "已完成", failed: "失败", cancelled: "已取消",
   };
   const counts: Record<string, number> = {};
   const columns: TeamColumnView[] = order.map((key) => ({ key, label: labels[key], states: [], tasks: [] }));
@@ -5702,6 +5727,61 @@ function makeMockApp(): AppBindings {
         .filter((k) => k.startsWith(prefix))
         .map((k) => k.slice(prefix.length));
     },
+    async AddTeamNote(teamId: string, taskId: string, text: string) {
+      if (!text.trim()) throw new Error("随手记点东西吧");
+      return mockPatchTeam(teamId, (tm) => ({
+        ...tm,
+        context: {
+          ...tm.context,
+          notes: [
+            ...(tm.context.notes ?? []),
+            {
+              id: mockTeamID("note"), author: "", authorName: "用户", taskId,
+              text: text.trim(), at: new Date().toISOString(),
+            },
+          ],
+          version: (tm.context.version ?? 0) + 1,
+        },
+      }));
+    },
+    async TeamNotes(teamId: string) {
+      const tm = mockFindTeam(teamId);
+      if (!tm) throw new Error("团队不存在");
+      return [...(tm.context.notes ?? [])].reverse().map((n) => ({ ...n }));
+    },
+    async SetTeamTaskApproval(teamId: string, taskId: string, mode: string) {
+      return mockPatchTeam(teamId, (tm) => ({
+        ...tm,
+        tasks: tm.tasks.map((tk) =>
+          tk.id === taskId ? { ...tk, approval: mode, approvalState: "", approvalNote: "" } : tk,
+        ),
+      }));
+    },
+    async ApproveTeamTask(teamId: string, taskId: string, note: string) {
+      return mockPatchTeam(teamId, (tm) => ({
+        ...tm,
+        tasks: tm.tasks.map((tk) =>
+          tk.id !== taskId
+            ? tk
+            : tk.approval === "after"
+              ? { ...tk, approvalState: "approved", approvalNote: note, status: "succeeded", progress: "" }
+              : { ...tk, approvalState: "approved", approvalNote: note, status: "queued", progress: "" },
+        ),
+      }));
+    },
+    async RejectTeamTask(teamId: string, taskId: string, note: string) {
+      return mockPatchTeam(teamId, (tm) => ({
+        ...tm,
+        tasks: tm.tasks.map((tk) =>
+          tk.id !== taskId
+            ? tk
+            : {
+                ...tk, approvalState: "rejected", approvalNote: note, status: "failed",
+                error: `人工驳回${note ? "：" + note : ""}`, progress: "",
+              },
+        ),
+      }));
+    },
     // --- 项目知识中枢 (project knowledge hub) mock ---
     async KnowledgeStatus() {
       return mockKBView();
@@ -5709,6 +5789,8 @@ function makeMockApp(): AppBindings {
     async KnowledgeSync(note: string) {
       mockKBSyncedAt = new Date().toISOString();
       mockKBRevisionSeq += 1;
+      mockKBLastChange = "新增 12 · 变更 3";
+      mockKBSyncs += 1;
       mockKBRevisions.unshift({
         id: `rev-${mockKBRevisionSeq}`,
         at: mockKBSyncedAt,
@@ -5743,6 +5825,22 @@ function makeMockApp(): AppBindings {
       const view = mockKBView();
       mockKBListeners.forEach((l) => l(view));
       return view;
+    },
+    async KnowledgeWatch(enable: boolean) {
+      mockKBWatching = enable;
+      const view = mockKBView();
+      mockKBListeners.forEach((l) => l(view));
+      return view;
+    },
+    async KnowledgeSummary(revision: string) {
+      if (revision) {
+        const r = mockKBRevisions.find((x) => x.id === revision);
+        return r
+          ? `### 本次变更\n\n- 快照 ${r.id} · ${r.nodes} 条 · ${r.note || r.trigger}`
+          : "";
+      }
+      if (!mockKBLastChange) return "";
+      return `### 本次变更（${mockKBLastChange}）\n\n**新增（12）**\n- [模块与包] internal/agent — 回合循环\n- [文档] README.md — 项目说明\n`;
     },
     async KnowledgeOpenDir() {},
   };

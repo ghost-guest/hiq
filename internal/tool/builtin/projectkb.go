@@ -51,7 +51,7 @@ func requireKnowledgeHub() (*projectkb.Hub, error) {
 
 // KnowledgeTools returns the kb_* tool surface, in registration order.
 func KnowledgeTools() []tool.Tool {
-	return []tool.Tool{kbSync{}, kbMap{}, kbSearch{}, kbHistory{}, kbRollback{}}
+	return []tool.Tool{kbSync{}, kbMap{}, kbSearch{}, kbSummary{}, kbHistory{}, kbRollback{}}
 }
 
 // maxKbMapChars caps a kb_map reply so a large project can't flood the context
@@ -276,6 +276,66 @@ func (kbSearch) Execute(_ context.Context, args json.RawMessage) (string, error)
 	if n == 0 {
 		return "没有匹配项。可以先 kb_sync 刷新，或换个关键词。", nil
 	}
+	return WrapUntrusted("project-kb", b.String()), nil
+}
+
+// --- kb_summary ------------------------------------------------------------
+
+type kbSummary struct{}
+
+func (kbSummary) Name() string { return "kb_summary" }
+
+func (kbSummary) Description() string {
+	return "Return the incremental summary (增量摘要) of the project map: item by item, what changed in the most recent sync or rollback (每个新增/变更/移除项都带前后文). Use it to answer \"自上次以来有什么变化？\" — after a break, or before reporting progress — instead of re-reading the whole map with kb_map. Pass a revision ID from kb_history to summarise that specific snapshot's change instead."
+}
+
+func (kbSummary) Schema() json.RawMessage {
+	return json.RawMessage(`{
+"type":"object",
+"properties":{
+  "revision":{"type":"string","description":"Optional revision ID (see kb_history); default = the most recent change"},
+  "limit":{"type":"integer","description":"Max items per group (default 40)"}
+}
+}`)
+}
+
+func (kbSummary) ReadOnly() bool { return true }
+
+func (kbSummary) Execute(_ context.Context, args json.RawMessage) (string, error) {
+	var p struct {
+		Revision string `json:"revision"`
+		Limit    int    `json:"limit"`
+	}
+	if len(args) > 0 {
+		if err := json.Unmarshal(args, &p); err != nil {
+			return "", fmt.Errorf("invalid args: %w", err)
+		}
+	}
+	h, err := requireKnowledgeHub()
+	if err != nil {
+		return "", err
+	}
+	if id := strings.TrimSpace(p.Revision); id != "" {
+		text, err := h.RevisionSummary(id)
+		if err != nil {
+			return "", err
+		}
+		if strings.TrimSpace(text) == "" {
+			return "该修订没有记录变更摘要（可能是同内容重写）。", nil
+		}
+		return WrapUntrusted("project-kb", text), nil
+	}
+
+	st := h.State()
+	if st.LastDiff == nil || st.LastDiff.IsEmpty() {
+		return "还没有变更记录——运行 kb_sync 采集一次来源后，这里会开始累积增量摘要。", nil
+	}
+	var b strings.Builder
+	if !st.LastChangeAt.IsZero() {
+		b.WriteString("最近一次变更：" + st.LastChangeAt.Local().Format("2006-01-02 15:04") + "\n\n")
+	}
+	b.WriteString(st.LastDiff.Markdown(p.Limit))
+	b.WriteString(fmt.Sprintf("\n（当前共 %d 条 · 用 kb_history 看历代快照，kb_map 读全文）", len(st.Nodes)))
 	return WrapUntrusted("project-kb", b.String()), nil
 }
 

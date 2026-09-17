@@ -79,6 +79,27 @@
 }
 .team-chip--skill { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
 .team-chip--leader { background: var(--warn); color: var(--bg); border-color: transparent; font-weight: 600; }
+.team-chip--gate { background: var(--accent-soft); color: var(--info); border-color: transparent; }
+
+/* HITL gate — a card parked in 待确认 (approval) waits for a human decision. */
+.team-col__dot--approval { background: var(--info); }
+.team-card--pending { border-color: var(--info); }
+.team-gate {
+  display: flex; flex-direction: column; gap: 5px; margin-top: 2px;
+  padding: 6px 7px; border-radius: var(--radius-sm);
+  background: var(--bg-soft); border: 1px dashed var(--border);
+}
+.team-gate__ask {
+  display: flex; align-items: center; gap: 2px; margin: 0;
+  font-size: 11px; font-weight: 600; color: var(--info);
+}
+.team-gate__why { margin: 0; font-size: 11px; color: var(--fg-dim); line-height: 1.4; word-break: break-word; }
+.team-gate__input {
+  width: 100%; box-sizing: border-box;
+  background: var(--bg-elev); color: var(--fg); border: 1px solid var(--border);
+  border-radius: var(--radius-xs); padding: 3px 6px; font-size: 11.5px;
+}
+.team-gate__btns { display: flex; gap: 5px; }
 
 /* Members roster */
 .team-members { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }

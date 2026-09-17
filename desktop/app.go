@@ -48,8 +48,8 @@ import (
 	"github.com/zzycxz/fairpeer/internal/permission"
 	"github.com/zzycxz/fairpeer/internal/plugin"
 	"github.com/zzycxz/fairpeer/internal/present"
-	"github.com/zzycxz/fairpeer/internal/provider"
 	projectkbpkg "github.com/zzycxz/fairpeer/internal/projectkb"
+	"github.com/zzycxz/fairpeer/internal/provider"
 	ragpkg "github.com/zzycxz/fairpeer/internal/rag"
 	schedulerpkg "github.com/zzycxz/fairpeer/internal/scheduler"
 	"github.com/zzycxz/fairpeer/internal/skill"
@@ -175,6 +175,14 @@ type App struct {
 	// kb_* tools call through. Guarded by kbMu.
 	kbHubs map[string]*projectkbpkg.Hub
 	kbMu   sync.Mutex
+	// kbWatch is the active 变更即同步 watcher (nil when off). It follows the
+	// active workspace: kbWatchKey is the hub directory it is bound to, so a
+	// tab switch re-targets it rather than leaking watchers. kbWatchEnabled is
+	// the user's preference (default on — the whole point is that the map keeps
+	// up while you work). Guarded by kbMu.
+	kbWatch        *projectkbpkg.Watcher
+	kbWatchKey     string
+	kbWatchEnabled bool
 	// expertRuns tracks in-flight expert-team runs keyed by teamID, so a panel
 	// remounted after the CoWorkLayout was torn down (tab/profile switch) can
 	// query whether a run is still going and re-subscribe to its stream. The

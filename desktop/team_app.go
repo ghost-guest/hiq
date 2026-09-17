@@ -78,7 +78,14 @@ type TeamTaskView struct {
 	Evidence       []string            `json:"evidence"`
 	Progress       string              `json:"progress"`
 	Error          string              `json:"error"`
-	Order          int                 `json:"order"`
+	// Approval is this card's human-in-the-loop gate ("", "before", "after").
+	Approval string `json:"approval"`
+	// ApprovalState is the live gate status ("", "pending", "approved",
+	// "rejected") — what the board's 待确认 column keys off.
+	ApprovalState string `json:"approvalState"`
+	// ApprovalNote is the human's confirmation/rejection reason.
+	ApprovalNote string `json:"approvalNote"`
+	Order        int    `json:"order"`
 }
 
 // TeamCriterionView is one acceptance check.
@@ -94,7 +101,19 @@ type TeamContextView struct {
 	Decisions     []TeamDecisionView `json:"decisions"`
 	Artifacts     []TeamArtifactView `json:"artifacts"`
 	OpenQuestions []string           `json:"openQuestions"`
-	Version       int                `json:"version"`
+	// Notes is the member-writable shared scratchpad (P4 共享上下文).
+	Notes   []TeamNoteView `json:"notes"`
+	Version int            `json:"version"`
+}
+
+// TeamNoteView is one shared-context note posted by a member (or the user).
+type TeamNoteView struct {
+	ID         string `json:"id"`
+	Author     string `json:"author"`
+	AuthorName string `json:"authorName"`
+	TaskID     string `json:"taskId"`
+	Text       string `json:"text"`
+	At         string `json:"at,omitempty"`
 }
 
 // TeamDecisionView is a settled decision on the blackboard.
@@ -107,11 +126,12 @@ type TeamDecisionView struct {
 
 // TeamArtifactView indexes a produced artifact.
 type TeamArtifactView struct {
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	Path   string `json:"path"`
-	TaskID string `json:"taskId"`
-	Kind   string `json:"kind"`
+	ID      string `json:"id"`
+	Title   string `json:"title"`
+	Path    string `json:"path"`
+	TaskID  string `json:"taskId"`
+	Kind    string `json:"kind"`
+	Summary string `json:"summary"`
 }
 
 // TeamPolicyView bounds team autonomy.
@@ -420,6 +440,112 @@ func (a *App) TeamBlackboardDigest(teamID string, maxChars int) (string, error) 
 	return teampkg.BlackboardDigest(t, maxChars), nil
 }
 
+// --- P4: 共享上下文 (shared context) + HITL (human-in-the-loop) --------------
+
+// AddTeamNote posts a shared-context note (P4 共享上下文). Members publish notes
+// from their own run output; this is the user's (or the leader's) way in, so a
+// human can steer the team's shared understanding without running a card.
+func (a *App) AddTeamNote(teamID, taskID, text string) (TeamProjectView, error) {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return TeamProjectView{}, err
+	}
+	if strings.TrimSpace(text) == "" {
+		return TeamProjectView{}, fmt.Errorf("随手记点东西吧")
+	}
+	updated, err := store.AddNote(teamID, teampkg.Note{
+		TaskID: strings.TrimSpace(taskID),
+		Text:   text,
+	})
+	if err != nil {
+		return TeamProjectView{}, err
+	}
+	a.emitTeamChanged(updated)
+	return toTeamProjectView(updated), nil
+}
+
+// TeamNotes lists a team's shared-context notes, newest first.
+func (a *App) TeamNotes(teamID string) ([]TeamNoteView, error) {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return nil, err
+	}
+	t, ok := store.Get(teamID)
+	if !ok {
+		return nil, fmt.Errorf("团队不存在: %s", teamID)
+	}
+	notes := t.SharedNotes()
+	out := make([]TeamNoteView, 0, len(notes))
+	for _, n := range notes {
+		out = append(out, TeamNoteView{
+			ID: n.ID, Author: n.Author, AuthorName: t.ResolveNoteAuthor(n.Author),
+			TaskID: n.TaskID, Text: n.Text, At: formatTeamTime(n.At),
+		})
+	}
+	return out, nil
+}
+
+// SetTeamTaskApproval sets or clears a card's HITL gate ("" | "before" |
+// "after"). Changing the gate clears any standing decision, so a mode switch can
+// never silently inherit an "approved".
+func (a *App) SetTeamTaskApproval(teamID, taskID, mode string) (TeamProjectView, error) {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return TeamProjectView{}, err
+	}
+	m := approvalModeFromView(mode)
+	if strings.TrimSpace(mode) != "" && !m.Valid() {
+		return TeamProjectView{}, fmt.Errorf("未知的确认方式: %s", mode)
+	}
+	updated, err := store.SetTaskApproval(teamID, taskID, m)
+	if err != nil {
+		return TeamProjectView{}, err
+	}
+	a.emitTeamChanged(updated)
+	return toTeamProjectView(updated), nil
+}
+
+// ApproveTeamTask is the human's "通过" on a card parked in 待确认. A before-gate
+// card is放行 and immediately dispatched (the point of HITL is that confirming
+// resumes the work, not that it needs a second click); an after-gate card's
+// deliverable is accepted and the card completes.
+func (a *App) ApproveTeamTask(teamID, taskID, note string) (TeamProjectView, error) {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return TeamProjectView{}, err
+	}
+	updated, err := store.ResolveApproval(teamID, taskID, true, note)
+	if err != nil {
+		return TeamProjectView{}, err
+	}
+	a.emitTeamChanged(updated)
+
+	if tk, ok := updated.Task(taskID); ok && tk.Status == taskmonitor.TaskStateQueued &&
+		strings.TrimSpace(tk.AssigneeID) != "" {
+		// Best-effort: if the card can't start (e.g. a prerequisite was
+		// reopened), the approval still stands and the board says why.
+		if started, err := a.RunTeamTask(teamID, taskID); err == nil {
+			return started, nil
+		}
+	}
+	return toTeamProjectView(updated), nil
+}
+
+// RejectTeamTask is the human's "驳回": the card fails with the reason, and the
+// reason is raised on the blackboard so the leader/re-planner sees it.
+func (a *App) RejectTeamTask(teamID, taskID, note string) (TeamProjectView, error) {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return TeamProjectView{}, err
+	}
+	updated, err := store.ResolveApproval(teamID, taskID, false, note)
+	if err != nil {
+		return TeamProjectView{}, err
+	}
+	a.emitTeamChanged(updated)
+	return toTeamProjectView(updated), nil
+}
+
 // DraftTeamMember turns a natural-language request into a 团员 configuration
 // ("帮我加一个擅长后端的团员"). With Adopt=true the member is created; otherwise
 // the draft is returned for the user to review first.
@@ -620,7 +746,7 @@ func toTeamProjectView(t teampkg.Team) TeamProjectView {
 		Goal:      t.Goal,
 		Members:   members,
 		Tasks:     tasks,
-		Context:   toTeamContextView(t.Context),
+		Context:   toTeamContextView(t),
 		Policy:    TeamPolicyView(t.Policy),
 		CreatedAt: formatTeamTime(t.CreatedAt),
 		UpdatedAt: formatTeamTime(t.UpdatedAt),
@@ -664,11 +790,15 @@ func toTeamTaskView(t teampkg.Team, tk teampkg.Task) TeamTaskView {
 		Evidence:       nonNilStrings(tk.Evidence),
 		Progress:       tk.Progress,
 		Error:          tk.Error,
+		Approval:       string(tk.Approval),
+		ApprovalState:  string(tk.ApprovalState),
+		ApprovalNote:   tk.ApprovalNote,
 		Order:          tk.Order,
 	}
 }
 
-func toTeamContextView(c teampkg.TeamContext) TeamContextView {
+func toTeamContextView(t teampkg.Team) TeamContextView {
+	c := t.Context
 	decisions := make([]TeamDecisionView, 0, len(c.Decisions))
 	for _, d := range c.Decisions {
 		decisions = append(decisions, TeamDecisionView{
@@ -678,7 +808,15 @@ func toTeamContextView(c teampkg.TeamContext) TeamContextView {
 	artifacts := make([]TeamArtifactView, 0, len(c.Artifacts))
 	for _, art := range c.Artifacts {
 		artifacts = append(artifacts, TeamArtifactView{
-			ID: art.ID, Title: art.Title, Path: art.Path, TaskID: art.TaskID, Kind: art.Kind,
+			ID: art.ID, Title: art.Title, Path: art.Path, TaskID: art.TaskID,
+			Kind: art.Kind, Summary: art.Summary,
+		})
+	}
+	notes := make([]TeamNoteView, 0, len(c.Notes))
+	for _, n := range c.Notes {
+		notes = append(notes, TeamNoteView{
+			ID: n.ID, Author: n.Author, AuthorName: t.ResolveNoteAuthor(n.Author),
+			TaskID: n.TaskID, Text: n.Text, At: formatTeamTime(n.At),
 		})
 	}
 	return TeamContextView{
@@ -687,6 +825,7 @@ func toTeamContextView(c teampkg.TeamContext) TeamContextView {
 		Decisions:     decisions,
 		Artifacts:     artifacts,
 		OpenQuestions: nonNilStrings(c.OpenQuestions),
+		Notes:         notes,
 		Version:       c.Version,
 	}
 }
@@ -731,6 +870,7 @@ func teamProjectViewToModel(tv TeamProjectView) teampkg.Team {
 			Decisions:     decisionsToModel(tv.Context.Decisions),
 			Artifacts:     artifactsToModel(tv.Context.Artifacts),
 			OpenQuestions: trimList(tv.Context.OpenQuestions),
+			Notes:         notesToModel(tv.Context.Notes),
 		},
 		Policy: policyToModel(tv.Policy),
 	}
@@ -771,8 +911,22 @@ func taskViewToModel(tv TeamTaskView) teampkg.Task {
 		Evidence:       trimList(tv.Evidence),
 		Progress:       tv.Progress,
 		Error:          tv.Error,
+		Approval:       approvalModeFromView(tv.Approval),
+		ApprovalState:  teampkg.ApprovalState(strings.TrimSpace(tv.ApprovalState)),
+		ApprovalNote:   strings.TrimSpace(tv.ApprovalNote),
 		Order:          tv.Order,
 	}
+}
+
+// approvalModeFromView maps the wire gate value onto the domain type. An
+// unknown value degrades to none rather than failing the save, so a stale panel
+// can never wedge the board.
+func approvalModeFromView(s string) teampkg.ApprovalMode {
+	m := teampkg.ApprovalMode(strings.TrimSpace(s))
+	if !m.Valid() {
+		return teampkg.ApprovalNone
+	}
+	return m
 }
 
 func decisionsToModel(ds []TeamDecisionView) []teampkg.Decision {
@@ -800,7 +954,30 @@ func artifactsToModel(as []TeamArtifactView) []teampkg.Artifact {
 	out := make([]teampkg.Artifact, 0, len(as))
 	for _, a := range as {
 		out = append(out, teampkg.Artifact{
-			ID: a.ID, Title: a.Title, Path: a.Path, TaskID: a.TaskID, Kind: a.Kind,
+			ID: a.ID, Title: a.Title, Path: a.Path, TaskID: a.TaskID,
+			Kind: a.Kind, Summary: a.Summary,
+		})
+	}
+	return out
+}
+
+// notesToModel converts wire notes back to the domain type. An empty author is
+// the user (a note typed in the panel), which the digest renders as 用户.
+func notesToModel(ns []TeamNoteView) []teampkg.Note {
+	if len(ns) == 0 {
+		return nil
+	}
+	out := make([]teampkg.Note, 0, len(ns))
+	now := time.Now().UTC()
+	for _, n := range ns {
+		at := now
+		if n.At != "" {
+			if parsed, err := time.Parse(time.RFC3339, n.At); err == nil {
+				at = parsed
+			}
+		}
+		out = append(out, teampkg.Note{
+			ID: n.ID, Author: n.Author, TaskID: n.TaskID, Text: n.Text, At: at,
 		})
 	}
 	return out
