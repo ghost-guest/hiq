@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -34,6 +37,8 @@ var (
 	exaAPIURL       = "https://api.exa.ai/search"
 	linkupAPIURL    = "https://api.linkup.so/v1/search"
 	anySearchAPIURL = "https://api.anysearch.com/v1/search"
+	bingSearchURL   = "https://www.bing.com/search"
+	baiduSearchURL  = "https://www.baidu.com/s"
 )
 
 // searchCache is the global search cache instance.
@@ -138,7 +143,7 @@ func (ws webSearch) Execute(ctx context.Context, args json.RawMessage) (string, 
 
 	client := ssrfGuardedClient(ws.proxyURLFor)
 
-	results, engineUsed, err := runHedgedSearch(ctx, client, p.Query)
+	results, engineUsed, err := runHedgedSearch(ctx, ws, client, p.Query)
 	if err != nil {
 		return "", err
 	}
@@ -176,7 +181,7 @@ type searchEngine struct {
 // configured engines first (they have paid quotas and better quality), then
 // AnySearch — always, because it works anonymously without an API key. That
 // last entry is what makes web_search zero-config out of the box.
-func buildSearchEngines(client *http.Client, query string) []searchEngine {
+func buildSearchEngines(ws webSearch, client *http.Client, query string) []searchEngine {
 	var engines []searchEngine
 	braveKey := os.Getenv("BRAVE_API_KEY")
 	if braveKey == "" {
@@ -201,19 +206,31 @@ func buildSearchEngines(client *http.Client, query string) []searchEngine {
 		engines = append(engines, searchEngine{"AnySearch", func(ctx context.Context) ([]searchResultItem, error) {
 			return searchAnySearch(ctx, client, key, query)
 		}})
-	} else {
-		// Zero-config fallback: AnySearch supports anonymous access (lower
-		// rate limits, full features). This keeps web_search usable with no
-		// configuration at all.
-		engines = append(engines, searchEngine{"AnySearch (free)", func(ctx context.Context) ([]searchResultItem, error) {
-			return searchAnySearch(ctx, client, "", query)
-		}})
 	}
+	// Direct-scrape engines: no API key, no SaaS dependency — we read the
+	// public search result pages ourselves, so a provider changing its API
+	// pricing/policy can't break them (only a markup redesign can, which is
+	// much rarer). They sit before the AnySearch anonymous fallback so the
+	// zero-config chain is fully self-directed first.
+	engines = append(engines,
+		searchEngine{"Bing (direct)", func(ctx context.Context) ([]searchResultItem, error) {
+			return searchBing(ctx, ws, query)
+		}},
+		searchEngine{"Baidu (direct)", func(ctx context.Context) ([]searchResultItem, error) {
+			return searchBaidu(ctx, ws, query)
+		}},
+	)
+	// Zero-config fallback: AnySearch supports anonymous access (lower
+	// rate limits, full features). This keeps web_search usable with no
+	// configuration at all.
+	engines = append(engines, searchEngine{"AnySearch (free)", func(ctx context.Context) ([]searchResultItem, error) {
+		return searchAnySearch(ctx, client, "", query)
+	}})
 	return engines
 }
 
-func runHedgedSearch(ctx context.Context, client *http.Client, query string) ([]searchResultItem, string, error) {
-	return runHedgedEngines(ctx, buildSearchEngines(client, query))
+func runHedgedSearch(ctx context.Context, ws webSearch, client *http.Client, query string) ([]searchResultItem, string, error) {
+	return runHedgedEngines(ctx, buildSearchEngines(ws, client, query))
 }
 
 // runHedgedEngines is the engine-agnostic core of the hedged search. It
@@ -512,6 +529,159 @@ func searchAnySearch(ctx context.Context, client *http.Client, key, query string
 			URL:     r.URL,
 			Snippet: snippet,
 		})
+	}
+	return out, nil
+}
+
+// --- Direct-scrape engines (Bing / Baidu) ---
+//
+// These read the public search result pages instead of calling a SaaS API, so
+// they need no key and survive provider pricing/policy changes. The tradeoff
+// is markup coupling: we parse with tolerant regexes over the stable anchors
+// (Bing's b_algo blocks, Baidu's /link?url= redirect anchors) and degrade to
+// "no results" rather than erroring on cosmetic markup shifts.
+
+// scrapeUA mimics a browser: search engines gate plain-UMA requests harder.
+const scrapeUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+
+// scrapeClient builds an SSRF-guarded client with browser-ish headers and, for
+// Baidu, a cookie jar (the first response seeds BAIDUID via redirects; without
+// a jar every request looks like a fresh bot).
+func scrapeClient(ws webSearch, jar bool) *http.Client {
+	c := ssrfGuardedClient(ws.proxyURLFor)
+	if jar {
+		c.Jar, _ = cookiejar.New(nil)
+	}
+	return c
+}
+
+var (
+	bingAlgoRe = regexp.MustCompile(`<li class="b_algo[^"]*".*?</li>`)
+	bingLinkRe = regexp.MustCompile(`<h2[^>]*><a[^>]*href="([^"]+)"[^>]*>(.*?)</a>`)
+	bingSnipRe = regexp.MustCompile(`<p[^>]*>(.*?)</p>`)
+	stripTagRe = regexp.MustCompile(`<[^>]+>`)
+)
+
+// searchBing scrapes https://www.bing.com/search (redirects to cn.bing.com in
+// CN, which the client follows). Result markup: <li class="b_algo"><h2><a
+// href=URL>TITLE</a></h2> ... <p>SNIPPET</p>.
+func searchBing(ctx context.Context, ws webSearch, query string) ([]searchResultItem, error) {
+	reqCtx, cancel := context.WithTimeout(ctx, webSearchTimeout)
+	defer cancel()
+
+	u, _ := url.Parse(bingSearchURL)
+	q := u.Query()
+	q.Set("q", query)
+	q.Set("count", "10")
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(reqCtx, "GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", scrapeUA)
+	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,*/*;q=0.5")
+
+	resp, err := scrapeClient(ws, false).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, webSearchErrorMaxRead))
+		return nil, fmt.Errorf("bing returned status %d: %s", resp.StatusCode, string(body))
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, err
+	}
+
+	var out []searchResultItem
+	for _, block := range bingAlgoRe.FindAllString(string(body), 10) {
+		m := bingLinkRe.FindStringSubmatch(block)
+		if m == nil {
+			continue
+		}
+		title := strings.TrimSpace(stripTagRe.ReplaceAllString(m[2], ""))
+		if title == "" {
+			continue
+		}
+		item := searchResultItem{Title: title, URL: m[1]}
+		if s := bingSnipRe.FindStringSubmatch(block); s != nil {
+			item.Snippet = strings.TrimSpace(stripTagRe.ReplaceAllString(s[1], ""))
+			if len(item.Snippet) > 400 {
+				item.Snippet = item.Snippet[:400] + "..."
+			}
+		}
+		out = append(out, item)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("bing markup yielded no results (page layout may have changed)")
+	}
+	return out, nil
+}
+
+var (
+	// Baidu salts its CSS classes per deploy, so anchor on the stable part:
+	// result titles are <a ... href=".../link?url=...">TITLE</a>.
+	baiduLinkRe = regexp.MustCompile(`<a[^>]+href="((?:https?:)?//www\.baidu\.com/link\?url=[^"]+)"[^>]*>(.*?)</a>`)
+	baiduBlock  = regexp.MustCompile(`(?s)<div class="result[ "]`)
+)
+
+// searchBaidu scrapes https://www.baidu.com/s. Result URLs are Baidu redirect
+// links (www.baidu.com/link?url=...) — we surface them as-is; they resolve to
+// the target site when opened. A cookie jar is required or Baidu serves a
+// verification page.
+func searchBaidu(ctx context.Context, ws webSearch, query string) ([]searchResultItem, error) {
+	reqCtx, cancel := context.WithTimeout(ctx, webSearchTimeout)
+	defer cancel()
+
+	u, _ := url.Parse(baiduSearchURL)
+	q := u.Query()
+	q.Set("wd", query)
+	q.Set("rn", "10")
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(reqCtx, "GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", scrapeUA)
+	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,*/*;q=0.5")
+
+	resp, err := scrapeClient(ws, true).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, webSearchErrorMaxRead))
+		return nil, fmt.Errorf("baidu returned status %d: %s", resp.StatusCode, string(body))
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	if err != nil {
+		return nil, err
+	}
+
+	seen := map[string]bool{}
+	var out []searchResultItem
+	for _, m := range baiduLinkRe.FindAllStringSubmatch(string(body), 40) {
+		title := strings.TrimSpace(stripTagRe.ReplaceAllString(m[2], ""))
+		if title == "" || seen[title] {
+			continue
+		}
+		seen[title] = true
+		// Snippet: the raw page around the match is too noisy to parse
+		// reliably (salted classes); the title itself carries the signal.
+		out = append(out, searchResultItem{Title: title, URL: m[1]})
+		if len(out) >= 10 {
+			break
+		}
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("baidu markup yielded no results (page layout may have changed)")
 	}
 	return out, nil
 }

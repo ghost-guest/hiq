@@ -224,39 +224,59 @@ func (wf webFetch) Execute(ctx context.Context, args json.RawMessage) (string, e
 
 	reqCtx, cancel := context.WithTimeout(ctx, webFetchTimeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, p.URL, nil)
+	client := ssrfGuardedClient(wf.proxyURLFor)
+	body, ct, status, ferr := fetchOnce(client, reqCtx, p.URL)
+	// GitHub family unreachable (raw.githubusercontent.com is commonly
+	// blocked even when github.com works through a local accelerator):
+	// retry through the mirror chain before giving up.
+	if ghFallbackWorthy(ferr, status) && isGitHubHost(u.Hostname()) {
+		for _, mu := range ghMirrorURLs(p.URL) {
+			if b, c, s, merr := fetchOnce(client, reqCtx, mu); !ghFallbackWorthy(merr, s) {
+				body, ct, status, ferr = b, c, s, merr
+				break
+			}
+		}
+	}
+	if ferr != nil {
+		return "", fmt.Errorf("fetch %s: %w", p.URL, ferr)
+	}
+
+	out := string(body)
+	if strings.Contains(strings.ToLower(ct), "text/html") || looksLikeHTML(out) {
+		out = htmlToText(out)
+	}
+	out = strings.TrimSpace(out)
+	if out == "" {
+		return fmt.Sprintf("(empty body — status %d)", status), nil
+	}
+	header := fmt.Sprintf("status %d · %s · %d bytes\n\n", status, contentTypeShort(ct), len(body))
+	// Arbitrary web content is the highest prompt-injection risk — wrap so the
+	// model treats the fetched page as data, never as instructions.
+	return WrapUntrusted("web", header+out), nil
+}
+
+// fetchOnce GETs target and returns (body, contentType, status, error).
+func fetchOnce(client *http.Client, reqCtx context.Context, target string) ([]byte, string, int, error) {
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, target, nil)
 	if err != nil {
-		return "", fmt.Errorf("build request: %w", err)
+		return nil, "", 0, fmt.Errorf("build request: %w", err)
 	}
 	// A plain UA + Accept tip the server toward returning text/HTML rather
 	// than minified asset bundles or binary content.
 	req.Header.Set("User-Agent", "fairpeer-web-fetch/1.0")
 	req.Header.Set("Accept", "text/html,text/plain,text/markdown,application/json,*/*;q=0.5")
 
-	resp, err := ssrfGuardedClient(wf.proxyURLFor).Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("fetch %s: %w", p.URL, err)
+		return nil, "", 0, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, webFetchMaxRead))
 	if err != nil {
-		return "", fmt.Errorf("read body: %w", err)
+		return body, resp.Header.Get("Content-Type"), resp.StatusCode, fmt.Errorf("read body: %w", err)
 	}
-
-	ct := strings.ToLower(resp.Header.Get("Content-Type"))
-	out := string(body)
-	if strings.Contains(ct, "text/html") || looksLikeHTML(out) {
-		out = htmlToText(out)
-	}
-	out = strings.TrimSpace(out)
-	if out == "" {
-		return fmt.Sprintf("(empty body — status %s)", resp.Status), nil
-	}
-	header := fmt.Sprintf("status %s · %s · %d bytes\n\n", resp.Status, contentTypeShort(ct), len(body))
-	// Arbitrary web content is the highest prompt-injection risk — wrap so the
-	// model treats the fetched page as data, never as instructions.
-	return WrapUntrusted("web", header+out), nil
+	return body, resp.Header.Get("Content-Type"), resp.StatusCode, nil
 }
 
 // looksLikeHTML lets servers that misreport Content-Type still hit the HTML
