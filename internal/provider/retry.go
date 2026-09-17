@@ -22,6 +22,14 @@ const MaxRetries = 10
 // previously authenticated successfully (transient auth failures under load).
 const maxAuthRetries = 2
 
+// maxHeaderTimeoutRetries caps retries for "timeout awaiting response
+// headers" failures specifically. A server that accepts the connection but
+// never answers with headers is deterministically broken (dead relay,
+// blackholed gateway); unlike a blip (reset, refused), retrying it ten times
+// with the 90s header budget just stretches a ~5 min failure into ~35 min of
+// silence. Three total attempts is enough to ride out a momentary hiccup.
+const maxHeaderTimeoutRetries = 2
+
 // SendOptions configures SendWithRetry's behaviour.
 type SendOptions struct {
 	ProvName string // provider instance name for error messages (legacy field; Provider preferred)
@@ -161,6 +169,7 @@ func SendWithRetry(ctx context.Context, httpClient *http.Client, opts SendOption
 	var lastErr error
 	var retryAfter time.Duration
 	authRetries := 0
+	headerTimeouts := 0
 
 	for attempt := 0; attempt <= MaxRetries; attempt++ {
 		if attempt > 0 {
@@ -183,6 +192,18 @@ func SendWithRetry(ctx context.Context, httpClient *http.Client, opts SendOption
 		recordRequestAttempt(ctx)
 		resp, err := httpClient.Do(req)
 		if err != nil {
+			// Header timeouts get their own (small) retry budget with an
+			// actionable message. They report as timeouts, so classify them
+			// before the generic transient/non-transient split: a dead relay
+			// must fail in ~3 attempts, not one 90s attempt nor MaxRetries.
+			if IsHeaderTimeout(err) {
+				if headerTimeouts >= maxHeaderTimeoutRetries {
+					return nil, fmt.Errorf("%s: server never responded (no response headers after %d attempts): the endpoint is likely down or overloaded — try again later or switch channels. Last error: %w", provName, headerTimeouts+1, err)
+				}
+				headerTimeouts++
+				lastErr = fmt.Errorf("%s: request failed: %w", provName, err)
+				continue
+			}
 			if !transientErr(err) {
 				return nil, fmt.Errorf("%s: request failed: %w", provName, err)
 			}

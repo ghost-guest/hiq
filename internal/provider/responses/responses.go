@@ -155,7 +155,7 @@ func New(cfg Config) provider.Provider {
 	httpClient := &http.Client{}
 	if built, err := netclient.NewHTTPClient(cfg.Proxy, netclient.TransportOptions{
 		DialTimeout: 30 * time.Second, KeepAlive: 30 * time.Second,
-		TLSHandshakeTimeout: 15 * time.Second, ResponseHeaderTimeout: 300 * time.Second,
+		TLSHandshakeTimeout: 15 * time.Second, ResponseHeaderTimeout: provider.ResponseHeaderTimeout(),
 	}); err == nil {
 		httpClient = built
 	}

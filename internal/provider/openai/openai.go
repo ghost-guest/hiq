@@ -122,10 +122,13 @@ func New(cfg provider.Config) (provider.Provider, error) {
 func newHTTPClient(cfg provider.Config) (*http.Client, error) {
 	spec, _ := cfg.Extra["proxy_spec"].(netclient.ProxySpec)
 	return netclient.NewHTTPClient(spec, netclient.TransportOptions{
-		DialTimeout:           30 * time.Second,
-		KeepAlive:             30 * time.Second,
-		TLSHandshakeTimeout:   15 * time.Second,
-		ResponseHeaderTimeout: 180 * time.Second, // models can think for a while before the first token; increased for slow models
+		DialTimeout:         30 * time.Second,
+		KeepAlive:           30 * time.Second,
+		TLSHandshakeTimeout: 15 * time.Second,
+		// Streaming servers send headers promptly; the model thinking happens
+		// after the 200. A long header wait only delays failing over a dead
+		// relay (see provider.DefaultResponseHeaderTimeout).
+		ResponseHeaderTimeout: provider.ResponseHeaderTimeout(),
 	})
 }
 
