@@ -91,8 +91,11 @@ export function ModelSwitcher({ label, tabId, onPick }: { label: string; tabId?:
     label: providerLabel(provider)
   })).sort((a, b) => a.label.localeCompare(b.label));
 
-  // Only use flat list if there are very few models, to prevent long cluttered menus.
-  const flatMode = models.length <= 5;
+  // Flat list when a single provider (a one-group cascade is pointless) or few
+  // models overall; otherwise cascade submenus per provider. The flat list must
+  // include EVERY provider's models — filtering to the first group here once
+  // hid all other channels' models behind an alphabetically-lucky provider.
+  const flatMode = visibleCats.length <= 1 || models.length <= 5;
 
   return (
     <div className="modelsw">
@@ -119,10 +122,8 @@ export function ModelSwitcher({ label, tabId, onPick }: { label: string; tabId?:
           {models.length === 0 && <div className="modelsw__empty">{t("status.noModels")}</div>}
 
           {flatMode
-            ? /* Single category: flat list (original behaviour) */
-              (grouped.get(visibleCats[0]?.id) ?? []).map((m) => (
-                <ModelRow key={m.ref} m={m} onPick={pick} />
-              ))
+            ? /* Flat list across ALL providers (rows carry a provider sub-label) */
+              models.map((m) => <ModelRow key={m.ref} m={m} onPick={pick} />)
             : /* Multiple categories: cascade submenus */
               visibleCats.map((cat) => {
                 const items = grouped.get(cat.id) ?? [];
