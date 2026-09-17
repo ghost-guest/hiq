@@ -20,7 +20,7 @@ import {
 import { TEXT_SIZES, applyTextSize, getTextSize, type TextSize } from "../lib/textSize";
 import { FONT_FAMILIES, applyFontFamily, getFontFamily, type FontFamily } from "../lib/fontFamily";
 import { getDisplayMode, onDisplayModeChange, setDisplayMode as setLocalDisplayMode } from "../lib/displayMode";
-import type { BotConnectionView, BotInstallStartResult, BotSettingsView, CoWorkSettingsView, HookConfigView, HooksSettingsView, MailProbeResult, ManagedBrowserStatus, NetworkView, ProviderTemplate, ProviderView, RegistryStatus, SecretStoreStatus, SettingsTab, SettingsView, WallpaperView } from "../lib/types";
+import type { BotConnectionView, BotInstallStartResult, BotSettingsView, CoWorkSettingsView, HookConfigView, HooksSettingsView, MailProbeResult, ManagedBrowserStatus, NetworkView, PatrolView, ProviderTemplate, ProviderView, RegistryStatus, SecretStoreStatus, SettingsTab, SettingsView, WallpaperView } from "../lib/types";
 import {
   WALLPAPER_BLUR_MAX,
   WALLPAPER_DIM_MAX,
@@ -153,7 +153,7 @@ export function SettingsPanel({ onClose, onChanged, initialTab, initialPayload }
                 {tab === "mcp" && <SettingsPageShell key={tab} s={s} tab={tab} busy={busy ?? false} apply={apply}><MCPServersSettingsPage initialHighlight={initialPayload} />{s && <WebSearchSection s={s} busy={busy} apply={apply} />}</SettingsPageShell>}
                 {tab === "skills" && <SettingsPageShell key={tab} s={s} tab={tab} busy={false} apply={apply}><SkillsSettingsPage initialHighlight={initialPayload} /></SettingsPageShell>}
                 {tab === "memory" && <SettingsPageShell key={tab} s={s} tab={tab} busy={false} apply={apply}><MemorySettingsPage /></SettingsPageShell>}
-                {tab === "permissions" && s && <SettingsPageShell key={tab} s={s} tab={tab} busy={busy} apply={apply}><PermissionsSection s={s} busy={busy} apply={apply} /></SettingsPageShell>}
+                {tab === "permissions" && s && <SettingsPageShell key={tab} s={s} tab={tab} busy={busy} apply={apply}><PermissionsSection s={s} busy={busy} apply={apply} /><PatrolSection s={s} busy={busy} apply={apply} /></SettingsPageShell>}
                 {tab === "sandbox" && s && <SettingsPageShell key={tab} s={s} tab={tab} busy={busy} apply={apply}><SandboxSection s={s} busy={busy} apply={apply} /></SettingsPageShell>}
                 {tab === "network" && s && <SettingsPageShell key={tab} s={s} tab={tab} busy={busy} apply={apply}><NetworkSection s={s} busy={busy} apply={apply} /></SettingsPageShell>}
                 {tab === "hooks" && <SettingsPageShell key={tab} s={s} tab={tab} busy={false} apply={apply}><HooksSection onChanged={() => onChanged()} /></SettingsPageShell>}
@@ -4168,6 +4168,135 @@ function PermissionsSection({ s, busy, apply }: SectionProps) {
       </div>
     </SettingsSection>
     </>
+  );
+}
+
+// PatrolSection —— 主动巡检心跳的权限档位（internal/patrol，[patrol] 段）。
+// 两个轴，都可被用户调整：mode（off/readonly/assist）决定是否巡检、以及新信号
+// 能否自起一个回合；allow_write 只在 assist 下有效，决定该回合是否可以改文件。
+// 默认（含 readonly）绝不写盘、绝不占用回合——只出报告。
+// 底部的「立即巡检」只读跑一遍，让用户不必等一个完整周期就能验证心跳确实在工作。
+function PatrolSection({ s, busy, apply }: SectionProps) {
+  const t = useT();
+  const p = s.patrol;
+  const [mins, setMins] = useState(() => String(Math.max(1, Math.round(p.intervalSec / 60))));
+  const [check, setCheck] = useState<{ busy: boolean; msg: string }>({ busy: false, msg: "" });
+
+  useEffect(() => {
+    setMins(String(Math.max(1, Math.round(p.intervalSec / 60))));
+  }, [p.intervalSec]);
+
+  const save = (next: Partial<PatrolView>) => {
+    const merged = { ...p, ...next };
+    // Mirror the kernel: allow_write is meaningless without assist, so it is
+    // sent as false rather than stored behind a mode that never acts.
+    const allowWrite = merged.mode === "assist" ? merged.allowWrite : false;
+    return apply(() => app.SetPatrol(merged.enabled, merged.mode, allowWrite, merged.intervalSec, merged.checks));
+  };
+
+  const commitInterval = () => {
+    const n = Math.round(Number(mins));
+    if (!Number.isFinite(n) || n < 1) {
+      setMins(String(Math.max(1, Math.round(p.intervalSec / 60))));
+      return;
+    }
+    const seconds = Math.min(24 * 60, n) * 60;
+    if (seconds !== p.intervalSec) void save({ intervalSec: seconds });
+  };
+
+  const toggleCheck = (name: string, on: boolean) => {
+    const set = new Set(p.checks);
+    if (on) set.add(name);
+    else set.delete(name);
+    void save({ checks: [...set] });
+  };
+
+  const runNow = async () => {
+    setCheck({ busy: true, msg: "" });
+    try {
+      const fired = await app.PatrolCheckNow();
+      setCheck({ busy: false, msg: t("settings.patrolCheckDone", { n: String(fired) }) });
+    } catch (err) {
+      setCheck({ busy: false, msg: err instanceof Error ? err.message : String(err) });
+    }
+  };
+
+  return (
+    <SettingsSection
+      title={t("settings.patrol")}
+      description={t("settings.patrolHint")}
+      actions={
+        <span className="set-rules__hint">
+          {p.running
+            ? t("settings.patrolRunning", { p: String(p.passes), f: String(p.fired) })
+            : t("settings.patrolStopped")}
+        </span>
+      }
+    >
+      <SettingsField label={t("settings.patrolEnabled")} hint={t("settings.patrolEnabledHint")}>
+        <input
+          type="checkbox"
+          checked={p.enabled}
+          disabled={busy}
+          onChange={(e) => void save({ enabled: e.target.checked })}
+        />
+      </SettingsField>
+      <SettingsField label={t("settings.patrolMode")} hint={t("settings.patrolModeHint")}>
+        <select
+          className="mem-select set-grow"
+          value={p.mode}
+          disabled={busy || !p.enabled}
+          onChange={(e) => void save({ mode: e.target.value })}
+        >
+          <option value="off">{t("settings.patrolModeOff")}</option>
+          <option value="readonly">{t("settings.patrolModeReadonly")}</option>
+          <option value="assist">{t("settings.patrolModeAssist")}</option>
+        </select>
+      </SettingsField>
+      <SettingsField label={t("settings.patrolAllowWrite")} hint={t("settings.patrolAllowWriteHint")}>
+        <input
+          type="checkbox"
+          checked={p.mode === "assist" && p.allowWrite}
+          disabled={busy || !p.enabled || p.mode !== "assist"}
+          onChange={(e) => void save({ allowWrite: e.target.checked })}
+        />
+      </SettingsField>
+      <SettingsField label={t("settings.patrolInterval")} hint={t("settings.patrolIntervalHint")}>
+        <input
+          className="mem-input"
+          type="number"
+          min={1}
+          max={1440}
+          value={mins}
+          disabled={busy || !p.enabled}
+          onChange={(e) => setMins(e.target.value)}
+          onBlur={commitInterval}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitInterval();
+          }}
+        />
+      </SettingsField>
+      <SettingsField label={t("settings.patrolChecks")} hint={t("settings.patrolChecksHint")}>
+        <div className="set-rules__chips">
+          {(["git", "markers"] as const).map((name) => (
+            <label className="set-rule" key={name}>
+              <input
+                type="checkbox"
+                checked={p.checks.includes(name)}
+                disabled={busy || !p.enabled}
+                onChange={(e) => toggleCheck(name, e.target.checked)}
+              />
+              {t(name === "git" ? "settings.patrolCheckGit" : "settings.patrolCheckMarkers")}
+            </label>
+          ))}
+        </div>
+      </SettingsField>
+      <SettingsField label={t("settings.patrolNow")} hint={check.msg || t("settings.patrolNowHint")}>
+        <button className="btn btn--small" disabled={busy || check.busy || !p.enabled} onClick={() => void runNow()}>
+          {check.busy ? t("settings.patrolChecking") : t("settings.patrolNowAction")}
+        </button>
+      </SettingsField>
+    </SettingsSection>
   );
 }
 

@@ -494,6 +494,12 @@ export interface AppBindings {
   AddPermissionRule(list: string, rule: string): Promise<void>;
   RemovePermissionRule(list: string, rule: string): Promise<void>;
   SetSandbox(bash: string, network: boolean, workspaceRoot: string, allowWrite: string[]): Promise<void>;
+  // Proactive patrol: the permission dial (mode off|readonly|assist x
+  // allowWrite) plus the inspection cadence. PatrolCheckNow runs one pass
+  // immediately and returns how many reports it produced, so the panel can
+  // prove the heartbeat works without waiting an interval.
+  SetPatrol(enabled: boolean, mode: string, allowWrite: boolean, intervalSec: number, checks: string[]): Promise<void>;
+  PatrolCheckNow(): Promise<number>;
   SetNetwork(n: NetworkView): Promise<void>;
   SetBotSettings(b: BotSettingsView): Promise<void>;
   // coWork profile settings (browser/PPT/email/RAG). Secrets go to a managed
@@ -2208,6 +2214,16 @@ function makeMockApp(): AppBindings {
       exaKeySet: false,
       linkupKeySet: false,
       anysearchKeySet: false,
+    },
+    patrol: {
+      enabled: false,
+      mode: "readonly",
+      allowWrite: false,
+      intervalSec: 900,
+      checks: ["git", "markers"],
+      running: false,
+      passes: 0,
+      fired: 0,
     },
     desktopLanguage: "",
     desktopTheme: "light",
@@ -4513,6 +4529,23 @@ function makeMockApp(): AppBindings {
     },
         async SetSandbox(bash: string, network: boolean, workspaceRoot: string, allowWrite: string[]) {
           settings.sandbox = { bash, network, workspaceRoot, allowWrite };
+        },
+        async SetPatrol(enabled: boolean, mode: string, allowWrite: boolean, intervalSec: number, checks: string[]) {
+          settings.patrol = {
+            enabled,
+            mode,
+            // Mirrors the Go side: allow_write is meaningless without assist
+            // and is cleared rather than stored for a mode that never acts.
+            allowWrite: mode === "assist" ? allowWrite : false,
+            intervalSec,
+            checks,
+            running: enabled && mode !== "off",
+            passes: 0,
+            fired: 0,
+          };
+        },
+        async PatrolCheckNow() {
+          return 0;
         },
         async SetNetwork(n: NetworkView) {
           settings.network = n;

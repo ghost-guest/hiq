@@ -165,16 +165,19 @@ type SettingsView struct {
 	Bot               BotSettingsView    `json:"bot"`
 	Cowork            CoWorkSettingsView `json:"cowork"`
 	WebSearch         WebSearchView      `json:"webSearch"`
-	DesktopLanguage   string             `json:"desktopLanguage"`
-	DesktopTheme      string             `json:"desktopTheme"`
-	DesktopThemeStyle string             `json:"desktopThemeStyle"`
-	CloseBehavior     string             `json:"closeBehavior"`
-	DisplayMode       string             `json:"displayMode"`
-	CheckUpdates      bool               `json:"checkUpdates"`
-	Telemetry         bool               `json:"telemetry"`
-	Metrics           bool               `json:"metrics"`
-	ExpandThinking    bool               `json:"expandThinking"`
-	ConfigPath        string             `json:"configPath"`
+	// Patrol is the proactive-inspection heartbeat's permission dial plus live
+	// status. See patrol_app.go.
+	Patrol            PatrolView `json:"patrol"`
+	DesktopLanguage   string     `json:"desktopLanguage"`
+	DesktopTheme      string     `json:"desktopTheme"`
+	DesktopThemeStyle string     `json:"desktopThemeStyle"`
+	CloseBehavior     string     `json:"closeBehavior"`
+	DisplayMode       string     `json:"displayMode"`
+	CheckUpdates      bool       `json:"checkUpdates"`
+	Telemetry         bool       `json:"telemetry"`
+	Metrics           bool       `json:"metrics"`
+	ExpandThinking    bool       `json:"expandThinking"`
+	ConfigPath        string     `json:"configPath"`
 	// ProviderKinds lists the provider implementations the kernel actually
 	// registered (provider.Kinds()), so the editor's "kind" picker offers only
 	// kinds that resolve — selecting an unregistered one would fail the rebuild.
@@ -364,6 +367,7 @@ func (a *App) Settings() SettingsView {
 			Metrics:           false,
 			ExpandThinking:    false,
 			SecretStore:       secretStoreView(),
+			Patrol:            patrolViewWhenUnreadable(),
 		}
 	}
 	ctrl := a.activeCtrl()
@@ -423,6 +427,7 @@ func (a *App) Settings() SettingsView {
 			LinkupKeySet:    os.Getenv("LINKUP_API_KEY") != "",
 			AnySearchKeySet: os.Getenv("ANYSEARCH_API_KEY") != "",
 		},
+		Patrol:            patrolView(cfg),
 		DesktopLanguage:   cfg.DesktopLanguage(),
 		DesktopTheme:      cfg.DesktopTheme(),
 		DesktopThemeStyle: cfg.DesktopThemeStyle(),

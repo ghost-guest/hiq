@@ -77,6 +77,11 @@ type Config struct {
 	// back into the session: whether a result may start its own turn, and which
 	// results raise an immediate notice. See DeferredConfig.
 	Deferred DeferredConfig `toml:"deferred"`
+	// Patrol ([patrol]) controls the proactive inspection heartbeat: while the
+	// user is away a session periodically inspects its workspace and reports
+	// what changed. Off by default; when on it only reports unless the user
+	// raises the permission level. See PatrolConfig.
+	Patrol PatrolConfig `toml:"patrol"`
 	// Cowork holds coWork (office) profile settings — currently just the browser
 	// path override. Empty means auto-detect; a non-empty path is tried first
 	// (and the user is guided to set it when no browser is found).
@@ -227,7 +232,9 @@ func (d DeferredConfig) EnabledEffective() bool { return boolOrNil(d.Enabled, tr
 
 // TriggerParentTurnEffective reports whether a finished result may start its
 // own turn (default: off).
-func (d DeferredConfig) TriggerParentTurnEffective() bool { return boolOrNil(d.TriggerParentTurn, false) }
+func (d DeferredConfig) TriggerParentTurnEffective() bool {
+	return boolOrNil(d.TriggerParentTurn, false)
+}
 
 // NotifyOnFailureEffective reports whether failures notify immediately
 // (default: on).
@@ -261,6 +268,83 @@ func (d DeferredConfig) BodyLimitBytesEffective() int {
 		return d.BodyLimitBytes
 	}
 	return DefaultDeferredBodyLimitBytes
+}
+
+// PatrolConfig controls the proactive inspection heartbeat. While the user is
+// away, patrol periodically inspects the session's workspace (git state,
+// unresolved TODO/FIXME markers) and hands what changed to the session as an
+// ordinary background result.
+//
+// The permission dial is deliberately two settings, both conservative:
+//
+//	mode        off (default) | readonly | assist
+//	allow_write only meaningful under assist; default off
+//
+// With the defaults — or with mode="readonly" — patrol never writes a file and
+// never starts a turn: a report only rides the next turn's context plus a
+// notice. Raising it to "assist" lets a fresh warn/high signal start its own
+// turn, and allow_write decides whether that turn may modify files. The normal
+// tool-permission gate still applies in every case, so allow_write is an extra
+// ceiling, not a bypass.
+type PatrolConfig struct {
+	// Enabled turns the heartbeat on. nil = off (no inspection, no tokens).
+	Enabled *bool `toml:"enabled"`
+	// Mode is the autonomy level: "off" | "readonly" | "assist". Empty or
+	// unrecognized = "readonly".
+	Mode string `toml:"mode"`
+	// AllowWrite lets an assist-mode patrol turn modify files. nil = off
+	// (investigate and report only).
+	AllowWrite *bool `toml:"allow_write"`
+	// IntervalSec is the patrol cadence in seconds. 0 = 900 (15 minutes).
+	IntervalSec int `toml:"interval_sec"`
+	// Checks selects the inspectors to run. Empty = all of ["git", "markers"].
+	Checks []string `toml:"checks"`
+	// BodyLimitBytes truncates one report body. 0 = 4000.
+	BodyLimitBytes int `toml:"body_limit_bytes"`
+}
+
+// Defaults for [patrol].
+const (
+	DefaultPatrolIntervalSec    = 900
+	DefaultPatrolBodyLimitBytes = 4000
+)
+
+// EnabledEffective reports whether the patrol heartbeat runs (default: off).
+func (p PatrolConfig) EnabledEffective() bool { return boolOrNil(p.Enabled, false) }
+
+// ModeEffective normalizes the autonomy level. Empty or unrecognized falls back
+// to the safe level ("readonly"), never to "assist".
+func (p PatrolConfig) ModeEffective() string {
+	switch strings.ToLower(strings.TrimSpace(p.Mode)) {
+	case "off", "false", "none", "disabled":
+		return "off"
+	case "assist", "act", "write", "auto":
+		return "assist"
+	default:
+		return "readonly"
+	}
+}
+
+// AllowWriteEffective reports whether an assist-mode turn may modify files
+// (default: off).
+func (p PatrolConfig) AllowWriteEffective() bool { return boolOrNil(p.AllowWrite, false) }
+
+// IntervalSecondsEffective returns the patrol cadence in seconds, applying the
+// default when unset.
+func (p PatrolConfig) IntervalSecondsEffective() int {
+	if p.IntervalSec > 0 {
+		return p.IntervalSec
+	}
+	return DefaultPatrolIntervalSec
+}
+
+// BodyLimitBytesEffective returns the report-body cap, applying the default
+// when unset.
+func (p PatrolConfig) BodyLimitBytesEffective() int {
+	if p.BodyLimitBytes > 0 {
+		return p.BodyLimitBytes
+	}
+	return DefaultPatrolBodyLimitBytes
 }
 
 // UITheme normalizes ui.theme (dark/light/auto). Empty or unrecognized falls

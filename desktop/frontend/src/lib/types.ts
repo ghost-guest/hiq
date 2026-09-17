@@ -1580,6 +1580,23 @@ export interface WebSearchView {
   anysearchKeySet: boolean;
 }
 
+// PatrolView is the proactive-inspection heartbeat (internal/patrol): the
+// permission dial the user controls plus live status. `running`/`passes`/`fired`
+// are runtime-only and reset when the app restarts.
+export interface PatrolView {
+  enabled: boolean;
+  /** "off" | "readonly" | "assist" */
+  mode: string;
+  /** Only meaningful under assist: may an assist turn modify files? */
+  allowWrite: boolean;
+  intervalSec: number;
+  /** Inspector names in use: "git", "markers". */
+  checks: string[];
+  running: boolean;
+  passes: number;
+  fired: number;
+}
+
 export interface BotInstallStartResult {
   ok: boolean;
   provider: string;
@@ -1689,6 +1706,7 @@ export interface SettingsView {
   bot: BotSettingsView;
   cowork: CoWorkSettingsView;
   webSearch: WebSearchView;
+  patrol: PatrolView;
   desktopLanguage: string; // "" | "en" | "zh"; empty = auto
   desktopTheme: string; // "auto" | "dark" | "light"
   desktopThemeStyle: string;

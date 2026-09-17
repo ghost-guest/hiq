@@ -472,6 +472,13 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	}
 	b.WriteString("\n")
 
+	if shouldRenderDeferred(c, defaults, scope) {
+		renderDeferredConfig(&b, c.Deferred)
+	}
+	if shouldRenderPatrol(c, defaults, scope) {
+		renderPatrolConfig(&b, c.Patrol)
+	}
+
 	if shouldRenderBot(c, defaults, scope) {
 		b.WriteString("# Bot gateway: multi-channel IM bot for QQ, Feishu/Lark, and WeChat.\n")
 		b.WriteString("[bot]\n")
@@ -625,6 +632,103 @@ func shouldRenderSystemPrompt(c, defaults *Config, scope RenderScope) bool {
 		return true
 	}
 	return strings.TrimSpace(c.Agent.SystemPrompt) != "" && c.Agent.SystemPrompt != defaults.Agent.SystemPrompt
+}
+
+// shouldRenderDeferred and shouldRenderPatrol follow the same rule as the other
+// gated sections: always emit for a user/full render (where the settings panel
+// saves, and where a missing section would silently drop the user's choice),
+// but only emit into a project file when it actually differs from the defaults.
+// These sections ARE round-tripped through RenderTOMLForScope, so forgetting to
+// render one erases it on the next save — they are not optional decoration.
+func shouldRenderDeferred(c, defaults *Config, scope RenderScope) bool {
+	if scope != RenderScopeProject {
+		return true
+	}
+	return !reflect.DeepEqual(c.Deferred, defaults.Deferred)
+}
+
+func shouldRenderPatrol(c, defaults *Config, scope RenderScope) bool {
+	if scope != RenderScopeProject {
+		return true
+	}
+	return !reflect.DeepEqual(c.Patrol, defaults.Patrol)
+}
+
+// writeOptBool writes "key = <value>" when the pointer is set, and the
+// commented default when it is nil, so an unset knob stays visible and
+// documented without pinning the value.
+func writeOptBool(b *strings.Builder, key string, v *bool, def bool) {
+	if v != nil {
+		fmt.Fprintf(b, "%s = %v\n", key, *v)
+		return
+	}
+	fmt.Fprintf(b, "# %s = %v\n", key, def)
+}
+
+// renderDeferredConfig emits [deferred]: pushing a finished background job's
+// actual result into the session. See config.DeferredConfig and internal/deferred.
+func renderDeferredConfig(b *strings.Builder, cfg DeferredConfig) {
+	b.WriteString("[deferred]\n")
+	b.WriteString("# Push a finished background job's ACTUAL result into its session the moment it\n")
+	b.WriteString("# exists, instead of waiting for the next turn to drain a one-line note. The\n")
+	b.WriteString("# result is always carried into the next turn's context; these knobs decide\n")
+	b.WriteString("# whether it may also start its own turn (costs tokens) and whether it raises\n")
+	b.WriteString("# an immediate notice.\n")
+	writeOptBool(b, "enabled", cfg.Enabled, true)
+	writeOptBool(b, "trigger_parent_turn", cfg.TriggerParentTurn, false)
+	writeOptBool(b, "notify_on_failure", cfg.NotifyOnFailure, true)
+	writeOptBool(b, "notify_on_success", cfg.NotifyOnSuccess, false)
+	if cfg.RetryIntervalSec > 0 {
+		fmt.Fprintf(b, "retry_interval_sec = %d\n", cfg.RetryIntervalSec)
+	} else {
+		fmt.Fprintf(b, "# retry_interval_sec = %d   # how often an undelivered result is retried\n", DefaultDeferredRetryIntervalSec)
+	}
+	if cfg.MaxAttempts > 0 {
+		fmt.Fprintf(b, "max_attempts = %d\n", cfg.MaxAttempts)
+	} else {
+		fmt.Fprintf(b, "# max_attempts = %d   # give up (and suppress) after this many tries\n", DefaultDeferredMaxAttempts)
+	}
+	if cfg.BodyLimitBytes > 0 {
+		fmt.Fprintf(b, "body_limit_bytes = %d\n", cfg.BodyLimitBytes)
+	} else {
+		fmt.Fprintf(b, "# body_limit_bytes = %d\n", DefaultDeferredBodyLimitBytes)
+	}
+	b.WriteString("\n")
+}
+
+// renderPatrolConfig emits [patrol]: the proactive inspection heartbeat. The
+// permission dial is mode x allow_write; both default to the conservative
+// choice (off, and report-only even when on). See config.PatrolConfig.
+func renderPatrolConfig(b *strings.Builder, cfg PatrolConfig) {
+	b.WriteString("[patrol]\n")
+	b.WriteString("# Proactive inspection heartbeat: while you are away, the session periodically\n")
+	b.WriteString("# inspects its workspace (git state, unresolved TODO/FIXME markers) and reports\n")
+	b.WriteString("# what changed, through the same path a finished background job uses.\n")
+	b.WriteString("#\n")
+	b.WriteString("# Permission dial (the normal tool-permission gate still applies on top):\n")
+	b.WriteString("#   mode = off        never inspects (default)\n")
+	b.WriteString("#   mode = readonly   inspects and reports; never writes, never spends a turn\n")
+	b.WriteString("#   mode = assist     a fresh warn/high signal may start its own turn\n")
+	b.WriteString("#   allow_write       only meaningful under assist: may that turn modify files?\n")
+	writeOptBool(b, "enabled", cfg.Enabled, false)
+	fmt.Fprintf(b, "mode = %q\n", cfg.ModeEffective())
+	writeOptBool(b, "allow_write", cfg.AllowWrite, false)
+	if cfg.IntervalSec > 0 {
+		fmt.Fprintf(b, "interval_sec = %d\n", cfg.IntervalSec)
+	} else {
+		fmt.Fprintf(b, "# interval_sec = %d   # 15 minutes\n", DefaultPatrolIntervalSec)
+	}
+	if len(cfg.Checks) > 0 {
+		fmt.Fprintf(b, "checks = %s\n", renderStringArray(cfg.Checks))
+	} else {
+		b.WriteString("# checks = [\"git\", \"markers\"]   # available: git, markers\n")
+	}
+	if cfg.BodyLimitBytes > 0 {
+		fmt.Fprintf(b, "body_limit_bytes = %d\n", cfg.BodyLimitBytes)
+	} else {
+		fmt.Fprintf(b, "# body_limit_bytes = %d\n", DefaultPatrolBodyLimitBytes)
+	}
+	b.WriteString("\n")
 }
 
 func renderLSPConfig(b *strings.Builder, cfg LSPConfig) {

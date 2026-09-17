@@ -40,6 +40,7 @@ import (
 	"github.com/zzycxz/fairpeer/internal/netclient"
 	"github.com/zzycxz/fairpeer/internal/netdev"
 	"github.com/zzycxz/fairpeer/internal/outputstyle"
+	"github.com/zzycxz/fairpeer/internal/patrol"
 	"github.com/zzycxz/fairpeer/internal/permission"
 	"github.com/zzycxz/fairpeer/internal/plugin"
 	"github.com/zzycxz/fairpeer/internal/projectkb"
@@ -321,7 +322,11 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	// Set once the controller exists. Atomic because the completion hook runs on
 	// background-job goroutines, concurrent with this assignment.
 	var ctrlForJobs atomic.Pointer[control.Controller]
-	if cfg.Deferred.EnabledEffective() {
+	// The coordinator is also the delivery path for the proactive patrol, so it
+	// is built when EITHER feature is on. The job completion hook, however, is
+	// installed only when [deferred] itself is on: turning on patrol must not
+	// silently start pushing job results.
+	if cfg.Deferred.EnabledEffective() || cfg.Patrol.EnabledEffective() {
 		deferredCoord = deferred.NewCoordinator(deferred.Options{
 			Policy: deferred.Policy{
 				TriggerParentTurn: cfg.Deferred.TriggerParentTurnEffective(),
@@ -335,29 +340,82 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 				slog.Debug("deferred: " + fmt.Sprintf(format, args...))
 			},
 		})
-		// The hook must not block (it runs on the job's goroutine): Enqueue
-		// writes a small JSON table and spawns the delivery attempt.
-		jm.SetCompletionHook(func(comp jobs.Completion) {
-			c := ctrlForJobs.Load()
-			if c == nil {
-				return
-			}
-			sessionPath := c.SessionPath()
-			if strings.TrimSpace(sessionPath) == "" {
-				return
-			}
-			_ = deferredCoord.Enqueue(sessionPath, deferred.Task{
-				ID:          "job:" + comp.ID,
-				Source:      "job",
-				Title:       deferredJobTitle(comp),
-				Body:        comp.Output,
-				Status:      deferredJobStatus(comp.Status),
-				Meta:        deferred.Meta{Kind: comp.Kind, Label: comp.Label},
-				SessionPath: sessionPath,
+		if cfg.Deferred.EnabledEffective() {
+			// The hook must not block (it runs on the job's goroutine): Enqueue
+			// writes a small JSON table and spawns the delivery attempt.
+			jm.SetCompletionHook(func(comp jobs.Completion) {
+				c := ctrlForJobs.Load()
+				if c == nil {
+					return
+				}
+				sessionPath := c.SessionPath()
+				if strings.TrimSpace(sessionPath) == "" {
+					return
+				}
+				_ = deferredCoord.Enqueue(sessionPath, deferred.Task{
+					ID:          "job:" + comp.ID,
+					Source:      "job",
+					Title:       deferredJobTitle(comp),
+					Body:        comp.Output,
+					Status:      deferredJobStatus(comp.Status),
+					Meta:        deferred.Meta{Kind: comp.Kind, Label: comp.Label},
+					SessionPath: sessionPath,
+				})
 			})
-		})
+		}
 		deferredCoord.Start()
 	}
+
+	// Proactive patrol ([patrol]): while the user is away, the bound session
+	// periodically inspects its workspace and reports what changed — through the
+	// same durable deferred path a finished job uses. The permission dial is
+	// [patrol] mode (off by default; read-only even when on) plus allow_write;
+	// see config.PatrolConfig. Inspectors are strictly read-only.
+	//
+	// The loop lives for the process, like the job manager: a rebuild swaps the
+	// controller and the Targets closure simply resolves the new one.
+	var patrolMgr *patrol.Manager
+	if deferredCoord != nil && cfg.Patrol.EnabledEffective() {
+		patrolMgr = patrol.New(patrol.Options{
+			Mode:       patrol.ParseMode(cfg.Patrol.ModeEffective()),
+			AllowWrite: cfg.Patrol.AllowWriteEffective(),
+			Interval:   time.Duration(cfg.Patrol.IntervalSecondsEffective()) * time.Second,
+			Inspectors: patrolInspectors(cfg.Patrol.Checks),
+			BodyLimit:  cfg.Patrol.BodyLimitBytesEffective(),
+			Targets: func() []patrol.Target {
+				c := ctrlForJobs.Load()
+				if c == nil {
+					return nil
+				}
+				sessionPath, wsRoot := c.SessionPath(), c.WorkspaceRoot()
+				if strings.TrimSpace(sessionPath) == "" || strings.TrimSpace(wsRoot) == "" {
+					return nil
+				}
+				return []patrol.Target{{SessionPath: sessionPath, Root: wsRoot, Label: filepath.Base(wsRoot)}}
+			},
+			Deliverer: deferredCoord,
+			Logf: func(format string, args ...any) {
+				slog.Debug("patrol: " + fmt.Sprintf(format, args...))
+			},
+		})
+		patrolMgr.Start()
+	}
+
+	// A settings change re-runs Build. If this Build fails after the background
+	// services above have started, stop them here so a failed rebuild does not
+	// leak a ticker; the success path swaps them into the package slots instead.
+	var built bool
+	defer func() {
+		if built {
+			return
+		}
+		if patrolMgr != nil {
+			go patrolMgr.Close()
+		}
+		if deferredCoord != nil {
+			go deferredCoord.Close()
+		}
+	}()
 
 	proxySpec := cfg.NetworkProxySpec()
 	if err := netclient.Validate(proxySpec); err != nil {
@@ -1758,7 +1816,43 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	// Inject the per-tool risk-class overrides (SPEC v2 §3.2A) so the interactive
 	// gate honors [[plugins]] risk config the same way the headless gate does.
 	ctrl.SetRiskOverrides(riskOverrides)
+	// Everything above is wired: retire the previous build's background services
+	// and publish the new ones (see the swap helpers). Disabling a feature swaps
+	// in nil, which is what stops the old ticker.
+	built = true
+	swapPatrolManager(patrolMgr)
+	swapDeferredCoordinator(deferredCoord)
 	return ctrl, nil
+}
+
+// --- process-lifetime background services -----------------------------------
+
+// patrolMgrForApp and deferredCoordForApp hold the services boot builds. A
+// settings change re-runs Build, so each new instance must stop the one it
+// replaces: without the swap, every rebuild would leak a ticker, and a patrol
+// the user just switched off would keep ticking forever.
+var (
+	patrolMgrForApp     atomic.Pointer[patrol.Manager]
+	deferredCoordForApp atomic.Pointer[deferred.Coordinator]
+)
+
+// PatrolManager returns the live patrol manager, or nil when [patrol] is off.
+// The desktop uses it for the "check now" action.
+func PatrolManager() *patrol.Manager { return patrolMgrForApp.Load() }
+
+// The retired services are closed on their own goroutines: Close waits for the
+// in-flight tick, which may be sitting in a git probe, and a settings save must
+// not block on that.
+func swapPatrolManager(next *patrol.Manager) {
+	if old := patrolMgrForApp.Swap(next); old != nil {
+		go old.Close()
+	}
+}
+
+func swapDeferredCoordinator(next *deferred.Coordinator) {
+	if old := deferredCoordForApp.Swap(next); old != nil {
+		go old.Close()
+	}
 }
 
 // deferredJobTitle is the headline for a finished background job pushed into
@@ -1797,7 +1891,31 @@ func deferredJobStatus(st jobs.Status) deferred.Status {
 	}
 }
 
-func migrateLegacySessionSources(sink event.Sink) {	dest := config.SessionDir()
+// patrolInspectors maps [patrol] checks onto inspectors. An empty list means
+// every inspector. A list naming only checks we do not have falls back to the
+// full set rather than silently patrolling nothing — a misconfiguration should
+// degrade to the useful default, not to silence.
+func patrolInspectors(checks []string) []patrol.Inspector {
+	if len(checks) == 0 {
+		return patrol.DefaultInspectors()
+	}
+	var out []patrol.Inspector
+	for _, name := range checks {
+		switch strings.ToLower(strings.TrimSpace(name)) {
+		case "git":
+			out = append(out, patrol.GitInspector{})
+		case "markers", "todo", "todos", "hygiene":
+			out = append(out, patrol.MarkerInspector{})
+		}
+	}
+	if len(out) == 0 {
+		return patrol.DefaultInspectors()
+	}
+	return out
+}
+
+func migrateLegacySessionSources(sink event.Sink) {
+	dest := config.SessionDir()
 	if strings.TrimSpace(dest) == "" {
 		return
 	}
