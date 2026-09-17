@@ -684,7 +684,8 @@ func (a *App) rebuild() error {
 		}
 	}
 	ctrl, err := boot.Build(a.bootContext(), boot.Options{
-		Model: model, RequireKey: false,
+		StatsSource: "desktop",
+		Model:       model, RequireKey: false,
 		Sink:           sink,
 		WorkspaceRoot:  root,
 		SessionDir:     tabSessionDir(tab),

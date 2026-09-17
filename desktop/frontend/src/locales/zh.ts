@@ -1287,6 +1287,7 @@ export const zh: Record<DictKey, string> = {
   "settings.openCapabilities": "打开管理面板",
   "settings.modelTab.usage": "使用",
   "settings.modelTab.access": "接入",
+  "settings.modelTab.stats": "用量统计",
   "settings.mcpDescription": "在专用管理面板中管理 MCP 服务器、授权、重试和工具可用性。",
   "settings.skillsDescription": "在专用管理面板中查看 Agent 技能、来源、启用状态和发现结果。",
   "settings.memoryDescription": "在记忆管理面板中管理已保存记忆和指令文件。",

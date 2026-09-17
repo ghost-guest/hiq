@@ -49,6 +49,11 @@ func Run(args []string, version string) int {
 	if len(args) > 0 && args[0] == sandbox.WindowsHelperCommand {
 		return sandbox.RunWindowsSandboxHelper(args[1:], os.Stdin, os.Stdout, os.Stderr)
 	}
+	// Usage recording is asynchronous, so every return path must drain the
+	// accepted records and fence the projection worker (see
+	// usage_catalog_lifecycle.go): a one-shot `fairpeer run` would otherwise
+	// lose its last usage rows and keep a lock on the user's cache directory.
+	defer closeCLIUsageCatalogs()
 	// Pick the UI language up front so even pre-config paths (the first-run
 	// welcome banner) come through localized. Env-only first; if a config
 	// exists and pins a language, that wins.
@@ -175,10 +180,11 @@ func configureCLIThemeFromConfigNoProbe() {
 // stdout, the TUI passes an event-channel sink so events become tea.Msgs.
 func setup(ctx context.Context, modelName string, maxStepsOverride int, requireKey bool, sink event.Sink) (*control.Controller, error) {
 	return boot.Build(ctx, boot.Options{
-		Model:      modelName,
-		MaxSteps:   maxStepsOverride,
-		RequireKey: requireKey,
-		Sink:       sink,
+		StatsSource: "cli",
+		Model:       modelName,
+		MaxSteps:    maxStepsOverride,
+		RequireKey:  requireKey,
+		Sink:        sink,
 	})
 }
 
@@ -187,11 +193,12 @@ func setup(ctx context.Context, modelName string, maxStepsOverride int, requireK
 // from corrupting the TUI's terminal raw mode.
 func setupQuiet(ctx context.Context, modelName string, maxStepsOverride int, requireKey bool, sink event.Sink) (*control.Controller, error) {
 	return boot.Build(ctx, boot.Options{
-		Model:      modelName,
-		MaxSteps:   maxStepsOverride,
-		RequireKey: requireKey,
-		Sink:       sink,
-		Stderr:     io.Discard,
+		StatsSource: "cli",
+		Model:       modelName,
+		MaxSteps:    maxStepsOverride,
+		RequireKey:  requireKey,
+		Sink:        sink,
+		Stderr:      io.Discard,
 	})
 }
 

@@ -598,3 +598,42 @@ button {
 :root[data-theme="dark"] {
   color-scheme: dark;
 }
+
+/* Chart series colours for the usage-statistics panel (model donut + stacked
+   daily trend). A fixed two-set categorical palette taken from GitHub Primer's
+   data-viz tokens (data-blue/green/orange/purple/pink/gray emphasis, light and
+   dark variants; the dark orange uses the palette's brighter .5 step #c46212
+   rather than the official #984b10 emphasis, which reads brownish on a dark
+   background). Theme styles and theme packs deliberately do not override these,
+   so the charts keep the same readable series whichever chrome theme is active.
+   The dark set lives on :root (the default), the light set on both light
+   selectors — the attribute wins on specificity, and `:not([data-theme])`
+   covers "follow the OS" before the user ever picks a theme. */
+:root {
+  --chart-1: #0576ff;
+  --chart-2: #2f6f37;
+  --chart-3: #c46212;
+  --chart-4: #975bf1;
+  --chart-5: #d34591;
+  --chart-other: #576270;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --chart-1: #006edb;
+    --chart-2: #30a147;
+    --chart-3: #eb670f;
+    --chart-4: #894ceb;
+    --chart-5: #ce2c85;
+    --chart-other: #808fa3;
+  }
+}
+
+:root[data-theme="light"] {
+  --chart-1: #006edb;
+  --chart-2: #30a147;
+  --chart-3: #eb670f;
+  --chart-4: #894ceb;
+  --chart-5: #ce2c85;
+  --chart-other: #808fa3;
+}

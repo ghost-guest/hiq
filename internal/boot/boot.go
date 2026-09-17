@@ -39,6 +39,7 @@ import (
 	"github.com/zzycxz/fairpeer/internal/memory"
 	"github.com/zzycxz/fairpeer/internal/netclient"
 	"github.com/zzycxz/fairpeer/internal/netdev"
+	"github.com/zzycxz/fairpeer/internal/nilutil"
 	"github.com/zzycxz/fairpeer/internal/outputstyle"
 	"github.com/zzycxz/fairpeer/internal/patrol"
 	"github.com/zzycxz/fairpeer/internal/permission"
@@ -50,6 +51,7 @@ import (
 	"github.com/zzycxz/fairpeer/internal/sandbox"
 	"github.com/zzycxz/fairpeer/internal/secret"
 	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/fairpeer/internal/stats"
 	"github.com/zzycxz/fairpeer/internal/tool"
 	"github.com/zzycxz/fairpeer/internal/tool/builtin"
 )
@@ -178,6 +180,13 @@ type Options struct {
 	MaxSteps   int
 	RequireKey bool
 	Sink       event.Sink
+	// StatsSource labels this frontend's recorded usage (internal/stats) with an
+	// entry-point tag — "desktop", "cli", "serve", "bot", "remote". Empty means
+	// "do not record": no recorder is installed, so a host that has no business
+	// writing usage (tests, embedded probes) keeps its sink untouched. The tag is
+	// also the value the usage panel's per-source filter matches against, so it
+	// must be one of the labels the UI offers.
+	StatsSource string
 	// EffortOverride is a session-local reasoning effort override. Nil means use
 	// the resolved provider config; a non-nil empty string means provider default.
 	EffortOverride *string
@@ -295,7 +304,13 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	// own goroutines, which can overlap a running turn's emission, so every emitter
 	// shares this synchronized sink. The job manager is session-scoped — its jobs
 	// outlive a turn and are cancelled by Controller.Close.
-	sink := event.Sync(opts.Sink)
+	//
+	// Usage recording sits just inside the synchronization (upstream order): the
+	// recorder writes one JSONL row per turn completion to the daily stats file,
+	// so it must see every event exactly once and from one goroutine at a time.
+	// It is asynchronous on the inside, so chat never waits on disk.
+	quoted := statsSink(opts.Sink, opts.StatsSource)
+	sink := event.Sync(quoted)
 
 	if migErr != nil {
 		sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: "config migration from ~/.fairpeer failed: " + migErr.Error()})
@@ -1853,6 +1868,27 @@ func swapDeferredCoordinator(next *deferred.Coordinator) {
 	if old := deferredCoordForApp.Swap(next); old != nil {
 		go old.Close()
 	}
+}
+
+// statsSink installs the usage recorder between the frontend sink and the
+// synchronization wrapper, labelled with the entry point that produced the run.
+// An empty (or blank) label means "this host does not record usage", in which
+// case the sink passes through untouched.
+//
+// A nil-ish inner sink is normalized to event.Discard first. That matters for
+// typed nils: a typed-nil *someSink in a non-nil interface is what event.Sync
+// screens out, and the recorder's own `inner != nil` guard does NOT see through
+// it — wrapping one would turn a previously harmless no-op emit into a nil
+// dereference deep inside a frontend sink.
+func statsSink(inner event.Sink, source string) event.Sink {
+	label := strings.TrimSpace(source)
+	if label == "" {
+		return inner
+	}
+	if nilutil.IsNil(inner) {
+		inner = event.Discard
+	}
+	return stats.NewRecorder(inner, config.StatsDir(), label)
 }
 
 // deferredJobTitle is the headline for a finished background job pushed into

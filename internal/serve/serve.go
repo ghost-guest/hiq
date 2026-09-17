@@ -108,9 +108,10 @@ func (s *Server) switchModel(ctx context.Context, ref string) error {
 	carried := cur.History()
 
 	newCtrl, err := boot.Build(ctx, boot.Options{
-		Model:  ref,
-		Sink:   s.bc,
-		Stderr: os.Stderr,
+		StatsSource: "serve",
+		Model:       ref,
+		Sink:        s.bc,
+		Stderr:      os.Stderr,
 	})
 	if err != nil {
 		return fmt.Errorf("switch model: %w", err)

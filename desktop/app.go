@@ -53,6 +53,7 @@ import (
 	ragpkg "github.com/zzycxz/fairpeer/internal/rag"
 	schedulerpkg "github.com/zzycxz/fairpeer/internal/scheduler"
 	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/fairpeer/internal/stats"
 	teampkg "github.com/zzycxz/fairpeer/internal/team"
 	"github.com/zzycxz/fairpeer/internal/tool/builtin"
 )
@@ -826,6 +827,7 @@ func (a *App) runHeadlessScheduled(ctx context.Context, profileName, prompt stri
 	}
 	sharedHost := a.acquireSharedHost(root)
 	ctrl, err := boot.Build(a.bootContext(), boot.Options{
+		StatsSource:   "desktop",
 		Model:         "", // config default_model
 		RequireKey:    false,
 		WorkspaceRoot: root,
@@ -1130,6 +1132,14 @@ func (a *App) shutdown(context.Context) {
 			a.releaseSharedHost(t.WorkspaceRoot)
 		}
 	}
+	// Usage recording is asynchronous (a chat turn never waits on disk), so the
+	// last rows may still be queued when the window closes. Flush them and close
+	// the rollup database; otherwise the most recent activity is missing from the
+	// usage panel until something else happens to flush.
+	flushCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_ = stats.Flush(flushCtx, config.StatsDir())
+	_ = stats.CloseUsageCatalogs(flushCtx)
 }
 
 // domReady is called (via OnDomReady) after the webview finishes loading its DOM
@@ -5223,6 +5233,7 @@ func (a *App) SetModelForTab(tabID, name string) error {
 	}
 
 	newCtrl, err := boot.Build(a.bootContext(), boot.Options{
+		StatsSource:    "desktop",
 		Model:          name,
 		RequireKey:     false,
 		Sink:           sink,
@@ -5443,6 +5454,7 @@ func (a *App) SwitchProfileForTab(tabID, name string) error {
 	newSessionDir := desktopSessionDirFor(root, name)
 
 	newCtrl, err := boot.Build(a.bootContext(), boot.Options{
+		StatsSource:    "desktop",
 		Model:          modelName,
 		RequireKey:     false,
 		Sink:           sink,
@@ -5604,6 +5616,7 @@ func (a *App) SetEffortForTab(tabID, level string) error {
 		carried = oldCtrl.History()
 	}
 	newCtrl, err := boot.Build(a.bootContext(), boot.Options{
+		StatsSource:    "desktop",
 		Model:          oldModel,
 		RequireKey:     false,
 		Sink:           sink,

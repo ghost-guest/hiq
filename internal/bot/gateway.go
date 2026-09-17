@@ -253,6 +253,7 @@ func (gw *BotGateway) prewarmSession(ctx context.Context) {
 	model, workspaceRoot := gw.sessionOptionsForPlatform(PlatformFeishu) // any platform, just need defaults
 	sessionSink := &sessionEventSink{}
 	ctrl, err := boot.Build(ctx, boot.Options{
+		StatsSource:   "bot",
 		Model:         model,
 		MaxSteps:      gw.cfg.MaxSteps,
 		RequireKey:    true,
@@ -759,6 +760,7 @@ func (gw *BotGateway) getOrCreateSession(ctx context.Context, key string, msg In
 	sessionSink := &sessionEventSink{}
 	model, workspaceRoot := gw.sessionOptionsForPlatform(msg.Platform)
 	ctrl, err := boot.Build(ctx, boot.Options{
+		StatsSource:   "bot",
 		Model:         model,
 		MaxSteps:      gw.cfg.MaxSteps,
 		RequireKey:    true,

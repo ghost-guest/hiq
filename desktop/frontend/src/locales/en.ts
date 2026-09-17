@@ -1284,6 +1284,7 @@ export const en = {
   "settings.openCapabilities": "Open management panel",
   "settings.modelTab.usage": "Use",
   "settings.modelTab.access": "Access",
+  "settings.modelTab.stats": "Usage stats",
   "settings.mcpDescription": "Manage MCP servers, authorization, retries, and tool availability from the dedicated management panel.",
   "settings.skillsDescription": "Review Agent skills, sources, enablement, and discovery from the dedicated management panel.",
   "settings.memoryDescription": "Manage saved memories and instruction files from the memory management panel.",

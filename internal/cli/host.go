@@ -95,6 +95,7 @@ func (f *hostFactory) NewController(ctx context.Context, p remotehost.SessionNew
 		}
 	}
 	return boot.Build(ctx, boot.Options{
+		StatsSource:    "cli",
 		Model:          model,
 		RequireKey:     false,
 		Sink:           sink,

@@ -3060,3 +3060,64 @@ export interface KBRevisionView {
   note: string;
   nodes: number;
 }
+
+// ---------------------------------------------------------------------------
+// Usage statistics (settings → models → usage statistics subtab)
+// ---------------------------------------------------------------------------
+
+// UsageStatsRequest selects the aggregation range and optional entry-point
+// filter for the usage statistics panel. Range is "7" | "14" | "30" | "90" |
+// "custom"; custom requires from/to as "2006-01-02" (inclusive, local dates).
+// Source "" or "all" aggregates every entry point; "desktop" | "cli" | "serve"
+// | "bot" | "remote" filters to that source's records.
+export interface UsageStatsRequest {
+  range: string;
+  from?: string;
+  to?: string;
+  source?: string;
+}
+
+// DailyTokenUsage is one day's token total, per-model split and turn count in
+// the daily trend series.
+export interface DailyTokenUsage {
+  day: string; // "2006-01-02"
+  total: number;
+  byModel: Record<string, number>; // model ref -> tokens
+  byProvider: Record<string, number>; // provider name -> tokens
+  requests: number; // API calls that day
+  turns: number;
+  cacheHit: number; // cached input tokens that day
+  cacheMiss: number; // uncached input tokens that day
+}
+
+// ModelTokenUsage is one model's aggregate within the range.
+export interface ModelTokenUsage {
+  model: string; // canonical "provider/model"
+  provider: string;
+  tokens: number;
+  percent: number; // 0..100
+}
+
+// ProviderTokenUsage is one provider's aggregate within the range.
+export interface ProviderTokenUsage {
+  provider: string;
+  tokens: number;
+  percent: number;
+}
+
+// UsageStatsRange is the full aggregate the settings panel renders.
+export interface UsageStatsRange {
+  from: string;
+  to: string;
+  tokens: number;
+  requests: number; // API calls
+  turns: number; // completed turns
+  cacheHit: number;
+  cacheMiss: number;
+  activeDays: number;
+  topModel: string;
+  topProvider: string;
+  daily: DailyTokenUsage[];
+  models: ModelTokenUsage[];
+  providers: ProviderTokenUsage[];
+}

@@ -152,6 +152,9 @@ import type {
   KBSourceView,
   KBSearchHitView,
   KBRevisionView,
+
+  UsageStatsRequest,
+  UsageStatsRange,
 } from "./types";
 
 
@@ -500,6 +503,11 @@ export interface AppBindings {
   // prove the heartbeat works without waiting an interval.
   SetPatrol(enabled: boolean, mode: string, allowWrite: boolean, intervalSec: number, checks: string[]): Promise<void>;
   PatrolCheckNow(): Promise<number>;
+  // Usage statistics: a pure read of the recorded usage files under the user
+  // state root ([stats] dir), aggregated for the requested range and entry
+  // point. Recording is asynchronous, so the backend gives the read a short
+  // read-your-own-writes window before answering.
+  UsageStats(req: UsageStatsRequest): Promise<UsageStatsRange>;
   SetNetwork(n: NetworkView): Promise<void>;
   SetBotSettings(b: BotSettingsView): Promise<void>;
   // coWork profile settings (browser/PPT/email/RAG). Secrets go to a managed
@@ -4546,6 +4554,11 @@ function makeMockApp(): AppBindings {
         },
         async PatrolCheckNow() {
           return 0;
+        },
+        async UsageStats() {
+          // Browser dev mock has no stats files; the panel does not consume
+          // provider aggregates, so keep this initial-bundle fallback lean.
+          return { from: "", to: "", tokens: 0, requests: 0, turns: 0, cacheHit: 0, cacheMiss: 0, activeDays: 0, topModel: "", daily: [], models: [] } as unknown as UsageStatsRange;
         },
         async SetNetwork(n: NetworkView) {
           settings.network = n;

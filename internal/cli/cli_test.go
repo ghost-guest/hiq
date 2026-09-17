@@ -95,12 +95,19 @@ func mustGetwd(t *testing.T) string {
 
 func isolateCLIConfigHome(t *testing.T) string {
 	t.Helper()
+	// The usage projection is process-wide and opens a SQLite file under the
+	// state home it first sees. Fence it on both sides of this home override —
+	// otherwise a catalog opened under the previous (real or temp) home keeps
+	// its handle, and Windows refuses to delete the file during TempDir
+	// cleanup ("being used by another process").
+	closeCLIUsageCatalogs()
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
 	t.Chdir(t.TempDir())
+	t.Cleanup(closeCLIUsageCatalogs)
 	return home
 }
 

@@ -19,6 +19,7 @@ import (
 	"github.com/zzycxz/fairpeer/internal/event"
 	"github.com/zzycxz/fairpeer/internal/plugin"
 	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/fairpeer/internal/stats"
 )
 
 // setTestCtrl creates a minimal workspace tab (if needed) and sets its
@@ -71,6 +72,11 @@ api_key_env = "FAIRPEER_API_KEY"
 
 func isolateDesktopUserDirs(t *testing.T) string {
 	t.Helper()
+	// Sessions built by the desktop now record usage (boot.Options.StatsSource
+	// "desktop"), which opens a process-wide SQLite projection under the state
+	// home in use at the time. Fence it before redirecting the home and again
+	// before TempDir cleanup, or Windows cannot delete the still-open database.
+	closeUsageCatalogsForTest(t)
 	home := robustTempDir(t)
 	xdg := filepath.Join(home, ".config")
 	appData := filepath.Join(home, "AppData")
@@ -83,7 +89,19 @@ func isolateDesktopUserDirs(t *testing.T) string {
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", xdg)
 	t.Setenv("AppData", appData)
+	t.Cleanup(func() { closeUsageCatalogsForTest(t) })
 	return home
+}
+
+// closeUsageCatalogsForTest closes the shared usage projection, waiting for the
+// flush so the handle is really gone before the caller deletes its temp dir.
+func closeUsageCatalogsForTest(t *testing.T) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := stats.CloseUsageCatalogs(ctx); err != nil {
+		t.Fatalf("close usage catalogs: %v", err)
+	}
 }
 
 func providerNamesFromView(providers []ProviderView) []string {
@@ -510,12 +528,12 @@ func TestModelsForTabListsTestProviderAPIPaidAccess(t *testing.T) {
 	cfg.DefaultModel = "test-provider/test-model-a"
 	cfg.Desktop.ProviderAccess = []string{"test-provider"}
 	cfg.Providers = append(cfg.Providers, config.ProviderEntry{
-		Name:       "test-provider",
-		Kind:       "openai",
-		BaseURL:    "https://api.example.com",
-		Models:     []string{"test-model-a", "test-model-b"},
-		Default:    "test-model-a",
-		APIKeyEnv:  "FAIRPEER_API_KEY",
+		Name:      "test-provider",
+		Kind:      "openai",
+		BaseURL:   "https://api.example.com",
+		Models:    []string{"test-model-a", "test-model-b"},
+		Default:   "test-model-a",
+		APIKeyEnv: "FAIRPEER_API_KEY",
 	})
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -1244,22 +1262,22 @@ func TestForkCreatesActiveTabWithoutSwitchingSourceController(t *testing.T) {
 	candidates := sessionTranscriptCandidates(dir)
 	for _, candidate := range candidates {
 		{
-		if candidate == path {
-			continue
-		}
-		m, ok, err := agent.LoadBranchMeta(candidate)
-		if err != nil {
-			t.Fatalf("load fork meta: %v", err)
-		}
-		if ok && m.TopicID == meta.TopicID {
-			forkPath = candidate
-			if m.ParentID != agent.BranchID(path) || m.ForkTurn != 1 || m.ForkMessageIndex != 3 {
-				t.Fatalf("fork branch meta = %+v, want parent %q turn 1 index 3", m, agent.BranchID(path))
+			if candidate == path {
+				continue
 			}
-			if m.Scope != "project" || m.WorkspaceRoot != workspace || m.TopicTitle != "Source topic · 分叉" {
-				t.Fatalf("fork topic meta = %+v", m)
+			m, ok, err := agent.LoadBranchMeta(candidate)
+			if err != nil {
+				t.Fatalf("load fork meta: %v", err)
 			}
-		}
+			if ok && m.TopicID == meta.TopicID {
+				forkPath = candidate
+				if m.ParentID != agent.BranchID(path) || m.ForkTurn != 1 || m.ForkMessageIndex != 3 {
+					t.Fatalf("fork branch meta = %+v, want parent %q turn 1 index 3", m, agent.BranchID(path))
+				}
+				if m.Scope != "project" || m.WorkspaceRoot != workspace || m.TopicTitle != "Source topic · 分叉" {
+					t.Fatalf("fork topic meta = %+v", m)
+				}
+			}
 		}
 	}
 	if forkPath == "" {

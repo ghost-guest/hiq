@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, CheckCircle2, ChevronDown, Loader2, QrCode, RefreshCw, Trash2, Bot } from "lucide-react";
 import { asArray } from "../lib/array";
@@ -43,6 +43,11 @@ import { MemorySettingsPage } from "./MemoryPanel";
 import { ModalCloseButton } from "./ModalCloseButton";
 
 export const SETTINGS_TABS: SettingsTab[] = ["general", "models", "bots", "cowork", "mcp", "skills", "memory", "permissions", "sandbox", "network", "hooks", "appearance", "updates", "mobile", "netdev", "trustdomain"];
+
+// The usage-statistics subpage is lazy: its chunk carries ~1k lines of chart
+// code plus its own translations and CSS, none of which should be part of the
+// every-startup settings bundle just because the models tab exists.
+const UsageStatsPanel = lazy(() => import("./UsageStatsPanel").then((module) => ({ default: module.UsageStatsPanel })));
 
 // SettingsPanel is the desktop settings centre — a centred modal with left
 // navigation and a right content area. It hosts all settings pages plus MCP,
@@ -2384,7 +2389,7 @@ function sanitizeBotDraft(draft: BotSettingsView): BotSettingsView {
 
 function ModelsSection({ s, busy, apply, backgroundApply }: ModelsSectionProps) {
   const t = useT();
-  const [subtab, setSubtab] = useState<"usage" | "access">("usage");
+  const [subtab, setSubtab] = useState<"usage" | "access" | "stats">("usage");
   const autoRefreshKeyRef = useRef("");
   const refs = allRefs(s);
   const defaultRef = toRef(s.defaultModel, s);
@@ -2461,9 +2466,21 @@ function ModelsSection({ s, busy, apply, backgroundApply }: ModelsSectionProps) 
         >
           {t("settings.modelTab.access")}
         </button>
+        <button
+          type="button"
+          className={`settings-subtab${subtab === "stats" ? " settings-subtab--active" : ""}`}
+          aria-selected={subtab === "stats"}
+          onClick={() => setSubtab("stats")}
+        >
+          {t("settings.modelTab.stats")}
+        </button>
       </div>
 
-      {subtab === "usage" ? (
+      {subtab === "stats" ? (
+        <Suspense fallback={<div className="empty">{t("settings.loading")}</div>}>
+          <UsageStatsPanel />
+        </Suspense>
+      ) : subtab === "usage" ? (
         <>
           <SettingsSection title={t("settings.modelUsage")}>
             <SettingsField label={t("settings.defaultModel")}>

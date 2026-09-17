@@ -1263,6 +1263,7 @@ func (a *App) buildTabController(tab *WorkspaceTab) {
 	}
 
 	ctrl, err := boot.Build(buildCtx, boot.Options{
+		StatsSource:    "desktop",
 		Model:          model,
 		RequireKey:     false,
 		Sink:           tab.sink,
