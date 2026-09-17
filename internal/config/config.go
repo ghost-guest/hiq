@@ -73,6 +73,10 @@ type Config struct {
 	Statusline StatuslineConfig `toml:"statusline"`
 	LSP        LSPConfig        `toml:"lsp"`
 	Bot        BotConfig        `toml:"bot"`
+	// Deferred ([deferred]) controls pushing finished background-task results
+	// back into the session: whether a result may start its own turn, and which
+	// results raise an immediate notice. See DeferredConfig.
+	Deferred DeferredConfig `toml:"deferred"`
 	// Cowork holds coWork (office) profile settings — currently just the browser
 	// path override. Empty means auto-detect; a non-empty path is tried first
 	// (and the user is guided to set it when no browser is found).
@@ -174,6 +178,89 @@ type NotificationsConfig struct {
 	TurnDone        bool `toml:"turn_done"`
 	ApprovalRequest bool `toml:"approval_request"`
 	AskRequest      bool `toml:"ask_request"`
+}
+
+// DeferredConfig controls pushing finished background-task results into the
+// session instead of waiting for the next turn to drain a one-line summary.
+//
+// The defaults are deliberately conservative: results are always carried into
+// the next turn's context, the user is told immediately about failures, and no
+// turn is ever started without the user opting in (each auto-started turn costs
+// model tokens).
+type DeferredConfig struct {
+	// Enabled turns push delivery on. nil = on.
+	Enabled *bool `toml:"enabled"`
+	// TriggerParentTurn lets a *finished* result start its own turn. nil = off;
+	// failures still raise a notice, they just don't spend a turn.
+	TriggerParentTurn *bool `toml:"trigger_parent_turn"`
+	// NotifyOnFailure raises an immediate notice when a background job fails.
+	// nil = on.
+	NotifyOnFailure *bool `toml:"notify_on_failure"`
+	// NotifyOnSuccess raises an immediate notice when a bash-style job
+	// succeeds. nil = off (task results always notify — their answer is the
+	// point of running them).
+	NotifyOnSuccess *bool `toml:"notify_on_success"`
+	// RetryIntervalSec is how often pending results are retried. 0 = 30s.
+	RetryIntervalSec int `toml:"retry_interval_sec"`
+	// MaxAttempts caps delivery retries before a result is dropped. 0 = 20.
+	MaxAttempts int `toml:"max_attempts"`
+	// BodyLimitBytes truncates a stored result body. 0 = 4000.
+	BodyLimitBytes int `toml:"body_limit_bytes"`
+}
+
+// Defaults for [deferred].
+const (
+	DefaultDeferredRetryIntervalSec = 30
+	DefaultDeferredMaxAttempts      = 20
+	DefaultDeferredBodyLimitBytes   = 4000
+)
+
+func boolOrNil(v *bool, def bool) bool {
+	if v == nil {
+		return def
+	}
+	return *v
+}
+
+// EnabledEffective reports whether push delivery is on (default: on).
+func (d DeferredConfig) EnabledEffective() bool { return boolOrNil(d.Enabled, true) }
+
+// TriggerParentTurnEffective reports whether a finished result may start its
+// own turn (default: off).
+func (d DeferredConfig) TriggerParentTurnEffective() bool { return boolOrNil(d.TriggerParentTurn, false) }
+
+// NotifyOnFailureEffective reports whether failures notify immediately
+// (default: on).
+func (d DeferredConfig) NotifyOnFailureEffective() bool { return boolOrNil(d.NotifyOnFailure, true) }
+
+// NotifyOnSuccessEffective reports whether successful bash-style jobs notify
+// immediately (default: off).
+func (d DeferredConfig) NotifyOnSuccessEffective() bool { return boolOrNil(d.NotifyOnSuccess, false) }
+
+// RetryIntervalSecondsEffective returns the retry cadence in seconds, applying
+// the default when unset.
+func (d DeferredConfig) RetryIntervalSecondsEffective() int {
+	if d.RetryIntervalSec > 0 {
+		return d.RetryIntervalSec
+	}
+	return DefaultDeferredRetryIntervalSec
+}
+
+// MaxAttemptsEffective returns the retry cap, applying the default when unset.
+func (d DeferredConfig) MaxAttemptsEffective() int {
+	if d.MaxAttempts > 0 {
+		return d.MaxAttempts
+	}
+	return DefaultDeferredMaxAttempts
+}
+
+// BodyLimitBytesEffective returns the stored-body cap, applying the default
+// when unset.
+func (d DeferredConfig) BodyLimitBytesEffective() int {
+	if d.BodyLimitBytes > 0 {
+		return d.BodyLimitBytes
+	}
+	return DefaultDeferredBodyLimitBytes
 }
 
 // UITheme normalizes ui.theme (dark/light/auto). Empty or unrecognized falls

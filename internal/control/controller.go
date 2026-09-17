@@ -34,6 +34,7 @@ import (
 	"github.com/zzycxz/fairpeer/internal/command"
 	"github.com/zzycxz/fairpeer/internal/compose"
 	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/fairpeer/internal/deferred"
 	"github.com/zzycxz/fairpeer/internal/diff"
 	"github.com/zzycxz/fairpeer/internal/event"
 	"github.com/zzycxz/fairpeer/internal/hook"
@@ -201,6 +202,22 @@ type Controller struct {
 	// it joins the prefix naturally on the next session. (some providers do not
 	// report cache tokens; the prefix stability still reduces token transmission.)
 	pendingMemory []string
+
+	// pendingDeferred holds background results pushed while they could not
+	// become their own turn (push delivery's "context only" mode). Compose
+	// drains it into the next outgoing turn under <deferred-results>, the same
+	// way pendingMemory and the drained job note ride the turn instead of the
+	// cache-stable system prefix.
+	pendingDeferred []string
+
+	// deferred is the shared background-result coordinator (nil when push
+	// delivery is off). The controller is its Deliverer: it decides whether a
+	// finished job becomes its own turn (FollowUp) or only rides the next one.
+	deferred *deferred.Coordinator
+
+	// closed flips in Close so a late background result is never pushed into a
+	// torn-down session.
+	closed bool
 
 	displayRecorder func(content, display string)
 
@@ -499,6 +516,13 @@ func (c *Controller) rebindCheckpoints(sessionPath string) {
 	if c.cpBound == nil {      // session can still rewind conversation / fork
 		c.cpBound = map[int]int{}
 	}
+	// Binding (or re-binding) a session is the moment to push background results
+	// that finished while it was closed: a job that failed in the background
+	// must not stay invisible until the user happens to ask something.
+	if c.deferred != nil && sessionPath != "" {
+		coord, path := c.deferred, sessionPath
+		go coord.FlushSession(path)
+	}
 }
 
 // beginCheckpoint opens a checkpoint for the turn about to run, recording the
@@ -617,6 +641,88 @@ func truncateForNotice(s string) string {
 		return s[:i] + "…"
 	}
 	return s[:80] + "…"
+}
+
+// --- Background-result push delivery (internal/deferred) ---
+//
+// The pull path (jobs.DrainCompletedNote folded in by Compose) only tells the
+// model that a job finished, and only when it next runs. Push delivery hands a
+// finished job's actual output to a session as soon as it exists — as its own
+// turn when the policy says so, otherwise as context plus a notice — with the
+// hand-off recorded on disk so a crash before delivery cannot lose it.
+
+// SetDeferred attaches the shared background-result coordinator and installs
+// this controller as its Deliverer. Call after the session is bound; calling
+// again after a rebind is fine (the coordinator is shared, only the binding
+// changes). nil disables push delivery.
+func (c *Controller) SetDeferred(coord *deferred.Coordinator) {
+	if coord == nil {
+		return
+	}
+	c.mu.Lock()
+	c.deferred = coord
+	path := c.sessionPath
+	c.mu.Unlock()
+	coord.SetDeliverer(c)
+	// Push anything a previous process left undelivered for this session — a
+	// crashed run, or a result that landed while the session was closed.
+	go coord.FlushSession(path)
+}
+
+// DeferredSessionRunnable implements deferred.Deliverer: results may only be
+// pushed into the session that is currently bound, and only while it is open.
+func (c *Controller) DeferredSessionRunnable(sessionPath string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closed {
+		return false
+	}
+	return sessionPath != "" && c.sessionPath == sessionPath
+}
+
+// DeliverDeferred implements deferred.Deliverer. With triggerTurn the result
+// becomes its own turn (FollowUp runs it now when idle, else queues it as the
+// next turn); without it the result only joins the session's context for the
+// next turn, so nothing is spent on it yet.
+func (c *Controller) DeliverDeferred(sessionPath, text string, triggerTurn bool) error {
+	if !c.DeferredSessionRunnable(sessionPath) {
+		return deferred.ErrSessionInactive
+	}
+	if triggerTurn {
+		c.FollowUp(text)
+		return nil
+	}
+	c.mu.Lock()
+	c.pendingDeferred = append(c.pendingDeferred, text)
+	c.mu.Unlock()
+	return nil
+}
+
+// NotifyDeferred implements deferred.Deliverer: a best-effort user-visible line
+// about a finished background result. The full text still rides the next turn,
+// so a notice failure never loses the result.
+func (c *Controller) NotifyDeferred(_ string, title, body string) error {
+	text := strings.TrimSpace(title)
+	if b := strings.TrimSpace(body); b != "" {
+		if i := strings.IndexByte(b, '\n'); i >= 0 {
+			b = b[:i]
+		}
+		text += " — " + truncateForNotice(b)
+	}
+	c.notice(text)
+	return nil
+}
+
+// FlushDeferred pushes results still pending for a session (used when a session
+// is (re)bound: the user re-opening a closed session must see what finished
+// while they were away).
+func (c *Controller) FlushDeferred(sessionPath string) {
+	c.mu.Lock()
+	coord := c.deferred
+	c.mu.Unlock()
+	if coord != nil && strings.TrimSpace(sessionPath) != "" {
+		coord.FlushSession(sessionPath)
+	}
 }
 
 // Send starts a turn with an uncomposed message. The controller applies
@@ -3397,6 +3503,10 @@ func (c *Controller) HeadlessGate() agent.Gate {
 func (c *Controller) Close() {
 	c.mu.Lock()
 	started := c.startedOnce
+	// Mark closed before anything else: a background result that finishes during
+	// teardown must be left for the next process (the coordinator keeps it on
+	// disk) instead of being pushed into a dying session.
+	c.closed = true
 	c.mu.Unlock()
 	if started {
 		c.hooks.SessionEnd(context.Background())

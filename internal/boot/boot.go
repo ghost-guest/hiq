@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/zzycxz/fairpeer/internal/agent"
@@ -28,6 +29,7 @@ import (
 	"github.com/zzycxz/fairpeer/internal/command"
 	"github.com/zzycxz/fairpeer/internal/config"
 	"github.com/zzycxz/fairpeer/internal/control"
+	"github.com/zzycxz/fairpeer/internal/deferred"
 	"github.com/zzycxz/fairpeer/internal/event"
 	"github.com/zzycxz/fairpeer/internal/hook"
 	"github.com/zzycxz/fairpeer/internal/installsource"
@@ -308,6 +310,54 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		sink.Emit(event.Event{Kind: event.Notice, Text: fmt.Sprintf("model %q is selected but its API key %s is not set — requests will fail until you set it", modelName, entry.APIKeyEnv)})
 	}
 	jm := jobs.NewManager(sink)
+
+	// Push delivery for background results (internal/deferred): a finished job
+	// hands its ACTUAL output to the session the moment it exists, instead of
+	// waiting for the next turn to drain a one-line summary. The controller
+	// installs itself as the deliverer right after it is built, below; until
+	// then results only accumulate on disk (so nothing is lost if the session
+	// never binds, and a later process flushes them).
+	var deferredCoord *deferred.Coordinator
+	// Set once the controller exists. Atomic because the completion hook runs on
+	// background-job goroutines, concurrent with this assignment.
+	var ctrlForJobs atomic.Pointer[control.Controller]
+	if cfg.Deferred.EnabledEffective() {
+		deferredCoord = deferred.NewCoordinator(deferred.Options{
+			Policy: deferred.Policy{
+				TriggerParentTurn: cfg.Deferred.TriggerParentTurnEffective(),
+				NotifyOnFailure:   cfg.Deferred.NotifyOnFailureEffective(),
+				NotifyOnSuccess:   cfg.Deferred.NotifyOnSuccessEffective(),
+			},
+			RetryInterval: time.Duration(cfg.Deferred.RetryIntervalSecondsEffective()) * time.Second,
+			MaxAttempts:   cfg.Deferred.MaxAttemptsEffective(),
+			BodyLimit:     cfg.Deferred.BodyLimitBytesEffective(),
+			Logf: func(format string, args ...any) {
+				slog.Debug("deferred: " + fmt.Sprintf(format, args...))
+			},
+		})
+		// The hook must not block (it runs on the job's goroutine): Enqueue
+		// writes a small JSON table and spawns the delivery attempt.
+		jm.SetCompletionHook(func(comp jobs.Completion) {
+			c := ctrlForJobs.Load()
+			if c == nil {
+				return
+			}
+			sessionPath := c.SessionPath()
+			if strings.TrimSpace(sessionPath) == "" {
+				return
+			}
+			_ = deferredCoord.Enqueue(sessionPath, deferred.Task{
+				ID:          "job:" + comp.ID,
+				Source:      "job",
+				Title:       deferredJobTitle(comp),
+				Body:        comp.Output,
+				Status:      deferredJobStatus(comp.Status),
+				Meta:        deferred.Meta{Kind: comp.Kind, Label: comp.Label},
+				SessionPath: sessionPath,
+			})
+		})
+		deferredCoord.Start()
+	}
 
 	proxySpec := cfg.NetworkProxySpec()
 	if err := netclient.Validate(proxySpec); err != nil {
@@ -1694,6 +1744,13 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		ctrlOpts.Classifier = classifier
 	}
 	ctrl := control.New(ctrlOpts)
+	// Publish the controller to the background-job completion hook installed
+	// above, then hand it the coordinator so finished results can be pushed into
+	// this session (as their own turn or as next-turn context, per policy).
+	ctrlForJobs.Store(ctrl)
+	if deferredCoord != nil {
+		ctrl.SetDeferred(deferredCoord)
+	}
 	// Route sub-agent writer pre-edits (task / run_skill) into the controller's
 	// checkpoint store, so skill-driven file writes rewind like main-loop edits.
 	subagentPreEdit.Set(ctrl.PreEditSnapshotter())
@@ -1704,8 +1761,43 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	return ctrl, nil
 }
 
-func migrateLegacySessionSources(sink event.Sink) {
-	dest := config.SessionDir()
+// deferredJobTitle is the headline for a finished background job pushed into
+// the session: what ran, and how it ended.
+func deferredJobTitle(c jobs.Completion) string {
+	name := fmt.Sprintf("background %s %s", c.Kind, c.ID)
+	if c.Label != "" {
+		name += fmt.Sprintf(" (%s)", c.Label)
+	}
+	switch c.Status {
+	case jobs.Failed:
+		if c.Err != nil {
+			return fmt.Sprintf("%s failed: %v", name, c.Err)
+		}
+		return name + " failed"
+	case jobs.Killed, jobs.Interrupted:
+		return name + " was cancelled"
+	default:
+		return name + " finished"
+	}
+}
+
+// deferredJobStatus maps a job's terminal status onto the deferred-task
+// lifecycle. A job that stopped without finishing (killed, interrupted by a
+// closing session) is an abort, not a failure.
+func deferredJobStatus(st jobs.Status) deferred.Status {
+	switch st {
+	case jobs.Done:
+		return deferred.Resolved
+	case jobs.Failed:
+		return deferred.Failed
+	case jobs.Killed, jobs.Interrupted:
+		return deferred.Aborted
+	default:
+		return deferred.Pending
+	}
+}
+
+func migrateLegacySessionSources(sink event.Sink) {	dest := config.SessionDir()
 	if strings.TrimSpace(dest) == "" {
 		return
 	}

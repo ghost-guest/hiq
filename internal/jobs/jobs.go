@@ -6,9 +6,12 @@
 // called). Tools reach the Manager through the call context (WithManager /
 // FromContext), the same injection pattern the `ask` tool uses for the asker.
 //
-// The Manager emits a user-visible Notice when a job starts and finishes, and
-// accumulates a one-line completion summary that the controller drains into the
-// next turn (DrainCompletedNote) so the model itself learns of completions.
+// The Manager emits a user-visible Notice when a job starts and finishes. By
+// default it also accumulates a one-line completion summary that the controller
+// drains into the next turn (DrainCompletedNote) so the model itself learns of
+// completions; a host that installs SetCompletionHook instead receives each
+// finished job as a Completion the moment it exists (the deferred-result push
+// path in internal/deferred), and no drain summary is queued.
 package jobs
 
 import (
@@ -51,6 +54,22 @@ type Result struct {
 	Label  string
 	Status Status
 	Output string // the terminal result text, or the streamed buffer when no result was set
+}
+
+// Completion describes a finished background job. The host can install a hook
+// (SetCompletionHook) to push the result somewhere durable — deferred delivery
+// into the session, a notification channel, a bridge — the moment it exists,
+// instead of waiting for the next turn to drain it.
+type Completion struct {
+	ID     string
+	Kind   string // "bash" | "task"
+	Label  string
+	Status Status
+	// Output is the job's visible result: a task job's final answer, or a bash
+	// job's captured output (head+tail capped at JobOutputCap).
+	Output string
+	Err    error
+	At     time.Time
 }
 
 // Job is one background job. The mutex guards the streaming buffer and the
@@ -155,6 +174,10 @@ type Manager struct {
 	jobs      map[string]*Job
 	order     []string
 	completed []string // finished-job summaries awaiting drain into the next turn
+	// onComplete, when set, takes over completion reporting: the finished job is
+	// handed to the host (see SetCompletionHook) and no drain summary is queued,
+	// so a completion is never reported twice.
+	onComplete func(Completion)
 }
 
 // NewManager returns a Manager whose jobs run under a fresh session-scoped
@@ -218,7 +241,14 @@ func (m *Manager) Start(kind, label string, run func(ctx context.Context, out io
 		// completion, skip j.done, and DrainCompletedNote would race ahead of the
 		// bookkeeping (the TestDrainMultiple -race flake). Recording first makes an
 		// observed terminal status imply the note is already queued.
-		m.recordCompletion(id, kind, label, st, err)
+		j.mu.Lock()
+		output := result
+		if output == "" {
+			// bash jobs stream to the buffer and return ""; surface what they wrote.
+			output = j.buf.String()
+		}
+		j.mu.Unlock()
+		m.recordCompletion(id, kind, label, st, output, err)
 
 		j.mu.Lock()
 		j.result = result
@@ -231,16 +261,38 @@ func (m *Manager) Start(kind, label string, run func(ctx context.Context, out io
 	return j
 }
 
-// recordCompletion queues the finished-job summary for DrainCompletedNote and
-// emits a closing Notice (warn for a failure, info otherwise).
-func (m *Manager) recordCompletion(id, kind, label string, st Status, err error) {
-	tag := id
-	if label != "" {
-		tag = fmt.Sprintf("%s (%s)", id, label)
-	}
+// SetCompletionHook installs the completion reporter. With a hook installed the
+// manager no longer accumulates DrainCompletedNote summaries (the hook owns
+// reporting, so nothing is reported twice); the start/finish Notices are
+// unaffected. Call it once, before jobs are started. The hook runs on the job's
+// own goroutine and must not block: hand the Completion to a queue or another
+// goroutine and return.
+func (m *Manager) SetCompletionHook(fn func(Completion)) {
 	m.mu.Lock()
-	m.completed = append(m.completed, fmt.Sprintf("%s — %s", tag, st))
+	m.onComplete = fn
 	m.mu.Unlock()
+}
+
+// recordCompletion reports a finished job: to the completion hook when one is
+// installed, else by queueing the summary DrainCompletedNote returns and
+// emitting a closing Notice (warn for a failure, info otherwise).
+func (m *Manager) recordCompletion(id, kind, label string, st Status, output string, err error) {
+	m.mu.Lock()
+	hook := m.onComplete
+	if hook == nil {
+		tag := id
+		if label != "" {
+			tag = fmt.Sprintf("%s (%s)", id, label)
+		}
+		m.completed = append(m.completed, fmt.Sprintf("%s — %s", tag, st))
+	}
+	m.mu.Unlock()
+
+	if hook != nil {
+		// Contract: the hook must not block, so a slow consumer cannot stall the
+		// job goroutine (and, through it, Manager.Close).
+		hook(Completion{ID: id, Kind: kind, Label: label, Status: st, Output: output, Err: err, At: time.Now()})
+	}
 
 	level, text := event.LevelInfo, fmt.Sprintf("background %s finished: %s", kind, id)
 	switch st {
