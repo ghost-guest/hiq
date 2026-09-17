@@ -1246,7 +1246,7 @@ export const en = {
   "settings.tabSub.capabilities": "Servers, Tools & Skills",
   "settings.tabSub.mcp": "Servers & Tools",
   "settings.webSearchTitle": "Web Search Engines (Fallback Chain)",
-  "settings.webSearchDesc": "Configure API keys for the native web_search tool. The system securely iterates through these engines (Brave -> Exa -> Linkup -> AnySearch) to ensure high availability and clean data parsing.",
+  "settings.webSearchDesc": "Configure API keys for the native web_search tool. Engines (Brave -> Exa -> Linkup -> AnySearch) are raced in parallel with automatic fallback. Works with zero configuration: if no key is set, AnySearch free anonymous search takes over automatically (lower rate limits; register for higher quota).",
   "settings.keyIsSetPlaceholder": "Key Set (Enter to update)",
   "settings.setKeyPlaceholder": "Set API Key",
   "settings.tabSub.skills": "Sources & enablement",

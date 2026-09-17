@@ -1249,7 +1249,7 @@ export const zh: Record<DictKey, string> = {
   "settings.tabSub.capabilities": "服务器、工具与技能",
   "settings.tabSub.mcp": "服务器与工具",
   "settings.webSearchTitle": "网络搜索降级链 (Web Search Engines)",
-  "settings.webSearchDesc": "配置内置原生 web_search 工具的 API Key。系统将在这些搜索引擎间自动降级（Brave -> Exa -> Linkup -> AnySearch），保证高可用性与内容解析效果。",
+  "settings.webSearchDesc": "配置内置原生 web_search 工具的 API Key。系统将对这些搜索引擎（Brave -> Exa -> Linkup -> AnySearch）并行对冲加速、自动降级。未配置任何 Key 时也可直接使用——AnySearch 免费匿名搜索自动兜底（限流较低，注册后额度更高）。",
   "settings.keyIsSetPlaceholder": "已设置 (输入新值覆盖)",
   "settings.setKeyPlaceholder": "输入 API Key 并回车保存",
   "settings.tabSub.skills": "来源与启用",
