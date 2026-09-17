@@ -1036,7 +1036,7 @@
   background: var(--accent-soft, #2a3f6b);
   color: var(--accent, #7aa2f7);
   cursor: pointer;
-  z-index: 2;
+  z-index: var(--z-local-raised);
   user-select: none;
 }
 .msg-attachment__topo:hover { filter: brightness(1.2); }

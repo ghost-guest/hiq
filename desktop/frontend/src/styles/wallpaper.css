@@ -256,7 +256,7 @@
 
 .wallpaper-slider::-webkit-slider-runnable-track {
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--border);
 }
 
@@ -276,7 +276,7 @@
 }
 
 .wallpaper-slider:focus-visible {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -284,7 +284,7 @@
 /* Firefox/Gecko fallback — harmless where unsupported. */
 .wallpaper-slider::-moz-range-track {
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--border);
 }
 
