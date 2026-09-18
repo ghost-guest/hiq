@@ -139,7 +139,7 @@ router | switch | firewall | ips | vpn | bastion | server | ap | cloud | unknown
 
 **入口 A（对话框，主入口）**：
 1. 用户把 `.drawio/.vsdx` 拖进 Composer。三条既有通道全部天然支持：原生拖入
-   `AttachDropped`（desktop/app.go:6266，工作区外文件自动拷入 `.fairpeer/attachments/`）、
+   `AttachDropped`（desktop/app.go:6266，工作区外文件自动拷入 `.hiq/attachments/`）、
    webview 内 drop（onFileDropCapture）、粘贴（SavePastedFile）——落点都是 Go 可读的稳定路径。
 2. 消息附件 chips 渲染处（Message.tsx:78 parseAttachmentRefsForDisplay）按扩展名追加动作按钮
    **「解析为拓扑」**。
@@ -564,7 +564,7 @@ T1（地基，无依赖，先行）──┬→ T2a（drawio）→ T2b（vsdx）
 | F4 | 预检三表（密封 Exec）+ 网段分级 + 计划卡确认 + vantage 隧道探测 + pacing 四键 | 解析/分级/计划/pacing |
 | F5 | BuildAttackPaths 纯函数 + 切断建议 + 拓扑按钮/报告卡 + 早报接线 | 路径/评分/切断聚合 |
 
-入口 A（聊天附件 chip「解析为拓扑」，仅 .drawio）经 `fairpeer:netdev-topo-import` 事件接线。
+入口 A（聊天附件 chip「解析为拓扑」，仅 .drawio）经 `hiq:netdev-topo-import` 事件接线。
 
 ### 9.2 偏差（诚实记录；✅ = v1.3 收尾轮已闭环）
 

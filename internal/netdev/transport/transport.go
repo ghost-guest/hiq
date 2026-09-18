@@ -5,7 +5,7 @@
 // reconnect.
 //
 // It is ported from DeepSeek-Reasonix's internal/remote (MIT, same origin as
-// fairpeer) with the remote-workspace concerns removed: no bootstrap, no
+// hiq) with the remote-workspace concerns removed: no bootstrap, no
 // serve, no workbench, no SFTP, no port forwards. netdev talks CLI/NETCONF to
 // network devices; the supervision surface is connect/exec/watch.
 //

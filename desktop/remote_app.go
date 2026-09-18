@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/remotehost"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/remotehost"
 )
 
 // activeRemoteSession returns the active tab's remoteSession, nil for local

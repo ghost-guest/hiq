@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/evidence"
-	"github.com/zzycxz/fairpeer/internal/instruction"
+	"github.com/zzycxz/hiq/internal/evidence"
+	"github.com/zzycxz/hiq/internal/instruction"
 )
 
 func readinessLedger(receipts ...evidence.Receipt) *evidence.Ledger {

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // probeResult captures the cache-relevant numbers from one real completion.
@@ -20,7 +20,7 @@ type probeResult struct {
 
 // TestRealtest-providerCacheProbe is an env-gated end-to-end probe against the live
 // test-provider API. It answers, with real numbers:
-//  1. does test-provider's auto cache actually serve fairpeer's request shape, and how
+//  1. does test-provider's auto cache actually serve hiq's request shape, and how
 //     much does a repeated prefix hit;
 //  2. does test-model-a even return reasoning_content (i.e. is the round-trip
 //     amplifier real for this model);
@@ -30,9 +30,9 @@ type probeResult struct {
 // Run with:  set -a; source .env; set +a; go test ./internal/provider/openai/ -run TestRealtest-providerCacheProbe -v -count=1
 func TestRealTestProviderCacheProbe(t *testing.T) {
 	t.Skip("test-provider does not report prompt cache tokens — cache probe is meaningless")
-	key := os.Getenv("FAIRPEER_API_KEY")
+	key := os.Getenv("HIQ_API_KEY")
 	if key == "" {
-		t.Skip("FAIRPEER_API_KEY not set — skipping live probe")
+		t.Skip("HIQ_API_KEY not set — skipping live probe")
 	}
 
 	p, err := New(provider.Config{
@@ -40,7 +40,7 @@ func TestRealTestProviderCacheProbe(t *testing.T) {
 		BaseURL: "https://api.example.com",
 		Model:   "test-model-a",
 		APIKey:  key,
-		Extra:   map[string]any{"api_key_env": "FAIRPEER_API_KEY"},
+		Extra:   map[string]any{"api_key_env": "HIQ_API_KEY"},
 	})
 	if err != nil {
 		t.Fatalf("New: %v", err)

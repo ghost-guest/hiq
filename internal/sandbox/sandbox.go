@@ -25,13 +25,13 @@ import (
 // Windows sandbox. Host binaries must register and dispatch it before normal
 // startup so an enforced launch can never fall through into an unconfined GUI
 // or CLI process.
-const WindowsHelperCommand = "__fairpeer_windows_sandbox"
+const WindowsHelperCommand = "__hiq_windows_sandbox"
 
 var helperDispatchRegistered atomic.Bool
 
 func RegisterHelperDispatch() { helperDispatchRegistered.Store(true) }
 
-const windowsSandboxFailureMarkerPrefix = "__fairpeer_windows_sandbox_failure__:"
+const windowsSandboxFailureMarkerPrefix = "__hiq_windows_sandbox_failure__:"
 
 func WindowsSandboxFailureMarker(payload string) string {
 	sum := sha256.Sum256([]byte(payload))

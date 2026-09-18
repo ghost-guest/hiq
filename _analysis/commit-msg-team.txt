@@ -31,7 +31,7 @@ feat(team): 团队功能（团长 + 团员 + 看板 + 自然语言建团）
 
 验证
 - 双 module build/vet 干净；go test ./internal/team 全绿；tsc --noEmit 通过；vite build 通过
-- 真实路径实测：MemoryUserDir()=D:\work\reasonix-self\fairpeer-data，库存到 <root>/teams/team_projects.json，建团→加团员→重开→读回 一致
+- 真实路径实测：MemoryUserDir()=D:\work\reasonix-self\hiq-data，库存到 <root>/teams/team_projects.json，建团→加团员→重开→读回 一致
 - 内嵌前端与 codegraph 的桌面 exe 已重编（-tags desktop,production,codegraph_embed），启动无团队相关错误
 
 注：P2（用 agent.TaskTool/runSubSession 以独立 sub-session 真正执行团员任务）待续；

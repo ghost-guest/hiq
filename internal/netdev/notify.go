@@ -5,7 +5,7 @@ package netdev
 // 任选组合，互不依赖。防轰炸：同一 source 的告警在聚合窗口（默认 5 分钟）
 // 内合并，窗口关闭时补一条带计数的汇总；severity 门槛统一在最前面。
 // NotifyPushText 是通用文本出口（每日早报等）。脱敏不变：推的是 Finding
-// 本身（标题/设备/截断摘要 + fairpeer:// 深链），不含原始回显。
+// 本身（标题/设备/截断摘要 + hiq:// 深链），不含原始回显。
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // NotifyPusher is the embedded IM gateway's push seam (desktop injects the
@@ -182,9 +182,9 @@ func notifyFindingNow(f *Finding, count int) {
 	if f.Project != "" {
 		proj = "[" + f.Project + "] "
 	}
-	text := fmt.Sprintf("[fairpeer 运维] %s%s（%s，%s）%s\n%s\n回复 /netdev 详情 %s 查看证据；确认收到回 /netdev ack %s", proj, f.Title, f.Severity, strings.Join(f.Devices, "、"), "fairpeer://finding/"+f.ID, detail, f.ID, f.ID)
+	text := fmt.Sprintf("[hiq 运维] %s%s（%s，%s）%s\n%s\n回复 /netdev 详情 %s 查看证据；确认收到回 /netdev ack %s", proj, f.Title, f.Severity, strings.Join(f.Devices, "、"), "hiq://finding/"+f.ID, detail, f.ID, f.ID)
 	if o.smc != nil {
-		subject := fmt.Sprintf("[fairpeer 运维] %s%s（%s，%s）", proj, f.Title, f.Severity, strings.Join(f.Devices, "、"))
+		subject := fmt.Sprintf("[hiq 运维] %s%s（%s，%s）", proj, f.Title, f.Severity, strings.Join(f.Devices, "、"))
 		go smtpSendText(o.smc, subject, text)
 	}
 	if o.botDst != "" && o.pusher != nil {
@@ -202,7 +202,7 @@ func notifyFindingNow(f *Finding, count int) {
 		body, err = json.Marshal(map[string]any{"msgtype": "text", "text": map[string]string{"content": text}})
 	default:
 		payload := map[string]any{
-			"source":     "fairpeer-netdev",
+			"source":     "hiq-netdev",
 			"kind":       "finding",
 			"id":         f.ID,
 			"title":      f.Title,
@@ -210,7 +210,7 @@ func notifyFindingNow(f *Finding, count int) {
 			"devices":    f.Devices,
 			"detail":     detail,
 			"agg_count":  count,
-			"deep_link":  "fairpeer://finding/" + f.ID,
+			"deep_link":  "hiq://finding/" + f.ID,
 			"created_at": f.CreatedAt.Format(time.RFC3339),
 		}
 		if f.Project != "" {
@@ -253,7 +253,7 @@ func NotifyPushText(kind, title, text string) {
 	case "dingtalk", "wecom":
 		body, err = json.Marshal(map[string]any{"msgtype": "text", "text": map[string]string{"content": title + "\n\n" + text}})
 	default:
-		body, err = json.Marshal(map[string]any{"source": "fairpeer-netdev", "kind": kind, "title": title, "text": text})
+		body, err = json.Marshal(map[string]any{"source": "hiq-netdev", "kind": kind, "title": title, "text": text})
 	}
 	if err != nil {
 		return

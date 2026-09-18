@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 func TestRedactHome(t *testing.T) {
@@ -33,7 +33,7 @@ func TestRedactHome(t *testing.T) {
 }
 
 func TestCollectReportRedactsSecrets(t *testing.T) {
-	t.Setenv("FAIRPEER_TEST_SECRET", "sk-live-secret")
+	t.Setenv("HIQ_TEST_SECRET", "sk-live-secret")
 
 	cfg := config.Default()
 	cfg.DefaultModel = "custom"
@@ -42,7 +42,7 @@ func TestCollectReportRedactsSecrets(t *testing.T) {
 		Kind:      "openai",
 		BaseURL:   "https://api.example.com/v1?token=secret-query",
 		Model:     "model-a",
-		APIKeyEnv: "FAIRPEER_TEST_SECRET",
+		APIKeyEnv: "HIQ_TEST_SECRET",
 	}}
 	cfg.Plugins = []config.PluginEntry{{
 		Name:    "remote",
@@ -80,7 +80,7 @@ func TestCollectReportRedactsSecrets(t *testing.T) {
 }
 
 func TestCollectReportDoesNotRequireAPIKey(t *testing.T) {
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 
 	// Default() ships no built-in presets (setup wizard owns first-run config),
 	// so a test provider is declared explicitly to exercise the provider report.
@@ -92,7 +92,7 @@ func TestCollectReportDoesNotRequireAPIKey(t *testing.T) {
 		Model:     "test-provider/test-model",
 		Default:   "test-provider/test-model",
 		Models:    []string{"test-provider/test-model"},
-		APIKeyEnv: "FAIRPEER_API_KEY",
+		APIKeyEnv: "HIQ_API_KEY",
 	}}
 	cfg.DefaultModel = "test-provider"
 	report := Collect(Options{Version: "1.2.3", Config: cfg})
@@ -107,7 +107,7 @@ func TestCollectReportDoesNotRequireAPIKey(t *testing.T) {
 	if report.Providers[0].KeyPresent {
 		t.Fatal("provider key should be reported missing when env is empty")
 	}
-	if !strings.Contains(text, "fairpeer 1.2.3 doctor") {
+	if !strings.Contains(text, "hiq 1.2.3 doctor") {
 		t.Fatalf("text report missing header:\n%s", text)
 	}
 	if !strings.Contains(text, "missing") {
@@ -116,7 +116,7 @@ func TestCollectReportDoesNotRequireAPIKey(t *testing.T) {
 }
 
 func TestRenderTextSurfacesWarningsUpTop(t *testing.T) {
-	text := RenderText(Report{Warnings: []string{"config fairpeer.toml: parse boom"}})
+	text := RenderText(Report{Warnings: []string{"config hiq.toml: parse boom"}})
 	w := strings.Index(text, "parse boom")
 	if w < 0 {
 		t.Fatalf("warning missing from report:\n%s", text)

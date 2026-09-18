@@ -3,7 +3,7 @@ package netdev
 import (
 	"net/http"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 	"net/http/httptest"
 	"strings"
 	"sync/atomic"
@@ -57,7 +57,7 @@ func TestNotifyWebhookFiresOnSeverity(t *testing.T) {
 	if got.Load() != 1 {
 		t.Fatalf("expected exactly 1 POST (warning fires, info filtered), got %d", got.Load())
 	}
-	if b, _ := body.Load().(string); !strings.Contains(b, "fairpeer://finding/") || !strings.Contains(b, "notify-test-warn") {
+	if b, _ := body.Load().(string); !strings.Contains(b, "hiq://finding/") || !strings.Contains(b, "notify-test-warn") {
 		t.Fatalf("payload missing deep link/title: %s", b)
 	}
 	EnsureNotifier(nil) // off

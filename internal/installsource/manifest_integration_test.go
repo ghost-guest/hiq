@@ -25,7 +25,7 @@ func TestApplyCopySkill_RecordsManifest(t *testing.T) {
 	}
 
 	// The manifest should now contain the skill with source + hash.
-	skillsRoot := filepath.Join(project, ".fairpeer", "skills")
+	skillsRoot := filepath.Join(project, ".hiq", "skills")
 	m := loadManifest(skillsRoot)
 	entry, ok := m.Skills["provenance-test"]
 	if !ok {
@@ -56,7 +56,7 @@ func TestApplyRemoveSkill_ForgetsManifest(t *testing.T) {
 	if err := it.applyCopySkill(req, &act); err != nil {
 		t.Fatalf("applyCopySkill: %v", err)
 	}
-	skillsRoot := filepath.Join(project, ".fairpeer", "skills")
+	skillsRoot := filepath.Join(project, ".hiq", "skills")
 	if _, ok := loadManifest(skillsRoot).Skills["to-remove"]; !ok {
 		t.Fatal("skill should be in manifest after install")
 	}

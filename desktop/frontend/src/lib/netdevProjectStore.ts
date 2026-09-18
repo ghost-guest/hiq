@@ -7,7 +7,7 @@
 // here by name and restored (validated against the definitions) on boot.
 export type NetDevProjectScope = { name: string; groups: string[] } | null; // null = 全部
 
-const LS_KEY = "fairpeer.netdev.activeProject";
+const LS_KEY = "hiq.netdev.activeProject";
 
 let current: NetDevProjectScope = null;
 const listeners = new Set<() => void>();

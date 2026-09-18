@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 func TestBroadcasterFanOut(t *testing.T) {

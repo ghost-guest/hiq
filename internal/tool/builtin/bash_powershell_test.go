@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/sandbox"
 )
 
 func powershellPath(t *testing.T) string {
@@ -33,12 +33,12 @@ func TestBashPowerShellRunsNativeCommand(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("powershell e2e is windows-only")
 	}
-	out, err := runPS(t, "Write-Output fairpeer-ok")
+	out, err := runPS(t, "Write-Output hiq-ok")
 	if err != nil {
 		t.Fatalf("powershell command failed: %v (out=%q)", err, out)
 	}
-	if !strings.Contains(out, "fairpeer-ok") {
-		t.Fatalf("output = %q, want it to contain fairpeer-ok", out)
+	if !strings.Contains(out, "hiq-ok") {
+		t.Fatalf("output = %q, want it to contain hiq-ok", out)
 	}
 }
 

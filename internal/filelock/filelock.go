@@ -39,7 +39,7 @@ var localRegistry = struct {
 
 // Acquire obtains an exclusive lock on path until the returned release
 // function is called. It serializes both goroutines in this process and other
-// Fairpeer processes, and never waits past ctx's deadline.
+// Hiq processes, and never waits past ctx's deadline.
 func Acquire(ctx context.Context, path string) (func(), error) {
 	return acquire(ctx, path, 0, ModeExclusive)
 }

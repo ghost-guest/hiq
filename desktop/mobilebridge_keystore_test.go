@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/mobilebridge"
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/mobilebridge"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
 // The secretKeyStore must satisfy the same contract the old plaintext

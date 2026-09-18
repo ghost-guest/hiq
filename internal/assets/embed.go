@@ -1,6 +1,6 @@
-// Package assets embeds the built-in, cross-platform skill payloads that fairpeer
+// Package assets embeds the built-in, cross-platform skill payloads that hiq
 // ships with its binary. Embedding lets a single downloaded executable carry
-// everything it needs, instead of distributing a separate .fairpeer "tail".
+// everything it needs, instead of distributing a separate .hiq "tail".
 //
 // Currently this embeds the ppt-auto skill (SVG → PPTX, pure Python + python-pptx).
 // The heavy, platform-specific Python runtime is intentionally NOT embedded: the
@@ -12,7 +12,7 @@ package assets
 import "embed"
 
 // pptauto is the embedded ppt-auto skill tree. It is released to the user's
-// ~/.fairpeer/skills/ppt-auto/ on first run by EnsurePPTAutoSkill.
+// ~/.hiq/skills/ppt-auto/ on first run by EnsurePPTAutoSkill.
 //
 // The `all:` prefix is required: the tree contains entries whose names begin
 // with `_` (Python __init__.py, templates/_index.md) which a bare //go:embed
@@ -27,7 +27,7 @@ var pptauto embed.FS
 // sit only at the repo root, which docconv.FindScript probes relative to the
 // exe — a packaged/installed binary runs from layouts where that probe misses,
 // so the whole PDF→PPT visual path died with "pdf_to_page_images.py not found".
-// Embedding + releasing to ~/.fairpeer/scripts/ (EnsureHelperScripts) makes it
+// Embedding + releasing to ~/.hiq/scripts/ (EnsureHelperScripts) makes it
 // available everywhere the binary runs.
 //
 //go:embed scripts

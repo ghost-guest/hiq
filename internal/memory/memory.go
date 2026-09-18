@@ -14,7 +14,7 @@ import (
 // re-deriving discovery context — losing ProfileName on reload would drop the
 // mode partition and let dev/cowork memories leak together.
 type Set struct {
-	Docs        []Source // fairpeer.md / AGENTS.md, ascending precedence
+	Docs        []Source // hiq.md / AGENTS.md, ascending precedence
 	Store       Store    // auto-memory store (may be a zero/disabled Store)
 	Index       string   // MEMORY.md contents at load time
 	PromptIndex string   // compact L1/L2 fact index injected with the portrait
@@ -34,7 +34,7 @@ type Options struct {
 	Profile string
 
 	// SkipProjectDocs drops the workspace hierarchy (ancestor + project +
-	// project-local AGENTS.md/fairpeer.md) and keeps only user-global memory.
+	// project-local AGENTS.md/hiq.md) and keeps only user-global memory.
 	// Used by profiles whose subject is not the workspace (netdev: the session
 	// operates on network devices, so a cloned repo's instruction files must
 	// not steer the session). See NETDEV_SPEC §7.3.
@@ -101,7 +101,7 @@ func userDocsOnly(docs []Source) []Source {
 
 // DocPath returns the doc-memory file a given scope writes to. To avoid splitting
 // a project's memory across conventions, it prefers a file that already exists
-// (fairpeer.md / AGENTS.md / CLAUDE.md, in that order); when none exists it
+// (hiq.md / AGENTS.md / CLAUDE.md, in that order); when none exists it
 // creates the universal default (AGENTS.md / AGENTS.local.md). ScopeUser →
 // <userDir>, ScopeLocal → <cwd> with the *.local.md names, anything else → <cwd>.
 // Returns "" for ScopeUser when no user dir is configured.

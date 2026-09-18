@@ -2,8 +2,8 @@ package main
 
 // remote_ssh.go — the SSH transport: dials through the netdev transport layer
 // (auth incl. ssh-agent and ~/.ssh/config, system known_hosts + TOFU into a
-// fairpeer-managed file with hard-fail on mismatch), provisions the Linux host
-// binary by streaming it over an exec session's stdin, and runs `fairpeer host`
+// hiq-managed file with hard-fail on mismatch), provisions the Linux host
+// binary by streaming it over an exec session's stdin, and runs `hiq host`
 // over a plain session with piped stdio. Credentials live in the manager
 // (in-memory) and the desktop secret store; RemoteRef persists only the
 // non-secret parts (target, user, key path).
@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/secret"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -39,7 +39,7 @@ type sshCredentials struct {
 
 // sshCredsSecretKeys derives the secret-store keys for a target.
 func sshCredsSecretKeys(host, port, user string) (passwordKey, passphraseKey string) {
-	base := "FAIRPEER_REMOTE_SSH_" + sshTargetSlug(host, port, user)
+	base := "HIQ_REMOTE_SSH_" + sshTargetSlug(host, port, user)
 	return base + "_PASSWORD", base + "_PASSPHRASE"
 }
 
@@ -185,7 +185,7 @@ func (t *sshTransport) Dial(ctx context.Context, ref RemoteRef) (io.Reader, io.W
 		Host: resolved,
 		Auth: *auth,
 		HostKeys: &transport.HostKeyPolicy{
-			// System known_hosts + the fairpeer-managed file; unknown keys are
+			// System known_hosts + the hiq-managed file; unknown keys are
 			// REJECTED (no silent TOFU) — the wizard confirms the fingerprint
 			// first (SSHInspectHost/SSHTrustHost), which writes the managed
 			// file, and this dial then accepts. A conflicting key fails hard.
@@ -296,7 +296,7 @@ func resolveSSHHost(creds *sshCredentials) (transport.ResolvedHost, *transport.A
 	return resolved, auth, nil
 }
 
-// provisionSSHHost ensures ~/.fairpeer/bin/fairpeer exists remotely with the
+// provisionSSHHost ensures ~/.hiq/bin/hiq exists remotely with the
 // same byte size as the local host binary, streaming the upload through an
 // exec session's stdin (no SFTP dependency).
 func provisionSSHHost(ctx context.Context, client *ssh.Client) (string, error) {
@@ -313,16 +313,16 @@ func provisionSSHHost(ctx context.Context, client *ssh.Client) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	remoteBin := "~/.fairpeer/bin/fairpeer"
+	remoteBin := "~/.hiq/bin/hiq"
 
 	needUpload := true
-	if out, err := sshExecOutput(client, "wc -c < ~/.fairpeer/bin/fairpeer 2>/dev/null"); err == nil {
+	if out, err := sshExecOutput(client, "wc -c < ~/.hiq/bin/hiq 2>/dev/null"); err == nil {
 		if size, perr := strconv.ParseInt(strings.TrimSpace(out), 10, 64); perr == nil && size == localInfo.Size() {
 			needUpload = false
 		}
 	}
 	if needUpload {
-		if _, err := sshExecOutput(client, "mkdir -p ~/.fairpeer/bin"); err != nil {
+		if _, err := sshExecOutput(client, "mkdir -p ~/.hiq/bin"); err != nil {
 			return "", fmt.Errorf("ssh: mkdir: %w", err)
 		}
 		f, err := os.Open(local)
@@ -342,7 +342,7 @@ func provisionSSHHost(ctx context.Context, client *ssh.Client) (string, error) {
 		}
 		var errBuf bytes.Buffer
 		sess.Stderr = &errBuf
-		if err := sess.Start("sh -c 'cat > ~/.fairpeer/bin/fairpeer.tmp && chmod +x ~/.fairpeer/bin/fairpeer.tmp && mv ~/.fairpeer/bin/fairpeer.tmp ~/.fairpeer/bin/fairpeer'"); err != nil {
+		if err := sess.Start("sh -c 'cat > ~/.hiq/bin/hiq.tmp && chmod +x ~/.hiq/bin/hiq.tmp && mv ~/.hiq/bin/hiq.tmp ~/.hiq/bin/hiq'"); err != nil {
 			f.Close()
 			sess.Close()
 			return "", fmt.Errorf("ssh: upload: %w", err)

@@ -156,7 +156,7 @@ func TestNormalizeType(t *testing.T) {
 
 // TestStoreForSlug ensures the project path becomes one filesystem-safe segment.
 func TestStoreForSlug(t *testing.T) {
-	s := StoreFor("/home/me/.config/fairpeer", "/Users/me/proj", "dev")
+	s := StoreFor("/home/me/.config/hiq", "/Users/me/proj", "dev")
 	if strings.Count(filepath.Base(filepath.Dir(s.Dir)), "/") != 0 {
 		t.Fatalf("slug should have no separators: %s", s.Dir)
 	}

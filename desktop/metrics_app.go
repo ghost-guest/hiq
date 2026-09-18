@@ -11,8 +11,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // metrics_app.go is the opt-in aggregate agent-metrics flush: anonymous
@@ -20,7 +20,7 @@ import (
 // launch. Never carries content, keys, prompts, or paths — only enumerated
 // integer counts. Gated on config desktop.metrics (default off), dev-skipped.
 
-var metricsEndpoint = "https://crash.fairpeer.io/v1/metrics"
+var metricsEndpoint = "https://crash.hiq.io/v1/metrics"
 
 const metricsPendingFile = "metrics-pending.json"
 

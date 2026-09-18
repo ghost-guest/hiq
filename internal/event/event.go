@@ -12,10 +12,10 @@
 package event
 
 import (
-	"github.com/zzycxz/fairpeer/internal/billing"
-	"github.com/zzycxz/fairpeer/internal/evidence"
-	"github.com/zzycxz/fairpeer/internal/nilutil"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/billing"
+	"github.com/zzycxz/hiq/internal/evidence"
+	"github.com/zzycxz/hiq/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // Kind tags an Event. Read the field(s) documented for that kind.
@@ -149,7 +149,7 @@ type Profile struct {
 // text output, so a frontend can render it directly under the tool card without
 // relying on the model to echo the path into its reply.
 type Attachment struct {
-	Path string `json:"path"` // repo-relative, under .fairpeer/attachments/
+	Path string `json:"path"` // repo-relative, under .hiq/attachments/
 	Kind string `json:"kind"` // "image"
 }
 
@@ -174,7 +174,7 @@ type Tool struct {
 	// them under it. Empty for top-level calls.
 	ParentID string
 	// Attachments carries files the tool generated (e.g. image_generate pictures
-	// saved under .fairpeer/attachments/), parsed from the result text so the
+	// saved under .hiq/attachments/), parsed from the result text so the
 	// frontend can display them regardless of what the model writes back.
 	Attachments []Attachment
 	FileDiff

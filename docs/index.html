@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>fairpeer — FairPeer-native coding agent for your terminal</title>
-<meta name="description" content="Open-source AI coding agent for your terminal, engineered around FairPeer's byte-stable prefix cache. Long sessions hold 90%+ cache hit and input-token cost collapses to ~1/5. A single Go binary. npm · Homebrew · desktop. MIT." />
-<link rel="canonical" href="https://zzycxz.github.io/fairpeer/" />
+<title>hiq — Hiq-native coding agent for your terminal</title>
+<meta name="description" content="Open-source AI coding agent for your terminal, engineered around Hiq's byte-stable prefix cache. Long sessions hold 90%+ cache hit and input-token cost collapses to ~1/5. A single Go binary. npm · Homebrew · desktop. MIT." />
+<link rel="canonical" href="https://zzycxz.github.io/hiq/" />
 <link rel="icon" href="favicon.png" type="image/png" />
-<meta property="og:title" content="fairpeer — FairPeer-native coding agent" />
+<meta property="og:title" content="hiq — Hiq-native coding agent" />
 <meta property="og:description" content="Cache-first AI coding agent for your terminal. A single Go binary. npm · Homebrew · desktop. MIT." />
-<meta property="og:url" content="https://zzycxz.github.io/fairpeer/" />
+<meta property="og:url" content="https://zzycxz.github.io/hiq/" />
 <style>
   :root{
     --bg:#f7f6f3; --paper:#fdfdfc; --ink:#16171a; --body:#3c3e44; --muted:#74777e; --faint:#9b9ea5;
@@ -135,12 +135,12 @@
 <body>
 <nav>
   <div class="wrap nav">
-    <a class="brand" href="#top"><span class="mk">中</span>FairPeer</a>
+    <a class="brand" href="#top"><span class="mk">中</span>Hiq</a>
     <div class="nav-links">
       <a href="#install" data-en>Install</a><a href="#install" data-zh>安装</a>
       <a href="#features" data-en>Features</a><a href="#features" data-zh>特性</a>
-      <a href="#why" data-en>Why FairPeer</a><a href="#why" data-zh>为何 FairPeer</a>
-      <a href="https://github.com/zzycxz/fairpeer">GitHub</a>
+      <a href="#why" data-en>Why Hiq</a><a href="#why" data-zh>为何 Hiq</a>
+      <a href="https://github.com/zzycxz/hiq">GitHub</a>
     </div>
     <div class="nav-right">
       <button class="lang" id="lang">中文</button>
@@ -153,26 +153,26 @@
 <header class="hero wrap">
   <div class="kicker"><span class="b">v1.0.0</span> · <span data-en>a ground-up rewrite in Go · open source, MIT</span><span data-zh>Go 全新重写 · 开源 MIT</span></div>
   <h1>
-    <span data-en>A <em>FairPeer</em>-native agent for your terminal.</span>
-    <span data-zh><em>FairPeer</em> 原生的终端编码 Agent。</span>
+    <span data-en>A <em>Hiq</em>-native agent for your terminal.</span>
+    <span data-zh><em>Hiq</em> 原生的终端编码 Agent。</span>
   </h1>
   <p class="lede">
-    <span data-en>The loop is append-only, aligned to FairPeer's byte-stable prefix cache — so long sessions hold <b>90%+ cache hit</b> and input-token cost collapses to <b>~1/5</b>. One Go binary. Terminal-first.</span>
-    <span data-zh>运行循环 append-only,对齐 FairPeer 字节稳定的 prefix-cache —— 长会话缓存命中 <b>90%+</b>,输入 token 成本降到 <b>约 1/5</b>。单个 Go 二进制,终端优先。</span>
+    <span data-en>The loop is append-only, aligned to Hiq's byte-stable prefix cache — so long sessions hold <b>90%+ cache hit</b> and input-token cost collapses to <b>~1/5</b>. One Go binary. Terminal-first.</span>
+    <span data-zh>运行循环 append-only,对齐 Hiq 字节稳定的 prefix-cache —— 长会话缓存命中 <b>90%+</b>,输入 token 成本降到 <b>约 1/5</b>。单个 Go 二进制,终端优先。</span>
   </p>
   <div class="cta">
     <a class="btn btn-dark" href="#install"><span data-en>Get started</span><span data-zh>开始使用</span></a>
-    <a class="btn btn-line" href="https://github.com/zzycxz/fairpeer"><span data-en>View on GitHub</span><span data-zh>在 GitHub 查看</span></a>
+    <a class="btn btn-line" href="https://github.com/zzycxz/hiq"><span data-en>View on GitHub</span><span data-zh>在 GitHub 查看</span></a>
   </div>
   <div class="install">
-    <span><span class="p">$ </span>npm i -g fairpeer</span>
-    <button class="cp" data-copy="npm i -g fairpeer"><span data-en>Copy</span><span data-zh>复制</span></button>
+    <span><span class="p">$ </span>npm i -g hiq</span>
+    <button class="cp" data-copy="npm i -g hiq"><span data-en>Copy</span><span data-zh>复制</span></button>
   </div>
 
   <div class="term">
-    <div class="tbar"><i></i><i></i><i></i><span>~/app — fairpeer chat</span></div>
-    <div class="tbody"><span class="u">$</span> fairpeer chat
-<span class="i">fairpeer v1.0.0 · model FairPeer-v4-flash · ~/app</span>
+    <div class="tbar"><i></i><i></i><i></i><span>~/app — hiq chat</span></div>
+    <div class="tbody"><span class="u">$</span> hiq chat
+<span class="i">hiq v1.0.0 · model Hiq-v4-flash · ~/app</span>
 <span class="d">cache 94.2% hit · session 18m · cost $0.043</span>
 <span class="u">›</span> add retry with backoff to the http client
 <span class="e">edit</span>  internal/net/client.go        <span class="c">+24 −3</span>
@@ -194,30 +194,30 @@
     <button class="tab" data-tab="desk"><span data-en>Desktop</span><span data-zh>桌面端</span></button>
   </div>
   <div class="panel on" data-panel="npm">
-    <div class="block"><button class="cp" data-copy="npm i -g fairpeer
-fairpeer setup
-fairpeer chat"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span class="p">$</span> npm i -g fairpeer
-<span class="p">$</span> fairpeer setup        <span class="c"># config wizard → ./fairpeer.toml</span>
-<span class="p">$</span> fairpeer chat         <span class="c"># or: fairpeer run "implement the TODOs"</span></pre></div>
+    <div class="block"><button class="cp" data-copy="npm i -g hiq
+hiq setup
+hiq chat"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span class="p">$</span> npm i -g hiq
+<span class="p">$</span> hiq setup        <span class="c"># config wizard → ./hiq.toml</span>
+<span class="p">$</span> hiq chat         <span class="c"># or: hiq run "implement the TODOs"</span></pre></div>
     <p class="undertext"><span data-en>Any OS · macOS, Linux, Windows × amd64/arm64. Short alias <code>dsnix</code> too.</span><span data-zh>任意系统 · macOS、Linux、Windows × amd64/arm64。</span></p>
   </div>
   <div class="panel" data-panel="brew">
-    <div class="block"><button class="cp" data-copy="brew install zzycxz/homebrew-fairpeer/fairpeer"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span class="p">$</span> brew install zzycxz/homebrew-fairpeer/fairpeer</pre></div>
+    <div class="block"><button class="cp" data-copy="brew install zzycxz/homebrew-hiq/hiq"><span data-en>Copy</span><span data-zh>复制</span></button><pre><span class="p">$</span> brew install zzycxz/homebrew-hiq/hiq</pre></div>
     <p class="undertext"><span data-en>macOS. The cask pulls the archive from the latest release.</span><span data-zh>macOS。cask 从最新 release 拉取归档。</span></p>
   </div>
   <div class="panel" data-panel="desk">
     <div class="dls">
-      <a class="dl" href="https://pub-147fb53b9c1e4bbf891a257968619ea7.r2.dev/latest/fairpeer-darwin-arm64.zip" download>
-        <span class="os">macOS</span><span class="fn">fairpeer-darwin-arm64.zip</span><span class="ar" data-en>universal · Intel + Apple Silicon</span><span class="ar" data-zh>通用 · Intel + Apple Silicon</span><span class="go">↓</span>
+      <a class="dl" href="https://pub-147fb53b9c1e4bbf891a257968619ea7.r2.dev/latest/hiq-darwin-arm64.zip" download>
+        <span class="os">macOS</span><span class="fn">hiq-darwin-arm64.zip</span><span class="ar" data-en>universal · Intel + Apple Silicon</span><span class="ar" data-zh>通用 · Intel + Apple Silicon</span><span class="go">↓</span>
       </a>
-      <a class="dl" href="https://pub-147fb53b9c1e4bbf891a257968619ea7.r2.dev/latest/fairpeer-windows-amd64-installer.exe" download>
-        <span class="os">Windows</span><span class="fn">fairpeer-windows-amd64-installer.exe</span><span class="ar" data-en>installer · x64</span><span class="ar" data-zh>安装器 · x64</span><span class="go">↓</span>
+      <a class="dl" href="https://pub-147fb53b9c1e4bbf891a257968619ea7.r2.dev/latest/hiq-windows-amd64-installer.exe" download>
+        <span class="os">Windows</span><span class="fn">hiq-windows-amd64-installer.exe</span><span class="ar" data-en>installer · x64</span><span class="ar" data-zh>安装器 · x64</span><span class="go">↓</span>
       </a>
-      <a class="dl" href="https://pub-147fb53b9c1e4bbf891a257968619ea7.r2.dev/latest/fairpeer-linux-amd64.tar.gz" download>
-        <span class="os">Linux</span><span class="fn">fairpeer-linux-amd64.tar.gz</span><span class="ar" data-en>x64</span><span class="ar" data-zh>x64</span><span class="go">↓</span>
+      <a class="dl" href="https://pub-147fb53b9c1e4bbf891a257968619ea7.r2.dev/latest/hiq-linux-amd64.tar.gz" download>
+        <span class="os">Linux</span><span class="fn">hiq-linux-amd64.tar.gz</span><span class="ar" data-en>x64</span><span class="ar" data-zh>x64</span><span class="go">↓</span>
       </a>
     </div>
-    <p class="undertext"><span data-en>Served from the R2 CDN (fast worldwide). Or browse <a href="https://github.com/zzycxz/fairpeer/releases/latest">all releases on GitHub</a>.</span><span data-zh>经 R2 CDN 分发(全球加速)。或在 <a href="https://github.com/zzycxz/fairpeer/releases/latest">GitHub releases</a> 浏览全部。</span></p>
+    <p class="undertext"><span data-en>Served from the R2 CDN (fast worldwide). Or browse <a href="https://github.com/zzycxz/hiq/releases/latest">all releases on GitHub</a>.</span><span data-zh>经 R2 CDN 分发(全球加速)。或在 <a href="https://github.com/zzycxz/hiq/releases/latest">GitHub releases</a> 浏览全部。</span></p>
   </div>
 </section>
 
@@ -227,7 +227,7 @@ fairpeer chat"><span data-en>Copy</span><span data-zh>复制</span></button><pre
     <h2><span data-en>Built for long, cheap sessions.</span><span data-zh>为长会话、低成本而生。</span></h2>
   </div>
   <div class="grid">
-    <div class="feat"><div class="n">01</div><h3 data-en>Cache-first loop</h3><h3 data-zh>缓存优先循环</h3><p data-en>Append-only history aligned to FairPeer's prefix cache. 90%+ hit on long sessions; input tokens bill at ~1/5.</p><p data-zh>append-only 历史对齐 FairPeer prefix-cache。长会话 90%+ 命中,输入 token 约 1/5 计费。</p></div>
+    <div class="feat"><div class="n">01</div><h3 data-en>Cache-first loop</h3><h3 data-zh>缓存优先循环</h3><p data-en>Append-only history aligned to Hiq's prefix cache. 90%+ hit on long sessions; input tokens bill at ~1/5.</p><p data-zh>append-only 历史对齐 Hiq prefix-cache。长会话 90%+ 命中,输入 token 约 1/5 计费。</p></div>
     <div class="feat"><div class="n">02</div><h3 data-en>Single Go binary</h3><h3 data-zh>单个 Go 二进制</h3><p data-en>CGO-free, cross-compiled for darwin/linux/windows × amd64/arm64. No Node runtime.</p><p data-zh>无 CGO,交叉编译覆盖 darwin/linux/windows × amd64/arm64。运行不需要 Node。</p></div>
     <div class="feat"><div class="n">03</div><h3>MCP first-class</h3><p data-en>stdio, SSE, streamable HTTP. External servers merge their tools into one registry under a prefix.</p><p data-zh>stdio、SSE、streamable HTTP。外部服务器的工具以前缀合并进同一 registry。</p></div>
     <div class="feat"><div class="n">04</div><h3 data-en>Plan mode + sandbox</h3><h3 data-zh>计划模式 + 沙箱</h3><p data-en>Writers are jailed to the workspace; <code>/plan</code> gates the session read-only until you approve.</p><p data-zh>写工具被关进工作区;<code>/plan</code> 进只读门,批准前不写盘。</p></div>
@@ -239,9 +239,9 @@ fairpeer chat"><span data-en>Copy</span><span data-zh>复制</span></button><pre
 <section id="why" class="wrap">
   <div class="why">
     <div>
-      <div class="lab" data-en>Why FairPeer</div><div class="lab" data-zh>为何 FairPeer</div>
+      <div class="lab" data-en>Why Hiq</div><div class="lab" data-zh>为何 Hiq</div>
       <h2><span data-en>The cheapness is the point.</span><span data-zh>便宜,就是核心。</span></h2>
-      <p class="sub"><span data-en>Most agents pay full price for the same growing prompt every turn. fairpeer keeps the prefix byte-identical so FairPeer's cache does the heavy lifting.</span><span data-zh>多数 agent 每回合都为同一段不断增长的 prompt 付全价。fairpeer 让前缀逐字节稳定,让 FairPeer 的缓存替你扛下来。</span></p>
+      <p class="sub"><span data-en>Most agents pay full price for the same growing prompt every turn. hiq keeps the prefix byte-identical so Hiq's cache does the heavy lifting.</span><span data-zh>多数 agent 每回合都为同一段不断增长的 prompt 付全价。hiq 让前缀逐字节稳定,让 Hiq 的缓存替你扛下来。</span></p>
     </div>
     <div class="nums">
       <div class="num"><div class="v">90%+</div><div class="l"><span data-en>cache hit on long sessions</span><span data-zh>长会话缓存命中</span></div></div>
@@ -253,12 +253,12 @@ fairpeer chat"><span data-en>Copy</span><span data-zh>复制</span></button><pre
 
 <footer>
   <div class="wrap foot">
-    <div>© 2026 FairPeer Contributors · <span data-en>MIT licensed</span><span data-zh>MIT 许可</span></div>
+    <div>© 2026 Hiq Contributors · <span data-en>MIT licensed</span><span data-zh>MIT 许可</span></div>
     <div class="foot-links">
-      <a href="https://github.com/zzycxz/fairpeer">GitHub</a>
-      <a href="https://www.npmjs.com/package/fairpeer">npm</a>
-      <a href="https://github.com/zzycxz/fairpeer" target="_blank" rel="noreferrer">FairPeer</a>
-      <a href="https://github.com/zzycxz/fairpeer/releases/latest"><span data-en>Releases</span><span data-zh>下载</span></a>
+      <a href="https://github.com/zzycxz/hiq">GitHub</a>
+      <a href="https://www.npmjs.com/package/hiq">npm</a>
+      <a href="https://github.com/zzycxz/hiq" target="_blank" rel="noreferrer">Hiq</a>
+      <a href="https://github.com/zzycxz/hiq/releases/latest"><span data-en>Releases</span><span data-zh>下载</span></a>
     </div>
   </div>
 </footer>

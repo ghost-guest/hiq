@@ -7,14 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/acp"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/acp"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 
-	_ "github.com/zzycxz/fairpeer/internal/tool/builtin"
+	_ "github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 const acpTestProviderKind = "acp-test-provider"
@@ -44,7 +44,7 @@ func TestACPBuiltinToolsKeepSessionLevelBuiltins(t *testing.T) {
 
 func TestACPInitializesWithoutAPIKey(t *testing.T) {
 	isolateCLIConfigHome(t)
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 	oldStdin := os.Stdin
 	r, w, err := os.Pipe()
 	if err != nil {
@@ -63,16 +63,16 @@ func TestACPInitializesWithoutAPIKey(t *testing.T) {
 			t.Fatalf("Run --acp initialize rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, `"protocolVersion":1`) || !strings.Contains(out, `"name":"fairpeer"`) {
+	if !strings.Contains(out, `"protocolVersion":1`) || !strings.Contains(out, `"name":"hiq"`) {
 		t.Fatalf("initialize output = %s", out)
 	}
 }
 
 func TestACPFactoryLoadsSessionCwdProjectConfig(t *testing.T) {
 	home := isolateCLIConfigHome(t)
-	t.Setenv("FAIRPEER_TEST_KEY", "test-key")
+	t.Setenv("HIQ_TEST_KEY", "test-key")
 	project := t.TempDir()
-	if err := os.WriteFile(filepath.Join(project, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(project, "hiq.toml"), []byte(`
 default_model = "local"
 
 [codegraph]
@@ -83,11 +83,11 @@ name = "local"
 kind = "acp-test-provider"
 base_url = "http://example.invalid"
 model = "fake-model"
-api_key_env = "FAIRPEER_TEST_KEY"
+api_key_env = "HIQ_TEST_KEY"
 `), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	cmdDir := filepath.Join(project, ".fairpeer", "commands")
+	cmdDir := filepath.Join(project, ".hiq", "commands")
 	if err := os.MkdirAll(cmdDir, 0o755); err != nil {
 		t.Fatal(err)
 	}

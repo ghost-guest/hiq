@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/i18n"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/i18n"
 )
 
 // TestRetryIndicatorShowsAndClears proves a Retrying event sets the transient

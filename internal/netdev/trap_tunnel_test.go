@@ -8,7 +8,7 @@ import (
 
 	"github.com/gosnmp/gosnmp"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // linkDown v2c trap → ring line + exactly ONE new Finding (throttled replay

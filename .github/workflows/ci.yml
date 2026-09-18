@@ -94,7 +94,7 @@ jobs:
         working-directory: desktop/build/bin
         shell: bash
         run: |
-          ARTIFACT_NAME="fairpeer-${{ steps.artifact_name.outputs.name }}"
+          ARTIFACT_NAME="hiq-${{ steps.artifact_name.outputs.name }}"
           if [ "${{ matrix.goos }}" = "windows" ]; then
             7z a "${ARTIFACT_NAME}.zip" *
             find . -mindepth 1 -maxdepth 1 ! -name "*.zip" -exec rm -rf {} +
@@ -106,7 +106,7 @@ jobs:
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: fairpeer-${{ steps.artifact_name.outputs.name }}
+          name: hiq-${{ steps.artifact_name.outputs.name }}
           path: |
             desktop/build/bin/*.zip
             desktop/build/bin/*.tar.gz

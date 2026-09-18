@@ -3,8 +3,8 @@
 package main
 
 // remote_wsl_windows.go — the P1 WSL transport: detects distros, provisions
-// the Linux host binary into the distro (~/.fairpeer/bin/fairpeer), and spawns
-// `fairpeer host` over wsl.exe pipes. The desktop's ConPTY terminal for remote
+// the Linux host binary into the distro (~/.hiq/bin/hiq), and spawns
+// `hiq host` over wsl.exe pipes. The desktop's ConPTY terminal for remote
 // tabs also runs wsl.exe directly (see PTYCreate), so no remote PTY protocol
 // is needed.
 
@@ -175,14 +175,14 @@ func wslHome(distro, user string) (string, error) {
 
 // provisionWSLHost copies the desktop-side Linux host binary into the distro
 // and marks it executable. The binary is looked up in the host cache
-// (%LOCALAPPDATA%\fairpeer\hosts) and beside the desktop exe (dev builds); a
+// (%LOCALAPPDATA%\hiq\hosts) and beside the desktop exe (dev builds); a
 // missing binary is a clear, actionable error.
 func provisionWSLHost(distro, user, home string) (string, error) {
 	local, err := localLinuxHostBinary()
 	if err != nil {
 		return "", err
 	}
-	remoteBin := home + "/.fairpeer/bin/fairpeer"
+	remoteBin := home + "/.hiq/bin/hiq"
 	unc := wslDistroUNC(distro, remoteBin)
 	if err := os.MkdirAll(filepath.Dir(unc), 0o755); err != nil {
 		return "", fmt.Errorf("wsl: create bin dir: %w", err)
@@ -227,12 +227,12 @@ func localLinuxHostBinary() (string, error) {
 	}
 	var candidates []string
 	if cache, err := os.UserCacheDir(); err == nil {
-		candidates = append(candidates, filepath.Join(cache, "fairpeer", "hosts", "fairpeer-linux-"+arch))
+		candidates = append(candidates, filepath.Join(cache, "hiq", "hosts", "hiq-linux-"+arch))
 	}
 	if exe, err := os.Executable(); err == nil {
 		candidates = append(candidates,
-			filepath.Join(filepath.Dir(exe), "hosts", "fairpeer-linux-"+arch),
-			filepath.Join(filepath.Dir(exe), "..", "..", "hosts", "fairpeer-linux-"+arch),
+			filepath.Join(filepath.Dir(exe), "hosts", "hiq-linux-"+arch),
+			filepath.Join(filepath.Dir(exe), "..", "..", "hosts", "hiq-linux-"+arch),
 		)
 	}
 	for _, p := range candidates {
@@ -240,7 +240,7 @@ func localLinuxHostBinary() (string, error) {
 			return p, nil
 		}
 	}
-	return "", fmt.Errorf("Linux host binary not found (looked in %%LOCALAPPDATA%%\\fairpeer\\hosts and beside the desktop exe). Run scripts/build-hosts.sh (or `GOOS=linux GOARCH=%s go build -o <cache>/fairpeer/hosts/fairpeer-linux-%s ./cmd/fairpeer`) and retry", arch, arch)
+	return "", fmt.Errorf("Linux host binary not found (looked in %%LOCALAPPDATA%%\\hiq\\hosts and beside the desktop exe). Run scripts/build-hosts.sh (or `GOOS=linux GOARCH=%s go build -o <cache>/hiq/hosts/hiq-linux-%s ./cmd/hiq`) and retry", arch, arch)
 }
 
 // wslHomeForProbe resolves the distro home for the wizard's default dir.

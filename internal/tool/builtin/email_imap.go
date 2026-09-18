@@ -24,7 +24,7 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // IMAP email read/search — powered by go-imap + go-message (production IMAP

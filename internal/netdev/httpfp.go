@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
 )
 
 // httpfp.go — F3: opt-in application fingerprint (spec §4.4, default OFF).
@@ -31,7 +31,7 @@ type HTTPFingerprint struct {
 // httpFingerprintPorts: the ports this pass looks at.
 var httpFingerprintPorts = map[int]bool{80: true, 443: true, 8080: true, 8443: true}
 
-const httpfpUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FairPeer-Ops/1.0"
+const httpfpUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Hiq-Ops/1.0"
 
 var titleRe = regexp.MustCompile(`(?is)<title[^>]*>(.{0,200}?)</title>`)
 

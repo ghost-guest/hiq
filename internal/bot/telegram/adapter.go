@@ -16,8 +16,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/bot"
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/bot"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // New 创建 Telegram Bot 适配器。

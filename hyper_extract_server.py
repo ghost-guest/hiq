@@ -1,4 +1,4 @@
-"""Hyper-Extract HTTP server for FairPeer integration.
+"""Hyper-Extract HTTP server for Hiq integration.
 
 Exposes Hyper-Extract's extraction capabilities over HTTP so the Go backend
 can call it without Python dependency issues. Runs on localhost only.
@@ -133,7 +133,7 @@ def _extract(text: str, template: str = "general/graph", lang: str = "zh") -> Di
 
     try:
         result = ka.extract(tmp_path)
-        # Convert to dict format compatible with FairPeer's Entity/Relation types.
+        # Convert to dict format compatible with Hiq's Entity/Relation types.
         entities = []
         relations = []
         if hasattr(result, "entities"):

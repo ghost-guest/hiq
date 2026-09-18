@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
 )
 
 // Assessment mode (NETDEV_SPEC §6.2): gated by the engagement envelope —
 // id + scopes + expiry + approver in the USER config. Weak-credential checking
 // is tiered (Appendix B-9): "basic" runs a fixed small candidate set within
 // the per-device budget; "dictionary" consumes a USER-SUPPLIED dictionary
-// (fairpeer ships none) and needs the explicit larger budget. Every attempt
+// (hiq ships none) and needs the explicit larger budget. Every attempt
 // is a full SSH auth dial and is audited; devices lock accounts after N
 // failures, so budgets are hard caps, not suggestions.
 

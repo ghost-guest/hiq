@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 func TestRemoteWorkHandler(t *testing.T) {

@@ -6,10 +6,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/agent/testutil"
-	"github.com/zzycxz/fairpeer/internal/diff"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/agent/testutil"
+	"github.com/zzycxz/hiq/internal/diff"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // preEditRecorder collects the changes a PreEditHook receives.

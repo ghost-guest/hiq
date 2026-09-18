@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/rag"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/rag"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // RAG knowledge-base tools (Phase 3 of coWork). Wrap a process-global rag.Store

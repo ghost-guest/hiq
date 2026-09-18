@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 func TestCaptureShapeNormalizesToolSchemaOrder(t *testing.T) {

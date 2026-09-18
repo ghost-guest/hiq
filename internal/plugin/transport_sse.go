@@ -132,7 +132,7 @@ func (t *sseTransport) dispatch(raw json.RawMessage) {
 		} `json:"error"`
 	}
 	if err := json.Unmarshal(raw, &env); err != nil || env.ID == nil {
-		return // notification or malformed — ignore (fairpeer is a consumer)
+		return // notification or malformed — ignore (hiq is a consumer)
 	}
 	t.mu.Lock()
 	ch, ok := t.pending[*env.ID]

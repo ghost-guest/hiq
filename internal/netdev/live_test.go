@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // collectLive buffers live events with their own lock; tests wait on a

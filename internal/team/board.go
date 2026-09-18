@@ -4,7 +4,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 // Board column keys. These are the stable identifiers the frontend renders as

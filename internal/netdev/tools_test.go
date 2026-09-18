@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
 )
 
 // testManager wires a Manager against the simulator with an isolated audit

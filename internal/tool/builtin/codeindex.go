@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // Lightweight built-in code symbol index. Prefer lsp_* for language semantics

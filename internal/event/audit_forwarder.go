@@ -1,8 +1,8 @@
 package event
 
 import (
-	"github.com/zzycxz/fairpeer/internal/evidence"
-	"github.com/zzycxz/fairpeer/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/evidence"
+	"github.com/zzycxz/hiq/internal/nilutil"
 )
 
 // AuditForwarder forwards every optional sink capability to Inner. Embed it in

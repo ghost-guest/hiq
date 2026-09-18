@@ -119,7 +119,7 @@ func TestNormalizeEmailAccountsEmpty(t *testing.T) {
 }
 
 // TestEmailAccountsTOMLParse verifies the [[cowork.email_accounts]] TOML shape
-// documented in fairpeer.example.toml / docs/email_setup.md actually decodes
+// documented in hiq.example.toml / docs/email_setup.md actually decodes
 // into the EmailAccounts slice with nested SMTP/IMAP intact.
 func TestEmailAccountsTOMLParse(t *testing.T) {
 	src := `

@@ -2,7 +2,7 @@
 
 package builtin
 
-import "github.com/zzycxz/fairpeer/internal/tool"
+import "github.com/zzycxz/hiq/internal/tool"
 
 // ScreenTools returns the desktop-automation tools available on macOS/Linux.
 //

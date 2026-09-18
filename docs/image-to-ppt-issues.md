@@ -764,7 +764,7 @@ ppt-auto 内部存在**三处独立的规则定义**，内容不一致，且消�
 
 ### 模拟运行记录（2026-08-27）
 
-> 沙箱实测：独立 USERPROFILE + skill 目录副本（不触碰真实 `~/.fairpeer` 与仓库文件）。场景：参考图（reference-style.json 带 hex 颜色）→ 6 页 deck（cover/toc/section/cards/columns/ending）→ autofit → build_page_skeleton → batch_check → qa_compare → svg_to_pptx，无模板与有模板各跑一轮。
+> 沙箱实测：独立 USERPROFILE + skill 目录副本（不触碰真实 `~/.hiq` 与仓库文件）。场景：参考图（reference-style.json 带 hex 颜色）→ 6 页 deck（cover/toc/section/cards/columns/ending）→ autofit → build_page_skeleton → batch_check → qa_compare → svg_to_pptx，无模板与有模板各跑一轮。
 
 | # | 发现 | 结论 |
 |---|------|------|

@@ -3,7 +3,7 @@ package installsource
 import (
 	"encoding/json"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // request mirrors the public schema. Fields stay exported because Execute

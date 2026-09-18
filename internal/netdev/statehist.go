@@ -26,9 +26,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/checkpoint"
-	"github.com/zzycxz/fairpeer/internal/diff"
-	fileenc "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
+	"github.com/zzycxz/hiq/internal/checkpoint"
+	"github.com/zzycxz/hiq/internal/diff"
+	fileenc "github.com/zzycxz/hiq/internal/fileutil/encoding"
 )
 
 // netdevStateEventLimit caps retained state events (one per transition, not per
@@ -148,7 +148,7 @@ func stateHist() *checkpoint.Store {
 	return stateStore
 }
 
-// stateHistRoot is the snapshot root: the fairpeer config dir, so both
+// stateHistRoot is the snapshot root: the hiq config dir, so both
 // netdev/** (proposals, jobs, cutovers…) and config.toml are coverable.
 func stateHistRoot() string { return filepath.Dir(netdevStateDir()) }
 

@@ -27,9 +27,9 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
-	teampkg "github.com/zzycxz/fairpeer/internal/team"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
+	teampkg "github.com/zzycxz/hiq/internal/team"
 )
 
 // --- DTOs (JSON-friendly projections of the team domain model) ---

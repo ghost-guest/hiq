@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // touch sets a file's mtime to t. Used by the listing-order test so it
@@ -17,12 +17,12 @@ func touch(path string, t time.Time) error {
 	return os.Chtimes(path, t, t)
 }
 
-// TestSaveLoadRoundTrip is the contract `fairpeer chat --resume` depends on: a
+// TestSaveLoadRoundTrip is the contract `hiq chat --resume` depends on: a
 // session written to disk reloads byte-for-byte, including tool calls and
 // reasoning content (which the model wants to keep across resumes for cache
 // hits on thinking-mode providers).
 func TestSaveLoadRoundTrip(t *testing.T) {
-	s := NewSession("you are fairpeer")
+	s := NewSession("you are hiq")
 	s.Add(provider.Message{Role: provider.RoleUser, Content: "find the bug"})
 	s.Add(provider.Message{
 		Role:             provider.RoleAssistant,
@@ -90,7 +90,7 @@ func TestSaveLoadLargeMessage(t *testing.T) {
 
 // TestListSessionsOrdersByMTime makes sure the picker shows the most
 // recently used conversation first — that's what users reach for when they
-// hit `fairpeer chat --continue`.
+// hit `hiq chat --continue`.
 func TestListSessionsOrdersByMTime(t *testing.T) {
 	dir := t.TempDir()
 	// Write two sessions, sleeping between writes so their original mtimes

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // kind=k8s seal over a fake API server: whitelist paths answer, everything

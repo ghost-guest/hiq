@@ -20,16 +20,16 @@ func TestPPTReferenceAttachment(t *testing.T) {
 		wantPath string
 		wantOK   bool
 	}{
-		{"image + ppt intent", "照这张图做个PPT @.fairpeer/attachments/shot.png", ".fairpeer/attachments/shot.png", true},
-		{"pdf + ppt intent (演示文稿)", "把这个PDF转成演示文稿 @.fairpeer/attachments/doc.pdf", ".fairpeer/attachments/doc.pdf", true},
-		{"slide keyword (english)", "make slides @.fairpeer/attachments/x.jpg", ".fairpeer/attachments/x.jpg", true},
-		{"幻灯 keyword", "做几页幻灯 @.fairpeer/attachments/a.webp", ".fairpeer/attachments/a.webp", true},
+		{"image + ppt intent", "照这张图做个PPT @.hiq/attachments/shot.png", ".hiq/attachments/shot.png", true},
+		{"pdf + ppt intent (演示文稿)", "把这个PDF转成演示文稿 @.hiq/attachments/doc.pdf", ".hiq/attachments/doc.pdf", true},
+		{"slide keyword (english)", "make slides @.hiq/attachments/x.jpg", ".hiq/attachments/x.jpg", true},
+		{"幻灯 keyword", "做几页幻灯 @.hiq/attachments/a.webp", ".hiq/attachments/a.webp", true},
 		{"ppt intent but no attachment", "做个PPT关于AI发展", "", false},
-		{"attachment but NO ppt intent → must skip (avoid VLM burn)", "看这张图里写了啥 @.fairpeer/attachments/shot.png", "", false},
-		{"attachment but non-image/pdf ext → skip", "做个PPT @.fairpeer/attachments/notes.txt", "", false},
-		{"multiple attachments, pick the image one", "做PPT @.fairpeer/attachments/a.txt 和 @.fairpeer/attachments/b.png", ".fairpeer/attachments/b.png", true},
-		{"chinese comma delimiter after token", "做PPT@.fairpeer/attachments/x.png，谢谢", ".fairpeer/attachments/x.png", true},
-		{"token at end of input (no trailing space)", "做个PPT 照这张 @.fairpeer/attachments/end.png", ".fairpeer/attachments/end.png", true},
+		{"attachment but NO ppt intent → must skip (avoid VLM burn)", "看这张图里写了啥 @.hiq/attachments/shot.png", "", false},
+		{"attachment but non-image/pdf ext → skip", "做个PPT @.hiq/attachments/notes.txt", "", false},
+		{"multiple attachments, pick the image one", "做PPT @.hiq/attachments/a.txt 和 @.hiq/attachments/b.png", ".hiq/attachments/b.png", true},
+		{"chinese comma delimiter after token", "做PPT@.hiq/attachments/x.png，谢谢", ".hiq/attachments/x.png", true},
+		{"token at end of input (no trailing space)", "做个PPT 照这张 @.hiq/attachments/end.png", ".hiq/attachments/end.png", true},
 		{"empty input", "", "", false},
 	}
 	for _, c := range cases {
@@ -124,8 +124,8 @@ func TestLocalPathReference(t *testing.T) {
 // removed, and clearing an already-clean home is a harmless no-op.
 func TestClearStaleReferenceFilesIn(t *testing.T) {
 	home := t.TempDir()
-	fp := filepath.Join(home, ".fairpeer", "reference-style.json")
-	pd := filepath.Join(home, ".fairpeer", "pdf-pages", "page-1.json")
+	fp := filepath.Join(home, ".hiq", "reference-style.json")
+	pd := filepath.Join(home, ".hiq", "pdf-pages", "page-1.json")
 	if err := os.MkdirAll(filepath.Dir(pd), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func TestWriteReferenceStyleSourcePath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(home, ".fairpeer", "reference-style.json"))
+	data, err := os.ReadFile(filepath.Join(home, ".hiq", "reference-style.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

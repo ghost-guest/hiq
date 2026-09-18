@@ -1,6 +1,6 @@
 package runtime
 
-// bundled.go finds runtimes bundled alongside the fairpeer executable.
+// bundled.go finds runtimes bundled alongside the hiq executable.
 // Mirrors internal/codegraph's bundledBaseDir() pattern: look in the directory
 // containing the executable for a <BundleDirName>/ subdirectory.
 
@@ -11,7 +11,7 @@ import (
 )
 
 // bundledBaseDir returns the absolute path to the bundle directory next to the
-// fairpeer executable (e.g. /opt/fairpeer/runtimes or C:\...\fairpeer\runtimes).
+// hiq executable (e.g. /opt/hiq/runtimes or C:\...\hiq\runtimes).
 // Returns ("", false) if the executable path can't be determined.
 func bundledBaseDir() (string, bool) {
 	exe, err := os.Executable()

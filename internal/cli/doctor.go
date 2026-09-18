@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/zzycxz/fairpeer/internal/doctor"
+	"github.com/zzycxz/hiq/internal/doctor"
 )
 
 func doctorCommand(args []string, version string) int {

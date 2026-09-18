@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev"
 )
 
 // netdev_dash_app.go — 大屏家族的 desktop 聚合层（DASHBOARD spec v2.0）：
 // D1 总览快照（buildOverviewData + NetDevOverview，30s 缓存）、四屏桥、
-// fairpeer:netdev-dash 写侧推送（§3.4）。总览与早报同源（D3）：早报的
+// hiq:netdev-dash 写侧推送（§3.4）。总览与早报同源（D3）：早报的
 // 客观计数全部读这份快照，两套口径永不漂移。
 
 // ---------------------------------------------------------------------------
@@ -481,7 +481,7 @@ func (a *App) NetDevTopoReconcile() (*netdev.TopoReconcile, error) {
 }
 
 // ---------------------------------------------------------------------------
-// fairpeer:netdev-dash 写侧推送（§3.4）——payload 只有屏枚举，无数据本体
+// hiq:netdev-dash 写侧推送（§3.4）——payload 只有屏枚举，无数据本体
 // ---------------------------------------------------------------------------
 
 // dashEmit nudges the dash screens after a successful write. Best-effort:
@@ -491,5 +491,5 @@ func (a *App) dashEmit(screens ...string) {
 		return
 	}
 	defer func() { _ = recover() }() // ctx may be gone during shutdown
-	runtime.EventsEmit(a.ctx, "fairpeer:netdev-dash", map[string]any{"screens": screens})
+	runtime.EventsEmit(a.ctx, "hiq:netdev-dash", map[string]any{"screens": screens})
 }

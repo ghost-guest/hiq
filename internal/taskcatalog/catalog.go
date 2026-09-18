@@ -18,9 +18,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/projectiondb"
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/projectiondb"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 const (
@@ -177,7 +177,7 @@ func Open(ctx context.Context, path string) (*Catalog, error) {
 		return nil, err
 	}
 	workerCtx, cancel := context.WithCancel(context.Background())
-	c := &Catalog{db: handle.DB, store: taskmonitor.NewFileStore(filepath.Join(".fairpeer", "tasks")), ctx: workerCtx, cancel: cancel,
+	c := &Catalog{db: handle.DB, store: taskmonitor.NewFileStore(filepath.Join(".hiq", "tasks")), ctx: workerCtx, cancel: cancel,
 		queue: make(chan request, 1024), dirtyWake: make(chan struct{}, 1), reconciling: map[string]bool{}, registered: map[string]bool{}, closeDone: make(chan struct{}),
 		status: Status{State: string(handle.Status.State), Mode: handle.Status.Mode, Path: handle.Status.Path, LastError: handle.Status.LastError}}
 	var revision uint64
@@ -190,7 +190,7 @@ func Open(ctx context.Context, path string) (*Catalog, error) {
 }
 
 func (c *Catalog) ObservedStore() *taskmonitor.FileStore {
-	return taskmonitor.NewObservedFileStore(filepath.Join(".fairpeer", "tasks"), c)
+	return taskmonitor.NewObservedFileStore(filepath.Join(".hiq", "tasks"), c)
 }
 
 func (c *Catalog) SnapshotChanged(projectRoot, taskID string) {
@@ -458,7 +458,7 @@ func (c *Catalog) indexEvents(ctx context.Context, root, taskID string) error {
 	unlock := c.lockProject(project.Key)
 	defer unlock()
 
-	path := filepath.Join(project.Root, ".fairpeer", "tasks", taskID, "events.jsonl")
+	path := filepath.Join(project.Root, ".hiq", "tasks", taskID, "events.jsonl")
 	info, statErr := os.Stat(path)
 	if errors.Is(statErr, os.ErrNotExist) {
 		return nil

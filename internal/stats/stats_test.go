@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/billing"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/filelock"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/billing"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/filelock"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 func flushRecorder(t *testing.T, recorder *Recorder) {

@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	rt "github.com/zzycxz/fairpeer/internal/runtime"
+	rt "github.com/zzycxz/hiq/internal/runtime"
 )
 
 // desktop_bridge.go — Unified Python bridge for all desktop interactions.
@@ -111,7 +111,7 @@ func findBridgeScript() string {
 		for _, p := range []string{
 			filepathJoin(dir, "scripts", "desktop_bridge.py"),
 			filepathJoin(dir, "..", "scripts", "desktop_bridge.py"),
-			filepathJoin(dir, "..", "fairpeer", "scripts", "desktop_bridge.py"),
+			filepathJoin(dir, "..", "hiq", "scripts", "desktop_bridge.py"),
 		} {
 			if fileExists(p) {
 				return p
@@ -121,9 +121,9 @@ func findBridgeScript() string {
 	// Try CWD and common subdirectories.
 	for _, p := range []string{
 		"scripts/desktop_bridge.py",
-		"fairpeer/scripts/desktop_bridge.py",
+		"hiq/scripts/desktop_bridge.py",
 		"../scripts/desktop_bridge.py",
-		"../fairpeer/scripts/desktop_bridge.py",
+		"../hiq/scripts/desktop_bridge.py",
 	} {
 		if fileExists(p) {
 			return p

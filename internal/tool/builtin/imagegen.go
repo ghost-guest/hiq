@@ -14,13 +14,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 func init() { tool.RegisterBuiltin(imageGenerate{}) }
 
 // imageGenerate (upgrade spec 5-6) generates an image via an OpenAI-compatible
-// /images/generations endpoint and stores it under .fairpeer/attachments so
+// /images/generations endpoint and stores it under .hiq/attachments so
 // the existing attachment pipeline (agent.go's attachmentImageRe → ToolCard
 // thumbnails + lightbox) renders it with zero extra wiring. The endpoint/base
 // URL/API key reuse the image model's provider entry, so users configure one
@@ -51,9 +51,9 @@ type imageGenConfig struct {
 // three variables the boot provider layer honours for image entries.
 func imageGenCfg() (imageGenConfig, bool) {
 	cfg := imageGenConfig{
-		BaseURL: strings.TrimRight(os.Getenv("FAIRPEER_IMAGE_BASE_URL"), "/"),
-		APIKey:  os.Getenv("FAIRPEER_IMAGE_API_KEY"),
-		Model:   os.Getenv("FAIRPEER_IMAGE_MODEL"),
+		BaseURL: strings.TrimRight(os.Getenv("HIQ_IMAGE_BASE_URL"), "/"),
+		APIKey:  os.Getenv("HIQ_IMAGE_API_KEY"),
+		Model:   os.Getenv("HIQ_IMAGE_MODEL"),
 	}
 	return cfg, cfg.BaseURL != "" && cfg.APIKey != "" && cfg.Model != ""
 }
@@ -73,7 +73,7 @@ func (g imageGenerate) Execute(ctx context.Context, args json.RawMessage) (strin
 	}
 	cfg, ok := imageGenCfg()
 	if !ok {
-		return "", fmt.Errorf("image generation is not configured: set FAIRPEER_IMAGE_BASE_URL / FAIRPEER_IMAGE_API_KEY / FAIRPEER_IMAGE_MODEL")
+		return "", fmt.Errorf("image generation is not configured: set HIQ_IMAGE_BASE_URL / HIQ_IMAGE_API_KEY / HIQ_IMAGE_MODEL")
 	}
 
 	body := map[string]any{"model": cfg.Model, "prompt": p.Prompt, "n": 1, "response_format": "b64_json"}
@@ -109,7 +109,7 @@ func (g imageGenerate) Execute(ctx context.Context, args json.RawMessage) (strin
 		return "", fmt.Errorf("image API returned no data")
 	}
 
-	// Save under .fairpeer/attachments (confined to the workspace roots so the
+	// Save under .hiq/attachments (confined to the workspace roots so the
 	// markdown path the model echoes resolves through the attachment viewer).
 	var data []byte
 	if out.Data[0].B64JSON != "" {
@@ -128,7 +128,7 @@ func (g imageGenerate) Execute(ctx context.Context, args json.RawMessage) (strin
 
 	name := fmt.Sprintf("gen-%s.png", time.Now().Format("20060102-150405"))
 	for _, root := range g.roots {
-		dir := filepath.Join(root, ".fairpeer", "attachments")
+		dir := filepath.Join(root, ".hiq", "attachments")
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			continue
 		}
@@ -136,13 +136,13 @@ func (g imageGenerate) Execute(ctx context.Context, args json.RawMessage) (strin
 		if err := os.WriteFile(path, data, 0o644); err != nil {
 			return "", fmt.Errorf("write %s: %w", path, err)
 		}
-		rel := ".fairpeer/attachments/" + name
+		rel := ".hiq/attachments/" + name
 		return fmt.Sprintf("generated image saved:\n![image](%s)", rel), nil
 	}
 	if len(g.roots) == 0 {
 		return "", fmt.Errorf("no workspace root to store the image in")
 	}
-	return "", fmt.Errorf("could not create .fairpeer/attachments under any root")
+	return "", fmt.Errorf("could not create .hiq/attachments under any root")
 }
 
 func downloadImage(ctx context.Context, url string) ([]byte, error) {

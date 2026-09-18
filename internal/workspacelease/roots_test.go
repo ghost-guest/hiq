@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/filelock"
+	"github.com/zzycxz/hiq/internal/filelock"
 )
 
 func collidingRootOwners(t *testing.T) (string, *Owner, *Owner) {

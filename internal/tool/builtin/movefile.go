@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 func init() { tool.RegisterBuiltin(moveFile{}) }
@@ -101,7 +101,7 @@ func (m moveFile) Execute(ctx context.Context, args json.RawMessage) (string, er
 }
 
 func renameSameFileDestination(src, dst string) error {
-	tmp, err := os.CreateTemp(filepath.Dir(src), ".fairpeer-move-*")
+	tmp, err := os.CreateTemp(filepath.Dir(src), ".hiq-move-*")
 	if err != nil {
 		return err
 	}

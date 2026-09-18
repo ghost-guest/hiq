@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"github.com/zzycxz/fairpeer/internal/diff"
+	"github.com/zzycxz/hiq/internal/diff"
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,10 +12,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
-	_ "github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
+	_ "github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // TestTruncateToolOutputUnderCap leaves small payloads alone — the cap should

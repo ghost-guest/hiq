@@ -1,4 +1,4 @@
-# fairpeer 完整记忆系统设计方案
+# hiq 完整记忆系统设计方案
 
 > 状态：Draft v3（定稿）| 创建：2026-06-24 | 修订：2026-06-24 | 目标版本：v0.4.0
 > 本文档是 `memory-dual-time.md`（Phase 1-6）的超集，新增 Phase 7-9。
@@ -68,10 +68,10 @@
 
 层 1：文档记忆（Doc Memory）— 静态，人工维护
   读取路径（优先级从低到高）：
-  ① ~/.config/fairpeer/fairpeer.md        ScopeUser（全局，跨项目）
-  ② 祖先目录中的 fairpeer.md / AGENTS.md  ScopeAncestor
-  ③ ./fairpeer.md / AGENTS.md / CLAUDE.md ScopeProject（提交共享）
-  ④ ./fairpeer.local.md / AGENTS.local.md ScopeLocal（个人，git-ignored）
+  ① ~/.config/hiq/hiq.md        ScopeUser（全局，跨项目）
+  ② 祖先目录中的 hiq.md / AGENTS.md  ScopeAncestor
+  ③ ./hiq.md / AGENTS.md / CLAUDE.md ScopeProject（提交共享）
+  ④ ./hiq.local.md / AGENTS.local.md ScopeLocal（个人，git-ignored）
   支持 @path 导入语法（最多 5 层递归）
   全文注入系统提示词前缀，每次会话字节级稳定
 
@@ -160,14 +160,14 @@ project 类事实（存 project memory，项目独立）
 └── project-milestone  重要里程碑
 ```
 
-### 2.2 fairpeer.md 内容边界
+### 2.2 hiq.md 内容边界
 
-**应该写入 fairpeer.md（永久真理，不会过时）：**
+**应该写入 hiq.md（永久真理，不会过时）：**
 - 身份定位（工程师 / 架构师）
 - 不变的工作原则（结论优先、不硬编码）
 - 明确禁止列表（不用 Tailwind、不用 os.Exit）
 
-**不应该写入 fairpeer.md（交给 remember 工具）：**
+**不应该写入 hiq.md（交给 remember 工具）：**
 - 居住城市（时效性，用 valid_from/to）
 - 当前项目目标（用 TTL 管理周期）
 - 模型的历次纠错（用 type=feedback 记录）
@@ -266,7 +266,7 @@ metadata:
 │  HOT（每次会话自动加载）                             │
 │  MEMORY.md 索引（一行摘要 × status=active）         │
 │  建议上限：50 条 / ~3KB                             │
-│  fairpeer.md 文档（永久真理，手动维护）               │
+│  hiq.md 文档（永久真理，手动维护）               │
 └──────────────────────────────────────────────────┘
                 │ 超过阈值 → 衰减/压缩
                 ▼
@@ -623,7 +623,7 @@ ListArchived() []ArchivedMemory // .archive/ 内容（Cold 层，已有）
 |------|------|
 | `status.go`（新） | memory_status 工具 |
 | `boot.go` | 注册 memory_status |
-| `fairpeer.example.toml` | 新增 [memory] 配置区块 |
+| `hiq.example.toml` | 新增 [memory] 配置区块 |
 | `doc.go` | 更新包注释 |
 | `CHANGELOG.md` | 记录变更 |
 
@@ -663,7 +663,7 @@ ListArchived() []ArchivedMemory // .archive/ 内容（Cold 层，已有）
 
 ---
 
-## 9. 配置项（fairpeer.toml）
+## 9. 配置项（hiq.toml）
 
 ```toml
 [memory]
@@ -750,11 +750,11 @@ ListArchived() []ArchivedMemory // .archive/ 内容（Cold 层，已有）
 ### 14.1 文档层与自动记忆层的职责边界
 
 **判断标准：这条信息 5 年后还成立吗？**
-- 是 → 文档层（fairpeer.md）
+- 是 → 文档层（hiq.md）
 - 否/不确定 → 自动记忆层（remember 工具）
 
 ```
-文档层（fairpeer.md）只负责：
+文档层（hiq.md）只负责：
   ✅ 身份定义（我是谁）
   ✅ 绝对不变的工作原则（永久真理）
   ✅ 红线禁止事项（如：不用 os.Exit、不硬编码）
@@ -771,12 +771,12 @@ ListArchived() []ArchivedMemory // .archive/ 内容（Cold 层，已有）
   ✅ 任何有可能随时间变化的信息
 ```
 
-### 14.2 推荐的 `~/.config/fairpeer/fairpeer.md` 结构
+### 14.2 推荐的 `~/.config/hiq/hiq.md` 结构
 
 ```markdown
 # 用户画像（User Profile）
 
-> 本文件是 fairpeer 的全局用户文档，加载到每次会话的系统提示词前缀。
+> 本文件是 hiq 的全局用户文档，加载到每次会话的系统提示词前缀。
 > 保持简洁（目标 2KB 以内）。时效性信息请用 remember 工具保存，不要写在这里。
 
 ## 身份
@@ -806,7 +806,7 @@ ListArchived() []ArchivedMemory // .archive/ 内容（Cold 层，已有）
 > **技术偏好（语言优先级、架构哲学）不要写在本文件中。**
 > 请用 `remember type=user, category=belief` 记录，这样可以追踪变化并在偏好改变时自动 supersede。
 
-## 对 fairpeer 的行为要求
+## 对 hiq 的行为要求
 
 - 回答简洁，不要无意义铺垫
 - 代码块优先，解释跟在代码后
@@ -877,7 +877,7 @@ ttl（短期事实必填）：
 - 对长期 dormant 的事实决定是否 memory_recall 或彻底 forget
 ```
 
-### 14.4 项目级 `./fairpeer.md` 结构
+### 14.4 项目级 `./hiq.md` 结构
 
 ```markdown
 # [项目名称] 记忆
@@ -997,7 +997,7 @@ Periodically (every ~10 turns or when relevant):
 
 ```
 启动时自动执行（代码层，无需模型干预）：
-  1. Load() 发现并合并 fairpeer.md / AGENTS.md 层级文档
+  1. Load() 发现并合并 hiq.md / AGENTS.md 层级文档
   2. store.Index() 读取 MEMORY.md，过滤 status=active
   3. Compose() 将文档 + 索引 + 当前日期注入系统提示词前缀（字节级稳定）
   4. ExpireTTL()：扫描 TTL 到期事实，自动归档（配置 ttl_check_on_start=true）
@@ -1137,7 +1137,7 @@ Get() 调用时自动更新：
                 ttl="2026-06-28",  # 本周日
                 importance="medium")
 
-[下周一启动 fairpeer]
+[下周一启动 hiq]
   ExpireTTL() 检测到 week-goal-phase1 的 ttl="2026-06-28" <= today
   → 自动归档（status=archived，移入 .archive/）
   → 通过 QueueMemory 通知："TTL expired: week-goal-phase1 archived."
@@ -1150,7 +1150,7 @@ Get() 调用时自动更新：
 ### 场景 E：首次使用——用户画像冷启动
 
 ```
-[第一次运行 fairpeer]
+[第一次运行 hiq]
   全局 memory 为空，MEMORY.md 不存在
 
 [模型在首轮对话中]：

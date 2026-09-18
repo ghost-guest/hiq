@@ -1,4 +1,4 @@
-// Package builtin provides fairpeer's compile-time built-in tools. Each tool
+// Package builtin provides hiq's compile-time built-in tools. Each tool
 // self-registers via init(); main blank-imports this package to wire them in.
 package builtin
 
@@ -14,8 +14,8 @@ import (
 
 	"golang.org/x/text/transform"
 
-	fileenc "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	fileenc "github.com/zzycxz/hiq/internal/fileutil/encoding"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 const (

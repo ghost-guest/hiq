@@ -120,7 +120,7 @@ export function CutoverView({
         )}
         {(run.status === "running" || run.status === "hold") && (
           <span className="btn btn--secondary btn--small" role="button" title={tt("ndv.cut.enterBoard")}
-            onClick={() => { window.dispatchEvent(new CustomEvent("fairpeer:netdev-open-screen", { detail: { screen: "cutover" } })); }}>
+            onClick={() => { window.dispatchEvent(new CustomEvent("hiq:netdev-open-screen", { detail: { screen: "cutover" } })); }}>
             {tt("ndv.cut.enterBoard")}
           </span>
         )}

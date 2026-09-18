@@ -21,8 +21,8 @@ type ImSourceMessage = {
   text: string;
 };
 
-const IM_SOURCE_START = "[[fairpeer-im]]";
-const IM_SOURCE_END = "[[/fairpeer-im]]";
+const IM_SOURCE_START = "[[hiq-im]]";
+const IM_SOURCE_END = "[[/hiq-im]]";
 
 function parseImSourceMessage(text: string): ImSourceMessage | null {
   // Display-only metadata: keep IM sender/chat details out of model prompts.
@@ -73,7 +73,7 @@ async function parseTopoFromAttachment(path: string, name: string): Promise<void
       pv = await app.NetDevImportTopoPreview(preview.body);
     }
     if (!pv) return;
-    window.dispatchEvent(new CustomEvent("fairpeer:netdev-topo-import", { detail: { name, preview: pv } }));
+    window.dispatchEvent(new CustomEvent("hiq:netdev-topo-import", { detail: { name, preview: pv } }));
   } catch {
     // attachments the bridge cannot read simply keep the viewer-only chip
   }

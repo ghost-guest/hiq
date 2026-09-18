@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/evidence"
+	"github.com/zzycxz/hiq/internal/evidence"
 )
 
 // Claim is the model's own account of the work, as passed to update_goal. It

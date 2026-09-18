@@ -4,7 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const devPort = Number(process.env.FAIRPEER_DESKTOP_VITE_PORT || "5173");
+const devPort = Number(process.env.HIQ_DESKTOP_VITE_PORT || "5173");
 const configDir = dirname(fileURLToPath(import.meta.url));
 
 // On macOS ≤ 12 (Safari 15 WebKit) a crossorigin module/stylesheet fetched over the

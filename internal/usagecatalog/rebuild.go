@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/projectiondb"
+	"github.com/zzycxz/hiq/internal/projectiondb"
 )
 
 // Rebuild replaces only the disposable usage projection after replaying the

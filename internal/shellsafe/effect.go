@@ -7,7 +7,7 @@ import (
 
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/zzycxz/fairpeer/internal/shellparse"
+	"github.com/zzycxz/hiq/internal/shellparse"
 )
 
 // Certainty reports whether the host could statically prove a command's

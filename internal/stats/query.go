@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/usagecatalog"
+	"github.com/zzycxz/hiq/internal/usagecatalog"
 )
 
 // DailyTokens is one day's token usage and turn count in a trend series.

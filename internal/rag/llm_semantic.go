@@ -33,7 +33,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // LLMSemantic wraps a provider for query expansion + reranking. A nil provider

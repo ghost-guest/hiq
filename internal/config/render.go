@@ -16,7 +16,7 @@ const (
 	RenderScopeProject RenderScope = "project"
 )
 
-// RenderTOML renders the config as annotated TOML in the `fairpeer setup` house style:
+// RenderTOML renders the config as annotated TOML in the `hiq setup` house style:
 // comments preserved, system_prompt as a multi-line string, helpful hints. The
 // output round-trips back through Load (see render_test.go).
 func RenderTOML(c *Config) string {
@@ -25,7 +25,7 @@ func RenderTOML(c *Config) string {
 
 // RenderTOMLForScope renders an annotated TOML file for a specific persistence
 // target. User configs can carry desktop and account-level preferences; project
-// fairpeer.toml stays focused on project behavior and intentionally excludes
+// hiq.toml stays focused on project behavior and intentionally excludes
 // desktop-only preferences.
 func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	if c == nil {
@@ -39,24 +39,24 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	defaults := Default()
 	var b strings.Builder
 
-	b.WriteString("# fairpeer configuration.\n")
-	b.WriteString("# Resolution order: flag > ./fairpeer.toml > ~/.config/fairpeer/config.toml > built-in defaults.\n")
+	b.WriteString("# hiq configuration.\n")
+	b.WriteString("# Resolution order: flag > ./hiq.toml > ~/.config/hiq/config.toml > built-in defaults.\n")
 	b.WriteString("# Secrets come from the environment via api_key_env; never put keys here.\n\n")
 
 	fmt.Fprintf(&b, "config_version = %d   # schema marker for diagnostics; old versions may ignore it\n", configVersion(c))
 	fmt.Fprintf(&b, "default_model = %q\n", c.DefaultModel)
 	if c.Language != "" {
-		fmt.Fprintf(&b, "language      = %q   # ui/model language; empty = auto-detect from $LANG / $FAIRPEER_LANG\n", c.Language)
+		fmt.Fprintf(&b, "language      = %q   # ui/model language; empty = auto-detect from $LANG / $HIQ_LANG\n", c.Language)
 	} else {
-		b.WriteString("# language      = \"zh\"   # ui/model language; empty = auto-detect from $LANG / $FAIRPEER_LANG\n")
+		b.WriteString("# language      = \"zh\"   # ui/model language; empty = auto-detect from $LANG / $HIQ_LANG\n")
 	}
 	b.WriteString("\n")
 
 	if shouldRenderUI(c, defaults, scope) {
 		b.WriteString("[ui]\n")
-		fmt.Fprintf(&b, "theme = %q   # auto|dark|light; CLI colors only; FAIRPEER_THEME can override per run\n", c.UITheme())
+		fmt.Fprintf(&b, "theme = %q   # auto|dark|light; CLI colors only; HIQ_THEME can override per run\n", c.UITheme())
 		if style := c.UIThemeStyle(); style != "" {
-			fmt.Fprintf(&b, "theme_style = %q   # CLI accent palette; FAIRPEER_THEME_STYLE can override per run\n", style)
+			fmt.Fprintf(&b, "theme_style = %q   # CLI accent palette; HIQ_THEME_STYLE can override per run\n", style)
 		} else {
 			b.WriteString("# theme_style = \"slate\"   # slate|graphite|aurora|midnight|sandstone|porcelain|linen|glacier\n")
 		}
@@ -144,7 +144,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 		if c.Network.Proxy.Password != "" {
 			fmt.Fprintf(&b, "password = %q   # supports ${VAR} expansion\n", c.Network.Proxy.Password)
 		} else {
-			b.WriteString("# password = \"${FAIRPEER_PROXY_PASSWORD}\"   # optional; supports ${VAR} expansion\n")
+			b.WriteString("# password = \"${HIQ_PROXY_PASSWORD}\"   # optional; supports ${VAR} expansion\n")
 		}
 		b.WriteString("\n")
 	}
@@ -297,7 +297,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	if c.Codegraph.Path != "" {
 		fmt.Fprintf(&b, "path         = %q   # optional launcher override\n", c.Codegraph.Path)
 	} else {
-		b.WriteString("# path       = \"\"   # empty = cache, then PATH, then a bundle beside fairpeer\n")
+		b.WriteString("# path       = \"\"   # empty = cache, then PATH, then a bundle beside hiq\n")
 	}
 	b.WriteString("\n")
 
@@ -318,7 +318,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 		if c.Memory.Root != "" {
 			fmt.Fprintf(&b, "root = %q   # 记忆数据根目录（profile/memory/projects 全跟随）；留空 = 系统用户配置目录\n", c.Memory.Root)
 		} else {
-			b.WriteString("# root     = \"D:/fairpeer-data\"   # 记忆数据根目录（profile/memory/projects 全跟随）；留空 = 系统用户配置目录\n")
+			b.WriteString("# root     = \"D:/hiq-data\"   # 记忆数据根目录（profile/memory/projects 全跟随）；留空 = 系统用户配置目录\n")
 		}
 		if c.Memory.Provider != "" || c.Memory.Model != "" {
 			fmt.Fprintf(&b, "provider = %q   # 记忆维护（Dream/Distill）使用的渠道\n", c.Memory.Provider)
@@ -555,7 +555,7 @@ func RenderTOMLForScope(c *Config, scope RenderScope) string {
 	if len(c.Plugins) == 0 {
 		b.WriteString("# [[plugins]]\n")
 		b.WriteString("# name    = \"example\"\n")
-		b.WriteString("# command = \"fairpeer-plugin-example\"\n")
+		b.WriteString("# command = \"hiq-plugin-example\"\n")
 		b.WriteString("# [[plugins]]                                  # a remote server over Streamable HTTP\n")
 		b.WriteString("# name    = \"stripe\"\n")
 		b.WriteString("# type    = \"http\"\n")
@@ -943,7 +943,7 @@ func renderBotSessionMappings(mappings []BotConnectionSessionMapping) string {
 }
 
 // renderRuleList emits a permission rule list. A populated list renders as an
-// active TOML array; an empty one renders as a commented example so `fairpeer setup`
+// active TOML array; an empty one renders as a commented example so `hiq setup`
 // scaffolds discoverable guidance without imposing surprising rules.
 func renderRuleList(key string, rules []string, example string) string {
 	if len(rules) == 0 {

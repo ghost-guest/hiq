@@ -1,7 +1,7 @@
-# Fairpeer 架构与交互层差距分析
+# Hiq 架构与交互层差距分析
 
-> 补充文档：覆盖 `fairpeer-codex-pi-upgrade-spec.md`（显示层）和
-> `fairpeer-beyond-display-upgrade-spec.md`（架构层）未涉及的 20 项差距。
+> 补充文档：覆盖 `hiq-codex-pi-upgrade-spec.md`（显示层）和
+> `hiq-beyond-display-upgrade-spec.md`（架构层）未涉及的 20 项差距。
 >
 > 对标项目：Codex（OpenAI）、Pi（Earendil Works）
 >
@@ -37,7 +37,7 @@
 
 ## 1. 前端扩展系统
 
-**现状**：Fairpeer 的 `toolCards.tsx` 是内部注册表，无公开 API。第三方无法自定义工具卡片渲染。
+**现状**：Hiq 的 `toolCards.tsx` 是内部注册表，无公开 API。第三方无法自定义工具卡片渲染。
 
 **对标**：Pi 的 Extension API 提供三个核心接口：
 - `registerTool({ name, renderCall, renderResult })` — 自定义工具调用/结果渲染
@@ -49,7 +49,7 @@
 - 无法扩展斜杠命令（当前 SlashMenu 仅支持内置命令）
 - 无法为特定消息类型（如 JSON、表格）注册自定义渲染器
 
-**建议**：WP-EXT-1：暴露 `fairpeer.registerTool({ name, renderCall, renderResult })` API，允许扩展包注册工具卡片渲染器。
+**建议**：WP-EXT-1：暴露 `hiq.registerTool({ name, renderCall, renderResult })` API，允许扩展包注册工具卡片渲染器。
 
 ---
 
@@ -64,7 +64,7 @@
 
 **差距**：
 - 中文粘贴后 Ctrl+←/→ 按字符移动而非按词
-- 大块粘贴文本无折叠标记（Fairpeer 有 `shouldFoldPaste` 但仅用于显示，非原子单元）
+- 大块粘贴文本无折叠标记（Hiq 有 `shouldFoldPaste` 但仅用于显示，非原子单元）
 - 无 CJK 词级选择（双击选中）
 
 **建议**：
@@ -480,16 +480,16 @@
 
 | 文档 | 覆盖范围 | 工作包数 |
 |------|----------|----------|
-| `fairpeer-codex-pi-upgrade-spec.md` | 显示层（Diff、审批、进度、流式） | 17 |
-| `fairpeer-beyond-display-upgrade-spec.md` | 架构层（扩展、隔离、MCP、会话） | 13 |
+| `hiq-codex-pi-upgrade-spec.md` | 显示层（Diff、审批、进度、流式） | 17 |
+| `hiq-beyond-display-upgrade-spec.md` | 架构层（扩展、隔离、MCP、会话） | 13 |
 | **本文档** | 交互层（键盘、终端、文件、Git、补全） | 20 |
 | **合计** | — | **50** |
 
 ---
 
-## 附录：Fairpeer 已有能力（避免重复规划）
+## 附录：Hiq 已有能力（避免重复规划）
 
-以下能力 Fairpeer 已实现，**无需升级**：
+以下能力 Hiq 已实现，**无需升级**：
 
 - ✅ UnifiedDiff 统一/分屏视图（`UnifiedDiff.tsx`）
 - ✅ 文件变更摘要（A/M/D 标记 + +N/-M 统计）

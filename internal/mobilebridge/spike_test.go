@@ -9,7 +9,7 @@ import (
 
 // TestPionEcho is the M0-spike gate (LINKPEER_VERIFICATION_PLAN §3): two
 // PeerConnections in ONE process connect via host candidates and echo a
-// DataChannel message. Proves pion/webrtc v4 works pure-Go inside fairpeer's
+// DataChannel message. Proves pion/webrtc v4 works pure-Go inside hiq's
 // CGO_ENABLED=0 build — the single static binary invariant must hold.
 //
 // Pass criteria:

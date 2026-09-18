@@ -3,7 +3,7 @@ package netdev
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 // newTDHarness builds a small domain (3 admins, quorum 2, one admitted

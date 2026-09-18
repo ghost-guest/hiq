@@ -110,17 +110,17 @@ jobs:
             # -tags codegraph_embed build, so both carry the embedded
             # CodeGraph runtime — the portable exe has no other channel.
             if ls *-installer.exe 1>/dev/null 2>&1; then
-              mv *-installer.exe fairpeer-${PLAT_NAME}-installer.exe
-              mv fairpeer.exe fairpeer-${PLAT_NAME}-portable.exe
+              mv *-installer.exe hiq-${PLAT_NAME}-installer.exe
+              mv hiq.exe hiq-${PLAT_NAME}-portable.exe
             else
-              mv fairpeer.exe fairpeer-${PLAT_NAME}.exe
+              mv hiq.exe hiq-${PLAT_NAME}.exe
             fi
           elif [ "${{ runner.os }}" = "macOS" ]; then
             # Compress .app to tar.gz to preserve permissions
-            tar -czf fairpeer-${PLAT_NAME}.tar.gz fairpeer.app
+            tar -czf hiq-${PLAT_NAME}.tar.gz hiq.app
           else
             # Linux produces a binary without extension
-            tar -czf fairpeer-${PLAT_NAME}.tar.gz fairpeer
+            tar -czf hiq-${PLAT_NAME}.tar.gz hiq
           fi
 
       - name: Upload Artifact

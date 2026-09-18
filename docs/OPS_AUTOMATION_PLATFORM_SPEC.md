@@ -1,4 +1,4 @@
-# FairPeer 统一智能运维与安全编排平台规格说明书
+# Hiq 统一智能运维与安全编排平台规格说明书
 
 > **版本**：v1.0-draft  
 > **日期**：2026-08-30  
@@ -7,18 +7,18 @@
 
 ## 0. 文档定位
 
-FairPeer 当前已经拥有一组成熟但相对分散的能力：`netdev` 数通诊断、Linux/Windows 主机体检、Docker/Kubernetes/数据库只读诊断、安全基线、CVE 匹配、Finding、案例、Job、割接和定时任务。
+Hiq 当前已经拥有一组成熟但相对分散的能力：`netdev` 数通诊断、Linux/Windows 主机体检、Docker/Kubernetes/数据库只读诊断、安全基线、CVE 匹配、Finding、案例、Job、割接和定时任务。
 
 本文将这些能力统一为一个产品模型：
 
-> 用户用自然语言提出请求，FairPeer 自动识别领域、资产、风险和目标，生成可解释的执行计划；低风险只读步骤自动运行，高风险动作进入审批；结果沉淀为证据、Finding、案例、报告和可验证的修复闭环。
+> 用户用自然语言提出请求，Hiq 自动识别领域、资产、风险和目标，生成可解释的执行计划；低风险只读步骤自动运行，高风险动作进入审批；结果沉淀为证据、Finding、案例、报告和可验证的修复闭环。
 
 本文是上层总规格，不替代下列领域规格：
 
-- [NETDEV_SPEC.md](C:\Users\13852\Desktop\Swarm-OS\fairpeer\docs\NETDEV_SPEC.md)：数通运维 v1.1
-- [NETDEV_SPEC_V2.md](C:\Users\13852\Desktop\Swarm-OS\fairpeer\docs\NETDEV_SPEC_V2.md)：全栈运维扩展 v2.1
-- [NETDEV_COMPLETION_SPEC.md](C:\Users\13852\Desktop\Swarm-OS\fairpeer\docs\NETDEV_COMPLETION_SPEC.md)：界面和能力补全
-- [NETDEV_USAGE.md](C:\Users\13852\Desktop\Swarm-OS\fairpeer\docs\NETDEV_USAGE.md)：当前使用逻辑
+- [NETDEV_SPEC.md](C:\Users\13852\Desktop\Swarm-OS\hiq\docs\NETDEV_SPEC.md)：数通运维 v1.1
+- [NETDEV_SPEC_V2.md](C:\Users\13852\Desktop\Swarm-OS\hiq\docs\NETDEV_SPEC_V2.md)：全栈运维扩展 v2.1
+- [NETDEV_COMPLETION_SPEC.md](C:\Users\13852\Desktop\Swarm-OS\hiq\docs\NETDEV_COMPLETION_SPEC.md)：界面和能力补全
+- [NETDEV_USAGE.md](C:\Users\13852\Desktop\Swarm-OS\hiq\docs\NETDEV_USAGE.md)：当前使用逻辑
 
 若本文与已落地的安全不变量冲突，以领域规格中更严格的约束为准。
 
@@ -699,7 +699,7 @@ audit_chain_verify_failure_total
 
 ## 19. 最终产品判断
 
-FairPeer 的长期产品形态不是“让 AI 代替运维工程师敲命令”，而是：
+Hiq 的长期产品形态不是“让 AI 代替运维工程师敲命令”，而是：
 
 > 一个能理解用户目标、自动组织诊断能力、在边界内执行、留下可审计证据，并把发现转成修复闭环的本地优先智能运维平台。
 

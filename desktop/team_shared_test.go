@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
-	teampkg "github.com/zzycxz/fairpeer/internal/team"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
+	teampkg "github.com/zzycxz/hiq/internal/team"
 )
 
 // Shared-context archive + checkpoints on the desktop side (open-vetta 移植

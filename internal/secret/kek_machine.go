@@ -17,8 +17,8 @@ import (
 
 type machineKekProvider struct{}
 
-func (machineKekProvider) Name() string      { return machineProviderName }
-func (machineKekProvider) Available() bool   { return true }
+func (machineKekProvider) Name() string    { return machineProviderName }
+func (machineKekProvider) Available() bool { return true }
 func (machineKekProvider) Create(id string) ([]byte, []byte, error) {
 	return machineDerivedKek(id), nil, nil
 }
@@ -28,6 +28,6 @@ func (machineKekProvider) Fetch(id string, inFile []byte) ([]byte, error) {
 
 func machineDerivedKek(id string) []byte {
 	mac := hmac.New(sha256.New, machineKey())
-	mac.Write([]byte("fairpeer-kek-v2:" + id))
+	mac.Write([]byte(kekSalt + id))
 	return mac.Sum(nil)
 }

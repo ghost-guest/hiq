@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 用户三点反馈：
 
 - **侧栏内嵌预览回归**：打开浏览器即可在右侧栏看到画面（优先控制台会话自己的帧，无帧不渲染、首帧自动展开）；大图仍走中间工作台（启动条并列）——不用再绕道工作台才能看预览
-- **工作台去掉元素面板**：元素只留右侧栏（单一来源）；工作台切页卡后广播 fairpeer:browser-console-changed 事件，右侧栏自动刷新元素并清旧选中（ref 随旧页面失效）——不同步问题消除
+- **工作台去掉元素面板**：元素只留右侧栏（单一来源）；工作台切页卡后广播 hiq:browser-console-changed 事件，右侧栏自动刷新元素并清旧选中（ref 随旧页面失效）——不同步问题消除
 - **元素悬停/选中页面高亮**：ConsoleHighlight 内核原语（ref 或 CSS → 滚动到可见 + 橙色 outline/底色闪烁，恢复原内联样式，纯视觉无 DOM 改动）；右侧栏元素行悬停短闪 500ms（150ms 防抖）、点选长亮 1500ms——列表行和页面元素终于对上号
 - 验证：tsc 零新错；locale-parity 2/2（移除 wbPickHint）；skill-doc 101/101；CSS 语法过；双模块 build 绿
 
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 用户澄清：不是把页卡条补回侧栏，而是要像日志/安全/大屏一样**占据中间画布**的工作台，可关闭，且页卡切换要在那里——因为切换影响元素获取。落地：
 
-- **BrowserWorkbench 接入 bench 机制**（与 logs/sec/dash 同款）：切换条新增「浏览器」chip、Esc/对话 chip/关闭钮三路返回、`?bench=browser` 深链与 fairpeer:netdev-bench 事件均可达；侧栏只留启动条（显示页卡数）派发 bench 事件打开
+- **BrowserWorkbench 接入 bench 机制**（与 logs/sec/dash 同款）：切换条新增「浏览器」chip、Esc/对话 chip/关闭钮三路返回、`?bench=browser` 深链与 hiq:netdev-bench 事件均可达；侧栏只留启动条（显示页卡数）派发 bench 事件打开
 - **页卡 + 元素联动**（核心诉求）：工作台内切页卡即重取元素列表（ref 随旧页面失效）；元素面板带过滤/计数/截断（50 行），点行复制编号（提示粘贴到侧栏目标框）——切页卡、看画面、拿元素一屏完成
 - **画面**：控制台源 5 秒轮询近实时；agent 会话源帧实时推送（复用镜像分桶）；页卡集 8 秒自动刷新（点击自动跟随/手动开页都能反映）
 - 移除上一版的浮层观察窗（被工作台取代）与侧栏页卡条（用户明确不要）；恢复被切片误删的错误横幅（第二次，已在改动流程里留意）
@@ -66,7 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 用户三点反馈落地：
 
 - **看/做分离**（用户提议的绑定关系）：右侧栏回归「驾驶舱」（元素 + 目标/文本/动作 + 动作记录，同源绑定）；新增中间大视图「**浏览器观察窗**」——Chrome 页卡条 + 大画面预览绑定在一起，侧栏只留一条纤细启动器（当前页卡标题 + 页卡数）；Esc/点背景/关闭钮关闭，切换页卡即刷元素
-- **近实时画面**（用户观察到的同步延迟）：镜像帧只在 fairpeer 动作后推送，手动在被控浏览器开页面看不到即时变化——观察窗打开时每 5 秒轮询截图 + 打开即截一帧，手动浏览也近实时
+- **近实时画面**（用户观察到的同步延迟）：镜像帧只在 hiq 动作后推送，手动在被控浏览器开页面看不到即时变化——观察窗打开时每 5 秒轮询截图 + 打开即截一帧，手动浏览也近实时
 - **动作记录 → 记录为技能**：面板每个操作（导航/输入/回车/点击/提取）记为结构化步骤；动作记录区新增「记录为技能」（计数 + 一键转 SKILL.md 草稿，默认 executor: browser-flow）与「清空」按钮；草稿进技能编辑器可继续编辑/试运行/保存——面板操作序列直接沉淀为可复用技能
 - 顺带修复重构中误删的错误横幅；新 locale 键 zh/en 各 +9
 - 验证：tsc 零新错；locale-parity 2/2；skill-doc 97/97；CSS 语法/z-index token 过（观察窗用 --z-local-backdrop）
@@ -74,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### fix(desktop/netdev): 窄窗口（≤820px）运维侧边栏被折叠成裁切残条且无法恢复
 
-用户反馈：窗口缩小后左侧边栏"丢失"。根因：tools.css 的窄窗口媒体查询（@media ≤820px，为编码视图设计的移动适配）把 `--sidebar-width` 置 0，而运维布局 `.ndv` 的 grid 第一列直接引用该变量——rail 被压成 ~25px 的裁切残条；更糟的是没有恢复入口（AppChrome 的展开按钮只在 React `sidebarCollapsed` 状态为真时渲染，CSS 媒体折叠不会置该状态），而窗口 MinWidth=760，760~820 CSS px 整个区间都会中招（显示缩放 >100% 时更容易落入）。修复：netdev.css 以 `.app.app--netdev` 双类特异性重新声明宽度变量（不依赖打包顺序），显式折叠态再高一档保持品牌行收起按钮语义；顺带把同媒体块里 coding 视图专属的 `.global-bottom-bar { width:100% }` 与 `.layout { padding-bottom:36px }` 在 netdev 下还原（底部栏回到只盖 rail 列、主区贴底）。验证：760/780/818/840/1100px 下 rail 宽度/内容/底栏/chrome 位置全部正常，折叠↔展开往返正常，CSS 语法检查过。另注：用户截图当时窗口 ~822px（>820）rail 主体内容完全未绘制（背景/品牌行/边框在）属 WebView2 缩放时的 GPU 合成层未重绘，与本次 CSS 修复无关，出现时划过侧边栏或再缩放即可恢复，频发可用 `FAIRPEER_DESKTOP_DISABLE_WEBVIEW2_GPU=1` 启动规避。
+用户反馈：窗口缩小后左侧边栏"丢失"。根因：tools.css 的窄窗口媒体查询（@media ≤820px，为编码视图设计的移动适配）把 `--sidebar-width` 置 0，而运维布局 `.ndv` 的 grid 第一列直接引用该变量——rail 被压成 ~25px 的裁切残条；更糟的是没有恢复入口（AppChrome 的展开按钮只在 React `sidebarCollapsed` 状态为真时渲染，CSS 媒体折叠不会置该状态），而窗口 MinWidth=760，760~820 CSS px 整个区间都会中招（显示缩放 >100% 时更容易落入）。修复：netdev.css 以 `.app.app--netdev` 双类特异性重新声明宽度变量（不依赖打包顺序），显式折叠态再高一档保持品牌行收起按钮语义；顺带把同媒体块里 coding 视图专属的 `.global-bottom-bar { width:100% }` 与 `.layout { padding-bottom:36px }` 在 netdev 下还原（底部栏回到只盖 rail 列、主区贴底）。验证：760/780/818/840/1100px 下 rail 宽度/内容/底栏/chrome 位置全部正常，折叠↔展开往返正常，CSS 语法检查过。另注：用户截图当时窗口 ~822px（>820）rail 主体内容完全未绘制（背景/品牌行/边框在）属 WebView2 缩放时的 GPU 合成层未重绘，与本次 CSS 修复无关，出现时划过侧边栏或再缩放即可恢复，频发可用 `HIQ_DESKTOP_DISABLE_WEBVIEW2_GPU=1` 启动规避。
 
 ### feat(netdev/desktop): 运维面板页卡条——多页卡可见可切，切换即刷元素
 
@@ -122,7 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### fix(netdev/desktop): 运维浏览器技能列表只显示浏览器专属技能
 
-用户反馈：右侧浏览器页签的技能列表混入了 ppt-auto 等非浏览器技能。BrowserConsoleListSkills 原先返回整个 ~/.fairpeer/skills 的全部用户技能；改为只返回 allowed-tools 含 browser_* 的浏览器专属技能（按名排序），办公/全局技能留在全局技能索引、不进运维面板。列表标题「已生成技能」→「浏览器技能」。注意：ppt-auto 出现在该目录说明本机 ~/.fairpeer/skills 下有同名用户副本（内核内置也有一份），过滤后面板不再显示，文件未动。
+用户反馈：右侧浏览器页签的技能列表混入了 ppt-auto 等非浏览器技能。BrowserConsoleListSkills 原先返回整个 ~/.hiq/skills 的全部用户技能；改为只返回 allowed-tools 含 browser_* 的浏览器专属技能（按名排序），办公/全局技能留在全局技能索引、不进运维面板。列表标题「已生成技能」→「浏览器技能」。注意：ppt-auto 出现在该目录说明本机 ~/.hiq/skills 下有同名用户副本（内核内置也有一份），过滤后面板不再显示，文件未动。
 
 
 ### feat(browser/skill): 多锚定位——目标列回退链 `CSS;;text=可见文字`
@@ -209,7 +209,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 用户澄清：此前给的 7 步流程只是场景之一，真实场景更复杂——不要写死流程，要可扩展；且优先把编辑界面做好用。落地：
 
-- **ask 步骤（运行时询问，表达力扩展的核心）**：步骤表新增 `ask`——目标列=回复绑定的参数名、值列=问用户的问题；试运行到 ask 暂停并在横幅里给出**输入框**，回复经 `TrialResume(reply)` 送回绑定到参数，**后续步骤的 {{参数名}} 在运行时替换**（TrialRun 改收原始步骤+参数表，逐步执行前替换；未绑定引用保持字面量可见，不静默置空）——「用户给数据/指令 → fairpeer 拿去页面操作」的通用机制；与 human（人操作）、wait stable:（流式完成）、源码协议（任意控制流）组合，覆盖比固定模板复杂的真实流程
+- **ask 步骤（运行时询问，表达力扩展的核心）**：步骤表新增 `ask`——目标列=回复绑定的参数名、值列=问用户的问题；试运行到 ask 暂停并在横幅里给出**输入框**，回复经 `TrialResume(reply)` 送回绑定到参数，**后续步骤的 {{参数名}} 在运行时替换**（TrialRun 改收原始步骤+参数表，逐步执行前替换；未绑定引用保持字面量可见，不静默置空）——「用户给数据/指令 → hiq 拿去页面操作」的通用机制；与 human（人操作）、wait stable:（流式完成）、源码协议（任意控制流）组合，覆盖比固定模板复杂的真实流程
 - **界面友好（编辑器）**：步骤类型按「基础操作 / 读取 / 等待与检测 / 人工与对话」分组（行内下拉 optgroup + 新的「按类型添加」面板，每步带一句说明）；新步骤带合理默认值；切换类型保留仍适用字段（click→type 留 target，human⇄ask 留提示语）；对话式协议技能（步骤表解析为 lossy）直接以源码模式打开并显示提示横幅（说明 /名称 调用），不再误入空结构化表单
 - **界面友好（技能页签）**：「新建技能」改为**模板画廊**：空白步骤表 / 表单填报（含人工断点，演示 ask→{{参数}}→human→stable 全链路）/ 值守循环（对话式），每张卡带说明；空技能列表给出引导文案（模板起步或去录制生成）
 - **AI 归纳同步**：生成 prompt 增加 ask 规则（运行时才知道的值输出 ask、目标列参数名、后续 {{参数名}} 引用）与 stable: 等流式输出的提示
@@ -257,7 +257,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 运维侧多批在途工作合并落地（143 文件，含状态历史批次织入宿主函数的挂点与锁加固随批生效）。
 
 - **大屏家族**（NETDEV_DASHBOARD_SPEC）：DashShell 五屏——总览/调查链/割接/发现/暴露面（OverviewPanel·ChainBoard·CutoverBoardView·DiscoveryBoardView·ExposureBoardView）；`netdev_dash_app.go` 桥 + dashEmit 事件流 + `cmd/dashshot` 截图工具；验证截图入库；修 OverviewPanel 健康卡补「可达 {ok}/{total}」说明行（dash-boards 的 honest x/y 断言 4/4 过）
-- **深链召回**：`fairpeer://cutover/<id>` 等 deeplink（跨平台实现+测试）；割接 hold/决策点 IM 推送带深链直达大屏
+- **深链召回**：`hiq://cutover/<id>` 等 deeplink（跨平台实现+测试）；割接 hold/决策点 IM 推送带深链直达大屏
 - **发现与指纹管线**（NETDEV_IMPORT_AND_FINGERPRINT_SPEC）：discovered 线索库 / discoveryrun 断点续扫 / layerdiscover 分层发现 / httpfp·snmpfp·banner 服务指纹 / role 角色推断 / attackpath 暴露面 / escalate 升级链 / healthwater·metrics 水位 / journal 巡检账本；`netdev_discover`/`netdev_topology` 工具接线
 - **导入向导与自导出**：ImportWizardCard + selfimport/selfexport 台账迁移 + topoimport/topovsdx（drawio/vsdx 拓扑导入，附件芯片一键解析入 dock）
 - **提案驳回与删除**（NETDEV_COMPLETION_SPEC §4.1）：RejectProposal（理由随提案持久化，agent 下一轮可见）+ DeleteProposal（仅草稿/终结态可删）——含状态历史快照挂点与锁内读改写；IM 审批/驳回通道（netdevcmds）
@@ -268,7 +268,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **运维模式（状态回退层，NETDEV_SPEC_V2 附录 D）**：此前 proposals/jobs/cutovers/templates/清单 TOML 全部原地覆写、零版本化——本批给每个状态迁移加"写前快照"，配 dock 新页签「状态历史」（归档组，紧挨审计：审计=不可变事实，状态历史=可回退留底）。
 
-- **快照层** `internal/netdev/statehist.go`：复用 `checkpoint.Store` 第二实例（root=fairpeer 配置目录，同盖 `netdev/**` 与 `config.toml`，上限 200 事件）；挂点与状态迁移审计同址（~26 处：提案 propose/approve/reject/execute/rollback/delete/close-watch、job 全生命周期、cutover 全生命周期、模板、发现裁决、设置/纳管/导入/拓扑/golden/工单），actor 分 user/agent/im/system（割接 runner 经 `CtxStateActor` 标 system）；secrets/审计流水/journal/只增库明确排除
+- **快照层** `internal/netdev/statehist.go`：复用 `checkpoint.Store` 第二实例（root=hiq 配置目录，同盖 `netdev/**` 与 `config.toml`，上限 200 事件）；挂点与状态迁移审计同址（~26 处：提案 propose/approve/reject/execute/rollback/delete/close-watch、job 全生命周期、cutover 全生命周期、模板、发现裁决、设置/纳管/导入/拓扑/golden/工单），actor 分 user/agent/im/system（割接 runner 经 `CtxStateActor` 标 system）；secrets/审计流水/journal/只增库明确排除
 - **回退引擎**：后缀语义（回到事件 E 前 = E 起所有触碰文件还原到各自动手前，文件原不存在则删除）；恢复前写 `restore-keep` 反向事件 → 可重做（守卫：反向事件后出现新事件即禁用）；ZCode 式事前安全分类（唯一拦截条件 = 后缀触碰活跃实体：执行中/观察期提案、运行/暂停作业、运行/hold 割接，列出实体名；执行时二次复检）；config.toml 专属连带警告；UI 固定声明"仅恢复本地记录，设备回退走提案/割接回滚"
 - **桥/UI**：`NetDevStateEvents/StateEventDiff/StateRestore` + StateHistoryPanel（**2.5s 自动轮询**、逐文件 unified diff、三分类确认、重做按钮）+ 页签 badge=可回退事件数（5s 轻量轮询）+ zh/en 各 ~62 键（ndv.hist.*）
 
@@ -347,7 +347,7 @@ R1-R5 落地后原「R6 规模化与战略批」以功能菜单式批次呈现�
 - **录制子页**：CDP `AddBinding`+注入脚本录制手动操作（跨导航/iframe 持久；CSS+AX 双目标；密码占位不落盘），实时"动词+元素名"步骤流 + 计时/计数；停止后**三道去噪**（页面级输入去抖 → 确定性规则：同目标连点折叠/无效点击丢弃/A→B→A 往返折叠，纯函数单测 → AI 语义归纳）且**过滤透明**（「已过滤 N 条」可展开核对）→ AI 理解生成**四段式 SKILL.md**（何时使用/步骤表/注意事项/验证；借 Hermes 反思模板与通用性规则：{{参数}}化、无用户名/密钥/绝对路径），模型不可用自动退化朴素转换并明示
 - **技能编辑器**（草稿与已有技能共用）：结构化⇄源码双模式——**防丢失护栏**：解析失败或有不可往返内容时拒绝切换、保持源码模式（绝不静默覆盖手改）；步骤行内联编辑（类型/目标/值/上移下移/删除/插入）· {{参数}}默认值 · 原始录制对照 · **试运行**（逐步 ✓/⟳/✕，失败即停）· 保存校验（frontmatter/同名覆盖需确认）
 - **真机 E2E 驱动的修复**（界面自动化全链路验收：打开浏览器→录制百度搜索→生成→编辑→落盘）：① chromedp `ListenTarget` handler 持锁死锁事件循环（录制安装 60s 超时并堵死会话全部命令）→ 原子标志+专用短锁+Run 出锁+15s 快失败；② AI 草稿 markdown 围栏/前导文字致编辑器拒收 → 生成侧规范化+合规校验回退；③ 朴素模板空 name（中文提示清洗为空）→ 兜底名；④ 模型解析链增「活动标签当前模型」与 `ResolveModelWithFallback("")` 终端回退两级（静态配置全空而会话在跑/恢复标签无 model 字段的场景）；⑤ 录制 label 对表单控件 name 属性优先于 placeholder（百度动态热搜词污染步骤名）。桌面层 `browser_console_app.go`：24 个绑定 + 生成器 + 试运行事件 `browser:trial`
-- 验证：内核/桌面 build/vet/test 全绿（过滤规则/内容规范化/朴素模板/技能释放纯逻辑测试）；前端 tsc/CSS 校验/vite build；SKILL.md⇄结构化往返 26 断言；技能落盘 `~/.fairpeer/skills/browser-skill/SKILL.md` 真机确认
+- 验证：内核/桌面 build/vet/test 全绿（过滤规则/内容规范化/朴素模板/技能释放纯逻辑测试）；前端 tsc/CSS 校验/vite build；SKILL.md⇄结构化往返 26 断言；技能落盘 `~/.hiq/skills/browser-skill/SKILL.md` 真机确认
 
 ### netdev R4 尾项：§4.1 体检电池升级为 Job 引擎 runbook
 
@@ -380,7 +380,7 @@ R4 剩余四件（规格 `docs/NETDEV_SPEC_V2.md` §7.1/§7.2/§6.1 + v1 §10.5 
 - **Job 引擎**（`internal/netdev/job.go`，v1 C 批）：多步骤诊断 runbook harness——步骤带 `expect`（正则门）/`timeout`/`retries`/`on_fail`（pause|abort|continue，默认 pause 冻结等人）与 `pause_before` 断点（恢复经 `BreakpointOK` 不重复拦截）；watchdog 三预算（墙钟默认 30m、命令数默认 200、连续失败熔断默认 3）超限即暂停；全部执行走 `m.Exec` 只读密封（Job 不给分类器开任何旁路，写动作仍只存在于提案）；持久化 jobs 目录可断点续跑；测试 6 项（完成/断点/失败暂停+终止/预算熔断/expect 失配/校验）全绿
 - **结构化提案步骤**（§7.1，`proposal_steps.go` + `proposal.go` 判别联合）：`cli`（现状，向后兼容）之外四种——`k8s-apply`（yaml 全文 → server-side apply PATCH；备份 = apply 前 live 对象 JSON，回滚 PUT 时 resourceVersion 钉住漂移即拒；Secret 对象与白名单外 Kind 拒收）、`sql-migration`（目标 = `[[netdev.db_sources]]`，**down 脚本必填缺则不可提交**；逐句执行逐句审计，v1 限 mysql/postgres/mssql）、`file-upload`（linux SSH 目标；备份现文件 → `base64 -d` 流式上传 → sha256 校验；声明 checksum 拨号前即核验；回滚恢复备份或删除新增文件）、`cert-replace`（证书对上传 + reload 命令，回滚恢复旧对 + reload）；**危险动词扫描**（delete/drop/truncate/undo/reboot/scale-down… 命中即强制 confirm2，回滚计划豁免）——旧 `undo vlan` 回滚不再误报；执行/回滚循环按类型分发，全部动作审计 `proposal-write`/`proposal-rollback`；注入防线：上传路径白名单字符集（发布门禁 #2）+ 测试覆盖引号/`$()` 走私
 - **人工终端 v2**（§6.1，`humantty.go` 重写）：真 SSH shell 通道——独立 transport client（不随诊断会话 idle reaper 抖动）+ PTY（xterm-256color 120×30，`WindowChange` 支持 resize）；输出流式回前端（`netdev:humantty` Wails 事件），UTF-8 截断序列跨 chunk 保全（GBK 回退同诊断会话策略）；**共享 VTY 预算**（`vtySnapshotLocked` 计入人工终端，占满即拒）；全程录制（8MB 尾环 → ANSI 剥离 + 脱敏落 `netdev/humantty/*.txt`）+ 起止审计（含字节量与录制路径）；紧急停止联动（`KillAllConnections` 杀人工终端）；e2e 三测（真 SSH 全链路：输出流/按键/录制；预算拒绝；解码器）
-- **人工终端前端**（§10.5）：`DeviceTerminal`（@xterm/xterm，重挂先查 status 不重复开 PTY）挂进主区终端面板**设备页签**（路由徽标 + 常亮 REC 红点，与本地页签同条可共存）——App 层 `fairpeer:netdev-terminal` 事件路由（与 `netdev-bench` 同款），设备卡「⌨ 终端」按钮直达；bridge 增 `onNetdevHumanTTY` 订阅 helper + 全套 mock（浏览器开发可独立渲染）
+- **人工终端前端**（§10.5）：`DeviceTerminal`（@xterm/xterm，重挂先查 status 不重复开 PTY）挂进主区终端面板**设备页签**（路由徽标 + 常亮 REC 红点，与本地页签同条可共存）——App 层 `hiq:netdev-terminal` 事件路由（与 `netdev-bench` 同款），设备卡「⌨ 终端」按钮直达；bridge 增 `onNetdevHumanTTY` 订阅 helper + 全套 mock（浏览器开发可独立渲染）
 - **割接模式**（§7.2，`internal/netdev/cutover.go`）：runbook = 已批准提案步骤 + 只读命令步骤，每步可挂**语义验证门**（正则须**持续** SustainSec 连续匹配，中断重计窗）与 `decision_point` 回退决策点；**总倒计时**耗尽即 hold 不再执行；割接前后自动各拍一次基线快照（复用配置备份库），结束产出前后 unified diff 对比报告（可导出 .md）；决策永远人按——hold 时 [继续] [回退] 并排，回滚走提案回滚全链路（首败冻结/备份恢复/审计）；测试 5 项（全链路/决策点回退/门失败/倒计时耗尽/未批准提案拒启动）全绿；前端 `CutoverView`（对话主区任务过程视图，不开第四工作台，Esc 返回；秒级倒计时 + 步骤清单 + hold 决策条 + 报告导出），入口在「提案」页签「🌗 割接」卡
 - **文件通道 UI 收口**（§6.2/§10.5）：补 `NetDevSFTPDownload/Browse` 桌面桥（b4ba7e8 前端已声明、后端欠账——下载走系统保存对话框 + 审计）；设备卡「📁 文件」下载对话框（白名单路径浏览/拉取/落盘位置选择，无常驻面板）
 - **提案中心结构化展示**：步骤类型徽标 + 按类型的载荷详情（k8s manifest/Up-Down SQL/上传路径与 reload/down 缺失⚠警示/危险动词强制确认标记）+ 观察期（watching）状态行；纯逻辑抽 `proposalStepFormat.ts` 进 tsx 测试（10 断言：类型摘要/降级/标签）
@@ -388,14 +388,14 @@ R4 剩余四件（规格 `docs/NETDEV_SPEC_V2.md` §7.1/§7.2/§6.1 + v1 §10.5 
 
 ### 私有网信任域（Trust Domain）：fleet 级信任基础设施全量落地
 
-设计文档 `docs/TRUSTDOMAIN_SPEC.md`（v0.13）：经完整排除法收敛，fairpeer 唯一立项的区块链能力——**许可链 = quorum 签名复制日志**，无代币无挖矿，链上只放控制面元数据（成员/撤销/令牌/审计锚/自证摘要）。账本"骑"在成员间 E2E 加密信道上，信任面由链本身驱动。
+设计文档 `docs/TRUSTDOMAIN_SPEC.md`（v0.13）：经完整排除法收敛，hiq 唯一立项的区块链能力——**许可链 = quorum 签名复制日志**，无代币无挖矿，链上只放控制面元数据（成员/撤销/令牌/审计锚/自证摘要）。账本"骑"在成员间 E2E 加密信道上，信任面由链本身驱动。
 
 - **账本核心**（`internal/trustdomain`，9+ 文件，30 测试）：八类记录（成员/撤销/令牌/审计锚/自证/策略/终止/暂停/继任）+ quorum 写入权限矩阵（日常零控制、权力变更强控制）+ 哈希链连续性（删块/重排/替换皆可定位检出）+ 检查点分叉裁决（最近检查点优先→长度→哈希）+ 规则版本化 + 反滥用上限；对抗验收全过（spec §14.2：伪造签名/不足 quorum/删块检测/终止后延长/分叉收敛/撤销见即生效）
 - **传输层**（`internal/trustdomain/nettrans`）：TCP + mobilebridge 同款握手（Ed25519 签名 + X25519 ECDH + HKDF + AES-256-GCM + 帧防重放，全部复用既有代码）——**握手双方各自从本地账本解析对方公钥**（未准入/已撤销静默断连）；`join <addr> <域ID>` 跨进程入域（域 ID 带外锚定 + 服务端签名事后验证）；**UDP 广播局域网发现**（信标签名/域过滤/±120s 新鲜度，零依赖三平台统一，mDNS 可后补）
 - **授权与执行**：能力令牌四态验证 + **令牌委托链**（深度 1/范围子集/寿命更短/只有持有者可授；撤销授予者即杀死全部下级）+ `Delegation` 委托执行五关闸（新鲜度/身份/载荷哈希绑定/令牌/范围）——执行端 `WorkHandler` 只见已验证工作
 - **治理闭环**：PAUSE 紧急刹车（quorum 签名，生效即停全部委托含只读——刹车从严）+ **失联继任**（dead-man 时钟用"记录签名时间戳 − 链内最后管理员活动"，确定性无本地钟依赖；继任记录无需 quorum）+ quorum 棘轮（只升不降）+ 终止/转生/归档三形态
 - **审计互锚**（spec §八）：netdev 本地审计链头（B 批既有哈希链）经阈值/时限双触发自动上链（每 16 条或 10 分钟；失败保待重试，绝不阻塞诊断手）+ 手动 `anchor`；三层防篡改（本地哈希链→域账本互锚→跨网络副本）
-- **CLI 十六命令**（`fairpeer trustdomain`）：init/identity/join/status/attest/admit/revoke/token/delegate/exec/sync/quorum/succession/promote/pause/resume/anchor/run（--listen/--bootstrap/--discover/--executor netdev）
+- **CLI 十六命令**（`hiq trustdomain`）：init/identity/join/status/attest/admit/revoke/token/delegate/exec/sync/quorum/succession/promote/pause/resume/anchor/run（--listen/--bootstrap/--discover/--executor netdev）
 - **Agent 工具**（AI 首次成为信任域一等用户，netdev 模式）：`netdev_fleet`（本地公告板：成员/自证/暂停态）+ `netdev_remote`（agent 表达意图，自动选择覆盖 (资源,操作) 的令牌——精确优先通配；无覆盖即拒并提示补签命令）；仅 `[trustdomain] enabled` 时注册
 - **首个真实消费者**：netdev 只读诊断接入委托执行（`netdev/health` 健康面板、`netdev/triage` 主机体检电池——词汇表无法表达写操作，能力隔离）；双进程冒烟全链路（init→admit→join→token→sync→exec 跨机拉取 HealthSnapshot→越权本地即拒）
 - **桌面面板**（设置新页签「信任域」）：域状态/成员卡（管理员高亮、撤销置灰）/本机令牌（含转授来源）/失联继任时钟 + 紧急刹车与互锚按钮；未启用/未入域给引导文案；i18n 双语
@@ -408,10 +408,10 @@ R4 剩余四件（规格 `docs/NETDEV_SPEC_V2.md` §7.1/§7.2/§6.1 + v1 §10.5 
 背景：mac/Linux 桌面端此前用「主机名+home 目录派生密钥」的 AES-GCM 兜底（代码注释自称仅测试替身，但 release 实际发布全平台），任何本机进程都能重建密钥解密 `secrets.enc.json`——保护强度接近混淆。本次改造让三平台都达到「OS 用户凭据绑定」级别，`Store` 对外 API 与语义完全不变。
 
 - **v2 文件格式**：`{"version":2, "kekId", "kek", "secrets": base64(nonce‖AES-256-GCM)}`——全条目 AES-GCM 于一个随机 KEK 之下；kekId 兼作派生盐与密钥库账户名，主存储与 `mobilebridge.enc.json` 各自独立 KEK
-- **KEK 保管按平台分治**（`internal/secret/kek_*.go`，遵循仓库 build-tag 惯例）：Windows=随机 KEK 经 DPAPI 包裹存文件内（自包含）；macOS=Keychain、Linux=Secret Service（`zalando/go-keyring` v0.2.6，零 CGO，root go.mod 新增直接依赖）；无密钥库环境（headless Linux serve/acp/bot）优先 `FAIRPEER_SECRET_PASSPHRASE[_FILE]` argon2id 派生，仍无则降级机器绑定并显式告警（sync.Once stderr + 设置面板 `banner--warn` 徽标 + doctor secrets 段；`SecurityMode()`/`SecretStoreView` 三处消费）
+- **KEK 保管按平台分治**（`internal/secret/kek_*.go`，遵循仓库 build-tag 惯例）：Windows=随机 KEK 经 DPAPI 包裹存文件内（自包含）；macOS=Keychain、Linux=Secret Service（`zalando/go-keyring` v0.2.6，零 CGO，root go.mod 新增直接依赖）；无密钥库环境（headless Linux serve/acp/bot）优先 `HIQ_SECRET_PASSPHRASE[_FILE]` argon2id 派生，仍无则降级机器绑定并显式告警（sync.Once stderr + 设置面板 `banner--warn` 徽标 + doctor secrets 段；`SecurityMode()`/`SecretStoreView` 三处消费）
 - **KEK 解析带真伪校验**：候选 KEK 须实际解开已知条目（GCM 认证标签天然防错键）才被接受，口令/机器等确定性后端与密钥库后端可安全共存于一条优先级链；密钥库丢失时读路径维持「视为未设置、提示重录」旧语义，写路径报错而非静默换键搁浅旧数据（空存储例外，允许重建）
 - **v1→v2 透明迁移**：旧每条独立加密的文件永久可读，任意写入触发一次性整体重加密；迁移中不可解密的条目（如跨用户拷贝的死数据）丢弃并 slog 告警
-- **可见性**：boot 降级一次性告警（含口令设置指引）；`loadIntoEnv` 跳过不可解密条目时 slog 计数（原先全静默）；`fairpeer doctor` 新增 secrets 段（backend/降级/存储路径脱敏）；设置面板「更新」页尾三态显示（正常=安静提示 / 降级=警告横幅 / 密钥库不可达=错误横幅），en/zh 双语键同步
+- **可见性**：boot 降级一次性告警（含口令设置指引）；`loadIntoEnv` 跳过不可解密条目时 slog 计数（原先全静默）；`hiq doctor` 新增 secrets 段（backend/降级/存储路径脱敏）；设置面板「更新」页尾三态显示（正常=安静提示 / 降级=警告横幅 / 密钥库不可达=错误横幅），en/zh 双语键同步
 - 依赖：root go.mod + `github.com/zalando/go-keyring`（MIT；macOS 走 `/usr/bin/security` CLI，已知取舍是写入瞬间 KEK 经 argv 短暂可见，仅一次性生成时刻，代码注释说明）
 - 验证：`internal/secret` 16 测试全绿（9 存量不动 + 7 新增：v1→v2 迁移 / KEK 丢失 / 空存储重建 / 错误确定性键拒绝 / 口令派生确定性 / 降级标志 / 双存储 KEK 隔离，经 `newWithKekProvider` 钩子注入 fake 后端做到 CI 无密钥库环境可测）；win/darwin/linux/freebsd 交叉编译通过；root+desktop 双模块 build/vet/test 全绿（cli/config/boot/doctor/mobilebridge）；前端 tsc 通过（`CoWorkLayout.tsx` 有一处并行改动遗留的未使用导入报错，非本次引入）；**真机冒烟待做**：macOS Keychain 授权弹窗体验、Linux 桌面 Secret Service 首次写入、headless 口令模式实测
 
@@ -440,7 +440,7 @@ spec 定稿见 `docs/NETDEV_SPEC_V2.md`（675 行，含 UI 契约与 15 条裁�
 
 - **R1 日志与体检**：主区「日志工作台」（多源勾选 → 时间戳合并时间线，无时间戳行吸附前一条；底栏跨设备 IOC 搜索，预算耗尽如实报覆盖 N/M 台）；`netdev_triage` 主机体检电池（linux 11 项/windows 5 项，失败登录爆发/磁盘水位/uid0/时钟未同步四类保守异常自动进「发现」）；巡检家族菜单四件套（网络巡检/主机体检/基线核查/**弱口令核查**——后端闲置能力正式接线）；`crontab -l`/`lastb`/`nginx -t`/`apache2ctl` 等入读表
 - **R2 容器与数据目标**：设备新增 `kind` 判别式（存量零迁移）——`docker`（只读 Engine API，npipe/unix/tcp，POST 无代码路径）、`k8s`（kubeconfig 入密钥库 + 固定 context + 命名空间白名单 + 防 SSRF）、`firewall`（FortiOS REST 只读，token/Basic）；日志源 `k8s:`/`docker:` 经 API 路由——VM journal、容器日志、Pod 日志可合并进同一条时间线；三客户端密封行为均被 httptest 假服务钉死
-- **R3 事件与时序**：`netdev_locate`（IP/MAC 全网 ARP 扇出定位，清单页签顶部入口）；通知出口（webhook + 飞书/钉钉/企微原生模板 + 严重度过滤 + `fairpeer://` 深链）；时序面 v1（JSONL 零依赖 + SNMP 轮询采集 + 设备卡 Sparkline）；报告族四件（值班交接/周报/凭证盘点 + 既有晨报）
+- **R3 事件与时序**：`netdev_locate`（IP/MAC 全网 ARP 扇出定位，清单页签顶部入口）；通知出口（webhook + 飞书/钉钉/企微原生模板 + 严重度过滤 + `hiq://` 深链）；时序面 v1（JSONL 零依赖 + SNMP 轮询采集 + 设备卡 Sparkline）；报告族四件（值班交接/周报/凭证盘点 + 既有晨报）
 - **设置三级导航（§10.9）**：表单进三级页、弹框只留阻塞确认——L3 翻页动画（reduced-motion 降级）+ 六表单迁移 + 未保存确认 + kind 选择题表单
 - **含上会话在途 P2 收口**：syslog 被动接收/告警规则/审计哈希链/日志 follow/DB 只读诊断源（mysql/pg/redis 白名单）
 - **功能补全（0.1.10 增补二）**：DB 源 **Via 跳板链**（本地转发穿 SSH direct-tcpip，七引擎通用，生产库在堡垒后的正解）；SNMP **trap 接收器**（v2c/v1，link-down/cold-start 自动 Finding + 10 分钟去重）；**SMTP 通知出口**（与 webhook 并行）；**状态导出**（审计页签一键，JSON 快照不含密钥）
@@ -450,15 +450,15 @@ spec 定稿见 `docs/NETDEV_SPEC_V2.md`（675 行，含 UI 契约与 15 条裁�
 
 对标 ZCode 远程连接的四步向导（选择方式 → 填写配置 → 连接中 → 选择目录），P1 交付 **WSL** 一种连接方式，Docker/SSH/Server 复用同一协议后续补。核心架构：**controller 跑在远端 headless host 进程里，桌面端经 stdio NDJSON JSON-RPC attach**——agent 工具、文件、git、会话存储全部在 WSL 内执行，桌面只是 UI 与转发。
 
-- **WP0 host 协议**：新包 `internal/remotehost`（复用 `internal/acp` 的双向 JSON-RPC Conn）+ CLI 子命令 `fairpeer host`。方法面覆盖桌面驱动本地 controller 的全部操作（submit/steer/approve/rewind/fork/setModel 重建等 ~40 个）+ 文件/git（fs/list、fs/read 支持 dataURL 媒体、fs/search、git/status）；事件以共享 wire 形状回推（新包 `internal/eventwire` 双向编解码，与 desktop/serve 现有 wire 字段级一致）；审批/ask 以 host→desktop 出站请求回程（照抄 acp 模式，30 分钟超时拒识防挂死）。管道测试覆盖握手/configure/会话/fs/越界防护
+- **WP0 host 协议**：新包 `internal/remotehost`（复用 `internal/acp` 的双向 JSON-RPC Conn）+ CLI 子命令 `hiq host`。方法面覆盖桌面驱动本地 controller 的全部操作（submit/steer/approve/rewind/fork/setModel 重建等 ~40 个）+ 文件/git（fs/list、fs/read 支持 dataURL 媒体、fs/search、git/status）；事件以共享 wire 形状回推（新包 `internal/eventwire` 双向编解码，与 desktop/serve 现有 wire 字段级一致）；审批/ask 以 host→desktop 出站请求回程（照抄 acp 模式，30 分钟超时拒识防挂死）。管道测试覆盖握手/configure/会话/fs/越界防护
 - **WP1 桌面端接线**：`WorkspaceTab.Ctrl` 字段类型换为 `tabSession` 接口（字段名不变，`*control.Controller` 结构化满足，编译器裁定方法面 ~90 个）；新 `remoteSession` 全量实现（运行态/模式/上下文用量本地缓存 + 事件流回灌 `tabEventSink`，遥测/自动快照/mobilebridge 转发原样工作）；`RemoteRef` 持久化进 desktop-tabs.json 与项目索引（slug 前缀 `remote-wsl-<distro>-<user>-` 防撞本地路径）；`@` 引用/文件预览/git 面板/reveal 在远程 tab 分支走 RPC（reveal 打开 `\\wsl$` UNC）
-- **WP2 WSL transport**：发行版探测（`wsl -l -v` UTF-16 输出嗅探解码）；Linux host 二进制下发（`%LOCALAPPDATA%\fairpeer\hosts` → distro 内 `~/.fairpeer/bin/fairpeer`，字节级比对免重复拷贝 + chmod）；`wsl.exe --exec` 拉起接管；断线 4 秒自动重连（按 pin 的 transcript 路径 reattach）；首连自动推送桌面端模型配置（仅远端无可用 provider 时落盘，不覆盖手工配置——密钥入远端 secret store + 进程 env）
+- **WP2 WSL transport**：发行版探测（`wsl -l -v` UTF-16 输出嗅探解码）；Linux host 二进制下发（`%LOCALAPPDATA%\hiq\hosts` → distro 内 `~/.hiq/bin/hiq`，字节级比对免重复拷贝 + chmod）；`wsl.exe --exec` 拉起接管；断线 4 秒自动重连（按 pin 的 transcript 路径 reattach）；首连自动推送桌面端模型配置（仅远端无可用 provider 时落盘，不覆盖手工配置——密钥入远端 secret store + 进程 env）
 - **WP2 终端桥接**：`PTYCreateForTab`——远程 tab 的 ConPTY 直接跑 `wsl.exe -d <distro> --cd <root>`，终端 day 1 进 Linux 环境，无需远程 PTY 协议
 - **WP3 向导 UI**：`RemoteConnectWizard` 四步弹层（发行版下拉 + Linux 用户 + 实时连接日志 + 远程目录树选择）；项目树新增「远程连接」入口；文件夹选择器选到 `\\wsl$` 路径时提示改走 WSL 连接（对齐 ZCode wsl-unc prompt）；zh/en 文案
 - **端到端验证**：真实 WSL Ubuntu 冒烟全绿（下发 87MB 二进制 → host/hello linux/amd64 → configure 推送 → 开会话 → fs/read 返回远端文件内容 → git/status → 干净退出）
 - **Docker transport（+1，同协议复用）**：`docker ps --format json` 容器检测（NDJSON 解析 + 单测）、`docker cp` 下发 host 二进制 + `docker exec -i` 拉起；向导第二方式（容器下拉，镜像/状态展示）；连接管理器按 kind 分发 transport（wsl/docker，ssh/server 预留）。alpine 临时容器真机冒烟全绿（cp → exec → hello → configure → 会话 → fs/read "hi-docker" → 干净退出）
-- **SSH transport（+1，同协议复用）**：复用 `internal/netdev/transport`（密码/私钥/ssh-agent 认证、`~/.ssh/config` 别名解析与向导入、系统 known_hosts + TOFU 落 `remote-known-hosts`、指纹冲突硬失败）；host 二进制经 exec stdin 流式上传（按字节数比对免重复传）；`fairpeer host` 跑在普通 session 的管道 stdio 上。凭据：RemoteRef 只持久化主机/用户/私钥路径（非机密），密码/口令入桌面端加密密钥库，重连自动取回；向导表单含别名导入下拉（复用 NetDevSSHImportCandidates）。真机 e2e 通过（alpine sshd 容器：认证 → TOFU → 上传 → host 拉起 → hello → configure → 会话 → fs/read，2.2s）
-- **Server transport（+1，收官）**：`fairpeer host --listen <addr> --token <t>` TCP 模式（每连接 token 握手 `host/auth`，常数时间比对；**会话注册表跨连接共享**——桌面断线重连后按 id 找回会话）；桌面端 `serverTransport` 拨号 + 握手探测（错误 token 干净报错），token 入加密密钥库；向导第四种方式（地址 + token）。本机 e2e 通过（错误 token 拒绝 ✓ 断线重连会话存活 ✓）
+- **SSH transport（+1，同协议复用）**：复用 `internal/netdev/transport`（密码/私钥/ssh-agent 认证、`~/.ssh/config` 别名解析与向导入、系统 known_hosts + TOFU 落 `remote-known-hosts`、指纹冲突硬失败）；host 二进制经 exec stdin 流式上传（按字节数比对免重复传）；`hiq host` 跑在普通 session 的管道 stdio 上。凭据：RemoteRef 只持久化主机/用户/私钥路径（非机密），密码/口令入桌面端加密密钥库，重连自动取回；向导表单含别名导入下拉（复用 NetDevSSHImportCandidates）。真机 e2e 通过（alpine sshd 容器：认证 → TOFU → 上传 → host 拉起 → hello → configure → 会话 → fs/read，2.2s）
+- **Server transport（+1，收官）**：`hiq host --listen <addr> --token <t>` TCP 模式（每连接 token 握手 `host/auth`，常数时间比对；**会话注册表跨连接共享**——桌面断线重连后按 id 找回会话）；桌面端 `serverTransport` 拨号 + 握手探测（错误 token 干净报错），token 入加密密钥库；向导第四种方式（地址 + token）。本机 e2e 通过（错误 token 拒绝 ✓ 断线重连会话存活 ✓）
 - **终端桥接补全**：`PTYCreateForTab` 现覆盖三种远程——WSL `wsl.exe --cd`、Docker `docker exec -it`、SSH `ssh`（BatchMode，需密钥/agent 认证）
 - **新建任务集成（ZCode 式）**：侧栏「新建任务」主入口改为下拉菜单（新建会话 Ctrl+N / 远程连接…→弹向导）；命令面板新增 cmd-remote-connect；Welcome 空态新增「远程连接…」虚线入口——三处均可唤起向导；项目树服务器图标保留
 - **前端徽标**：TabBar 远程 tab 显示方式徽标（WSL/Docker/SSH/Srv，离线态红删线）；订阅 `remote:status` 事件刷新 TabMeta
@@ -479,7 +479,7 @@ spec 定稿见 `docs/NETDEV_SPEC_V2.md`（675 行，含 UI 契约与 15 条裁�
 
 ## [编码体验升级 M0–M3] — 2026-08-21
 
-对标 Codex CLI / Pi 的三方合流升级（规格书 `docs/FAIRPEER_UPGRADE_SPEC.md`，51 任务首批落地 32 + 测试清零），7 个 commit 自 `ff965a2` 起。
+对标 Codex CLI / Pi 的三方合流升级（规格书 `docs/HIQ_UPGRADE_SPEC.md`，51 任务首批落地 32 + 测试清零），7 个 commit 自 `ff965a2` 起。
 
 - **M0 断链清零**：FileDiff wire 透传（wireTool/wireApproval/wireUsage 补字段，desktop+serve 双传输同步）、apply_patch/doc 族 Previewer、审批富上下文（逐文件 diff + bash 命令 + j/k/e 导航）、reasoning Markdown、成本/RPM 显示（激活 netdev 区死接口）、⌘K 真实现、输入历史（Alt+↑/↓）、删除 4 个孤立组件
 - **M1 展示重构**：UnifiedDiff（词级 intra-line、行号、Unified/Split 切换，服务端 diff 为准）、工具卡注册表、web_search/netdev 专用卡、只读分组显示 subject、Turn 改动汇总卡、失败重试、备份 diff 统一、bash 头尾折叠
@@ -570,7 +570,7 @@ spec 定稿见 `docs/NETDEV_SPEC_V2.md`（675 行，含 UI 契约与 15 条裁�
 ### 全局域退役（三模式项目严格隔离）— 08-21
 
 - **决策**：全局（scope=global）"又麻烦又容易出问题"，三模式全部取消——每个会话必须属于一个项目，dev/cowork/netdev 项目互相严格隔离
-- **工作台项目取代全局**：每 profile 一个真实项目根 `<configDir>/fairpeer/home-<profile>`（标题"工作台"），常显于项目树/胶囊目录；新建会话/首启/定时任务/移动端全部落工作台
+- **工作台项目取代全局**：每 profile 一个真实项目根 `<configDir>/hiq/home-<profile>`（标题"工作台"），常显于项目树/胶囊目录；新建会话/首启/定时任务/移动端全部落工作台
 - **会话零迁移**：工作台的会话目录路由覆盖到原全局分区（`desktopSessionDir(For)` 识别 home 根 → `SessionDirFor(profile)`），旧全局 transcript 原地可达；索引/标题/创建时间一次性迁入工作台（`migrateGlobalIntoHome`，启动+树构建双触发、幂等）
 - **旧入口全垫片**：`OpenGlobalTab`→工作台项目页签；`EnsureBlankTab`/`CreateTopic`/`ensureTopicIndexed`/`restoreSessionTopicIndex` 把 global/空根统一归一为工作台项目；持久化 global 页签恢复时改挂工作台（topicID 保留）；历史会话恢复/legacy 迁移收编进工作台
 - **前端摘除**：胶囊去"全局"入口与 global 态（三模式统一）；历史面板范围筛选只剩全部/项目；blankSessionTarget 恒 project；locale/mock 同步收敛
@@ -602,8 +602,8 @@ spec 定稿见 `docs/NETDEV_SPEC_V2.md`（675 行，含 UI 契约与 15 条裁�
 - **调用控制三原则**落地：per-skill `max-steps` frontmatter（ppt-auto 设 80）；desktop-auto"每步必复验"改**检查点复验**；全技能审计表入 spec
 - **描述修复**：explore 不再揽 review 的活；document-auto 与 ppt-auto 划清 .pptx 边界；netdev-help 英文化；install-capability 自解释
 - **codegraph / context7 统一 opt-in 默认关**
-- **派生可编辑副本**：能力面板一键把内置技能落成 `~/.fairpeer/skills/` 文件副本（同名遮蔽即生效，删副本即还原）
-- 前端：能力面板新增"运维"域分组；技能选择弹窗描述修正；`fairpeer.example.toml` 补 profiles/hidden_plugins 文档块
+- **派生可编辑副本**：能力面板一键把内置技能落成 `~/.hiq/skills/` 文件副本（同名遮蔽即生效，删副本即还原）
+- 前端：能力面板新增"运维"域分组；技能选择弹窗描述修正；`hiq.example.toml` 补 profiles/hidden_plugins 文档块
 
 ### ppt-auto 提速与调用控制 — 08-21（SkillVersion 43 → 45）
 
@@ -664,7 +664,7 @@ codegraph 校验表锚定"所选版本"而非"上游可信"——上游仓库若
 - **推理模型 token 饥饿修复**：mimo 类模型隐藏推理先烧 max_tokens，1024 上限下颜色请求返回 content=None 静默丢失——上限提到 4096/8192（上限是天花板非目标）
 - **本地绝对路径路由**：手打路径（原仅识别 @attachments）与路径不存在告警；**残留文件不变式**（PPT 意图无参考时清理 reference-style.json/pdf-pages，防跨任务污染）
 - **降级全可见**：ppt:reference-warning 事件全情形发射 + 前端 toast（原事件发到空气）；判定结果事件供用户当场纠错
-- **PDF 渲染脚本嵌入**：pdf_to_page_images.py 从仓库根移入 go:embed，boot 释放到 ~/.fairpeer/scripts/（打包运行原本必然找不到，PDF 视觉路径整体死亡）
+- **PDF 渲染脚本嵌入**：pdf_to_page_images.py 从仓库根移入 go:embed，boot 释放到 ~/.hiq/scripts/（打包运行原本必然找不到，PDF 视觉路径整体死亡）
 - **防绕过注入**：PDF 参考就绪时向模型 input 追加系统提示（display 不变）——主模型曾自己抽文字编 32 页大纲把表格拍平
 
 ### skill 侧（ppt-auto）
@@ -697,7 +697,7 @@ VLM 判定存在自然波动（同 deck 两轮 ±2 页 MAJOR 翻转，双轮硬�
 - **能力探测补引擎** (`desktop/screenshot_solve.go`)：`webSearchKeyConfigured` 加入 `ANYSEARCH_API_KEY`，配了 AnySearch 也算"web 搜索可用"
 - **类型 / mock 对齐** (`desktop/frontend/src/lib/types.ts`、`bridge.ts`)：`WebSearchView` 接口 + mock 默认值补 `anysearchKeySet`
 - **文案补全** (`desktop/frontend/src/locales/zh.ts`、`en.ts`)：降级链描述由"这三个搜索引擎（Brave -> Exa -> Linkup）"改为"这些搜索引擎（Brave -> Exa -> Linkup -> AnySearch）"
-- **文档对齐** (`README_cn.md`、`docs/FAIRPEER_FEATURES.md`、`docs/DEV_COWORK_TOOL_COMPARISON.md`、`docs/COWORK_IMPLEMENTATION_PLAN.md`)：四处仍写"三引擎"的全部更新为四引擎链
+- **文档对齐** (`README_cn.md`、`docs/HIQ_FEATURES.md`、`docs/DEV_COWORK_TOOL_COMPARISON.md`、`docs/COWORK_IMPLEMENTATION_PLAN.md`)：四处仍写"三引擎"的全部更新为四引擎链
 
 ### 兼容性
 
@@ -830,12 +830,12 @@ VLM 判定存在自然波动（同 deck 两轮 ±2 页 MAJOR 翻转，双轮硬�
   - 新增 `parse_color_alpha()` 提取 rgba alpha 通道，`build_fill_xml`/`build_stroke_xml` 保留透明度
 
 - **视觉配色提取层**（新增，`desktop/ppt_template_vision.go`）
-  - 用户选模板时后台调视觉模型识别背景图的配色/风格，写入 `~/.fairpeer/ppt-template-style.json`
+  - 用户选模板时后台调视觉模型识别背景图的配色/风格，写入 `~/.hiq/ppt-template-style.json`
   - 优先级最高的配色来源，静默降级（无 VLM 配置时回退到 XML+PIL 提取）
 
 - **去除硬编码品牌色/风格**
-  - 默认配色从 Fairpeer 暗色主题（#121212/"科技感深色极客"）改为中性浅色（白底深字蓝色强调）
-  - 删除 `brand_green`（Fairpeer 品牌色）、`"科技极简风"` 风格指向
+  - 默认配色从 Hiq 暗色主题（#121212/"科技感深色极客"）改为中性浅色（白底深字蓝色强调）
+  - 删除 `brand_green`（Hiq 品牌色）、`"科技极简风"` 风格指向
   - 默认字体从 Inter 改为微软雅黑（中文/数字更正式）
 
 ### PPT-auto — 流程与验证
@@ -859,7 +859,7 @@ VLM 判定存在自然波动（同 deck 两轮 ±2 页 MAJOR 翻转，双轮硬�
 
 ### PPT-auto — 沙箱与 evidence
 
-- **沙箱白名单**：`~/.fairpeer` 自动加入 write roots——`extract_template_colors.py` 写 `template_config.json` 不再被拦截
+- **沙箱白名单**：`~/.hiq` 自动加入 write roots——`extract_template_colors.py` 写 `template_config.json` 不再被拦截
 - **complete_step evidence 指引**：脚本生成的文件用 `kind: verification`，只有 `write_file` 写的文件用 `kind: files`
 - **project_manager.py**：重复目录自动加 `_2`/`_3` 后缀，不再报错让模型重试 3 次
 
@@ -878,7 +878,7 @@ VLM 判定存在自然波动（同 deck 两轮 ±2 页 MAJOR 翻转，双轮硬�
 ## [0.1.1] — 2026-08-06
 
 The first major feature release after the v0.1.0 brand migration (momapeer →
-fairpeer). This version transforms fairpeer from a provider-agnostic coding
+hiq). This version transforms hiq from a provider-agnostic coding
 agent into a **reliable, self-evolving, ecosystem-connected AI assistant** —
 with operation-level failure recovery, bilingual semantic search, a third-party
 skill marketplace, pre-write syntax validation, and comprehensive Office/PPT
@@ -888,7 +888,7 @@ enhancements.
 
 All new features in this release adhere to two hard constraints:
 
-1. **零用户学习成本** — 功能开箱即用，用户永远不需要理解新概念（如 RiskClass、操作指纹、Inbox 状态机）。用户的心智模型始终是："FairPeer 自己会处理，我只在被问时点一下"
+1. **零用户学习成本** — 功能开箱即用，用户永远不需要理解新概念（如 RiskClass、操作指纹、Inbox 状态机）。用户的心智模型始终是："Hiq 自己会处理，我只在被问时点一下"
 2. **零提示词膨胀** — 功能实现不得向 base system prompt 注入新指令。能力靠 host 侧硬机制（纯函数/代码逻辑），而非 prompt 说教。base prompt 保持 ~900 字符不变
 
 ### Added — Reliability (Phase 1)
@@ -1047,7 +1047,7 @@ Windows-only 扩展到三平台（Windows / macOS / Linux）全部可用。
 - **embed JSON 快照**（`default_registry.json`）— 11 厂商数据编译时内嵌，离线兜底
 - **models.dev 远程同步** — 启动时异步拉取 `models.dev/api.json`，过滤 11 家 tracked vendors，
   合并远程数据（URL/模型/上下文）与快照角色字段（DisplayName/推荐角色）
-- **本地缓存 12h TTL**（`~/.fairpeer/registry-cache.json`）
+- **本地缓存 12h TTL**（`~/.hiq/registry-cache.json`）
 - **四层兜底**：内存 → 本地缓存 → models.dev → embed 快照（永不失败）
 - **设置面板"检查更新"按钮** — RegistryBox 显示最后更新时间，手动触发刷新
 
@@ -1110,7 +1110,7 @@ Windows-only 扩展到三平台（Windows / macOS / Linux）全部可用。
 
 ## [0.1.0] - 2026-08-03
 
-The initial release of fairpeer, fully migrated from momapeer. This is a
+The initial release of hiq, fully migrated from momapeer. This is a
 provider-agnostic, multi-vendor AI coding and automation assistant.
 
 ### Added
@@ -1142,7 +1142,7 @@ provider-agnostic, multi-vendor AI coding and automation assistant.
 
 ### Changed (from momapeer)
 
-- Complete brand replacement: momapeer → fairpeer (Go module, env vars, UI text,
+- Complete brand replacement: momapeer → hiq (Go module, env vars, UI text,
   build configs, CI/CD, update chain, data directories)
 - Config rewritten to be provider-agnostic (no hardcoded jiutian/moma defaults)
 - 11 preset vendor templates replace single-provider assumption

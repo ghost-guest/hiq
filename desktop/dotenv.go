@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/fileutil"
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/fileutil"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
 // dotenvMu serializes read-modify-write of the legacy credentials file and
@@ -22,7 +22,7 @@ import (
 var dotenvMu sync.Mutex
 
 // credentialsPath is the LEGACY plaintext global credentials file — what the
-// settings panel and `fairpeer setup` wrote API keys to before the encrypted
+// settings panel and `hiq setup` wrote API keys to before the encrypted
 // secret store existed. It is read-only now: startup migrates it into the
 // encrypted store (see migrateCredentialsFile) and every writer scrubs keys
 // from it. Never a project .env: keys stay out of the user's project tree.
@@ -82,7 +82,7 @@ func removeCredential(key string) error {
 // failure the plaintext file is kept and keeps loading via config.loadDotEnv,
 // so nothing breaks — the next startup finishes the migration.
 //
-// Only the fairpeer-owned credentials file qualifies. When the user config dir
+// Only the hiq-owned credentials file qualifies. When the user config dir
 // can't be resolved, credentialsPath() falls back to ~/.env — that file is the
 // USER's own shell env (also loaded by config as a legacy fallback), so
 // consuming it into the store and deleting it would destroy user data.

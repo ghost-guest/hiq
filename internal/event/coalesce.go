@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/evidence"
-	"github.com/zzycxz/fairpeer/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/evidence"
+	"github.com/zzycxz/hiq/internal/nilutil"
 )
 
 // coalesceMaxBytes bounds a merged delta so one event never carries an

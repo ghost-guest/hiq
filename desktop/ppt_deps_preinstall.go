@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"time"
 
-	skillassets "github.com/zzycxz/fairpeer/internal/assets"
+	skillassets "github.com/zzycxz/hiq/internal/assets"
 
 	"log/slog"
 )

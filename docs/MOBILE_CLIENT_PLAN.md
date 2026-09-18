@@ -1,4 +1,4 @@
-# linkpeer × fairpeer 移动端方案（决策锁定版）
+# linkpeer × hiq 移动端方案（决策锁定版）
 
 > 状态：方案确定，待 M0 启动
 > 日期：2026-08-11
@@ -9,9 +9,9 @@
 
 ## 0. 产品定位
 
-**linkpeer** = fairpeer 的移动伴侣端（Android / iOS，Flutter）。fairpeer 桌面端跑模型、读写文件、做办公自动化；linkpeer 在手机上实时镜像对话、远程批操作、触发办公任务。两端点对点直连，云端只做敲门，业务流量全程端到端加密。
+**linkpeer** = hiq 的移动伴侣端（Android / iOS，Flutter）。hiq 桌面端跑模型、读写文件、做办公自动化；linkpeer 在手机上实时镜像对话、远程批操作、触发办公任务。两端点对点直连，云端只做敲门，业务流量全程端到端加密。
 
-| | fairpeer（桌面） | linkpeer（移动） |
+| | hiq（桌面） | linkpeer（移动） |
 |---|---|---|
 | 角色 | 服务 peer | 连接 peer |
 | 持有 | Controller、会话历史、API Key、文件系统 | 仅本地私钥 + 会话缓存 |
@@ -21,8 +21,8 @@
 ### 0.1 命名约定
 
 - **linkpeer**：移动端产品名、Flutter 仓库名、移动端 package 前缀。
-- **fairpeer**：桌面端，不变。
-- **mobilebridge**：fairpeer 桌面端内部为 linkpeer 提供桥接的 Go package（`internal/mobilebridge`），是 fairpeer 的改动，不是 linkpeer 的一部分。
+- **hiq**：桌面端，不变。
+- **mobilebridge**：hiq 桌面端内部为 linkpeer 提供桥接的 Go package（`internal/mobilebridge`），是 hiq 的改动，不是 linkpeer 的一部分。
 - 协议层中立命名：双方交换的消息用 `wireEvent` / `cmd.*`，不含任一产品名。
 
 ---
@@ -62,14 +62,14 @@
 
 ## 2. 架构总览
 
-**核心定位：linkpeer = 第 5 个 bot 适配器（远端镜像语义）。** fairpeer 已有 Feishu/QQ/TG/WeChat 四个 IM 适配器跑通「远端用户 → `BotGateway` → `Controller` → 事件回投」闭环；linkpeer 是同构问题。关键基础设施已具备：
+**核心定位：linkpeer = 第 5 个 bot 适配器（远端镜像语义）。** hiq 已有 Feishu/QQ/TG/WeChat 四个 IM 适配器跑通「远端用户 → `BotGateway` → `Controller` → 事件回投」闭环；linkpeer 是同构问题。关键基础设施已具备：
 
 - `desktop/tabs.go` 的 `tabEventSink.Emit` 是**单点注入**：已把事件分发给 metrics、wails `EventsEmit`、telemetry。linkpeer 只需在此加一行「转发给 mobilebridge（若该 tab 被移动端订阅）」。**不改 Controller。**
 - `App.SubmitToTab` / `App.CancelTab` / `App.ApproveTab` / `tabByIDLocked` 已为多 tab 做好——上行命令纯转发。
 - `serve.toWire` / `wireEvent` 已是稳定 JSON 契约——下行直接复用。
 - `secret.Store`（DPAPI 加密）可存设备配对密钥。
 
-真正要新建的只有：**① 桌面桥接（`internal/mobilebridge` + pion/webrtc）② linkpeer Flutter App ③ 云端轻量信令**。fairpeer 业务逻辑层零新增。
+真正要新建的只有：**① 桌面桥接（`internal/mobilebridge` + pion/webrtc）② linkpeer Flutter App ③ 云端轻量信令**。hiq 业务逻辑层零新增。
 
 ### 数据流
 
@@ -81,7 +81,7 @@
         ┌─────────────────────┴─────────────────────┐
         ▼                                             ▼
 ┌────────────────────┐  WebRTC DataChannel（E2E 加密） ┌────────────────────┐
-│  fairpeer 桌面      │ ◄════════════════════════════► │  linkpeer 移动      │
+│  hiq 桌面      │ ◄════════════════════════════► │  linkpeer 移动      │
 │  Controller        │   下行：wireEvent（复用 SSE 流） │  Flutter UI         │
 │  tabEventSink +mobilebridge │ 上行：cmd.*（submit…） │  Android / iOS      │
 │  secret.Store      │                                   │  Keychain/Keystore  │
@@ -92,7 +92,7 @@
 
 ## 3. 公平分工：双端改动清单
 
-### 3.1 fairpeer 桌面端改动（Go + Wails）
+### 3.1 hiq 桌面端改动（Go + Wails）
 
 | 文件/包 | 改动 | 性质 |
 |---|---|---|
@@ -102,7 +102,7 @@
 | **`desktop/app.go`** | `App` 持有 `mobilebridge *Bridge`；`startup` 初始化；`beforeClose` 优雅关闭；`createTabEntry` 时把 sink 接好 | 微改 |
 | **`internal/secret/`** | 新增 key 命名空间 `mobilebridge.device.{id}.priv`（Ed25519 长期私钥）、`mobilebridge.peer.{id}.pub`（已配对端公钥） | 复用，无代码改动 |
 | **`go.mod`** | 加 `github.com/pion/webrtc/v4`、`github.com/pion/datachannel`、`golang.org/x/crypto`（curve25519/aes） | 新依赖（需 spike 验证无冲突） |
-| **`fairpeer.example.toml`** | 新增 `[mobilebridge]` 段：`enabled`、`signal_url`、`stun_servers`、`upnp`、`readonly_default`、`require_approval` | 配置 |
+| **`hiq.example.toml`** | 新增 `[mobilebridge]` 段：`enabled`、`signal_url`、`stun_servers`、`upnp`、`readonly_default`、`require_approval` | 配置 |
 | **`desktop/frontend/`** | 设置页加「移动端」面板：配对二维码、已配对设备列表、只读开关、连接状态；通知栏显示「linkpeer 已连接」 | 新建组件 |
 | **`internal/netclient/`** | 复用现有 proxy 配置（信令 WS 走用户代理设置）；无需改动 | 复用 |
 
@@ -117,7 +117,7 @@ linkpeer/
     core/
       webrtc/        # PeerConnection、DataChannel、ICE 收集、保活
       crypto/        # Ed25519 / X25519 / AES-256-GCM
-      signaling/     # 与 fairpeer 云端信令通信（WS）
+      signaling/     # 与 hiq 云端信令通信（WS）
       pairing/       # 扫码 + 指纹本地校验
       transport/     # NDJSON 编解码 + AEAD 封装 + 分片重组
     data/
@@ -140,17 +140,17 @@ linkpeer/
 - `flutter_secure_storage` —— iOS Keychain / Android Keystore 存 Ed25519 私钥。
 - `sqflite` —— 会话列表/缓存。
 - Riverpod —— 状态管理。
-- `flutter_markdown` + `flutter_tex` —— 复用 fairpeer 前端的 katex 思路；mermaid 走 webview 或桌面预渲染图回传。
+- `flutter_markdown` + `flutter_tex` —— 复用 hiq 前端的 katex 思路；mermaid 走 webview 或桌面预渲染图回传。
 
 ### 3.3 云端信令（自建 Go，独立小服务）
 
-放在 `cmd/linkpeer-signal/`（fairpeer 仓库内）或独立仓库。无状态，~300 行。
+放在 `cmd/linkpeer-signal/`（hiq 仓库内）或独立仓库。无状态，~300 行。
 
 ---
 
 ## 4. 协议设计（单 DataChannel，NDJSON，端到端加密）
 
-### 4.1 下行（fairpeer → linkpeer）：复用 `serve.wireEvent`
+### 4.1 下行（hiq → linkpeer）：复用 `serve.wireEvent`
 
 直接复用 `internal/serve/wire.go` 的 `wireEvent` 结构，linkpeer 拿到与桌面 webview 完全相同的事件流：
 
@@ -165,7 +165,7 @@ linkpeer/
 { "kind": "compaction",  "compaction": { ... } }
 ```
 
-### 4.2 上行（linkpeer → fairpeer）：命令 `cmd.*`
+### 4.2 上行（linkpeer → hiq）：命令 `cmd.*`
 
 所有命令均映射到现有 `App.*ToTab` 方法，mobilebridge 纯转发：
 
@@ -209,7 +209,7 @@ linkpeer/
 
 ### 5.1 一次性配对流程
 
-1. fairpeer 桌面端生成 Ed25519 长期密钥对，存入 `secret.Store`（key `mobilebridge.device.{desktopId}.priv`）。
+1. hiq 桌面端生成 Ed25519 长期密钥对，存入 `secret.Store`（key `mobilebridge.device.{desktopId}.priv`）。
 2. 桌面端显示二维码 + 6 位配对码：
    `linkpeer://pair?code=123456&fp=AB:CD:EF:...&relay=wss://signal.example.com&dev=<desktopId>`
 3. linkpeer 扫码 → 经云端信令用配对码换桌面端公钥 → **本地**比对二维码里的 `fp` 指纹（防 MITM；不信任云端传回的公钥本身）。
@@ -262,7 +262,7 @@ linkpeer/
 
 ## 8. 云端信令服务规格（M0，自建 Go）
 
-**默认自建 Go 小服务**（匹配 fairpeer「单静态 Go 二进制、零运行时依赖」工程哲学；部署在用户自有的公网 VPS）。
+**默认自建 Go 小服务**（匹配 hiq「单静态 Go 二进制、零运行时依赖」工程哲学；部署在用户自有的公网 VPS）。
 
 ### 职责边界（严格）
 
@@ -318,8 +318,8 @@ GET  /session/<pairId>/ws                          (双方各自建 WS，交换 
 | 阶段 | 目标 | 产出 | 周期（估） |
 |---|---|---|---|
 | **M0 信令服务** | 云端敲门上线 | `cmd/linkpeer-signal`：配对码、公钥撮合、候选中转 | 3–5 天 |
-| **M1 桌面桥接器** | `internal/mobilebridge`：订阅 tabEventSink，暴露 DataChannel | fairpeer「移动端配对」入口（扫码+状态） | 5–7 天 |
-| **M2 本地 P2P** | 同 WiFi 下 fairpeer↔linkpeer WebRTC + E2E 加密 | 收事件 / 发 cmd 打通 | 5–7 天 |
+| **M1 桌面桥接器** | `internal/mobilebridge`：订阅 tabEventSink，暴露 DataChannel | hiq「移动端配对」入口（扫码+状态） | 5–7 天 |
+| **M2 本地 P2P** | 同 WiFi 下 hiq↔linkpeer WebRTC + E2E 加密 | 收事件 / 发 cmd 打通 | 5–7 天 |
 | **M3 跨网打洞** | STUN/UPnP 接入 | 多 STUN 源、UPnP 自动映射、ICE restart、失败 UX | 5 天 |
 | **M4 对话界面** | linkpeer 对话 Tab 完整可用 | wireEvent 渲染、批准、历史回看 | 7–10 天 |
 | **M5 办公界面** | linkpeer 办公 Tab | 模板触发、结果预览 | 5–7 天 |
@@ -374,9 +374,9 @@ flutter build ios --release           # Xcode 归档
 
 配 GitHub Actions：push tag 触发 `macos-latest` runner 出 iOS + Android 双端包并自动 release。省手动归档，兼异地备份。
 
-### 11.6 fairpeer 桌面端依赖注意（M0 前 spike）
+### 11.6 hiq 桌面端依赖注意（M0 前 spike）
 
-桌面桥接 `internal/mobilebridge` 要引入 `github.com/pion/webrtc/v4`。fairpeer 现为**纯 Go（无 cgo）**（SQLite 用 `modernc.org/sqlite`，无 C 依赖）。pion/webrtc 也是纯 Go，理论干净接入。**M0 启动前必须 spike 验证**：pion 加进 `go.mod`、跑通 echo DataChannel、确认无依赖冲突、交叉编译不破——fairpeer 的「单静态二进制跨平台」不能因 pion 引入 cgo。
+桌面桥接 `internal/mobilebridge` 要引入 `github.com/pion/webrtc/v4`。hiq 现为**纯 Go（无 cgo）**（SQLite 用 `modernc.org/sqlite`，无 C 依赖）。pion/webrtc 也是纯 Go，理论干净接入。**M0 启动前必须 spike 验证**：pion 加进 `go.mod`、跑通 echo DataChannel、确认无依赖冲突、交叉编译不破——hiq 的「单静态二进制跨平台」不能因 pion 引入 cgo。
 
 ### 11.7 将来接 iOS：Silicon Mac 优先，Intel Mac 备用
 
@@ -390,20 +390,20 @@ Mac 可用后，两台里**优先用 Silicon（M 系列）**做 iOS 主力：能
 
 **全屏沉浸式对话流**，参考豆包 / Gemini / ChatGPT 移动端。AI 消息不套气泡、占满宽度（带 avatar），用户消息右气泡；底部输入区圆角带附件 / 语音 / 发送；顶栏极简；历史会话侧抽屉。底部 Tab 仍保留「对话 / 办公 / 我的」（豆包样式是对话 Tab **内部**的样式）。
 
-### 12.2 品牌一致（沿用 fairpeer 设计 token）
+### 12.2 品牌一致（沿用 hiq 设计 token）
 
-linkpeer 视觉继承 fairpeer 桌面端，保证产品线一致：
+linkpeer 视觉继承 hiq 桌面端，保证产品线一致：
 
-- **品牌主色 `#d97757`**（fairpeer `--accent`，暖橙）—— 恰好与豆包橙色调同频，天然契合。
+- **品牌主色 `#d97757`**（hiq `--accent`，暖橙）—— 恰好与豆包橙色调同频，天然契合。
 - accent-strong `#e58a6b`、accent-soft `rgba(217,119,87,0.14)`、border `#343945` 直接复用。
-- **深色为默认**（fairpeer `color-scheme: dark`，bg `#090a0c`，fg `#f4f5f7`），浅色可选。
+- **深色为默认**（hiq `color-scheme: dark`，bg `#090a0c`，fg `#f4f5f7`），浅色可选。
 - 移动端字号比桌面放大一档（手机阅读距离）。
 
 ### 12.3 对话 Tab（线框）
 
 ```
 ┌────────────────────────────┐
-│ ☰  fairpeer·coding     ⌄ ⋮ │  顶栏：抽屉 / 会话名 / 模型 / 菜单
+│ ☰  hiq·coding     ⌄ ⋮ │  顶栏：抽屉 / 会话名 / 模型 / 菜单
 ├────────────────────────────┤
 │                            │
 │ 🤖  正在思考…          ▾    │  reasoning 折叠卡（点开看全程）
@@ -475,6 +475,6 @@ linkpeer 视觉继承 fairpeer 桌面端，保证产品线一致：
 
 1. 信令服务：自建 Go（默认）vs Cloudflare Worker + Durable Objects。
 2. linkpeer 是否本地缓存会话历史支持离线查看（影响是否镜像 JSONL 到 `sqflite`）。
-3. 是否支持「一个 linkpeer 绑定多个 fairpeer 桌面端」（一人多机）。
+3. 是否支持「一个 linkpeer 绑定多个 hiq 桌面端」（一人多机）。
 4. 首屏先做对话（建议）还是办公。
 5. iOS 后台策略：仅前台（MVP）vs APNs 静默推送唤醒（后期）。

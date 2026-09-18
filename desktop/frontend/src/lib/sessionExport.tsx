@@ -432,7 +432,7 @@ function createRasterPdf(jpegBytes: Uint8Array, imageWidth: number, imageHeight:
     `<< /Type /XObject /Subtype /Image /Width ${imageWidth} /Height ${imageHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>`,
     jpegBytes,
   );
-  addObject(infoObjectId, `<< /Title (${pdfString(title)}) /Producer (fairpeer) >>`);
+  addObject(infoObjectId, `<< /Title (${pdfString(title)}) /Producer (hiq) >>`);
 
   const xrefStart = position;
   push(`xref\n0 ${objectCount + 1}\n0000000000 65535 f \n`);

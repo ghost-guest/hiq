@@ -3,7 +3,7 @@
 > **状态**：已批准实施
 > **范围**：coWork（办公协作）profile 的桌面自动化、浏览器、邮件、知识库、定时任务
 > **目标**：在"AI 操作真人桌面/外发不可逆动作"的场景下，建立分层防护，且不破坏现有 UX
-> **核心原则**：每个模块复用 fairpeer 已有基础设施，不造新概念；按"成本递增、UX 风险递增"排序
+> **核心原则**：每个模块复用 hiq 已有基础设施，不造新概念；按"成本递增、UX 风险递增"排序
 
 ---
 
@@ -455,7 +455,7 @@ ask = ["email_send", "rag_delete"]
 
 **问题**：`todo_write` 与 `complete_step` 耦合——中断时待办列表冻结。
 
-**fairpeer 现状**：`todo.go:88-109` 有完全相同的逻辑（`verifyTodoCompletionTransitions` 要求每个新 completed 条目有匹配的 `complete_step` 回执，否则硬失败）。
+**hiq 现状**：`todo.go:88-109` 有完全相同的逻辑（`verifyTodoCompletionTransitions` 要求每个新 completed 条目有匹配的 `complete_step` 回执，否则硬失败）。
 
 **缓解因素**（比 reasonix 好一点）：`if !hasBaseline { return nil }` 是安全阀——每回合第一次 `todo_write` 无基线直接放行。只有"回合中途被中断、恢复后又 todo_write"才踩雷。
 

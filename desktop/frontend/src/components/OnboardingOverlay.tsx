@@ -32,7 +32,7 @@ export function OnboardingOverlay({ onComplete }: { onComplete: () => void }) {
   return (
     <div className="onboarding">
       <div className="onboarding__card onboarding__card--wide">
-        <img src={logo} className="onboarding__logo" alt="FairPeer" draggable={false} />
+        <img src={logo} className="onboarding__logo" alt="Hiq" draggable={false} />
         <div className="onboarding__title">{t("onboarding.title")}</div>
         <div className="onboarding__dots" aria-hidden="true">
           {(["vendor", "key", "model"] as const).map((s) => (

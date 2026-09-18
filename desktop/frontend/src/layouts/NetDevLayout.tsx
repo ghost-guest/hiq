@@ -241,10 +241,10 @@ type OpsResult = {
 const DOCK_TAB_DEFAULT_OPEN: readonly DockTab[] = ["overview", "live", "health", "findings"];
 // DASHBOARD spec §4.2：总览是默认落地页签；老安装的存量页签集里没有它，
 // 一次性补种（同 live-seeded 先例——种完之后用户的增删仍是权威）。
-const NETDEV_DOCK_TABS_OVW_SEEDED = "fairpeer.netdevDockTabs.ovw-seeded";
-const NETDEV_DOCK_TABS_KEY = "fairpeer.netdevDockTabs";
-const NETDEV_DOCK_TABS_SEEDED = "fairpeer.netdevDockTabs.seeded";
-const NETDEV_DOCK_TABS_LIVE_SEEDED = "fairpeer.netdevDockTabs.live-seeded";
+const NETDEV_DOCK_TABS_OVW_SEEDED = "hiq.netdevDockTabs.ovw-seeded";
+const NETDEV_DOCK_TABS_KEY = "hiq.netdevDockTabs";
+const NETDEV_DOCK_TABS_SEEDED = "hiq.netdevDockTabs.seeded";
+const NETDEV_DOCK_TABS_LIVE_SEEDED = "hiq.netdevDockTabs.live-seeded";
 
 // 深链过滤匹配器（大屏/总览 onJump 的 filter 语义）：
 //   severity:<sev> | id:<id> | device:<name> | assess | baseline | syslog
@@ -462,7 +462,7 @@ export function NetDevLayout({
     setBrowserBenchEverOpened(true);
   }, []);
   // 大屏（DASHBOARD spec §4.1）：初始屏/深链 finding；manualSignal 驱动
-  // Alt+1..5、命令面板、fairpeer://finding 深链的后到切换。
+  // Alt+1..5、命令面板、hiq://finding 深链的后到切换。
   const [dashScreen, setDashScreen] = useState<DashScreen | null>(() => dashScreenParam());
   const [dashFinding, setDashFinding] = useState<string>("");
   const [dashManual, setDashManual] = useState<{ screen: DashScreen; finding?: string } | null>(null);
@@ -534,7 +534,7 @@ export function NetDevLayout({
         openDashBench(d.screen, d.finding);
         return;
       }
-      // 页签型路由（fairpeer://proposal/<id>）：提案中心定位 + 深链过滤。
+      // 页签型路由（hiq://proposal/<id>）：提案中心定位 + 深链过滤。
       if (d?.tab) {
         const tabKey = (d.tab === "jobs" ? "live" : d.tab) as DockTab;
         setDashJumpFilter(d.filter ? { tab: tabKey, filter: d.filter } : null);
@@ -542,22 +542,22 @@ export function NetDevLayout({
         openDockTabFnRef.current?.(tabKey);
       }
     };
-    window.addEventListener("fairpeer:netdev-bench", onBench);
-    window.addEventListener("fairpeer:netdev-open-screen", onOpenScreen);
+    window.addEventListener("hiq:netdev-bench", onBench);
+    window.addEventListener("hiq:netdev-open-screen", onOpenScreen);
     return () => {
-      window.removeEventListener("fairpeer:netdev-bench", onBench);
-      window.removeEventListener("fairpeer:netdev-open-screen", onOpenScreen);
+      window.removeEventListener("hiq:netdev-bench", onBench);
+      window.removeEventListener("hiq:netdev-open-screen", onOpenScreen);
     };
   }, [openLogsBench, openSecBench, openDashBench, openBrowserBench]);
 
-  // §4.12 深链路由：notify 推送消息里的 fairpeer://finding/<id> 链接在
+  // §4.12 深链路由：notify 推送消息里的 hiq://finding/<id> 链接在
   // webview 里没有协议处理器——这里拦截点击，落调查链屏并高亮（把 v1 的
   // 断头路接通；协议级系统注册留待 Wails 侧一次性接线）。
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const a = (e.target as HTMLElement | null)?.closest?.("a");
       const href = a?.getAttribute("href") ?? "";
-      const m = href.match(/^fairpeer:\/\/finding\/([\w-]+)/);
+      const m = href.match(/^hiq:\/\/finding\/([\w-]+)/);
       if (!m) return;
       e.preventDefault();
       openDashBench("chain", m[1]);
@@ -580,11 +580,11 @@ export function NetDevLayout({
       if (!d) return;
       setLocateTarget(d);
     };
-    window.addEventListener("fairpeer:netdev-device-focus", onFocus);
-    window.addEventListener("fairpeer:netdev-device-select", onSelect);
+    window.addEventListener("hiq:netdev-device-focus", onFocus);
+    window.addEventListener("hiq:netdev-device-select", onSelect);
     return () => {
-      window.removeEventListener("fairpeer:netdev-device-focus", onFocus);
-      window.removeEventListener("fairpeer:netdev-device-select", onSelect);
+      window.removeEventListener("hiq:netdev-device-focus", onFocus);
+      window.removeEventListener("hiq:netdev-device-select", onSelect);
     };
   }, [onDockOpen]);
 
@@ -877,8 +877,8 @@ export function NetDevLayout({
       setTab("topology");
       setOpenTabs(prev => (prev.includes("topology") ? prev : [...prev, "topology"]));
     };
-    window.addEventListener("fairpeer:netdev-topo-import", onTopoImport);
-    return () => window.removeEventListener("fairpeer:netdev-topo-import", onTopoImport);
+    window.addEventListener("hiq:netdev-topo-import", onTopoImport);
+    return () => window.removeEventListener("hiq:netdev-topo-import", onTopoImport);
   }, []);
 
   const applyTopoImport = useCallback(async () => {
@@ -1436,7 +1436,7 @@ export function NetDevLayout({
       )}
       <div className="ndv__rail">
         {/* Brand row — identical classes/markup to the coding view's
-            sidebar__brandrow: logo + FairPeer + new-session ghost button +
+            sidebar__brandrow: logo + Hiq + new-session ghost button +
             collapse toggle. Spans the chrome row (top-left of the window). */}
         <div className="sidebar__brandrow" title={tt("ndv.tbar.mode")}>
           {/* Logo retired; collapse toggle leads, mode name follows (2026-08-19). */}
@@ -1617,7 +1617,7 @@ export function NetDevLayout({
               onFocusDevice={(d: string) => {
                 onDockOpen?.();
                 openDockTabFn("devices");
-                window.dispatchEvent(new CustomEvent("fairpeer:netdev-device-select", { detail: d }));
+                window.dispatchEvent(new CustomEvent("hiq:netdev-device-select", { detail: d }));
               }}
             />
           </div>
@@ -1874,7 +1874,7 @@ export function NetDevLayout({
               setDashJumpFilter(j.filter ? { tab: target, filter: j.filter } : null);
               openDockTabFn(target);
             }}
-            onFocusDevice={(d) => window.dispatchEvent(new CustomEvent("fairpeer:netdev-device-focus", { detail: d }))}
+            onFocusDevice={(d) => window.dispatchEvent(new CustomEvent("hiq:netdev-device-focus", { detail: d }))}
           />
         )}
 
@@ -2057,7 +2057,7 @@ export function NetDevLayout({
                       onClick={() => {
                         // §10.5：设备卡「终端」→ 主区终端面板设备页签。App 层监听
                         // 该事件并打开面板；PTY 生命周期由 DeviceTerminal 管理。
-                        window.dispatchEvent(new CustomEvent("fairpeer:netdev-terminal", { detail: { device: selectedDevice.name } }));
+                        window.dispatchEvent(new CustomEvent("hiq:netdev-terminal", { detail: { device: selectedDevice.name } }));
                       }}
                     >{"⌨ "}{tt("ndv.dev.terminal")}</span>
                     {(selectedDevice.protocols ?? []).includes("netconf") && (
@@ -2236,7 +2236,7 @@ export function NetDevLayout({
               onLocate={() => openDockTabFn("devices")}
               onTriage={() => { onInsertComposer?.(tt("ndv.sc.triagePrompt")); openDockTabFn("findings"); }}
               onWeak={() => { onInsertComposer?.(tt("ndv.sc.weakPrompt")); openDockTabFn("findings"); }}
-              onCVE={() => { openSecBench(); window.dispatchEvent(new Event("fairpeer:netdev-cve")); }}
+              onCVE={() => { openSecBench(); window.dispatchEvent(new Event("hiq:netdev-cve")); }}
               onSecWizard={() => { openSecBench(); }}
               onCorrelate={() => { setLogsBenchEverOpened(true); setBench("logs"); }}
               onReports={() => openDockTabFn("audit")}
@@ -2886,18 +2886,18 @@ function FindingRow({ f, onResolved }: { f: NetDevFinding; onResolved?: () => vo
         )}
         <span className="btn btn--secondary btn--small" role="button" title={tt("ndv.fnd.caseTip")}
           onClick={() => {
-            window.dispatchEvent(new CustomEvent("fairpeer:netdev-case", { detail: { title: f.title, device: (f.devices ?? [])[0] ?? "", text: `${f.severity}｜${f.title}｜${(f.detail ?? "").slice(0, 120)}`, ref: f.id } }));
-            window.dispatchEvent(new CustomEvent("fairpeer:netdev-bench", { detail: "sec" }));
+            window.dispatchEvent(new CustomEvent("hiq:netdev-case", { detail: { title: f.title, device: (f.devices ?? [])[0] ?? "", text: `${f.severity}｜${f.title}｜${(f.detail ?? "").slice(0, 120)}`, ref: f.id } }));
+            window.dispatchEvent(new CustomEvent("hiq:netdev-bench", { detail: "sec" }));
           }}>{tt("ndv.fnd.createCase")}</span>
         {f.status === "active" && (
           <span className="btn btn--secondary btn--small" role="button"
             onClick={() => { void app.NetDevResolveFinding(f.id).then(() => onResolved?.()); }}>{tt("ndv.fnd.resolve")}</span>
         )}
         <span className="btn btn--secondary btn--small" role="button" title={tt("ndv.fnd.chainTip")}
-          onClick={() => { window.dispatchEvent(new CustomEvent("fairpeer:netdev-open-screen", { detail: { screen: "chain", finding: f.id } })); }}>{tt("ndv.fnd.chainBtn")}</span>
+          onClick={() => { window.dispatchEvent(new CustomEvent("hiq:netdev-open-screen", { detail: { screen: "chain", finding: f.id } })); }}>{tt("ndv.fnd.chainBtn")}</span>
         <span className="btn btn--secondary btn--small" role="button" title={tt("ndv.fnd.copyLinkTip")}
           onClick={() => {
-            void navigator.clipboard?.writeText(`fairpeer://finding/${f.id}`).then(() => {
+            void navigator.clipboard?.writeText(`hiq://finding/${f.id}`).then(() => {
               setCopied(true);
               window.setTimeout(() => setCopied(false), 1500);
             });

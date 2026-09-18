@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // mcpEntryAction assembles the DTO for a single MCP server install. The

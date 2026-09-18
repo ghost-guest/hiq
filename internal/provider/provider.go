@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/nilutil"
 )
 
 // Role is the role of a message.
@@ -42,7 +42,7 @@ type Message struct {
 	// Only embedded for vision-capable models.
 	Images []string `json:"images,omitempty"`
 	// Audio holds inline audio blocks for audio-capable models. This is
-	// fairpeer-specific: upstream Reasonix has no speech-to-text path.
+	// hiq-specific: upstream Reasonix has no speech-to-text path.
 	Audio            []InputAudio `json:"audio,omitempty"`
 	ReasoningContent string       `json:"reasoning_content,omitempty"` // assistant: thinking-mode chain-of-thought, round-tripped on multi-turn
 	// ReasoningSignature is an opaque, provider-issued proof that ReasoningContent
@@ -81,7 +81,7 @@ type Message struct {
 
 // UnmarshalJSON restores a message from its on-disk JSON. Current files store
 // content as a plain string plus optional images/audio arrays, so the common
-// path is a straight decode. Files written by fairpeer ≤ v0.1 stored content as
+// path is a straight decode. Files written by hiq ≤ v0.1 stored content as
 // a []ContentPart array instead (text + image_url + input_audio parts); those
 // are flattened into Content/Images/Audio so old sessions keep loading
 // losslessly rather than silently dropping their image data.
@@ -248,7 +248,7 @@ func (m Message) HasImages() bool { return len(m.Images) > 0 }
 // HasAudio reports whether the message carries inline audio blocks.
 func (m Message) HasAudio() bool { return len(m.Audio) > 0 }
 
-// MessageFromInput builds the user message for a turn from fairpeer's turn
+// MessageFromInput builds the user message for a turn from hiq's turn
 // input carrier, which is either plain text or a []ContentPart multimodal
 // payload (text + image_url + input_audio parts) assembled by the control
 // layer. It is the single conversion point between the turn plumbing, which
@@ -742,7 +742,7 @@ func (e *AuthError) Error() string {
 	if e.KeyEnv != "" {
 		key = e.KeyEnv
 	}
-	return fmt.Sprintf("authentication failed for provider %q (HTTP %d): %s is invalid or expired — update it (in .env or your environment) and retry, or run `fairpeer setup`",
+	return fmt.Sprintf("authentication failed for provider %q (HTTP %d): %s is invalid or expired — update it (in .env or your environment) and retry, or run `hiq setup`",
 		e.Provider, e.Status, key)
 }
 

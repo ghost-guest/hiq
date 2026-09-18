@@ -11,20 +11,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
-// buildExamplePlugin compiles cmd/fairpeer-plugin-example into a temp binary and
+// buildExamplePlugin compiles cmd/hiq-plugin-example into a temp binary and
 // returns its path. Building from inside the module lets `go build` resolve the
 // import path regardless of the test's working directory.
 func buildExamplePlugin(t *testing.T) string {
 	t.Helper()
-	bin := filepath.Join(t.TempDir(), "fairpeer-plugin-example")
+	bin := filepath.Join(t.TempDir(), "hiq-plugin-example")
 	if runtime.GOOS == "windows" {
 		bin += ".exe"
 	}
-	out, err := exec.Command("go", "build", "-o", bin, "github.com/zzycxz/fairpeer/cmd/fairpeer-plugin-example").CombinedOutput()
+	out, err := exec.Command("go", "build", "-o", bin, "github.com/zzycxz/hiq/cmd/hiq-plugin-example").CombinedOutput()
 	if err != nil {
 		t.Fatalf("build example plugin: %v\n%s", err, out)
 	}

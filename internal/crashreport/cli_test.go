@@ -25,7 +25,7 @@ func TestCapturePanicWritesBoundedSanitizedReport(t *testing.T) {
 	secret := "private prompt contents"
 	apiKey := "sk-proj-abcdefghijklmnopqrstuvwxyz1234567890"
 	stack := "goroutine 7 [running]:\n" +
-		"github.com/zzycxz/fairpeer/internal/agent.run(" + secret + ")\n" +
+		"github.com/zzycxz/hiq/internal/agent.run(" + secret + ")\n" +
 		"\t/Users/alice/private-project/internal/agent/run.go:42 +0x123\n" +
 		"Authorization: Bearer abcdefghijklmnopqrstuvwxyz1234567890\n" +
 		"api_key=" + apiKey
@@ -44,10 +44,10 @@ func TestCapturePanicWritesBoundedSanitizedReport(t *testing.T) {
 	if len(report.EventID) != 32 || len(report.DedupKey) != 64 {
 		t.Fatalf("report identity = event %q dedup %q", report.EventID, report.DedupKey)
 	}
-	if !strings.Contains(report.Stack, "github.com/zzycxz/fairpeer/internal/agent.run(...)") || !strings.Contains(report.Stack, "<path>/run.go:42") {
+	if !strings.Contains(report.Stack, "github.com/zzycxz/hiq/internal/agent.run(...)") || !strings.Contains(report.Stack, "<path>/run.go:42") {
 		t.Fatalf("sanitized stack = %q", report.Stack)
 	}
-	if report.TopFrame != "github.com/zzycxz/fairpeer/internal/agent.run <path>/run.go:42" {
+	if report.TopFrame != "github.com/zzycxz/hiq/internal/agent.run <path>/run.go:42" {
 		t.Fatalf("top frame = %q", report.TopFrame)
 	}
 	preview, err := Preview(report)
@@ -121,7 +121,7 @@ func TestListBackfillsStableIdentityForOldPendingReport(t *testing.T) {
 
 func TestSendUsesSharedProtocolWithoutDeletingLocalReport(t *testing.T) {
 	home := t.TempDir()
-	if err := CapturePanic(home, "v1.20.0", "boom", []byte("goroutine 1 [running]:\nfairpeer.run()\n\t/home/alice/fairpeer/main.go:12")); err != nil {
+	if err := CapturePanic(home, "v1.20.0", "boom", []byte("goroutine 1 [running]:\nhiq.run()\n\t/home/alice/hiq/main.go:12")); err != nil {
 		t.Fatal(err)
 	}
 	pending, err := Load(home, "")
@@ -178,7 +178,7 @@ func TestConcurrentCaptureKeepsQueueBounded(t *testing.T) {
 		go func(value int) {
 			defer wg.Done()
 			<-start
-			if err := CapturePanic(home, "v1.20.0", value, []byte("fairpeer.run()\n\t/home/alice/main.go:12")); err != nil {
+			if err := CapturePanic(home, "v1.20.0", value, []byte("hiq.run()\n\t/home/alice/main.go:12")); err != nil {
 				t.Errorf("CapturePanic: %v", err)
 			}
 		}(i)
@@ -204,7 +204,7 @@ func TestCapturePanicPrunesOnlyCurrentReportFormat(t *testing.T) {
 	}
 
 	for i := range maxReports + 1 {
-		if err := CapturePanic(home, "v1.20.0", i, []byte("fairpeer.run()\n\t/home/alice/main.go:12")); err != nil {
+		if err := CapturePanic(home, "v1.20.0", i, []byte("hiq.run()\n\t/home/alice/main.go:12")); err != nil {
 			t.Fatal(err)
 		}
 	}

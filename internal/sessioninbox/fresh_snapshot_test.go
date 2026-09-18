@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/filelock"
+	"github.com/zzycxz/hiq/internal/filelock"
 )
 
 func TestTryFreshSnapshotReloadsAnotherStoreCommit(t *testing.T) {

@@ -63,7 +63,7 @@ func TestSaveMasksSecretsInBodyAndIndex(t *testing.T) {
 func TestAppendDocMasksSecrets(t *testing.T) {
 	const secret = "ghp_abcdefghijklmnopqrstuvwxyz0123456789"
 	dir := t.TempDir()
-	path := filepath.Join(dir, "fairpeer.md")
+	path := filepath.Join(dir, "hiq.md")
 	if err := AppendDoc(path, "prod token is "+secret); err != nil {
 		t.Fatalf("append: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestAppendDocMasksSecrets(t *testing.T) {
 // path a user hits when they paste a note by hand.
 func TestWriteDocFileMasksSecrets(t *testing.T) {
 	const secret = "AKIAIOSFODNN7EXAMPLE"
-	path := filepath.Join(t.TempDir(), "fairpeer.md")
+	path := filepath.Join(t.TempDir(), "hiq.md")
 	if err := writeDocFile(path, "# Notes\n\nAWS key "+secret+"\n"); err != nil {
 		t.Fatalf("write: %v", err)
 	}

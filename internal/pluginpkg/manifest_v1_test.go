@@ -28,7 +28,7 @@ func writeV2Plugin(t *testing.T, root, manifest string) {
 // v2ExampleManifest is the canonical Manifest v2 example: contributes with
 // every path-list kind plus a full runtime declaration.
 const v2ExampleManifest = `{
-  "apiVersion": "fairpeer.io/plugin/v2",
+  "apiVersion": "hiq.io/plugin/v2",
   "name": "example",
   "version": "1.0.0",
   "description": "Example v2 plugin",
@@ -37,7 +37,7 @@ const v2ExampleManifest = `{
     "agents": ["agents"],
     "commands": ["commands"],
     "prompts": ["prompts"],
-    "themes": ["themes/*.fairpeer-theme"]
+    "themes": ["themes/*.hiq-theme"]
   },
   "runtime": {
     "command": "${REASONIX_PLUGIN_ROOT}/bin/example",
@@ -58,7 +58,7 @@ func writeV2ExampleAssets(t *testing.T, root string) {
 	writeTestFile(t, filepath.Join(root, "agents", "reviewer.md"), "---\ndescription: reviews\n---\nReview")
 	writeTestFile(t, filepath.Join(root, "commands", "ship.md"), "---\ndescription: ship\n---\nShip $ARGUMENTS")
 	writeTestFile(t, filepath.Join(root, "prompts", "plan.md"), "---\ndescription: plan\n---\nPlan $ARGUMENTS")
-	writeTestFile(t, filepath.Join(root, "themes", "neon.fairpeer-theme"), "theme pack bytes")
+	writeTestFile(t, filepath.Join(root, "themes", "neon.hiq-theme"), "theme pack bytes")
 	writeTestFile(t, filepath.Join(root, "bin", "example"), "#!/bin/sh\n")
 }
 
@@ -74,8 +74,8 @@ func TestManifestV2FullParse(t *testing.T) {
 	if len(warnings) != 0 {
 		t.Fatalf("unexpected warnings: %v", warnings)
 	}
-	if pkg.ManifestKind != "fairpeer" {
-		t.Fatalf("ManifestKind = %q, want fairpeer", pkg.ManifestKind)
+	if pkg.ManifestKind != "hiq" {
+		t.Fatalf("ManifestKind = %q, want hiq", pkg.ManifestKind)
 	}
 	m := pkg.Manifest
 	if m.Name != "example" || m.Version != "1.0.0" || m.Description != "Example v2 plugin" {
@@ -93,7 +93,7 @@ func TestManifestV2FullParse(t *testing.T) {
 	if !reflect.DeepEqual(m.Prompts, []string{"prompts"}) {
 		t.Fatalf("Prompts = %#v", m.Prompts)
 	}
-	if !reflect.DeepEqual(m.Themes, []string{"themes/*.fairpeer-theme"}) {
+	if !reflect.DeepEqual(m.Themes, []string{"themes/*.hiq-theme"}) {
 		t.Fatalf("Themes = %#v", m.Themes)
 	}
 	rt := m.Runtime
@@ -134,7 +134,7 @@ func TestManifestV2FullParse(t *testing.T) {
 
 func TestManifestV2RejectsUnknownFieldsWithPath(t *testing.T) {
 	base := `{
-  "apiVersion": "fairpeer.io/plugin/v2",
+  "apiVersion": "hiq.io/plugin/v2",
   "name": "strict-demo",
   "contributes": {"skills": ["skills"]},
   "hooks": {"PreToolUse": [{"match": "Bash", "command": "./pre.sh"}]},
@@ -193,17 +193,17 @@ func TestManifestAPIVersionV2Gating(t *testing.T) {
 		apiVersion any
 		wantErr    string
 	}{
-		{"fairpeer.io/plugin/v2", ""},
-		{"fairpeer.io/plugin/v1", `unsupported apiVersion`},
-		{"fairpeer.io/plugin/v0", `unsupported apiVersion`},
-		{"fairpeer.io/plugin/v10.2", `unsupported apiVersion`},
+		{"hiq.io/plugin/v2", ""},
+		{"hiq.io/plugin/v1", `unsupported apiVersion`},
+		{"hiq.io/plugin/v0", `unsupported apiVersion`},
+		{"hiq.io/plugin/v10.2", `unsupported apiVersion`},
 		{"v1", `unsupported apiVersion`},
-		{"fairpeer.io/plugin/vX", `unsupported apiVersion`},
+		{"hiq.io/plugin/vX", `unsupported apiVersion`},
 		{"foo", `unsupported apiVersion`},
 		{42, `apiVersion must be a string`},
 		// Exact v2 only — v2.x minor aliases are rejected by design.
-		{"fairpeer.io/plugin/v2.1", `unsupported apiVersion`},
-		{"fairpeer.io/plugin/v2.0", `unsupported apiVersion`},
+		{"hiq.io/plugin/v2.1", `unsupported apiVersion`},
+		{"hiq.io/plugin/v2.0", `unsupported apiVersion`},
 	}
 	for _, tc := range cases {
 		t.Run(strings.ReplaceAll(strings.TrimSpace(jsonText(tc.apiVersion)), `"`, ""), func(t *testing.T) {
@@ -227,7 +227,7 @@ func TestManifestAPIVersionV2Gating(t *testing.T) {
 func TestManifestV2LegacyFieldsMergeWithContributes(t *testing.T) {
 	root := t.TempDir()
 	writeV2Plugin(t, root, `{
-  "apiVersion": "fairpeer.io/plugin/v2",
+  "apiVersion": "hiq.io/plugin/v2",
   "name": "merge-demo",
   "skills": ["legacy-skills", "shared"],
   "commands": "legacy-commands",
@@ -289,13 +289,13 @@ func TestManifestV2MergeConflictsFail(t *testing.T) {
 		wantErr  string
 	}{
 		{"hook redefined", `{
-  "apiVersion": "fairpeer.io/plugin/v2",
+  "apiVersion": "hiq.io/plugin/v2",
   "name": "conflict-demo",
   "hooks": {"SessionStart": [{"command": "./start.sh", "timeout": 5000}]},
   "contributes": {"hooks": {"SessionStart": [{"command": "./start.sh", "timeout": 9000}]}}
 }`, `hook "./start.sh" (event SessionStart) is defined differently`},
 		{"mcp server redefined", `{
-  "apiVersion": "fairpeer.io/plugin/v2",
+  "apiVersion": "hiq.io/plugin/v2",
   "name": "conflict-demo",
   "mcpServers": {"srv": {"type": "stdio", "command": "./a"}},
   "contributes": {"mcpServers": {"srv": {"type": "stdio", "command": "./b"}}}
@@ -316,7 +316,7 @@ func TestManifestV2MergeConflictsFail(t *testing.T) {
 func TestManifestV2PromptsAndCommandsStaySeparateSets(t *testing.T) {
 	root := t.TempDir()
 	writeV2Plugin(t, root, `{
-  "apiVersion": "fairpeer.io/plugin/v2",
+  "apiVersion": "hiq.io/plugin/v2",
   "name": "dual-demo",
   "contributes": {
     "commands": ["shared"],
@@ -360,7 +360,7 @@ func TestManifestV2RuntimeValidation(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
-			writeV2Plugin(t, root, `{"apiVersion": "fairpeer.io/plugin/v2", "name": "rt-demo", "runtime": `+tc.runtime+`}`)
+			writeV2Plugin(t, root, `{"apiVersion": "hiq.io/plugin/v2", "name": "rt-demo", "runtime": `+tc.runtime+`}`)
 			_, _, err := ParseDir(root)
 			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
 				t.Fatalf("error = %v, want it to contain %q", err, tc.wantErr)
@@ -372,7 +372,7 @@ func TestManifestV2RuntimeValidation(t *testing.T) {
 func TestManifestV2RuntimeAcceptsBoundaryValues(t *testing.T) {
 	root := t.TempDir()
 	writeV2Plugin(t, root, `{
-  "apiVersion": "fairpeer.io/plugin/v2",
+  "apiVersion": "hiq.io/plugin/v2",
   "name": "rt-ok",
   "runtime": {
     "command": "plugin-runtime",
@@ -393,7 +393,7 @@ func TestManifestV2RuntimeAcceptsBoundaryValues(t *testing.T) {
 func TestManifestV2PathSafety(t *testing.T) {
 	t.Run("dot-dot escape rejected", func(t *testing.T) {
 		root := t.TempDir()
-		writeV2Plugin(t, root, `{"apiVersion": "fairpeer.io/plugin/v2", "name": "esc", "contributes": {"skills": ["../outside"]}}`)
+		writeV2Plugin(t, root, `{"apiVersion": "hiq.io/plugin/v2", "name": "esc", "contributes": {"skills": ["../outside"]}}`)
 		if _, _, err := ParseDir(root); err == nil || !strings.Contains(err.Error(), "must be relative and stay inside the plugin root") {
 			t.Fatalf("error = %v, want the traversal refusal", err)
 		}
@@ -421,7 +421,7 @@ func TestManifestV2PathSafety(t *testing.T) {
 		outside := t.TempDir()
 		writeTestFile(t, filepath.Join(outside, "evil.md"), "evil")
 		root := t.TempDir()
-		writeV2Plugin(t, root, `{"apiVersion": "fairpeer.io/plugin/v2", "name": "linkesc", "contributes": {"skills": ["skills-link"]}}`)
+		writeV2Plugin(t, root, `{"apiVersion": "hiq.io/plugin/v2", "name": "linkesc", "contributes": {"skills": ["skills-link"]}}`)
 		if err := os.Symlink(outside, filepath.Join(root, "skills-link")); err != nil {
 			t.Skipf("symlinks unavailable: %v", err)
 		}
@@ -431,7 +431,7 @@ func TestManifestV2PathSafety(t *testing.T) {
 	})
 	t.Run("in-root symlink accepted", func(t *testing.T) {
 		root := t.TempDir()
-		writeV2Plugin(t, root, `{"apiVersion": "fairpeer.io/plugin/v2", "name": "linkok", "contributes": {"skills": ["skills-link"]}}`)
+		writeV2Plugin(t, root, `{"apiVersion": "hiq.io/plugin/v2", "name": "linkok", "contributes": {"skills": ["skills-link"]}}`)
 		writeTestFile(t, filepath.Join(root, "real-skills", "s", "SKILL.md"), "---\ndescription: s\n---\nS")
 		if err := os.Symlink(filepath.Join(root, "real-skills"), filepath.Join(root, "skills-link")); err != nil {
 			t.Skipf("symlinks unavailable: %v", err)
@@ -442,13 +442,13 @@ func TestManifestV2PathSafety(t *testing.T) {
 	})
 	t.Run("theme symlink escape rejected", func(t *testing.T) {
 		outside := t.TempDir()
-		writeTestFile(t, filepath.Join(outside, "evil.fairpeer-theme"), "evil")
+		writeTestFile(t, filepath.Join(outside, "evil.hiq-theme"), "evil")
 		root := t.TempDir()
-		writeV2Plugin(t, root, `{"apiVersion": "fairpeer.io/plugin/v2", "name": "themesc", "contributes": {"themes": ["themes/*.fairpeer-theme"]}}`)
+		writeV2Plugin(t, root, `{"apiVersion": "hiq.io/plugin/v2", "name": "themesc", "contributes": {"themes": ["themes/*.hiq-theme"]}}`)
 		if err := os.MkdirAll(filepath.Join(root, "themes"), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.Symlink(filepath.Join(outside, "evil.fairpeer-theme"), filepath.Join(root, "themes", "evil.fairpeer-theme")); err != nil {
+		if err := os.Symlink(filepath.Join(outside, "evil.hiq-theme"), filepath.Join(root, "themes", "evil.hiq-theme")); err != nil {
 			t.Skipf("symlinks unavailable: %v", err)
 		}
 		if _, _, err := ParseDir(root); err == nil || !strings.Contains(err.Error(), "escapes the plugin root through a symlink") {
@@ -457,7 +457,7 @@ func TestManifestV2PathSafety(t *testing.T) {
 	})
 	t.Run("non-regular theme rejected", func(t *testing.T) {
 		root := t.TempDir()
-		writeV2Plugin(t, root, `{"apiVersion": "fairpeer.io/plugin/v2", "name": "themedir", "contributes": {"themes": ["themes"]}}`)
+		writeV2Plugin(t, root, `{"apiVersion": "hiq.io/plugin/v2", "name": "themedir", "contributes": {"themes": ["themes"]}}`)
 		if err := os.MkdirAll(filepath.Join(root, "themes"), 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -468,12 +468,12 @@ func TestManifestV2PathSafety(t *testing.T) {
 	t.Run("missing paths are warnings not failures", func(t *testing.T) {
 		root := t.TempDir()
 		writeV2Plugin(t, root, `{
-  "apiVersion": "fairpeer.io/plugin/v2",
+  "apiVersion": "hiq.io/plugin/v2",
   "name": "missing-demo",
   "contributes": {
     "skills": ["no-such-skills"],
     "prompts": ["no-such-prompts"],
-    "themes": ["themes/*.fairpeer-theme"]
+    "themes": ["themes/*.hiq-theme"]
   }
 }`)
 		pkg, warnings, err := ParseDir(root)
@@ -481,7 +481,7 @@ func TestManifestV2PathSafety(t *testing.T) {
 			t.Fatalf("ParseDir with missing paths: %v", err)
 		}
 		joined := strings.Join(warnings, "\n")
-		for _, want := range []string{`skills path "no-such-skills" does not exist`, `prompts path "no-such-prompts" does not exist`, `theme glob "themes/*.fairpeer-theme" matched no files`} {
+		for _, want := range []string{`skills path "no-such-skills" does not exist`, `prompts path "no-such-prompts" does not exist`, `theme glob "themes/*.hiq-theme" matched no files`} {
 			if !strings.Contains(joined, want) {
 				t.Fatalf("warnings missing %q:\n%s", want, joined)
 			}
@@ -497,7 +497,7 @@ func TestManifestV2DescribeRendersPromptsThemesRuntime(t *testing.T) {
 	root := filepath.Join(home, "plugins", "example")
 	writeV2Plugin(t, root, v2ExampleManifest)
 	writeV2ExampleAssets(t, root)
-	if err := Upsert(home, InstalledPlugin{Name: "example", Root: "plugins/example", Version: "1.0.0", ManifestKind: "fairpeer", Enabled: true}); err != nil {
+	if err := Upsert(home, InstalledPlugin{Name: "example", Root: "plugins/example", Version: "1.0.0", ManifestKind: "hiq", Enabled: true}); err != nil {
 		t.Fatal(err)
 	}
 

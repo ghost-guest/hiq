@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 func TestExplainError(t *testing.T) {
@@ -14,8 +14,8 @@ func TestExplainError(t *testing.T) {
 		t.Error("nil should stay nil")
 	}
 
-	auth := explainError(&provider.AuthError{Provider: "test-provider", KeyEnv: "FAIRPEER_API_KEY", Status: 401})
-	if !strings.Contains(auth.Error(), "FAIRPEER_API_KEY") {
+	auth := explainError(&provider.AuthError{Provider: "test-provider", KeyEnv: "HIQ_API_KEY", Status: 401})
+	if !strings.Contains(auth.Error(), "HIQ_API_KEY") {
 		t.Errorf("401 should name the key env: %q", auth.Error())
 	}
 

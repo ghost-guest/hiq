@@ -1,4 +1,4 @@
-// This file is a fairpeer-specific addition to the agent package. Everything
+// This file is a hiq-specific addition to the agent package. Everything
 // else in this package predates or is ported from upstream Reasonix; keeping the
 // extra status surface in its own file means a future re-port (a straight file
 // copy) never overwrites it.
@@ -6,16 +6,16 @@ package agent
 
 // ContextMaintenanceSnapshot is a read-only view of the context the agent will
 // hand to the provider, so callers (the guardian, the desktop Context Panel) can
-// tell whether a step altered it. The field set is fairpeer's projection of the
+// tell whether a step altered it. The field set is hiq's projection of the
 // upstream Reasonix snapshot: upstream derives ProjectionVersion from its
-// projection sidecar, fairpeer from the session rewrite version, which is bumped
+// projection sidecar, hiq from the session rewrite version, which is bumped
 // on exactly the same events — a compaction fold, a rewind truncation, a
 // guardian merge.
 type ContextMaintenanceSnapshot struct {
 	// CanonicalTokens estimates the token size of the full message log.
 	CanonicalTokens int
 	// ProjectedTokens estimates what actually reaches the provider. Equal to
-	// CanonicalTokens in fairpeer: the whole log is sent, with only role
+	// CanonicalTokens in hiq: the whole log is sent, with only role
 	// coalescing applied for strict-alternating providers.
 	ProjectedTokens int
 	// SummaryTokens estimates the size of the rolling compaction summary, or 0

@@ -8,9 +8,9 @@ import (
 // TestMain isolates os.UserConfigDir() for the whole package. On Windows it
 // reads %AppData%, which the per-test HOME / XDG_CONFIG_HOME overrides do not
 // cover — without this, tests that persist desktop state (saveWorkspace,
-// session/cache writes) leak into the developer's real fairpeer config dir.
+// session/cache writes) leak into the developer's real hiq config dir.
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "fairpeer-desktop-test")
+	dir, err := os.MkdirTemp("", "hiq-desktop-test")
 	if err != nil {
 		os.Exit(1)
 	}

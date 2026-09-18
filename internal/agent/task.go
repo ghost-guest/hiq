@@ -8,11 +8,11 @@ import (
 	"io"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/diff"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/jobs"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/diff"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/jobs"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // DefaultTaskSystemPrompt steers a sub-agent toward focused, terse delivery —
@@ -332,7 +332,7 @@ func (t *TaskTool) prepareTranscriptRun(subReg *tool.Registry, modelRef, effortR
 	if t.transcripts == nil {
 		return nil, fmt.Errorf("subagent transcript store is required")
 	}
-	// Headless runs (e.g. `fairpeer run`) never mint a session path, so there is
+	// Headless runs (e.g. `hiq run`) never mint a session path, so there is
 	// no parent session to own a transcript. Run the sub-agent ephemerally —
 	// exactly as before persisted transcripts existed — instead of failing the
 	// call. Continuation/fork need a persisted owner, so they error here.

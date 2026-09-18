@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/bot"
-	"github.com/zzycxz/fairpeer/internal/bot/feishu"
-	"github.com/zzycxz/fairpeer/internal/bot/telegram"
-	"github.com/zzycxz/fairpeer/internal/bot/weixin"
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/bot"
+	"github.com/zzycxz/hiq/internal/bot/feishu"
+	"github.com/zzycxz/hiq/internal/bot/telegram"
+	"github.com/zzycxz/hiq/internal/bot/weixin"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 type BotConnectionCredentialView struct {
@@ -291,18 +291,18 @@ func (a *App) TestBotConnection(id, target string) (BotConnectionDiagnostic, err
 		feishuCfg.Domain = firstNonEmptyBot(conn.Domain, feishuCfg.Domain)
 		feishuCfg.AppID = firstNonEmptyBot(conn.Credential.AppID, feishuCfg.AppID)
 		feishuCfg.AppSecretEnv = firstNonEmptyBot(conn.Credential.AppSecretEnv, feishuCfg.AppSecretEnv)
-		result, err = feishu.SendText(ctx, feishuCfg, target, "fairpeer bot 测试消息：连接和发送链路可用。")
+		result, err = feishu.SendText(ctx, feishuCfg, target, "hiq bot 测试消息：连接和发送链路可用。")
 	case "weixin":
 		weixinCfg := cfg.Bot.Weixin
 		weixinCfg.Enabled = true
 		weixinCfg.AccountID = firstNonEmptyBot(conn.Credential.AccountID, weixinCfg.AccountID)
 		weixinCfg.TokenEnv = firstNonEmptyBot(conn.Credential.TokenEnv, weixinCfg.TokenEnv)
-		result, err = weixin.SendText(ctx, weixinCfg, target, "fairpeer bot 测试消息：连接和发送链路可用。")
+		result, err = weixin.SendText(ctx, weixinCfg, target, "hiq bot 测试消息：连接和发送链路可用。")
 	case "telegram":
 		telegramCfg := cfg.Bot.Telegram
 		telegramCfg.Enabled = true
 		telegramCfg.TokenEnv = firstNonEmptyBot(conn.Credential.TokenEnv, telegramCfg.TokenEnv)
-		result, err = telegram.SendText(ctx, telegramCfg, target, "fairpeer bot 测试消息：连接和发送链路可用。")
+		result, err = telegram.SendText(ctx, telegramCfg, target, "hiq bot 测试消息：连接和发送链路可用。")
 	}
 	if err != nil {
 		return BotConnectionDiagnostic{ID: conn.ID, Label: conn.Label, Status: "error", Message: err.Error()}, nil

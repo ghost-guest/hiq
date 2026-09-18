@@ -5,7 +5,7 @@ package agent
 import (
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // Session holds the conversation history for one task. The run loop (one turn at

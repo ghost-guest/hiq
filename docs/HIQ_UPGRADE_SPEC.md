@@ -1,10 +1,10 @@
-# Fairpeer 编码体验升级 · 总规格书（Consolidated Spec）
+# Hiq 编码体验升级 · 总规格书（Consolidated Spec）
 
 > **版本**: v1.0 ｜ **基线**: `feat/mindmap-read-loop`（2026-08-21）｜ **状态**: 规划中
 > **合流来源（三方，全部经源码交叉验证）**:
-> 1. **本地方案**（ZCode 深度调研）— `FAIRPEER_UPGRADE_PLAN.md` + `fairpeer_vs_codex_pi_upgrade_plan.md`：三轮全栈调研（展示层 / 交互与会话工程 / 三 profile 传播），54 项问题、49 任务（合流定稿后为 58/51）
+> 1. **本地方案**（ZCode 深度调研）— `HIQ_UPGRADE_PLAN.md` + `hiq_vs_codex_pi_upgrade_plan.md`：三轮全栈调研（展示层 / 交互与会话工程 / 三 profile 传播），54 项问题、49 任务（合流定稿后为 58/51）
 > 2. **Gemini 方案**（核心架构重构 spec，用户粘贴）— 循环内核视角：全局写锁、主循环耦合、wire 断链、参数黑盒四个缺陷 + 主循环中间件化重构蓝图
-> 3. **MiMo 方案**（`fairpeer-codex-pi-upgrade-spec.md`）— 前端 UX 视角：diff 显示 / 审批 UX / 进度面板 / 流式输出四块，含 UI 线框与验收清单
+> 3. **MiMo 方案**（`hiq-codex-pi-upgrade-spec.md`）— 前端 UX 视角：diff 显示 / 审批 UX / 进度面板 / 流式输出四块，含 UI 线框与验收清单
 > **红线**（承 MiMo，三方一致）：功能零缺失；改版后所有现有入口仍可达；领先资产零退化。
 > 对标参照物：`Swarm-OS/codex`（OpenAI Codex CLI）、`Swarm-OS/pi`（Pi Agent Harness）。
 
@@ -59,7 +59,7 @@
 
 ## 四、问题总账（58 项）
 
-严重度：**S0** 断链/信任｜**S1** 用户感知主战场｜**S2** 工程竞争力｜**S3/backlog** 按需。完整证据链见 `FAIRPEER_UPGRADE_PLAN.md` 第二节，此处为合流定稿版。
+严重度：**S0** 断链/信任｜**S1** 用户感知主战场｜**S2** 工程竞争力｜**S3/backlog** 按需。完整证据链见 `HIQ_UPGRADE_PLAN.md` 第二节，此处为合流定稿版。
 
 ### A. 断链与死代码（S0，9 项）
 
@@ -342,7 +342,7 @@ type wireFileChange struct {  // 与 MiMo WP-1.1 提案一致
 
 ## 附录 A：三方案条目溯源与处置
 
-### A.1 MiMo 方案（`fairpeer-codex-pi-upgrade-spec.md`，17 个 WP）
+### A.1 MiMo 方案（`hiq-codex-pi-upgrade-spec.md`，17 个 WP）
 
 | MiMo 编号 | 内容 | 处置 |
 |-----------|------|------|
@@ -376,20 +376,20 @@ type wireFileChange struct {  // 与 MiMo WP-1.1 提案一致
 | Phase 1 附带 | PreviewChange 异步化/延迟审批 | ⚠️ 性能关切成立（实为双算），但延迟方案破坏 checkpoint 依赖；正解=合并双算（0-1 注记） |
 | 资产清单 | steer 队列/stream recovery/cache_shape/checkpoint | ✅ 描述准确（stream recovery 描述修正了本地方案引述旧档的过时说法）；"OpGate=4 级鉴权"系概念混淆（已更正） |
 
-### A.3 本地方案（`FAIRPEER_UPGRADE_PLAN.md`，49 任务）
+### A.3 本地方案（`HIQ_UPGRADE_PLAN.md`，49 任务）
 
-全部保留为骨干（阶段 0-5 任务主体）；据 Gemini 修正 wire 归因与 stream recovery 描述；据 MiMo 新增 2-7/5-7 并扩充 0-4/1-2/1-5 验收细节。证据链与三轮调研记录见 `fairpeer_vs_codex_pi_upgrade_plan.md`（一~九节）与 `FAIRPEER_UPGRADE_PLAN.md` 第十节。
+全部保留为骨干（阶段 0-5 任务主体）；据 Gemini 修正 wire 归因与 stream recovery 描述；据 MiMo 新增 2-7/5-7 并扩充 0-4/1-2/1-5 验收细节。证据链与三轮调研记录见 `hiq_vs_codex_pi_upgrade_plan.md`（一~九节）与 `HIQ_UPGRADE_PLAN.md` 第十节。
 
 ## 附录 B：文档体系
 
 | 文档 | 角色 |
 |------|------|
-| **本档 `FAIRPEER_UPGRADE_SPEC.md`** | 唯一执行规格（合流定稿） |
-| `FAIRPEER_UPGRADE_PLAN.md` | 本地方案全量细节（问题证据、三轮调研沉淀、外部方案验证记录） |
-| `fairpeer_vs_codex_pi_upgrade_plan.md` | 对标论证与证据来源（codex/pi 实现细节索引） |
-| `fairpeer-codex-pi-upgrade-spec.md` | MiMo 原档（前端 UX 视角，线框图与色值参考） |
+| **本档 `HIQ_UPGRADE_SPEC.md`** | 唯一执行规格（合流定稿） |
+| `HIQ_UPGRADE_PLAN.md` | 本地方案全量细节（问题证据、三轮调研沉淀、外部方案验证记录） |
+| `hiq_vs_codex_pi_upgrade_plan.md` | 对标论证与证据来源（codex/pi 实现细节索引） |
+| `hiq-codex-pi-upgrade-spec.md` | MiMo 原档（前端 UX 视角，线框图与色值参考） |
 | Gemini Refactoring Spec（用户粘贴） | 循环内核视角原始档（未落盘，结论已收录附录 A.2） |
-| `fairpeer_vs_pi_remaining_gaps.md` / `fix_tool_visibility_plan.md` | 历史档（欠账已收编：P2→0-2，P3→3-1/3-2） |
+| `hiq_vs_pi_remaining_gaps.md` / `fix_tool_visibility_plan.md` | 历史档（欠账已收编：P2→0-2，P3→3-1/3-2） |
 
 ## 附录 C：自查记录（2026-08-21，v1.0→v1.1）
 
@@ -403,7 +403,7 @@ type wireFileChange struct {  // 与 MiMo WP-1.1 提案一致
 5. TUI 输入历史存在（`chat_tui.go:60/493`）、`permission.go:553 IsExternal`、`document.go:583/607` 返回、`tools.ts:34/60/134` 三函数、`transport_stdio.go:417` 丢弃注释、`checkpoint.go:8-10` Preview 注释、`backup.go:189` diff 复用、`ProposalCenter.tsx:39/52` 原生 confirm —— 全部属实。
 
 **本轮发现并已修正的错误**：
-1. **包路径错误**：证据链名单真实位置是 `internal/evidence/evidence.go:570`（isWriterTool/isReaderTool），此前三处文档误写 `internal/agent/evidence.go`（子代理报告笔误被传播）——已全部修正（`FAIRPEER_UPGRADE_PLAN.md` 的 C6 问题行与 2-6 任务行、`fairpeer_vs_codex_pi_upgrade_plan.md` 九.3 卡点 2）；
+1. **包路径错误**：证据链名单真实位置是 `internal/evidence/evidence.go:570`（isWriterTool/isReaderTool），此前三处文档误写 `internal/agent/evidence.go`（子代理报告笔误被传播）——已全部修正（`HIQ_UPGRADE_PLAN.md` 的 C6 问题行与 2-6 任务行、`hiq_vs_codex_pi_upgrade_plan.md` 九.3 卡点 2）；
 2. **算术错误**：plan 档里程碑总量误记"任务 42 个/问题 ~50 项"，实际枚举为 **49 任务/54 问题**——已修正并注明本档定稿数字 58/51；
 3. **来源计数**：本档合流来源行误将本地方案记为"58 项问题"（58 为合流后总数，本地方案为 54）——已修正。
 

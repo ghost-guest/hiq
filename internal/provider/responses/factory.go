@@ -3,8 +3,8 @@ package responses
 import (
 	"fmt"
 
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // newFromConfig adapts a resolved provider.Config into the Responses client.

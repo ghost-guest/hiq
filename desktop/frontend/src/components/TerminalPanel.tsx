@@ -8,7 +8,7 @@
 //
 // R4 §10.5: 设备页签 — device terminal tabs (DeviceTerminal/xterm) live in the
 // SAME strip, visually distinct (route badge + REC dot), added via the
-// `openDevice` prop (App routes the "fairpeer:netdev-terminal" event here).
+// `openDevice` prop (App routes the "hiq:netdev-terminal" event here).
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ChevronDown, Eraser, MessageSquare, Plus, Route, TerminalSquare, X } from "lucide-react";
@@ -18,7 +18,7 @@ import type { WireEvent, WireTool } from "../lib/types";
 import { getScopedItem, setScopedItem } from "../lib/profileScopedStorage";
 import { DeviceTerminal } from "./DeviceTerminal";
 
-const TERMINAL_OPEN_KEY = "fairpeer.terminalOpen";
+const TERMINAL_OPEN_KEY = "hiq.terminalOpen";
 const MAX_LINES = 500;
 const MAX_TERMINALS = 8;
 const SESSION_TAB_ID = "__side_session__";
@@ -79,7 +79,7 @@ export function TerminalPanel({
   // Bottom axis's second pane (副会话): rendered inside a pinned tab
   // (pane-system spec §3.5). Absent → terminal-only bar.
   sessionPane?: ReactNode;
-  // 设备页签入口（§10.5）: App bumps `seq` per "fairpeer:netdev-terminal"
+  // 设备页签入口（§10.5）: App bumps `seq` per "hiq:netdev-terminal"
   // event; the panel opens (or reactivates) that device's tab.
   openDevice?: { device: string; seq: number };
 }) {

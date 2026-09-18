@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/fileutil"
-	fileencoding "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
-	"github.com/zzycxz/fairpeer/internal/nilutil"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/fileutil"
+	fileencoding "github.com/zzycxz/hiq/internal/fileutil/encoding"
+	"github.com/zzycxz/hiq/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // PolicyPrompt returns the guardian safety policy as a string. The policy is

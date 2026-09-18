@@ -114,12 +114,12 @@ func TestSendWithRetryAuthError(t *testing.T) {
 		calls++
 		return statusResp(401, nil), nil
 	})}
-	_, err := SendWithRetry(context.Background(), cl, SendOptions{ProvName: "test-provider", KeyEnv: "FAIRPEER_API_KEY"}, newDummyReq)
+	_, err := SendWithRetry(context.Background(), cl, SendOptions{ProvName: "test-provider", KeyEnv: "HIQ_API_KEY"}, newDummyReq)
 	if calls != 1 {
 		t.Errorf("401 retried (%d calls), should fail fast", calls)
 	}
 	var authErr *AuthError
-	if !errors.As(err, &authErr) || authErr.KeyEnv != "FAIRPEER_API_KEY" {
+	if !errors.As(err, &authErr) || authErr.KeyEnv != "HIQ_API_KEY" {
 		t.Errorf("want *AuthError naming the key env, got %v", err)
 	}
 }

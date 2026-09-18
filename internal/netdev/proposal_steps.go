@@ -21,7 +21,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // absentMarker in step.Backup means the remote file did not exist before the
@@ -222,7 +222,7 @@ func (m *Manager) execK8sApply(ctx context.Context, s *ProposalStep) error {
 		return fmt.Errorf("backup GET %s: status %d: %.200s", ref.Path, code, live)
 	}
 
-	q := ref.Path + "?fieldManager=fairpeer-proposal&force=true"
+	q := ref.Path + "?fieldManager=hiq-proposal&force=true"
 	code, out, err := m.kubeRequest(ctx, s.Device, http.MethodPatch, q, "application/apply-patch+yaml", []byte(s.YAML))
 	if err != nil {
 		return fmt.Errorf("apply PATCH %s: %w", ref.Path, err)

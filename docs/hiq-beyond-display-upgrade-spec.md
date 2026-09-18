@@ -1,9 +1,9 @@
-# Fairpeer 对标 Codex / Pi — 展示层之外的深层差距与提升规划
+# Hiq 对标 Codex / Pi — 展示层之外的深层差距与提升规划
 
 > **状态**: 规划中
 > **基线**: `feat/mindmap-read-loop` 分支 (2026-08-21)
 > **范围**: 展示层之外的架构级能力差距 — 扩展系统、子Agent隔离、MCP客户端、会话生命周期、沙箱安全、文本处理、键盘系统等
-> **前序文档**: `fairpeer-codex-pi-upgrade-spec.md`（聚焦 Diff/审批/进度的显示层升级）
+> **前序文档**: `hiq-codex-pi-upgrade-spec.md`（聚焦 Diff/审批/进度的显示层升级）
 > **对标来源**:
 > - **Codex** — `codex-rs/tui` (Rust ratatui) — 重点分析 `subagents.rs`, `event_dispatch.rs`, `approval_overlay.rs`, `bottom_pane/mod.rs`
 > - **Pi** — `pi/packages` (TypeScript) — 重点分析 `tui.ts`, `session.ts`, `types.ts`, `tool-execution.ts`
@@ -14,7 +14,7 @@
 
 前一份 spec 聚焦"看到什么"（Diff、审批、进度），本文档聚焦"能做什么"——架构级能力差距。
 
-| # | 能力维度 | Fairpeer 现状 | Codex 做法 | Pi 做法 | 差距等级 |
+| # | 能力维度 | Hiq 现状 | Codex 做法 | Pi 做法 | 差距等级 |
 |---|----------|--------------|-----------|---------|----------|
 | 1 | 扩展系统 | Go plugin（后端） | Rust 模块 | `ExtensionAPI` (TS) | 🔴 严重 |
 | 2 | 子Agent 隔离 | 无隔离 | 3 种隔离模式 | 无 | 🔴 严重 |
@@ -33,9 +33,9 @@
 
 ### 2.1 扩展系统（差距等级：🔴 严重）
 
-#### Fairpeer 现状
+#### Hiq 现状
 
-Fairpeer 的工具系统是**纯后端硬编码**：
+Hiq 的工具系统是**纯后端硬编码**：
 
 ```
 internal/tool/registry.go → tool.Registry → 工具注册在 Go 编译时完成
@@ -88,7 +88,7 @@ pub(crate) trait HistoryCell: std::fmt::Debug {
 
 #### 差距
 
-| 特性 | Fairpeer | Codex | Pi |
+| 特性 | Hiq | Codex | Pi |
 |------|----------|-------|-----|
 | 前端扩展点 | ❌ | Rust trait | `ExtensionAPI` |
 | 自定义工具渲染 | ❌ 硬编码 | ✅ `HistoryCell` | ✅ `registerTool` |
@@ -129,9 +129,9 @@ const registry = {
 
 ### 2.2 子Agent 隔离（差距等级：🔴 严重）
 
-#### Fairpeer 现状
+#### Hiq 现状
 
-Fairpeer 有 `task` 和 `parallel_tasks` 工具，子Agent 在**同一进程**中运行：
+Hiq 有 `task` 和 `parallel_tasks` 工具，子Agent 在**同一进程**中运行：
 
 ```go
 // internal/agent/parallel_tasks.go
@@ -164,7 +164,7 @@ pub(crate) enum SubAgentIsolationMode {
 
 #### 差距
 
-| 特性 | Fairpeer | Codex |
+| 特性 | Hiq | Codex |
 |------|----------|-------|
 | 隔离模式 | ❌ 无 | ✅ 3 种 |
 | Git worktree | ❌ | ✅ 并行开发 |
@@ -215,9 +215,9 @@ func (d *DockerSandbox) Run(command string, opts RunOpts) (Output, error) {
 
 ### 2.3 MCP 客户端（差距等级：🟡 中等）
 
-#### Fairpeer 现状
+#### Hiq 现状
 
-Fairpeer 有 MCP 支持，但范围有限：
+Hiq 有 MCP 支持，但范围有限：
 
 ```go
 // internal/builtinmcp/builtinmcp.go — 仅 Context7
@@ -274,7 +274,7 @@ fn render_mcp_status(connections: &[McpConnection]) -> String;
 
 #### 差距
 
-| 特性 | Fairpeer | Codex |
+| 特性 | Hiq | Codex |
 |------|----------|-------|
 | 内置 MCP 服务器 | Context7 only | 多个 |
 | 传输协议 | stdio | stdio + http + sse |
@@ -324,9 +324,9 @@ type SSETransport struct {
 
 ### 2.4 会话生命周期（差距等级：🟡 中等）
 
-#### Fairpeer 现状
+#### Hiq 现状
 
-Fairpeer 的会话管理：
+Hiq 的会话管理：
 
 ```typescript
 // useController.ts
@@ -399,7 +399,7 @@ getDefaultThread()           // 获取默认线程
 
 #### 差距
 
-| 特性 | Fairpeer | Codex | Pi |
+| 特性 | Hiq | Codex | Pi |
 |------|----------|-------|-----|
 | 会话持久化 | ✅ | ✅ | ✅ |
 | 会话恢复 | ✅ | ✅ | ✅ |
@@ -440,7 +440,7 @@ interface SessionMeta {
 
 ### 2.5 沙箱安全（差距等级：🔴 严重）
 
-#### Fairpeer 现状
+#### Hiq 现状
 
 **无沙箱**。bash 工具直接在宿主机执行：
 
@@ -485,7 +485,7 @@ enum SandboxMode {
 
 #### 差距
 
-| 特性 | Fairpeer | Codex |
+| 特性 | Hiq | Codex |
 |------|----------|-------|
 | 文件系统沙箱 | ❌ | ✅ 白名单 |
 | 网络沙箱 | ❌ | ✅ host/port 级 |
@@ -528,7 +528,7 @@ func (n *NetPolicy) CheckConnection(host string, port int) error {
 
 ### 2.6 权限模型（差距等级：🟡 中等）
 
-#### Fairpeer 现状
+#### Hiq 现状
 
 ```typescript
 // useController.ts
@@ -563,7 +563,7 @@ struct PermissionProfile {
 
 #### 差距
 
-| 特性 | Fairpeer | Codex |
+| 特性 | Hiq | Codex |
 |------|----------|-------|
 | 审批类型 | 通用 | 4 种专用 |
 | 路径级权限 | ❌ | ✅ |
@@ -578,7 +578,7 @@ struct PermissionProfile {
 
 ### 2.7 文本处理（差距等级：🟡 中等）
 
-#### Fairpeer 现状
+#### Hiq 现状
 
 使用标准 `<textarea>` + CodeMirror：
 
@@ -645,7 +645,7 @@ const vimKeybindings = {
 
 #### 差距
 
-| 特性 | Fairpeer | Codex | Pi |
+| 特性 | Hiq | Codex | Pi |
 |------|----------|-------|-----|
 | CJK 分词 | ❌ | 终端原生 | ✅ `Intl.Segmenter` |
 | Paste marker | ❌ | ❌ | ✅ 原子标记 |
@@ -692,7 +692,7 @@ const keybindingProfiles: Record<KeyProfile, KeyBindingMap> = {
 
 ### 2.8 键盘系统（差距等级：🟡 中等）
 
-#### Fairpeer 现状
+#### Hiq 现状
 
 最小快捷键集：
 
@@ -737,7 +737,7 @@ fn render_shortcut_hints(context: KeymapContext) -> Vec<ShortcutHint>;
 
 #### 差距
 
-| 特性 | Fairpeer | Codex |
+| 特性 | Hiq | Codex |
 |------|----------|-------|
 | 快捷键数量 | ~10 | ~50+ |
 | 上下文感知 | ❌ | ✅ |
@@ -773,7 +773,7 @@ export function getKeybinding(context: string, event: KeyboardEvent): KeyBinding
 
 ### 2.9 Token 可视化（差距等级：🟡 中等）
 
-#### Fairpeer 现状
+#### Hiq 现状
 
 ```typescript
 // useController.ts
@@ -822,7 +822,7 @@ fn check_context_usage(used: u32, window: u32) -> Option<ContextWarning> {
 
 #### 差距
 
-| 特性 | Fairpeer | Codex |
+| 特性 | Hiq | Codex |
 |------|----------|-------|
 | Token 计数 | ✅ | ✅ |
 | 速率限制 | ❌ | ✅ |
@@ -853,7 +853,7 @@ function TokenUsageBar({ used, window }: { used: number; window: number }) {
 
 ### 2.10 渲染架构（差距等级：🟢 轻微）
 
-#### Fairpeer 现状
+#### Hiq 现状
 
 标准 React 组件：
 
@@ -901,7 +901,7 @@ box.addChild(new Text("World", 0, 1));
 
 #### 差距
 
-Fairpeer 的 React 渲染已经足够好，差距不大。主要改进点：
+Hiq 的 React 渲染已经足够好，差距不大。主要改进点：
 - 组件拆分（SettingsPanel 5,342 行、Composer 2,229 行）
 - 纯搬移不改逻辑（已在 ui-redesign-spec 中规划）
 
@@ -931,12 +931,12 @@ Fairpeer 的 React 渲染已经足够好，差距不大。主要改进点：
 
 | Spec | 聚焦领域 | 状态 |
 |------|----------|------|
-| `fairpeer-codex-pi-upgrade-spec.md` | 显示层：Diff、审批、进度、流式 | 规划中 |
-| `fairpeer-beyond-display-upgrade-spec.md` | 架构层：扩展、隔离、MCP、沙箱、文本 | 规划中（本文档） |
+| `hiq-codex-pi-upgrade-spec.md` | 显示层：Diff、审批、进度、流式 | 规划中 |
+| `hiq-beyond-display-upgrade-spec.md` | 架构层：扩展、隔离、MCP、沙箱、文本 | 规划中（本文档） |
 
 两份 spec 互补：
 - 前一份解决"看到什么"——让用户在 UI 中看到更好的代码变更和进度信息
-- 本文档解决"能做什么"——让 Fairpeer 具备 Codex/Pi 级的架构能力
+- 本文档解决"能做什么"——让 Hiq 具备 Codex/Pi 级的架构能力
 
 **建议实施顺序**：
 1. 先做前一份 spec 的 WP-1.1（审批内嵌 Diff）+ WP-1.2（文件摘要）— 最高 ROI
@@ -948,7 +948,7 @@ Fairpeer 的 React 渲染已经足够好，差距不大。主要改进点：
 
 ## 五、附录：关键源码索引
 
-| 能力 | Fairpeer 源码 | Codex 参考 | Pi 参考 |
+| 能力 | Hiq 源码 | Codex 参考 | Pi 参考 |
 |------|--------------|-----------|---------|
 | 工具注册 | `internal/tool/registry.go` | `codex-rs/tui/src/history_cell/` | `pi/packages/coding-agent/src/agent/types.ts` |
 | 子Agent | `internal/agent/parallel_tasks.go` | `codex-rs/tui/src/chatwidget/subagents.rs` | N/A |

@@ -8,7 +8,7 @@ package runtime
 //
 // The downloaded uv is ~15MB — a single static binary with no dependencies.
 // It can install Python (`uv python install`), manage venvs (`uv venv`), and
-// run tools (`uvx`). By bundling or auto-installing just uv, FairPeer gains
+// run tools (`uvx`). By bundling or auto-installing just uv, Hiq gains
 // the full Python ecosystem without shipping Python itself.
 
 import (
@@ -39,11 +39,11 @@ const uvRepo = "astral-sh/uv"
 func uvCacheDir() string {
 	cache, err := os.UserCacheDir()
 	if err != nil || cache == "" {
-		// Fallback to home/.fairpeer/cache.
+		// Fallback to home/.hiq/cache.
 		home, _ := os.UserHomeDir()
-		return filepath.Join(home, ".fairpeer", "cache", "uv", UVVersion)
+		return filepath.Join(home, ".hiq", "cache", "uv", UVVersion)
 	}
-	return filepath.Join(cache, "fairpeer", "uv", UVVersion)
+	return filepath.Join(cache, "hiq", "uv", UVVersion)
 }
 
 // Install downloads uv to the cache directory. Safe to call from a goroutine

@@ -30,13 +30,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/docconv"
-	"github.com/zzycxz/fairpeer/internal/proc"
-	runtimepkg "github.com/zzycxz/fairpeer/internal/runtime"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/docconv"
+	"github.com/zzycxz/hiq/internal/proc"
+	runtimepkg "github.com/zzycxz/hiq/internal/runtime"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
-// pptVisionDebugLog appends a timestamped line to ~/.fairpeer/ppt-vision-debug.log
+// pptVisionDebugLog appends a timestamped line to ~/.hiq/ppt-vision-debug.log
 // so the image→PPT pipeline can be diagnosed end-to-end without relying on slog
 // routing (which may go to stderr and be lost when the app is double-clicked).
 // Best-effort: errors silently dropped. Remove/toggle off once the pipeline is stable.
@@ -45,7 +45,7 @@ func pptVisionDebugLog(format string, args ...any) {
 	if err != nil {
 		return
 	}
-	path := filepath.Join(home, ".fairpeer", "ppt-vision-debug.log")
+	path := filepath.Join(home, ".hiq", "ppt-vision-debug.log")
 	msg := fmt.Sprintf(format, args...)
 	line := fmt.Sprintf("[%s] %s\n", time.Now().Format("15:04:05.000"), msg)
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
@@ -482,7 +482,7 @@ var referenceAttachmentExts = map[string]bool{
 	".pdf": true,
 }
 
-// pptReferenceAttachment scans input for an @.fairpeer/attachments/<file> token
+// pptReferenceAttachment scans input for an @.hiq/attachments/<file> token
 // whose extension is an image/PDF, AND whose text shows PPT intent. Returns the
 // attachment path (relative, without the leading @) and true when both match —
 // the signal that PreparePPTReference should run before the message reaches the
@@ -491,7 +491,7 @@ func pptReferenceAttachment(input string) (string, bool) {
 	if !hasPPTIntent(strings.ToLower(input)) {
 		return "", false
 	}
-	const prefix = "@.fairpeer/attachments/"
+	const prefix = "@.hiq/attachments/"
 	search := input
 	for {
 		idx := strings.Index(search, prefix)
@@ -512,7 +512,7 @@ func pptReferenceAttachment(input string) (string, bool) {
 			continue
 		}
 		if referenceAttachmentExts[strings.ToLower(filepath.Ext(name))] {
-			return ".fairpeer/attachments/" + name, true
+			return ".hiq/attachments/" + name, true
 		}
 	}
 }
@@ -520,7 +520,7 @@ func pptReferenceAttachment(input string) (string, bool) {
 // localPathReference scans input for an ABSOLUTE local file path with an
 // image/PDF extension — the "user pasted a path instead of uploading the file"
 // form (e.g. 把 C:\Users\me\Desktop\shot.png 转成PPT). pptReferenceAttachment only
-// recognizes @.fairpeer/attachments tokens, so without this the message would
+// recognizes @.hiq/attachments tokens, so without this the message would
 // bypass the pre-analysis gate entirely and ppt-auto would run with no
 // reference-style.json at all (the model improvising via image_understand).
 // Returns the first path that EXISTS on disk (symlinks rejected, mirroring
@@ -600,11 +600,11 @@ func clearStaleReferenceFilesIn(home string) {
 	if home == "" {
 		return
 	}
-	fp := filepath.Join(home, ".fairpeer", "reference-style.json")
+	fp := filepath.Join(home, ".hiq", "reference-style.json")
 	if err := os.Remove(fp); err == nil {
 		pptVisionDebugLog("cleared stale reference file: %s", fp)
 	}
-	pd := filepath.Join(home, ".fairpeer", "pdf-pages")
+	pd := filepath.Join(home, ".hiq", "pdf-pages")
 	if err := os.RemoveAll(pd); err == nil {
 		pptVisionDebugLog("cleared stale pdf-pages dir: %s", pd)
 	}

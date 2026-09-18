@@ -8,10 +8,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // newTestChatTUIWithMessages builds a chatTUI wired to a controller whose
@@ -169,7 +169,7 @@ func TestExportWritesMarkdownAndStripsReferencedContext(t *testing.T) {
 
 	checks := map[string]bool{
 		"system prompt excluded": !strings.Contains(got, "system prompt should not export"),
-		"has title":              strings.HasPrefix(got, "# fairpeer session"),
+		"has title":              strings.HasPrefix(got, "# hiq session"),
 		"user turn present":      strings.Contains(got, "## User"),
 		"assistant turn present": strings.Contains(got, "## Assistant") && strings.Contains(got, "hi there"),
 		// The wrapper header must be stripped; the user's actual text remains.

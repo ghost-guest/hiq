@@ -1,7 +1,7 @@
 Unicode true
 
 ####
-## fairpeer per-user NSIS installer.
+## hiq per-user NSIS installer.
 ##
 ## This file is COMMITTED and customized (Wails leaves an existing project.nsi
 ## untouched and only regenerates wails_tools.nsh). The customizations vs.
@@ -17,8 +17,8 @@ Unicode true
 ##      InstallLocation (HKCU\...\Uninstall\InstallLocation). When upgrading from
 ##      a build that did not write InstallLocation yet, .onInit falls back to the
 ##      old DisplayIcon path before using the default. Without this, every release
-##      forces the user back to %LOCALAPPDATA%\Programs\fairpeer even if they had
-##      moved the install to a different drive (e.g. D:\Tools\fairpeer); the silent
+##      forces the user back to %LOCALAPPDATA%\Programs\hiq even if they had
+##      moved the install to a different drive (e.g. D:\Tools\hiq); the silent
 ##      auto-updater would re-run with /S into the wrong dir, leaving the old
 ##      install orphaned.
 ##
@@ -75,16 +75,16 @@ ManifestDPIAware true
 
 Name "${INFO_PRODUCTNAME}"
 OutFile "..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the installer's file.
-!define FAIRPEER_DEFAULT_INSTALLDIR "$LOCALAPPDATA\Programs\${INFO_PRODUCTNAME}"
+!define HIQ_DEFAULT_INSTALLDIR "$LOCALAPPDATA\Programs\${INFO_PRODUCTNAME}"
 InstallDirRegKey HKCU "${UNINST_KEY}" "InstallLocation" # Reuse the previous install path on update; .onInit falls back to the default on first install.
-InstallDir "${FAIRPEER_DEFAULT_INSTALLDIR}" # Per-user install location (no admin rights required).
+InstallDir "${HIQ_DEFAULT_INSTALLDIR}" # Per-user install location (no admin rights required).
 ShowInstDetails show # This will always show the installation details.
 
 ####
 ## Per-user uninstaller registry (HKCU). Replaces wails.writeUninstaller /
 ## wails.deleteUninstaller, which write HKLM and would fail without admin rights.
 ####
-!macro fairpeer.writeUninstaller
+!macro hiq.writeUninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
     WriteRegStr HKCU "${UNINST_KEY}" "Publisher" "${INFO_COMPANYNAME}"
@@ -95,8 +95,8 @@ ShowInstDetails show # This will always show the installation details.
     WriteRegStr HKCU "${UNINST_KEY}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
     # Persist the resolved install path so a subsequent update picks it up
     # via InstallDirRegKey above. Without this, every release would force the
-    # user back to %LOCALAPPDATA%\Programs\fairpeer even if they had moved
-    # the install to a different drive (e.g. D:\Tools\fairpeer). The auto-
+    # user back to %LOCALAPPDATA%\Programs\hiq even if they had moved
+    # the install to a different drive (e.g. D:\Tools\hiq). The auto-
     # updater re-runs this installer with /S and trusts the persisted path,
     # so it has to be present before the silent re-install.
     WriteRegStr HKCU "${UNINST_KEY}" "InstallLocation" "$INSTDIR"
@@ -106,7 +106,7 @@ ShowInstDetails show # This will always show the installation details.
     WriteRegDWORD HKCU "${UNINST_KEY}" "EstimatedSize" "$0"
 !macroend
 
-!macro fairpeer.deleteUninstaller
+!macro hiq.deleteUninstaller
     Delete "$INSTDIR\uninstall.exe"
     DeleteRegKey HKCU "${UNINST_KEY}"
 !macroend
@@ -126,7 +126,7 @@ Function .onInit
    StrCmp $INSTDIR "" fallback done
 
 fallback:
-   StrCpy $INSTDIR "${FAIRPEER_DEFAULT_INSTALLDIR}"
+   StrCpy $INSTDIR "${HIQ_DEFAULT_INSTALLDIR}"
 done:
 FunctionEnd
 
@@ -145,7 +145,7 @@ Section
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
 
-    !insertmacro fairpeer.writeUninstaller
+    !insertmacro hiq.writeUninstaller
 SectionEnd
 
 Section "uninstall"
@@ -161,5 +161,5 @@ Section "uninstall"
     !insertmacro wails.unassociateFiles
     !insertmacro wails.unassociateCustomProtocols
 
-    !insertmacro fairpeer.deleteUninstaller
+    !insertmacro hiq.deleteUninstaller
 SectionEnd

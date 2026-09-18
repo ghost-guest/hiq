@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 // Store persists team projects to a single JSON file, mirroring

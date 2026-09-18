@@ -3,7 +3,7 @@ package sandbox
 import (
 	"context"
 
-	"github.com/zzycxz/fairpeer/internal/permissionpreset"
+	"github.com/zzycxz/hiq/internal/permissionpreset"
 )
 
 type permissionPresetContextKey struct{}

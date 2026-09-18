@@ -14,7 +14,7 @@
 
 import { getScopedItem, setScopedItem } from "./profileScopedStorage";
 
-const KEY = "fairpeer.composer.history";
+const KEY = "hiq.composer.history";
 const CAP = 200;
 
 export interface HistoryEntry {

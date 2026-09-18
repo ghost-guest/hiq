@@ -18,12 +18,12 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/boot"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/boot"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // --- WorkspaceTab -----------------------------------------------------------
@@ -1452,7 +1452,7 @@ func (a *App) ctrlByTabID(tabID string) tabSession {
 
 // ActiveTabID returns the currently focused tab's ID. mobilebridge maps the
 // linkpeer "default"/"" tab alias onto this so the phone joins the desktop's
-// active session without knowing fairpeer's UUID-style tab IDs.
+// active session without knowing hiq's UUID-style tab IDs.
 func (a *App) ActiveTabID() string {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
@@ -1648,9 +1648,9 @@ func desktopConfigDir() string {
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		home, _ := os.UserHomeDir()
-		return filepath.Join(home, ".fairpeer")
+		return filepath.Join(home, ".hiq")
 	}
-	return filepath.Join(dir, "fairpeer")
+	return filepath.Join(dir, "hiq")
 }
 
 func (a *App) saveTabsLocked() {
@@ -2120,7 +2120,7 @@ func topicTitlesPath(workspaceRoot string, profileKey ...string) string {
 	if workspaceRoot == "" {
 		return filepath.Join(desktopConfigDir(), "global", name)
 	}
-	return filepath.Join(workspaceRoot, ".fairpeer", name)
+	return filepath.Join(workspaceRoot, ".hiq", name)
 }
 
 func topicTitleSourcesPath(workspaceRoot string, profileKey ...string) string {
@@ -2128,7 +2128,7 @@ func topicTitleSourcesPath(workspaceRoot string, profileKey ...string) string {
 	if workspaceRoot == "" {
 		return filepath.Join(desktopConfigDir(), "global", name)
 	}
-	return filepath.Join(workspaceRoot, ".fairpeer", name)
+	return filepath.Join(workspaceRoot, ".hiq", name)
 }
 
 func topicCreatedAtsPath(workspaceRoot string, profileKey ...string) string {
@@ -2136,7 +2136,7 @@ func topicCreatedAtsPath(workspaceRoot string, profileKey ...string) string {
 	if workspaceRoot == "" {
 		return filepath.Join(desktopConfigDir(), "global", name)
 	}
-	return filepath.Join(workspaceRoot, ".fairpeer", name)
+	return filepath.Join(workspaceRoot, ".hiq", name)
 }
 
 func loadTopicTitles(workspaceRoot string, profileKey ...string) map[string]string {
@@ -3611,9 +3611,9 @@ func globalWorkspaceRoot() string {
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		home, _ := os.UserHomeDir()
-		return filepath.Join(home, ".fairpeer", "global-workspace")
+		return filepath.Join(home, ".hiq", "global-workspace")
 	}
-	return filepath.Join(dir, "fairpeer", "global-workspace")
+	return filepath.Join(dir, "hiq", "global-workspace")
 }
 
 func ensureGlobalWorkspaceRoot() (string, error) {

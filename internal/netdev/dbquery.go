@@ -22,7 +22,7 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // dbQueryRowCap / dbQueryCellCap bound one result set.

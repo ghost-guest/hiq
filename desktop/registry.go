@@ -15,11 +15,11 @@ import (
 //
 // Data sources (4-layer fallback):
 //  1. In-memory cache (populated on startup)
-//  2. Local cache file (~/.fairpeer/registry-cache.json, 12h TTL)
+//  2. Local cache file (~/.hiq/registry-cache.json, 12h TTL)
 //  3. models.dev remote registry (https://models.dev/api.json)
 //  4. Embedded snapshot (default_registry.json) — the ultimate fallback
 //
-// The embedded snapshot ships with the binary so FairPeer always has a working
+// The embedded snapshot ships with the binary so Hiq always has a working
 // vendor list offline. The remote fetch (Step 2) refreshes BaseURL/Models/
 // ContextWindow/Vision from models.dev; DisplayName/DocURL/role fields stay
 // from the snapshot (they don't change often and models.dev doesn't carry them).
@@ -33,13 +33,13 @@ const registryTTL = 12 * time.Hour
 // modelsDevURL is the remote registry endpoint.
 const modelsDevURL = "https://models.dev/api.json"
 
-// registryCacheFilename is the local cache file name (inside the fairpeer config dir).
+// registryCacheFilename is the local cache file name (inside the hiq config dir).
 const registryCacheFilename = "registry-cache.json"
 
 // trackedVendors maps models.dev vendor IDs to our provider names. Only these
 // vendors are pulled from the remote registry; everything else is ignored.
 // Multiple models.dev IDs can map to the same provider (e.g. alibaba-cn and
-// alibaba both enrich "qwen" — we prefer the CN endpoint since FairPeer targets
+// alibaba both enrich "qwen" — we prefer the CN endpoint since Hiq targets
 // Chinese users). Coding-plan variants map to their "-coding" counterparts.
 var trackedVendors = map[string]string{
 	// Direct vendors (prefer CN endpoints for Chinese users)
@@ -155,7 +155,7 @@ func (r *ModelRegistry) set(ts []ProviderTemplate, updatedAt time.Time) {
 	r.mu.Unlock()
 }
 
-// registryCachePath returns the local cache file path inside the fairpeer
+// registryCachePath returns the local cache file path inside the hiq
 // config directory. Returns "" if the config dir can't be resolved.
 func registryCachePath() string {
 	dir := userConfigDir()
@@ -165,17 +165,17 @@ func registryCachePath() string {
 	return filepath.Join(dir, registryCacheFilename)
 }
 
-// userConfigDir is the fairpeer config directory (same as config.toml).
+// userConfigDir is the hiq config directory (same as config.toml).
 // Reuses the config package's resolution to stay consistent.
 func userConfigDir() string {
 	// config.userDir() is the canonical path; replicate its logic without
 	// importing the config package (avoid a desktop→config dependency here
-	// — userDir uses os.UserConfigDir + the "fairpeer" dirname).
+	// — userDir uses os.UserConfigDir + the "hiq" dirname).
 	base, err := os.UserConfigDir()
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(base, "fairpeer")
+	return filepath.Join(base, "hiq")
 }
 
 // GetProviderTemplates returns the current vendor templates for the onboarding

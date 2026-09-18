@@ -1,18 +1,18 @@
-# Fairpeer vs Codex CLI vs Pi — 编码体验对比与全面提升规划
+# Hiq vs Codex CLI vs Pi — 编码体验对比与全面提升规划
 
 > 对比对象：`Swarm-OS/codex`（OpenAI Codex CLI，Rust monorepo，130+ crate）、`Swarm-OS/pi`（Pi Agent Harness，TypeScript monorepo）、本仓库。
 > 聚焦用户痛点：**编码模块、进度显示、编码内容展示**，二轮补充**交互、会话工程、模型工程、MCP、生态**。
-> 日期：2026-08-21（一轮）／2026-08-21 二轮增补（第七、八节）。接续 `fairpeer_vs_pi_remaining_gaps.md`（该档 P2/P3 并入本规划阶段 3，P1 已验证属实）。
-> **工程实施方案（全量问题总账 + 里程碑 + 风险）见 `docs/FAIRPEER_UPGRADE_PLAN.md`**，本档保留为对比论证与证据来源。
+> 日期：2026-08-21（一轮）／2026-08-21 二轮增补（第七、八节）。接续 `hiq_vs_pi_remaining_gaps.md`（该档 P2/P3 并入本规划阶段 3，P1 已验证属实）。
+> **工程实施方案（全量问题总账 + 里程碑 + 风险）见 `docs/HIQ_UPGRADE_PLAN.md`**，本档保留为对比论证与证据来源。
 
 ---
 
 ## 一、总体判断
 
-**fairpeer 的 agent 循环底座并不落后，真正落伍的是展示层。**
+**hiq 的 agent 循环底座并不落后，真正落伍的是展示层。**
 
 - 循环层：截断安全、edit 返回 diff、只读并行、steer 队列、compaction 分级触发、checkpoint/rewind —— 这些与 codex/pi 同水位，部分（checkpoint、证据链 todo、storm breaker、4 级权限）反而是独有领先。
-- 展示层：与 codex/pi 差距明显。codex 的 TUI 有约 20 种专用 history cell、2559 行的 diff 渲染器、1976 行的流式渲染控制器；pi 有 per-tool 自定义渲染钩子、词级 diff、实时编辑预演。fairpeer 桌面端**用一个 250 行的通用 ToolCard 渲染全部 40+ 工具**，diff 靠前端从 args 现算，且后端算好的 `FileDiff` 在传输层被丢弃。
+- 展示层：与 codex/pi 差距明显。codex 的 TUI 有约 20 种专用 history cell、2559 行的 diff 渲染器、1976 行的流式渲染控制器；pi 有 per-tool 自定义渲染钩子、词级 diff、实时编辑预演。hiq 桌面端**用一个 250 行的通用 ToolCard 渲染全部 40+ 工具**，diff 靠前端从 args 现算，且后端算好的 `FileDiff` 在传输层被丢弃。
 
 三个最刺眼的问题（均已在源码验证）：
 
@@ -28,7 +28,7 @@
 
 ### 2.1 编码内容显示（差距最大的维度）
 
-| 维度 | Codex | Pi | Fairpeer | 判定 |
+| 维度 | Codex | Pi | Hiq | 判定 |
 |------|-------|-----|----------|------|
 | 工具展示体系 | ~20 种专用 HistoryCell（`tui/src/history_cell/`：User/AgentMessage/Patch/Plan/Exec/McpToolCall/WebSearch/Hook…），每种独立布局 | 工具自渲染：`registerTool` 内嵌 `renderCall/renderResult`（`core/tools/edit.ts` 自绘实时 diff） | 单一通用 `ToolCard.tsx`（250 行）渲染所有工具，靠 `subjectOf()` 一行摘要区分 | **落后** |
 | diff 渲染 | `tui/src/diff_render.rs`（2559 行）：统一 diff + syntect 高亮（按 hunk 保持 parser 状态）+ 行号 gutter + hunk `⋮` 分隔 + 文件头 `(+a -r)` 统计 | `components/diff.ts`：统一 diff + highlight.js + **词级 intra-line diff**（1删1增时 `diffWords` 反显变化 token） | `CodeMirrorDiff.tsx` side-by-side MergeView，**无词级 diff**；数据源是前端从 args 现算（`diffsFor()`），apply_patch 算不出 | **落后** |
@@ -44,7 +44,7 @@
 
 ### 2.2 进度显示
 
-| 维度 | Codex | Pi | Fairpeer | 判定 |
+| 维度 | Codex | Pi | Hiq | 判定 |
 |------|-------|-----|----------|------|
 | turn 状态 | "Working" + elapsed + 中断提示；**reasoning 首个 bold 提取为状态行标题**（`chatwidget/streaming.rs:229`） | spinner / retry 倒计时 / compaction 指示器三种状态组件 | 轮换动词 + 耗时 + `↓ N tokens`（`Composer.tsx:1637`）+ Phase chip | 有基础，缺语义 |
 | todo/plan 进度 | `PlanUpdateCell` 三态 checkbox（✔/□进行中/□待办，进行中高亮） | 无内置 plan 工具（扩展可自绘 widget） | `TodoPanel` 有 done/total 计数、两级步骤、in_progress 自动滚动；**无进度条/百分比/步骤耗时**；`complete_step` 证据链是独有强项但 UI 上是 quiet 淡化卡，不可见 | 各有胜负 |
@@ -54,7 +54,7 @@
 
 ### 2.3 编码模块（循环与工具）
 
-| 维度 | Codex | Pi | Fairpeer | 判定 |
+| 维度 | Codex | Pi | Hiq | 判定 |
 |------|-------|-----|----------|------|
 | 主循环 | Session→Task→Turn 模型（`docs/protocol_v1.md`），pre-sampling compact、steering 排空、skills 注入 | `Agent`（有状态）+ `runAgentLoop`（无状态双层 while），steer/followUp 双队列 + QueueMode | `Run()` 单循环 + `executeBatch` + `finalReadnessCheck`；独有 storm breaker、op_gate、重复成功守卫 | **持平，各有护栏** |
 | 工具并行 | RwLock 门：支持并行的工具拿读锁并发，否则写锁互斥（`tools/parallel.rs:152`） | 默认并行 `Promise.all`，写类工具 `executionMode:"sequential"` 覆盖 + **按 canonicalPath 的 file-mutation-queue**；结果按源顺序回传保证上下文稳定 | 连续只读并行（maxParallel=8）+ **全部写工具全局串行**（`agent.go:1441 parallelisable`）——不同文件编辑也要排队 | **落后（旧档 P3-1）** |
@@ -63,21 +63,21 @@
 | 参数校验 | tool spec 层 | schema 声明 + loop dispatch 前校验 | 各工具自行校验，无统一层（旧档 P3-2） | 落后 |
 | 补丁格式 | 自家 `*** Begin Patch` 格式 + 流式解析器 + 模糊定位（`seek_sequence.rs`） | 无补丁工具（edit 多块编辑一次调用） | 自有 `parsePatch` 格式，无流式解析、无预览（旧档 P2） | 落后 |
 | 终端 | unified_exec PTY + `TerminalInteraction` 写 stdin 交互 | bash 工具 + Operations 可委托远程 | TerminalPanel 一次性命令，非 PTY（v1 注释已留 ConPTY/xterm.js 演进位） | 落后（已知债） |
-| 会话持久化 | rollout JSONL + SQLite 索引 + torn 处理 + **backtrack 树回退** + resume 预览 | **append-only JSONL 树**（id/parentId 原地分支、compaction boundary、branch summary、fork=新文件）；v4 加 seq/LaneRecord/崩溃恢复；SQLite+FTS5 后端 | 全量重写 JSONL + present sidecar（UI 字段旁路，100 turn 上限）+ **checkpoint/rewind/fork（独有强项）** + trash 恢复 | 各有胜负：fairpeer 缺树导航 UI，但 checkpoint 领先 |
+| 会话持久化 | rollout JSONL + SQLite 索引 + torn 处理 + **backtrack 树回退** + resume 预览 | **append-only JSONL 树**（id/parentId 原地分支、compaction boundary、branch summary、fork=新文件）；v4 加 seq/LaneRecord/崩溃恢复；SQLite+FTS5 后端 | 全量重写 JSONL + present sidecar（UI 字段旁路，100 turn 上限）+ **checkpoint/rewind/fork（独有强项）** + trash 恢复 | 各有胜负：hiq 缺树导航 UI，但 checkpoint 领先 |
 | 子代理 | multi_agents v2 + CollabAgent 事件 + SubAgentActivity | 无（pi-chat 另项目） | TaskTool 子代理事件改写转发，前端**实时嵌套渲染**（`subcallsByParent`）——做得好 | **领先/持平** |
 
 ### 2.4 架构与生态
 
-| 维度 | Codex | Pi | Fairpeer | 判定 |
+| 维度 | Codex | Pi | Hiq | 判定 |
 |------|-------|-----|----------|------|
-| UI 接入协议 | **协议优先**：`app-server-protocol` 约 150 个 RPC；ThreadItem 模型 + item/agentMessage/delta 等增量通知 + ServerRequest 审批问询；**TUI 本身只是 app-server 的一个客户端** | protocol/server/client 三包（实验）：CBOR 帧 + `SessionSnapshot`（快照为准）+ `TranscriptProgress`（增量）；另有成熟 `--mode rpc`（JSONL，~30 命令，含 RpcExtensionUIRequest 把扩展 UI 对话框转发给外部前端） | Wails `EventsEmit` 直连前端；18 种事件 Kind，无 item/delta 分层；Sink 抽象使 Agent 不感知传输（好底子） | **落后**（但 fairpeer 有 mobilebridge 场景，协议化的收益更大） |
+| UI 接入协议 | **协议优先**：`app-server-protocol` 约 150 个 RPC；ThreadItem 模型 + item/agentMessage/delta 等增量通知 + ServerRequest 审批问询；**TUI 本身只是 app-server 的一个客户端** | protocol/server/client 三包（实验）：CBOR 帧 + `SessionSnapshot`（快照为准）+ `TranscriptProgress`（增量）；另有成熟 `--mode rpc`（JSONL，~30 命令，含 RpcExtensionUIRequest 把扩展 UI 对话框转发给外部前端） | Wails `EventsEmit` 直连前端；18 种事件 Kind，无 item/delta 分层；Sink 抽象使 Agent 不感知传输（好底子） | **落后**（但 hiq 有 mobilebridge 场景，协议化的收益更大） |
 | 扩展系统 | plugins/marketplace、skills、hooks（十余事件）、custom prompts | TS 扩展 API（~1800 行）：40+ 生命周期事件、registerTool/Command/Shortcut/MessageRenderer | hooks 12 事件 + skill + MCP + 插件示例，路线不同 | 各有路线 |
 | 沙箱 | seatbelt/landlock/bwrap/Windows 沙箱 + execpolicy | 无内置（文档引导容器化） | 4 级风险 + YOLO/Auto/Ask + plan 模式 HardDeny（权限模型本身领先） | 各有路线 |
 | Provider | OpenAI 系 | ~40 provider 统一 API + OAuth 全家桶 | 18 厂商 300+ 模型预设 + RPM 限流 + 中流重连（韧性领先） | 持平 |
 
 ---
 
-## 三、fairpeer 领先项（改造时保持不退化）
+## 三、hiq 领先项（改造时保持不退化）
 
 来自循环层与产品层，这两块不是本次改造对象：
 
@@ -136,13 +136,13 @@
 | 3-3 | **流式补丁预览**（对标 codex 最大亮点）：`apply_patch` 参数增量解析（流式 parsePatch，逐行产出完整 hunk 即渲染）；需新增 `ToolArgsDelta` 事件 Kind，前端 500ms 节流渲染 | `apply_patch.go`、`event.go`、前端 PatchCard | ~200 行 |
 | 3-4 | TerminalPanel v2：ConPTY + xterm.js，交互式命令（对标 codex unified_exec），独立排期 | `TerminalPanel.tsx` | 大项 |
 
-> 注：pi 的"参数流完即预演 diff"在阶段 0 完成后即等价获得（fairpeer 的 ToolDispatch+FileDiff 本就发生在执行前）；3-3 是进一步把预览提前到**模型正在生成参数时**。
+> 注：pi 的"参数流完即预演 diff"在阶段 0 完成后即等价获得（hiq 的 ToolDispatch+FileDiff 本就发生在执行前）；3-3 是进一步把预览提前到**模型正在生成参数时**。
 
 ### 阶段 4：架构演进（长期，按需）
 
 | # | 方向 | 说明 |
 |---|------|------|
-| 4-1 | **事件模型 item 化** | 18 种 Kind 向 codex `ThreadItem + item_started/delta/completed` 分层靠拢。收益一：前端从"翻译事件"变为"渲染 item"；收益二：**mobile bridge / 未来 remote 直接受益**（fairpeer 已有 mobilebridge 场景，这是比两个参照物更强的动机） |
+| 4-1 | **事件模型 item 化** | 18 种 Kind 向 codex `ThreadItem + item_started/delta/completed` 分层靠拢。收益一：前端从"翻译事件"变为"渲染 item"；收益二：**mobile bridge / 未来 remote 直接受益**（hiq 已有 mobilebridge 场景，这是比两个参照物更强的动机） |
 | 4-2 | 快照+增量协议 | pi `SessionSnapshot` 模式：任意时刻可从快照+增量恢复 UI，替代现在的 present sidecar 全量重放（100 turn 上限的根因） |
 | 4-3 | 会话树导航 UI | backtrack 式树视图（数据层的 Fork/branch/checkpoint 已具备，缺 UI 入口）；resume 时预览旧会话转录 |
 | 4-4 | 观测性 | 参考 pi telemetry 包的 vendor-neutral span 契约，结构化生命周期事件 |
@@ -164,7 +164,7 @@
 
 | 前档条目 | 本档处置 |
 |----------|---------|
-| `fairpeer_vs_pi_remaining_gaps.md` P1-1/P1-2（已完成） | 验证属实：`editfile.go:118` 返回 diff、`agent.go:805` 截断拦截 |
+| `hiq_vs_pi_remaining_gaps.md` P1-1/P1-2（已完成） | 验证属实：`editfile.go:118` 返回 diff、`agent.go:805` 截断拦截 |
 | 同档 P2（apply_patch 预览） | 并入本档 **0-2** |
 | 同档 P3-1（file mutation queue） | 并入本档 **3-1** |
 | 同档 P3-2（集中校验） | 并入本档 **3-2** |
@@ -174,13 +174,13 @@
 
 # 二轮增补（2026-08-21）
 
-一轮聚焦展示层主链路；二轮覆盖**交互层、会话与持久化工程、模型工程、MCP 深度、生态工程化**五个面，fairpeer 侧为逐项存在性核查（每项「有/无/部分」均带证据）。新增差距编入第八节路线图增补。
+一轮聚焦展示层主链路；二轮覆盖**交互层、会话与持久化工程、模型工程、MCP 深度、生态工程化**五个面，hiq 侧为逐项存在性核查（每项「有/无/部分」均带证据）。新增差距编入第八节路线图增补。
 
 ## 七、二轮补充差距
 
 ### 7.1 交互层
 
-| 能力 | Codex | Pi | Fairpeer | 判定 |
+| 能力 | Codex | Pi | Hiq | 判定 |
 |------|-------|-----|----------|------|
 | 命令面板快捷键 | /keymap 交互式重映射 UI（选 action→捕获键/chord，`tui/src/keymap_setup.rs`）+ vim 模式 | /hotkeys + `core/keybindings.ts` 声明合并，用户可自定义 | **⌘K 注册走 `useGlobalShortcut`——空实现 stub**（`lib/keyboardShortcuts.ts` 仅 `useEffect(() => {}, [])`，注释 "Future"），CommandPalette 只能点顶栏按钮打开 | **bug 级断链** |
 | 输入历史（上箭头） | TUI textarea 自带 | 100 条 + 在途草稿保护（`tui/src/components/editor.ts:316`） | **TUI 有**（`internal/cli/chat_tui.go:63` submittedInputs）**桌面无**——功能已在仓库里，纯移植 | 缺失（易补） |
@@ -193,7 +193,7 @@
 
 ### 7.2 会话与持久化工程
 
-| 能力 | Codex | Pi | Fairpeer | 判定 |
+| 能力 | Codex | Pi | Hiq | 判定 |
 |------|-------|-----|----------|------|
 | 跨 session 全文搜索 | `thread/search`：**用 ripgrep 直接搜 rollout 文件内容** + state_db 元数据/分页/排序（`thread-store/src/local/search_threads.rs:33`） | SQLite 后端 **FTS5 全文索引**（`packages/session-backends/sqlite-node/`） | 只有标题/预览的前端内存过滤（preview=首条用户消息前 80 字符） | **缺失** |
 | 崩溃恢复 | `recover_turn_if_idle`（保留原 turn_id 续跑）+ rollout 截断预算 | v4 `LaneRecord`（operation_started/finished 逐步持久化，为崩溃恢复设计，WIP） | tab/会话状态可恢复；**正在跑的 turn 不续跑**（重开即 idle，停在最后原子保存点） | 落后 |
@@ -204,7 +204,7 @@
 
 ### 7.3 模型工程
 
-| 能力 | Codex | Pi | Fairpeer | 判定 |
+| 能力 | Codex | Pi | Hiq | 判定 |
 |------|-------|-----|----------|------|
 | token 计数 | 字节/4 启发式 + 服务端 usage 归一（扣除 baseline） | usage 回传 + 压缩后未知时显示 `?` | **服务端 usage 为准**（`ContextSnapshot`）+ cache_shape 字节估算兜底 | 持平 |
 | prompt cache 主动管理 | `prompt_cache_key`（默认 session_id）+ `previous_response_id` 复用校验（8 项一致性）+ **启动预热 warmup 请求**（`session_startup_prewarm.rs`，正式请求继承 response id） | **Anthropic `cache_control` 断点 + 1h 长缓存** + OpenAI `prompt_cache_key`（cacheRetention 可控）+ **cache waste 检测**（5min TTL 逐轮算 re-billed 损失金额，`core/cache-stats.ts`） | 稳定前缀策略（boot.go cache-stable prefix，好底子）+ **cache_shape 诊断（miss 原因归因 system/tools/log_rewrite——独有）**；但**无任何主动断点**（grep `cache_control/cached_content` 零命中）、无预热 | **落后**（并入 4-6） |
@@ -218,25 +218,25 @@
 
 ### 7.4 MCP 深度
 
-| 能力 | Codex | Pi | Fairpeer |
+| 能力 | Codex | Pi | Hiq |
 |------|-------|-----|----------|
 | 基础 | tools/resources/prompts + 进程内传输 | **无 MCP** | tools/prompts/resources + 懒加载/热添加 + stdio/HTTP + session 过期重连（**领先 pi**） |
 | OAuth | **PKCE + 本地回调 + OS keyring 存储 + 刷新锁 + 动态客户端注册** | — | 无（mcpdiag 只做 401 诊断、提示可打开的授权 URL，不做 token 交换） |
 | elicitation | 服务化：`ElicitationService` 计数暂停，阻塞工具结果交付直到完成；app-server 转 Form 请求给 GUI | — | 无（grep 零命中） |
 | 进度通知 | 协议已定义 `item/mcpToolCall/progress`，TUI 已消费 | — | **显式丢弃**（`transport_stdio.go:417` "drops server-initiated notifications/requests"） |
 
-结论：fairpeer 的 MCP 在广度上领先 pi，但在深度上全面落后 codex——长任务 MCP 工具（视频渲染、大数据管道）无进度反馈、需二次授权的 server 无法走完流程。
+结论：hiq 的 MCP 在广度上领先 pi，但在深度上全面落后 codex——长任务 MCP 工具（视频渲染、大数据管道）无进度反馈、需二次授权的 server 无法走完流程。
 
 ### 7.5 生态与工程化
 
-| 维度 | Codex | Pi | Fairpeer |
+| 维度 | Codex | Pi | Hiq |
 |------|-------|-----|----------|
 | 行为评测 | analytics 事件事实模型（goal/steer/compaction/guardian 全家） | **vitest-evals 自举式评测**：让 agent 写扩展→reload→调用→judge 精确断言；还做 harness baseline vs candidate 对比（去掉 Guidelines 的系统提示跑对比） | e2ebench 目录存在（性质不同）；pi 的"用产品自身验证产品提示词"方法值得借鉴 |
 | headless 自动化 | cloud tasks + daemon + app-server websocket（带 capability-token/JWT 鉴权） | `pi -p` print / `--mode json`（JSONL + 背压控制）；**GitHub Actions issue 分析实战**（label 触发→分析→gist 回评→附本地续跑命令） | serve/bot/ACP/LoopPanel（多形态领先）；但缺"issue→分析→回帖→可续跑"这类闭环示例 |
 | 自更新 | npm 平台分包分发 | Windows 占用文件隔离替换（.node 移隔离区再恢复） | 自动更新已有 |
 | 研发自举 | — | **用 pi 开发 pi**（.pi/extensions 里 4 个自用扩展，tps 实时统计 TUI redraw） | — |
 
-### 7.6 二轮新发现的 fairpeer 领先项（补充第三节保持清单）
+### 7.6 二轮新发现的 hiq 领先项（补充第三节保持清单）
 
 1. **保存完整性三家最强**：原子写 + HMAC-SHA256 签名边车 + torn-tail 修复三重保障；
 2. **cache_shape 诊断独有**：PrefixShape 哈希对比可归因 cache miss 来源（system/tools/log_rewrite），codex/pi 都只有统计没有归因；
@@ -280,7 +280,7 @@
 | # | 改动 | 说明 |
 |---|------|------|
 | 4-5 | **会话全文搜索** | 两条路线：低成本=codex 模式（ripgrep 扫 session.jsonl 内容 + 元数据聚合）；长期=pi 模式（SQLite FTS5 索引）。CommandPalette 已有 fuzzy 框架可直接挂 |
-| 4-6 | **prompt cache 主动化** | Anthropic `cache_control` 断点 + OpenAI `prompt_cache_key` 透传 + 启动预热（codex warmup 模式）；用已有 cache_shape 诊断量化前后收益——fairpeer 在这件事上有独到的验证工具 |
+| 4-6 | **prompt cache 主动化** | Anthropic `cache_control` 断点 + OpenAI `prompt_cache_key` 透传 + 启动预热（codex warmup 模式）；用已有 cache_shape 诊断量化前后收益——hiq 在这件事上有独到的验证工具 |
 | 4-7 | turn 级结构化输出 | provider 层支持 `response_format: json_schema`；先给 LoopPanel/专家团/子代理等内部消费者用，再暴露给用户 |
 
 ### 新增阶段 5：生态（可选，按需）
@@ -289,7 +289,7 @@
 |---|------|------|
 | 5-1 | **成本聚合视图** | 跨 session/按天/按模型汇总（serve wire 已有 Cost 字段，缺聚合与 UI）；进阶做 pi 式 cache re-billed 损失估算（与 cache_shape 联动） |
 | 5-2 | 崩溃 turn 恢复 | codex `recover_turn_if_idle` 模式：崩溃重开后识别未完成 turn 并续跑（依赖 4-1 事件 item 化更自然） |
-| 5-3 | 本地模型接入 | Ollama/llama.cpp provider 预设 + 模型加载管理面板（pi llama 扩展模式；fairpeer 的 provider 预设体系接入成本低） |
+| 5-3 | 本地模型接入 | Ollama/llama.cpp provider 预设 + 模型加载管理面板（pi llama 扩展模式；hiq 的 provider 预设体系接入成本低） |
 | 5-4 | 行号跳编辑器 | 工具卡 diff/文件预览加 "在编辑器打开"（`vscode://file/<abs>:<line>` 协议链接） |
 | 5-5 | 会话 HTML 导出/分享 | 补 HTML 格式（渲染产物已有 React DOM，导出比 pi 的 ANSI 转换更容易） |
 

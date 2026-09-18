@@ -7,8 +7,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/i18n"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/i18n"
 )
 
 // resumePicker is an in-chat overlay for "/resume" that lets the user pick a

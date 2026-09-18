@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/remotehost"
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/remotehost"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
 // TestHostConfigureMirrorsModelConfig verifies the desktop-push path on a fresh
@@ -24,7 +24,7 @@ func TestHostConfigureMirrorsModelConfig(t *testing.T) {
 		DefaultModel: "pushed/pushed-model",
 		Providers: []remotehost.ProviderSnapshot{{
 			Name: "pushed", Kind: "acp-test-provider",
-			APIKeyEnv: "FAIRPEER_PUSHED_KEY", APIKey: "pushed-key",
+			APIKeyEnv: "HIQ_PUSHED_KEY", APIKey: "pushed-key",
 			Models: []string{"pushed-model"},
 		}},
 	})
@@ -32,10 +32,10 @@ func TestHostConfigureMirrorsModelConfig(t *testing.T) {
 		t.Fatalf("configureRemote = %+v, %v", res, err)
 	}
 
-	if v, ok, _ := secret.New(secret.DefaultPath()).Get("FAIRPEER_PUSHED_KEY"); !ok || v != "pushed-key" {
+	if v, ok, _ := secret.New(secret.DefaultPath()).Get("HIQ_PUSHED_KEY"); !ok || v != "pushed-key" {
 		t.Fatalf("secret store key = %q, %v", v, ok)
 	}
-	if os.Getenv("FAIRPEER_PUSHED_KEY") != "pushed-key" {
+	if os.Getenv("HIQ_PUSHED_KEY") != "pushed-key" {
 		t.Fatal("configure should apply the key to the running process env")
 	}
 	data, err := os.ReadFile(config.UserConfigPath())
@@ -43,7 +43,7 @@ func TestHostConfigureMirrorsModelConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := string(data)
-	for _, want := range []string{`name = "pushed"`, `api_key_env = "FAIRPEER_PUSHED_KEY"`, `models = ["pushed-model"]`, `default_model = "pushed/pushed-model"`} {
+	for _, want := range []string{`name = "pushed"`, `api_key_env = "HIQ_PUSHED_KEY"`, `models = ["pushed-model"]`, `default_model = "pushed/pushed-model"`} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("user config missing %q:\n%s", want, text)
 		}

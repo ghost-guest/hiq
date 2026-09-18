@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/projectkb"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/projectkb"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // Project knowledge hub tools (项目知识中枢). They expose the self-maintaining

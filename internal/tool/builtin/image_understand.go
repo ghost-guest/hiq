@@ -15,14 +15,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 	"golang.org/x/image/draw"
 	"golang.org/x/image/webp" // register webp decoder
 )
 
 // image_understand is the user-image counterpart to screen_perceive: it reads an
 // image file (typically a user-uploaded attachment referenced as
-// @.fairpeer/attachments/x.png) and asks the configured vision model (VLM) about
+// @.hiq/attachments/x.png) and asks the configured vision model (VLM) about
 // it, returning the VLM's text response. The prompt is provided by the calling
 // agent, so the agent decides WHAT to ask — a layout question, an OCR request, a
 // chart readout — rather than getting a fixed generic description.
@@ -64,7 +64,7 @@ const (
 func (imageUnderstand) Name() string { return "image_understand" }
 
 func (imageUnderstand) Description() string {
-	return "Understand a user-uploaded image: read an image file (the path appears in the conversation as an <image path=\"...\"> reference, e.g. .fairpeer/attachments/xxx.png) and ask the configured vision model about it. You MUST pass a `prompt` describing what you want to know — e.g. 'describe the overall layout', 'what does the error message say', 'transcribe the table as markdown'. The more specific your prompt, the more useful the answer. Returns the model's text answer PREFIXED with an [image: name | WxH | mime | vision: model] header of objective facts (dimensions/MIME/vision model are certain; the answer below is the VLM's possibly-imperfect description). Use this whenever the user attached an image and you need its contents (the main model cannot see the image bytes directly). STRENGTHS: describing content/layout, OCR (reading text), identifying objects/scenes/UI, reading simple tables as markdown. LIMITS: it CANNOT return precise pixel coordinates or bounding boxes (no visual grounding), CANNOT reliably give exact hex color codes, and does NOT guarantee structured/JSON output — for locating UI elements use screen_perceive, and accept that coordinates/exact-colors/layout-cloning are beyond this tool's reliable reach."
+	return "Understand a user-uploaded image: read an image file (the path appears in the conversation as an <image path=\"...\"> reference, e.g. .hiq/attachments/xxx.png) and ask the configured vision model about it. You MUST pass a `prompt` describing what you want to know — e.g. 'describe the overall layout', 'what does the error message say', 'transcribe the table as markdown'. The more specific your prompt, the more useful the answer. Returns the model's text answer PREFIXED with an [image: name | WxH | mime | vision: model] header of objective facts (dimensions/MIME/vision model are certain; the answer below is the VLM's possibly-imperfect description). Use this whenever the user attached an image and you need its contents (the main model cannot see the image bytes directly). STRENGTHS: describing content/layout, OCR (reading text), identifying objects/scenes/UI, reading simple tables as markdown. LIMITS: it CANNOT return precise pixel coordinates or bounding boxes (no visual grounding), CANNOT reliably give exact hex color codes, and does NOT guarantee structured/JSON output — for locating UI elements use screen_perceive, and accept that coordinates/exact-colors/layout-cloning are beyond this tool's reliable reach."
 }
 
 func (imageUnderstand) Schema() json.RawMessage {
@@ -73,7 +73,7 @@ func (imageUnderstand) Schema() json.RawMessage {
   "properties":{
     "path":{
       "type":"string",
-      "description":"Image file path — use the path from the <image path=\"...\"> reference in the conversation (e.g. .fairpeer/attachments/xxx.png)."
+      "description":"Image file path — use the path from the <image path=\"...\"> reference in the conversation (e.g. .hiq/attachments/xxx.png)."
     },
     "prompt":{
       "type":"string",

@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/netclient"
+	"github.com/zzycxz/hiq/internal/netclient"
 )
 
 func startCONNECTProxy(t *testing.T) string {

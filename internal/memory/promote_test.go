@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/extensioncontract"
-	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/hiq/internal/extensioncontract"
+	"github.com/zzycxz/hiq/internal/skill"
 )
 
 // seedPromotionStore saves a few facts across levels and tags, the material a

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // connector is the Claude-style "⎿" gutter that ties a continuation block (tool

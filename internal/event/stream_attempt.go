@@ -14,7 +14,7 @@ const (
 // reconstruct retry ladders without parsing notice text.
 //
 // Ported from DeepSeek-Reasonix internal/event (upstream defines this in
-// event.go; kept here in a standalone file so fairpeer's own event.go stays a
+// event.go; kept here in a standalone file so hiq's own event.go stays a
 // minimal, merge-friendly superset).
 type StreamAttemptInfo struct {
 	ID      string

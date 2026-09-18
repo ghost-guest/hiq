@@ -8,15 +8,15 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/skill"
 )
 
 func makeTestSkills() []skill.Skill {
 	return []skill.Skill{
-		{Name: "review", Description: "Review code changes for correctness", Scope: skill.ScopeProject, Path: "/fake/proj/.fairpeer/skills/review/SKILL.md", RunAs: skill.RunSubagent, Body: "# Review\n\nReview code."},
+		{Name: "review", Description: "Review code changes for correctness", Scope: skill.ScopeProject, Path: "/fake/proj/.hiq/skills/review/SKILL.md", RunAs: skill.RunSubagent, Body: "# Review\n\nReview code."},
 		{Name: "explore", Description: "Fast read-only search agent", Scope: skill.ScopeBuiltin, Path: "(builtin)", RunAs: skill.RunSubagent, Body: "# Explore\n\nSearch the codebase."},
-		{Name: "test", Description: "Run tests and validate behavior", Scope: skill.ScopeProject, Path: "/fake/proj/.fairpeer/skills/test.md", RunAs: skill.RunInline, Body: "# Test\n\nRun the tests."},
+		{Name: "test", Description: "Run tests and validate behavior", Scope: skill.ScopeProject, Path: "/fake/proj/.hiq/skills/test.md", RunAs: skill.RunInline, Body: "# Test\n\nRun the tests."},
 	}
 }
 
@@ -281,7 +281,7 @@ func TestSkillPickerDetail(t *testing.T) {
 func TestSkillPickerSourceView(t *testing.T) {
 	skills := makeTestSkills()
 	roots := []skillRootLine{
-		{dir: "/fake/proj/.fairpeer/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 2, diagnostic: true},
+		{dir: "/fake/proj/.hiq/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 2, diagnostic: true},
 		{dir: i18nSkillPickerBuiltinSource(), scope: skill.ScopeBuiltin, status: skill.StatusOK, skills: 1, diagnostic: true},
 	}
 	m := chatTUI{
@@ -299,7 +299,7 @@ func TestSkillPickerSourceView(t *testing.T) {
 	if !strings.Contains(out, "Sources") && !strings.Contains(out, "来源") {
 		t.Fatalf("source view missing title:\n%s", out)
 	}
-	if !strings.Contains(out, ".fairpeer") {
+	if !strings.Contains(out, ".hiq") {
 		t.Fatalf("source view should show root path:\n%s", out)
 	}
 }
@@ -313,7 +313,7 @@ func i18nSkillPickerBuiltinSource() string {
 func TestSkillPickerDiagnostics(t *testing.T) {
 	roots := []skillRootLine{
 		{dir: "/conf", scope: skill.ScopeCustom, status: skill.StatusOK, skills: 0, configured: true},
-		{dir: "/proj/.fairpeer/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 1, diagnostic: true},
+		{dir: "/proj/.hiq/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 1, diagnostic: true},
 		{dir: "/proj/.agents/skills", scope: skill.ScopeProject, status: skill.StatusMissing, skills: 0, diagnostic: true},
 		{dir: "/proj/.agent/skills", scope: skill.ScopeProject, status: skill.StatusMissing, skills: 0, diagnostic: true},
 	}
@@ -474,7 +474,7 @@ func TestSkillPickerSourceEnterShowsRootSkills(t *testing.T) {
 			mode:   pickerSources,
 			skills: skills,
 			roots: []skillRootLine{
-				{dir: "/fake/proj/.fairpeer/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 2, diagnostic: true},
+				{dir: "/fake/proj/.hiq/skills", scope: skill.ScopeProject, status: skill.StatusOK, skills: 2, diagnostic: true},
 			},
 		},
 	}
@@ -558,7 +558,7 @@ func TestSkillPickerDetailShowsActionsBeforeBodyPreview(t *testing.T) {
 		Name:        "review",
 		Description: "Review code",
 		Scope:       skill.ScopeProject,
-		Path:        "/proj/.fairpeer/skills/review/SKILL.md",
+		Path:        "/proj/.hiq/skills/review/SKILL.md",
 		RunAs:       skill.RunSubagent,
 		Body:        "# Review\n\n" + strings.Repeat("BODY_LINE\n", 40),
 	}
@@ -826,12 +826,12 @@ func TestRescanInSearchModeClampsToFiltered(t *testing.T) {
 
 func TestPathBoundaryMatching(t *testing.T) {
 	skills := []skill.Skill{
-		{Name: "alpha", Scope: skill.ScopeProject, Path: "/proj/.fairpeer/skills/alpha/SKILL.md"},
-		{Name: "beta", Scope: skill.ScopeProject, Path: "/proj/.fairpeer/skills-extra/beta/SKILL.md"},
+		{Name: "alpha", Scope: skill.ScopeProject, Path: "/proj/.hiq/skills/alpha/SKILL.md"},
+		{Name: "beta", Scope: skill.ScopeProject, Path: "/proj/.hiq/skills-extra/beta/SKILL.md"},
 	}
 	lines := []skillRootLine{
-		{dir: "/proj/.fairpeer/skills", scope: skill.ScopeProject, status: skill.StatusOK},
-		{dir: "/proj/.fairpeer/skills-extra", scope: skill.ScopeProject, status: skill.StatusOK},
+		{dir: "/proj/.hiq/skills", scope: skill.ScopeProject, status: skill.StatusOK},
+		{dir: "/proj/.hiq/skills-extra", scope: skill.ScopeProject, status: skill.StatusOK},
 	}
 
 	// Count skills per root with directory-boundary match.
@@ -865,7 +865,7 @@ func TestSourceRowLabelUsesI18n(t *testing.T) {
 	t.Cleanup(func() { i18n.DetectLanguage("en") })
 
 	r := skillRootLine{
-		dir:    "/proj/.fairpeer/skills",
+		dir:    "/proj/.hiq/skills",
 		scope:  skill.ScopeProject,
 		status: skill.StatusOK,
 		skills: 3,
@@ -904,7 +904,7 @@ func TestRenderSkillDetailUsesI18nMeta(t *testing.T) {
 		Name:        "review",
 		Description: "Review code",
 		Scope:       skill.ScopeProject,
-		Path:        "/proj/.fairpeer/skills/review/SKILL.md",
+		Path:        "/proj/.hiq/skills/review/SKILL.md",
 		RunAs:       skill.RunSubagent,
 		Body:        "# Review\n\nLine 1\nLine 2",
 	}
@@ -923,7 +923,7 @@ func TestLegacySkillShowUnchanged(t *testing.T) {
 		Name:        "my-skill",
 		Description: "A test skill",
 		Scope:       skill.ScopeProject,
-		Path:        "/fake/proj/.fairpeer/skills/my-skill.md",
+		Path:        "/fake/proj/.hiq/skills/my-skill.md",
 		Body:        "# My Skill\n\nSome body text.",
 	}
 	out := renderSkillShow(80, s, false)
@@ -934,7 +934,7 @@ func TestLegacySkillShowUnchanged(t *testing.T) {
 
 func TestLegacySkillPathsUnchanged(t *testing.T) {
 	roots := []skill.Root{
-		{Dir: "/proj/.fairpeer/skills", Scope: skill.ScopeProject, Priority: 0, Status: skill.StatusOK},
+		{Dir: "/proj/.hiq/skills", Scope: skill.ScopeProject, Priority: 0, Status: skill.StatusOK},
 	}
 	out := renderSkillPaths(80, roots)
 	if !strings.Contains(out, "skill paths") {

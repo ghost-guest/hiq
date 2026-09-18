@@ -16,8 +16,8 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/text/encoding/simplifiedchinese"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/driver"
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/netdev/driver"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
 )
 
 // Session is one PTY-driven interactive CLI session with a network device,

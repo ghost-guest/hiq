@@ -1,4 +1,4 @@
-# fairpeer 编码能力升级 · 技术核查报告（合并定稿）
+# hiq 编码能力升级 · 技术核查报告（合并定稿）
 
 > **日期**：2026-07-04 · **状态**：经逐行源码复核
 > **方法**：15 个 agent 分批逐行通读 controller/agent/input/auto_plan/task/evidence/chat_tui/desktop(app+tabs)/frontend(App+bridge+types+tools+useController)/serve/bot/acp/boot/config/skill/permission/checkpoint/compact/plugin/mcpdiag/proc/sandbox/hook + MiMo-Code compose/runtime/worktree/plan-agent + 全部文档
@@ -11,7 +11,7 @@
 1. **Plan Mode 是活跃的对外 API**（`SetPlanMode`/`SetMode`/`PlanMode()` 有真实外部调用者：chat_tui、serve、desktop），不是死代码。重构必须改语义而非删除。
 2. **重构 Plan Mode 牵动 ~30 个文件**——逐行核查后成立。正确方案是**增量叠加 compose，不动 Plan Mode 现有代码**。
 3. **逐行核查发现 6 个真 bug + 8 个中危设计缺陷 + 11 处死代码 + 30 条文档债**。本报告逐条列出，每条附源码行号。
-4. **MiMo compose 是确定性脚本不是 prompt 引导**——fairpeer 必须用 Go 写确定性编排器，不能让模型自己走 7 阶段。
+4. **MiMo compose 是确定性脚本不是 prompt 引导**——hiq 必须用 Go 写确定性编排器，不能让模型自己走 7 阶段。
 5. **provider 层不支持 schema 是 compose 移植最大缺口**——`provider.Request` 无 ResponseFormat 字段。
 
 ---
@@ -140,7 +140,7 @@
 | GUIDE.md | 20, 29, 37, 38, 231-269 | 双模型 + planner_model 教程 |
 | GUIDE.zh-CN.md | 20, 28, 36, 37, 208-239 | 双模型 + planner_model 教程 |
 | SPEC.md | 33, 110, 112-118, 114, 116, 143, 238, 240 | 双模型 + 已删工具(ls/glob) + planner_model |
-| fairpeer.md | 51 | "协调器"残留 |
+| hiq.md | 51 | "协调器"残留 |
 | CONTRIBUTING.md | 122 | `feat(glob):` 示例但 glob 已删 |
 | serve/index.html | 764, 769 | multi_edit/notebook_edit/delete_range/delete_symbol 已删工具 |
 
@@ -178,7 +178,7 @@
 ## 第七部分 · compose 移植设计（MiMo-Code 逐行读后）
 
 ### 关键真相
-1. **compose.js 是确定性 JS 脚本**（QuickJS 沙箱），调用 host 钩子 `agent()/phase()/parallel()`，**不是 prompt 驱动**。fairpeer 必须用 Go 写确定性编排器。
+1. **compose.js 是确定性 JS 脚本**（QuickJS 沙箱），调用 host 钩子 `agent()/phase()/parallel()`，**不是 prompt 驱动**。hiq 必须用 Go 写确定性编排器。
 2. **provider 层不支持 schema**（provider.Request 无 ResponseFormat）—— compose 结构化输出契约无法按原样移植。推荐 v1 用 prompt + StructuredOutput 工具模拟。
 3. **worktree 是并行隔离硬依赖**——不做则批次串行（对 1-3 任务常见 feature 无感）。
 

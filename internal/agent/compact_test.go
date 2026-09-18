@@ -2,14 +2,14 @@ package agent
 
 import (
 	"context"
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // fakeProvider returns a fixed reply and records the messages it was asked to

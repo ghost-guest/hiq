@@ -1,6 +1,6 @@
 package responses
 
-import "github.com/zzycxz/fairpeer/internal/provider"
+import "github.com/zzycxz/hiq/internal/provider"
 
 // OutputBudget reports the default total output budget sent by this client.
 func (c *client) OutputBudget() int { return c.maxOutputTokens }

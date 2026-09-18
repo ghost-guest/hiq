@@ -507,7 +507,7 @@ func TestWindowsRestrictedRuntimeCompatibility(t *testing.T) {
 func TestWindowsCapabilityRejectsProtectedRootOverlap(t *testing.T) {
 	workspace := t.TempDir()
 	tempRoot := t.TempDir()
-	protected := filepath.Join(workspace, ".fairpeer-state")
+	protected := filepath.Join(workspace, ".hiq-state")
 	if err := os.Mkdir(protected, 0o755); err != nil {
 		t.Fatal(err)
 	}

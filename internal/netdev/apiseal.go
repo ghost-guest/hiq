@@ -10,7 +10,7 @@ package netdev
 import (
 	"fmt"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/driver"
+	"github.com/zzycxz/hiq/internal/netdev/driver"
 )
 
 // sealAPIGet runs one whitelisted API GET under the full netdev seal.

@@ -23,7 +23,7 @@ from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPTS.parent
-FAIRPEER_DIR = Path.home() / ".fairpeer"
+HIQ_DIR = Path.home() / ".hiq"
 
 
 def run(cmd):
@@ -44,7 +44,7 @@ def main():
         "steps": [],
     }
 
-    tpl = FAIRPEER_DIR / "ppt-template.pptx"
+    tpl = HIQ_DIR / "ppt-template.pptx"
     summary["has_template"] = tpl.exists()
     if tpl.exists():
         rc, out = run([py, str(SCRIPTS / "extract_template_colors.py"), str(tpl), str(cfg_path)])
@@ -52,14 +52,14 @@ def main():
     # Merge runs whenever ANY VLM style file exists — a reference image's
     # colors must reach the config even when the user picked no template
     # (S-21: the merge used to be gated on the template and silently skipped).
-    has_style = any((FAIRPEER_DIR / name).exists()
+    has_style = any((HIQ_DIR / name).exists()
                     for name in ("ppt-template-style.json", "reference-style.json"))
     if tpl.exists() or has_style:
         rc, out = run([py, str(SCRIPTS / "merge_vlm_style.py"), str(cfg_path)])
         summary["steps"].append({"step": "merge_vlm_style", "rc": rc, "out": out[-400:]})
 
-    summary["reference_style"] = (FAIRPEER_DIR / "reference-style.json").exists()
-    pages_dir = FAIRPEER_DIR / "pdf-pages"
+    summary["reference_style"] = (HIQ_DIR / "reference-style.json").exists()
+    pages_dir = HIQ_DIR / "pdf-pages"
     if pages_dir.is_dir():
         summary["pdf_pages"] = len(list(pages_dir.glob("page-*.json")))
 

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // SlashEntry is one invocable slash command exposed to the model through the

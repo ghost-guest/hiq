@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/memory"
+	"github.com/zzycxz/hiq/internal/memory"
 )
 
 // TestMemoryFactViewMapsFields verifies the DTO mapper carries core fields

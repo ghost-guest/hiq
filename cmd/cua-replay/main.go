@@ -5,7 +5,7 @@
 // Two modes:
 //
 //  1. REPLAY (default, any platform): read PNG screenshots (from a dir, default
-//     .fairpeer/attachments) and run each through the configured multimodal
+//     .hiq/attachments) and run each through the configured multimodal
 //     model, printing what the VLM saw + any coordinates it returned. Copies each
 //     image + the VLM's raw response into cua-replay-trace/ numbered in order, so
 //     you can open the folder and walk through every frame the agent looked at.
@@ -26,7 +26,7 @@
 //	go run ./cmd/cua-replay
 //
 //	# Replay a specific image with a custom task:
-//	go run ./cmd/cua-replay -image .fairpeer/attachments/perceive-noUIA-1782574502.png -task "where is the save button"
+//	go run ./cmd/cua-replay -image .hiq/attachments/perceive-noUIA-1782574502.png -task "where is the save button"
 //
 //	# Live capture (Windows) — see what the VLM sees right now:
 //	go run ./cmd/cua-replay -live -task "find the text input area"
@@ -60,8 +60,8 @@ const defaultBaseURL = "https://api.openai.com/v1" // default; override via -bas
 func main() {
 	var (
 		task     = flag.String("task", "找到屏幕上可以输入文字的区域，给我它的中心坐标", "what to look for in each frame")
-		model    = flag.String("model", "", "multimodal model (provider/model format); set via [cowork] vlm_model in fairpeer.toml")
-		srcDir   = flag.String("dir", ".fairpeer/attachments", "dir to replay screenshots from (replay mode)")
+		model    = flag.String("model", "", "multimodal model (provider/model format); set via [cowork] vlm_model in hiq.toml")
+		srcDir   = flag.String("dir", ".hiq/attachments", "dir to replay screenshots from (replay mode)")
 		image    = flag.String("image", "", "analyze a single image file (overrides -dir)")
 		live     = flag.Bool("live", false, "capture the current screen once and analyze it (Windows)")
 		traceDir = flag.String("trace", "cua-replay-trace", "where to copy frames + VLM responses")
@@ -74,7 +74,7 @@ func main() {
 		die("OPENAI_API_KEY not set")
 	}
 	if *model == "" {
-		die("-model is required (provider/model format); set via [cowork] vlm_model in fairpeer.toml or pass -model flag")
+		die("-model is required (provider/model format); set via [cowork] vlm_model in hiq.toml or pass -model flag")
 	}
 
 	if err := os.MkdirAll(*traceDir, 0o755); err != nil {

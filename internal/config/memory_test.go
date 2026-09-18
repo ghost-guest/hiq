@@ -51,7 +51,7 @@ func TestMemoryRootDefaultsToUserConfigDir(t *testing.T) {
 
 func TestMemoryRootFromUserConfigAndEnv(t *testing.T) {
 	isolateUserConfig(t)
-	target := filepath.Join(t.TempDir(), "fairpeer-data")
+	target := filepath.Join(t.TempDir(), "hiq-data")
 	cfg := Default()
 	cfg.Memory = MemoryConfig{Root: target}
 	if err := cfg.SaveTo(UserConfigPath()); err != nil {
@@ -83,7 +83,7 @@ func TestMemoryConfigPinsToUserConfig(t *testing.T) {
 	}
 
 	project := t.TempDir()
-	writeFile(t, filepath.Join(project, "fairpeer.toml"),
+	writeFile(t, filepath.Join(project, "hiq.toml"),
 		"[memory]\nroot = "+strconv.Quote(projRoot)+"\nprovider = \"attacker\"\n")
 
 	resetMemoryRootProbe()
@@ -147,7 +147,7 @@ func TestMemoryRootRendersAndReloads(t *testing.T) {
 	}
 	// Project scope keeps it out: the section is user-global.
 	if project := RenderTOMLForScope(c, RenderScopeProject); strings.Contains(project, "[memory]") {
-		t.Fatal("[memory] must not be rendered into a project fairpeer.toml")
+		t.Fatal("[memory] must not be rendered into a project hiq.toml")
 	}
 }
 

@@ -10,17 +10,17 @@ import (
 	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	skillassets "github.com/zzycxz/fairpeer/internal/assets"
-	"github.com/zzycxz/fairpeer/internal/browserlaunch"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/ppttemplate"
-	"github.com/zzycxz/fairpeer/internal/secret"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	skillassets "github.com/zzycxz/hiq/internal/assets"
+	"github.com/zzycxz/hiq/internal/browserlaunch"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/ppttemplate"
+	"github.com/zzycxz/hiq/internal/secret"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // CoWorkSettingsView is the settings-panel view of the coWork profile config.
 // It mirrors config.CoworkConfig but presents secrets (SMTP/IMAP passwords) as
-// plain values the user types — they're stored in a fairpeer-managed .env file
+// plain values the user types — they're stored in a hiq-managed .env file
 // (loaded at startup), NOT in config.toml. The *_env fields in config point at
 // env var names; this view resolves them to/from the .env so the user never
 // touches environment variables manually.
@@ -249,13 +249,13 @@ func scanPPTXTemplates(dir string) []ppttemplate.View {
 
 // updatePPTSkillConfig updates a single key in the PPT skill's template_config.json.
 func (a *App) updatePPTSkillConfig(key, value string) error {
-	// Prefer the released embedded skill's config (~/.fairpeer/skills/ppt-auto),
+	// Prefer the released embedded skill's config (~/.hiq/skills/ppt-auto),
 	// then fall back to the legacy exe-sibling layout for older installs.
 	configPath := skillassets.PPTAutoConfigPath()
 	if configPath == "" {
 		exePath, _ := os.Executable()
 		exeDir := filepath.Dir(exePath)
-		configPath = filepath.Join(exeDir, ".fairpeer", "skills", "ppt-auto", "template_config.json")
+		configPath = filepath.Join(exeDir, ".hiq", "skills", "ppt-auto", "template_config.json")
 	}
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -284,7 +284,7 @@ func (a *App) updatePPTSkillConfig(key, value string) error {
 
 // SetCoWorkSettings persists the coWork settings: non-secret fields to
 // config.toml via the edit pipeline, secret fields (SMTP/IMAP passwords) to the
-// fairpeer-managed .env. The password_env names are auto-assigned when empty so
+// hiq-managed .env. The password_env names are auto-assigned when empty so
 // the user doesn't have to invent env var names.
 func (a *App) SetCoWorkSettings(v CoWorkSettingsView) (err error) {
 	// Recover from panic so a bug in the save path returns an error to the
@@ -664,7 +664,7 @@ func (a *App) OpenPPTTemplateDir() error {
 }
 
 // PickPPTTemplate opens a file picker for .pptx files and copies the selected
-// file to ~/.fairpeer/ppt-template.pptx (a fixed path the ppt-auto skill reads).
+// file to ~/.hiq/ppt-template.pptx (a fixed path the ppt-auto skill reads).
 // Returns the display name of the selected file, or "" if cancelled.
 func (a *App) PickPPTTemplate() (string, error) {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
@@ -678,7 +678,7 @@ func (a *App) PickPPTTemplate() (string, error) {
 	}
 	// Copy the selected file to the fixed location.
 	home, _ := os.UserHomeDir()
-	dest := filepath.Join(home, ".fairpeer", "ppt-template.pptx")
+	dest := filepath.Join(home, ".hiq", "ppt-template.pptx")
 	srcData, err := os.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("读取模板文件失败: %w", err)
@@ -690,7 +690,7 @@ func (a *App) PickPPTTemplate() (string, error) {
 		return "", fmt.Errorf("写入模板文件失败: %w", err)
 	}
 	// Kick off async vision-based color/style extraction. This writes
-	// ~/.fairpeer/ppt-template-style.json which the ppt-auto skill reads
+	// ~/.hiq/ppt-template-style.json which the ppt-auto skill reads
 	// (Step 0) as the highest-priority color source. Best-effort: silently
 	// degrades if no VLM configured or no full-screen bg image found.
 	go a.analyzeTemplateStyleAsync(dest)
@@ -700,7 +700,7 @@ func (a *App) PickPPTTemplate() (string, error) {
 
 // --- .env management --------------------------------------------------------
 
-// coworkEnvPath is the fairpeer-managed .env holding coWork secrets (SMTP/IMAP
+// coworkEnvPath is the hiq-managed .env holding coWork secrets (SMTP/IMAP
 // passwords). Lives in the user config dir alongside config.toml. Loaded at
 // startup into the process env so the tools see the passwords via os.Getenv.
 func coworkEnvPath() string {

@@ -8,7 +8,7 @@ import (
 )
 
 // TestWriteDocAllowsRecognizedFiles verifies WriteDoc overwrites a canonical
-// scope file (project fairpeer.md) and that it round-trips.
+// scope file (project hiq.md) and that it round-trips.
 func TestWriteDocAllowsRecognizedFiles(t *testing.T) {
 	proj := t.TempDir()
 	mustMkdir(t, filepath.Join(proj, ".git"))
@@ -45,7 +45,7 @@ func TestWriteDocRejectsArbitraryPaths(t *testing.T) {
 
 // TestWriteDocAllowsDiscoveredDoc verifies an already-discovered doc (e.g. an
 // AGENTS.md the user is editing) stays writable even though it isn't a canonical
-// fairpeer.md scope target.
+// hiq.md scope target.
 func TestWriteDocAllowsDiscoveredDoc(t *testing.T) {
 	proj := t.TempDir()
 	mustMkdir(t, filepath.Join(proj, ".git"))

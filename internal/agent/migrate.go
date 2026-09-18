@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // legacyEvent is the subset of the v0.x typed event stream (<name>.events.jsonl)
@@ -67,7 +67,7 @@ func MigrateLegacySessions(srcDir, globalDest string, projectDir func(workspaceR
 
 // MigrateLegacySessionsFromConfigDir imports v0.x event-log sessions found in
 // the current user config session directory. It uses an independent marker so a
-// previous ~/.fairpeer import marker cannot hide sessions from a redirected
+// previous ~/.hiq import marker cannot hide sessions from a redirected
 // config root on Windows/macOS.
 func MigrateLegacySessionsFromConfigDir(srcDir, globalDest string, projectDir func(workspaceRoot string) string) (int, error) {
 	return migrateLegacySessions(srcDir, globalDest, legacyRoutedConfigImportMarker, projectDir)

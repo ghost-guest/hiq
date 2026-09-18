@@ -41,7 +41,7 @@ export function SidebarSessions({
   const [editing, setEditing] = useState<string | null>(null);
   const [open, setOpen] = useState(() => {
     try {
-      const saved = localStorage.getItem("fairpeer.sidebarSessions.open");
+      const saved = localStorage.getItem("hiq.sidebarSessions.open");
       return saved ? saved === "true" : true;
     } catch {
       return true;
@@ -52,7 +52,7 @@ export function SidebarSessions({
     setOpen((prev) => {
       const next = !prev;
       try {
-        localStorage.setItem("fairpeer.sidebarSessions.open", String(next));
+        localStorage.setItem("hiq.sidebarSessions.open", String(next));
       } catch {}
       return next;
     });

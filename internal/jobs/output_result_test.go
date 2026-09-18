@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // TestOutputSurfacesResultForBufferlessJob probes a task-style job: its run func

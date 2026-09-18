@@ -3,7 +3,7 @@
 //
 // # Why this exists
 //
-// fairpeer keeps durable notes about a project: doc memory, saved facts, and
+// hiq keeps durable notes about a project: doc memory, saved facts, and
 // their MEMORY.md index. Those notes are written by a model summarising a
 // conversation, and a conversation about an integration routinely contains the
 // thing that makes the integration work — "the key is sk-live-…". The note is

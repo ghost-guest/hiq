@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/shellsafe"
+	"github.com/zzycxz/hiq/internal/shellsafe"
 )
 
 // OutcomeSample decomposes one tool round's receipts by outcome: information

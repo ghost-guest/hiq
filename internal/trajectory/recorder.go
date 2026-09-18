@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/eventwire"
-	"github.com/zzycxz/fairpeer/internal/evidence"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/eventwire"
+	"github.com/zzycxz/hiq/internal/evidence"
 )
 
 // SchemaVersion identifies the record layout; bump on breaking changes.

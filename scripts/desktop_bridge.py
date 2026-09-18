@@ -1,5 +1,5 @@
 """
-Unified desktop interaction bridge for fairpeer.
+Unified desktop interaction bridge for hiq.
 
 Called by Go via subprocess. All actions use JSON stdin/stdout protocol.
 

@@ -7,11 +7,11 @@ Usage:
 Runs AFTER Step 6 (SVG generation) and BEFORE Step 7 (PPTX conversion), only
 when the deck was generated from a reference:
 
-  - PDF reference:  ~/.fairpeer/pdf-pages/page-N.png  ↔ svg_output/slide_NN.svg
-  - single image:   ~/.fairpeer/reference-style.json's source_path ↔ slide_01.svg
+  - PDF reference:  ~/.hiq/pdf-pages/page-N.png  ↔ svg_output/slide_NN.svg
+  - single image:   ~/.hiq/reference-style.json's source_path ↔ slide_01.svg
 
 Each page pair is rendered to PNG (cairosvg) and sent to the configured VLM
-(the same cowork.vlm_model the desktop pre-analysis uses, read from fairpeer's
+(the same cowork.vlm_model the desktop pre-analysis uses, read from hiq's
 config) with a severity-gated compare prompt. Output is a JSON report:
 
     {"round": 1, "stop": false, "pages": [{"page": 1, "verdict": "MAJOR", ...}]}
@@ -27,7 +27,7 @@ The script ALWAYS exits 0 with a report (except bare usage errors): the skill's
 complete_step evidence must match a successful bash receipt, and the SKILL.md
 instructions tell the agent to obey the "stop" flag rather than the exit code.
 
-VLM access is reconstructed from fairpeer's own config (project ./fairpeer.toml
+VLM access is reconstructed from hiq's own config (project ./hiq.toml
 taking precedence over the user config dir), resolving the model ref
 ("<provider>/<model>") to its provider entry, and the API key from the
 provider's api_key_env (environment first, then the credentials file beside
@@ -104,21 +104,21 @@ def _deep_merge(base, overlay):
     return base
 
 
-def load_fairpeer_config():
+def load_hiq_config():
     """Match the Go loader's layering: user config.toml as the base, the
-    project ./fairpeer.toml merged on top (per-field, later wins). Returning
-    only the FIRST existing file was a bug: a project fairpeer.toml without
+    project ./hiq.toml merged on top (per-field, later wins). Returning
+    only the FIRST existing file was a bug: a project hiq.toml without
     provider/vlm keys shadowed the user config entirely, so qa_compare
     reported vlm_not_configured while the desktop's correctly-layered
     pre-analysis worked fine on the same machine."""
     base = None
     config_dir = ""
-    uc = os.path.join(_user_config_dir(), "fairpeer", "config.toml")
+    uc = os.path.join(_user_config_dir(), "hiq", "config.toml")
     if os.path.isfile(uc):
         base = _toml_load(uc)
         if base is not None:
             config_dir = os.path.dirname(uc)
-    proj = os.path.join(os.getcwd(), "fairpeer.toml")
+    proj = os.path.join(os.getcwd(), "hiq.toml")
     if os.path.isfile(proj):
         p = _toml_load(proj)
         if p is not None:
@@ -130,7 +130,7 @@ def load_fairpeer_config():
 
 def _credentials_key(config_dir, env_name):
     """Resolve the provider key: environment first, then KEY=value lines in the
-    credentials file beside config.toml (the same file fairpeer loads)."""
+    credentials file beside config.toml (the same file hiq loads)."""
     val = os.environ.get(env_name, "").strip()
     if val:
         return val
@@ -228,14 +228,14 @@ def _deck_background(home):
     background fixes it."""
     bg = ""
     try:
-        with open(os.path.join(home, ".fairpeer", "skills", "ppt-auto",
+        with open(os.path.join(home, ".hiq", "skills", "ppt-auto",
                                "template_config.json"), "r", encoding="utf-8") as f:
             bg = str((json.load(f).get("colors") or {}).get("background") or "")
     except (OSError, ValueError):
         pass
     if not (bg.startswith("#") and len(bg) == 7):
         try:
-            with open(os.path.join(home, ".fairpeer", "reference-style.json"),
+            with open(os.path.join(home, ".hiq", "reference-style.json"),
                       "r", encoding="utf-8") as f:
                 bg = str(json.load(f).get("background") or "")
         except (OSError, ValueError):
@@ -389,7 +389,7 @@ def reference_pages(home):
     PDF reference: per-page renders. Single image: page 1 only (the spec draws
     ONE similar slide from a single reference; the rest of the deck is
     topic-driven and has nothing to compare against)."""
-    pdf_dir = os.path.join(home, ".fairpeer", "pdf-pages")
+    pdf_dir = os.path.join(home, ".hiq", "pdf-pages")
     if os.path.isdir(pdf_dir):
         pages = []
         for j in sorted(glob.glob(os.path.join(pdf_dir, "page-*.json"))):
@@ -402,7 +402,7 @@ def reference_pages(home):
                 pages.append((n, png))
         if pages:
             return pages
-    ref_style = os.path.join(home, ".fairpeer", "reference-style.json")
+    ref_style = os.path.join(home, ".hiq", "reference-style.json")
     if os.path.isfile(ref_style):
         try:
             with open(ref_style, "r", encoding="utf-8") as f:
@@ -431,7 +431,7 @@ def main():
     ap = argparse.ArgumentParser(description="Visual QA: compare generated SVG slides against the reference.")
     ap.add_argument("project_dir", help="ppt-auto project dir containing svg_output/")
     ap.add_argument("--round", type=int, default=1, help="rework round (1-based); script hard-caps at 2")
-    ap.add_argument("--home", default=None, help="home dir containing .fairpeer/ (default: ~)")
+    ap.add_argument("--home", default=None, help="home dir containing .hiq/ (default: ~)")
     ap.add_argument("--sample", type=int, default=None,
                     help="QA only a subset of pages: the cover + N-1 evenly-spaced pages "
                          "(fast mode). Deterministic spacing so round-over-round no-progress "
@@ -479,7 +479,7 @@ def main():
 
     # VLM availability check BEFORE rendering (M-6): rendering every page and
     # then discovering there is no key wastes the whole render pass.
-    cfg, config_dir = load_fairpeer_config()
+    cfg, config_dir = load_hiq_config()
     vlm, why_not = (None, "vlm_config_missing")
     if cfg is not None:
         vlm, why_not = resolve_vlm(cfg, config_dir)

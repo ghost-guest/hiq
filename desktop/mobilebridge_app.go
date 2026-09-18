@@ -17,15 +17,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/linkpeersignal"
-	"github.com/zzycxz/fairpeer/internal/mobilebridge"
-	"github.com/zzycxz/fairpeer/internal/scheduler"
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/linkpeersignal"
+	"github.com/zzycxz/hiq/internal/mobilebridge"
+	"github.com/zzycxz/hiq/internal/scheduler"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
 // desktop/mobilebridge_app.go wires the internal/mobilebridge Bridge into the
-// fairpeer desktop App. It provides:
+// hiq desktop App. It provides:
 //   - a secret.Store-backed KeyStore (encrypted at rest) for S's long-term
 //     Ed25519 key + paired peer pubs
 //   - an execAdapter exposing App's existing tab methods as CommandExecutor
@@ -37,7 +37,7 @@ import (
 
 // secretKeyStore adapts the encrypted secret.Store (DPAPI on Windows, AES-GCM
 // elsewhere) to mobilebridge.KeyStore, so the long-term Ed25519 private key and
-// paired peer pubs are encrypted at rest (FAIRPEER_SPEC §6). It deliberately
+// paired peer pubs are encrypted at rest (HIQ_SPEC §6). It deliberately
 // uses its own store file — NOT secret.Default() — because the shared store's
 // LoadIntoEnv exports every entry into the process env, which must never happen
 // to key material.
@@ -46,7 +46,7 @@ type secretKeyStore struct {
 }
 
 // mobilebridgeStorePath is the encrypted keystore location, beside the other
-// fairpeer secrets in the user config dir.
+// hiq secrets in the user config dir.
 func mobilebridgeStorePath() string {
 	return filepath.Join(desktopConfigDir(), "mobilebridge.enc.json")
 }
@@ -79,7 +79,7 @@ func (s *secretKeyStore) Delete(key string) error {
 	return s.store.Delete(key)
 }
 
-// legacyMobilebridgeKeysPath is the M1 plaintext keystore (~/.fairpeer/
+// legacyMobilebridgeKeysPath is the M1 plaintext keystore (~/.hiq/
 // mobilebridge_keys.json, base64 values). Kept only for the one-time migration
 // below.
 func legacyMobilebridgeKeysPath() string {
@@ -87,7 +87,7 @@ func legacyMobilebridgeKeysPath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".fairpeer", "mobilebridge_keys.json")
+	return filepath.Join(home, ".hiq", "mobilebridge_keys.json")
 }
 
 // migrateLegacyKeyFileAt lifts the M1 plaintext keystore into the encrypted
@@ -167,10 +167,10 @@ type execAdapter struct {
 	fdFiles map[string]*os.File // file_drop 接收中的文件（name → handle）
 }
 
-// resolveMobileTab maps linkpeer's tab alias ("default"/"") to a real fairpeer
+// resolveMobileTab maps linkpeer's tab alias ("default"/"") to a real hiq
 // tab UUID (the active tab). All mobilebridge commands route through this so
 // the phone transparently joins the desktop's active session without knowing
-// fairpeer's UUID-style tab IDs.
+// hiq's UUID-style tab IDs.
 func (a *App) resolveMobileTab(tab string) string {
 	if tab == "default" || tab == "" {
 		return a.ActiveTabID()
@@ -294,7 +294,7 @@ func (e *execAdapter) DeleteSession(tab string) error {
 }
 
 // OfficeRun 触发办公生成（M5）。简化版：把模板 + 参数拼成指令 submit 到激活
-// tab，fairpeer 的 Controller（cowork profile）调用办公工具链生成文档。
+// tab，hiq 的 Controller（cowork profile）调用办公工具链生成文档。
 func (e *execAdapter) OfficeRun(tab, template string, args map[string]string) error {
 	tab = e.app.resolveMobileTab(tab)
 	if tab == "" {
@@ -312,7 +312,7 @@ func (e *execAdapter) OfficeRun(tab, template string, args map[string]string) er
 	return nil
 }
 
-// —— 文件投递（file_drop，§4）—— 落地到 configDir/fairpeer/incoming/。
+// —— 文件投递（file_drop，§4）—— 落地到 configDir/hiq/incoming/。
 
 func (e *execAdapter) FileStart(_ string, name string, size int64) error {
 	// 安全：清理文件名，防路径遍历 + 限制大小 + 白名单扩展名
@@ -390,7 +390,7 @@ func (e *execAdapter) FileEnd(_ string, name string) error {
 
 func fileDropDir() string {
 	dir, _ := os.UserConfigDir()
-	return filepath.Join(dir, "fairpeer")
+	return filepath.Join(dir, "hiq")
 }
 
 // LoadSession 返回某个 tab 的对话历史（load_session 命令，§4.2）。
@@ -427,7 +427,7 @@ func (a *App) ensureMobileBridge(ctx context.Context) {
 	var pairAddr string // 用户钉死的配对网卡（[mobilebridge] pair_address）
 	// Resolution order: LINKPEER_SIGNAL env > [mobilebridge] signal_url > default.
 	// The env var wins so ad-hoc `LINKPEER_SIGNAL=... wails dev` still works;
-	// the TOML section is the persistent, restart-surviving way to point fairpeer
+	// the TOML section is the persistent, restart-surviving way to point hiq
 	// at your linkpeer-signal K during normal use.
 	signalConfigured := false
 	if s := os.Getenv("LINKPEER_SIGNAL"); s != "" {
@@ -491,7 +491,7 @@ func (a *App) ensureMobileBridge(ctx context.Context) {
 	adapter := &execAdapter{app: a, fdFiles: map[string]*os.File{}}
 	bridge := mobilebridge.NewBridge(cfg, priv, pub, store, adapter, mobilebridge.NewAudit(cfg.LogLevel))
 	adapter.bridge.Store(bridge)
-	// 注入 tab 别名解析：linkpeer 发 "default"/""，fairpeer 需要 UUID tab id。
+	// 注入 tab 别名解析：linkpeer 发 "default"/""，hiq 需要 UUID tab id。
 	// 映射到当前激活 tab，手机就能接入桌面正在用的会话。
 	bridge.SetResolveTab(func(tab string) string {
 		if tab == "default" || tab == "" {
@@ -651,7 +651,7 @@ func (a *App) MobileBridgeSetCloudRelay(enabled bool, url string) error {
 //   - "external"：写入手填的外部 K 地址（独立 K / debug-server）
 //   - "cloud"：signal_url = cloud_signal_url（纯跨网，无本地 K）
 // 返回最终模式供面板回显。当前运行中的 Bridge 不热切（信令重建复杂，
-// 重启 fairpeer 生效——面板有提示文案）。
+// 重启 hiq 生效——面板有提示文案）。
 func (a *App) MobileBridgeSetKMode(mode, externalURL string) (string, error) {
 	switch mode {
 	case "embedded", "external", "cloud":

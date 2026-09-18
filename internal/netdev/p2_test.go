@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 func TestRuleCmpAndMetrics(t *testing.T) {

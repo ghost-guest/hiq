@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/driver"
+	"github.com/zzycxz/hiq/internal/netdev/driver"
 )
 
 // RunInspection sweeps every inventory device with a fixed read battery and

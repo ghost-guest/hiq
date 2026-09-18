@@ -3,7 +3,7 @@ package evidence
 import (
 	"encoding/json"
 
-	"github.com/zzycxz/fairpeer/internal/shellsafe"
+	"github.com/zzycxz/hiq/internal/shellsafe"
 )
 
 // ToolEffects projects shell effects onto policy and evidence boundaries.

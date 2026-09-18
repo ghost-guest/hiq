@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/frontmatter"
+	"github.com/zzycxz/hiq/internal/frontmatter"
 )
 
 // OutputStyle is one selectable persona. Body is appended to the system prompt
@@ -76,7 +76,7 @@ func Dirs() []string {
 
 // conventionDirs mirrors config.ConventionDirs (kept local to avoid an import
 // cycle; config imports nothing from here, but this package stays dependency-light).
-var conventionDirs = []string{".fairpeer", ".agents", ".agent", ".claude"}
+var conventionDirs = []string{".hiq", ".agents", ".agent", ".claude"}
 
 // List returns every available style — built-ins plus the markdown files under
 // dirs — deduped by lowercased name, with custom files overriding built-ins.

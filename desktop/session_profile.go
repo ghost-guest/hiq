@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // desktopSessionDirFor returns the session directory for a workspace root
@@ -50,7 +50,7 @@ func desktopSessionDirFor(workspaceRoot, profile string) string {
 const homeProjectTitle = "工作台"
 
 // profileHomeRoot returns the on-disk workspace root of a profile's home
-// project (<configDir>/fairpeer/home-<profileKey>). It is a real directory so
+// project (<configDir>/hiq/home-<profileKey>). It is a real directory so
 // the home project behaves exactly like any user project.
 func profileHomeRoot(profile string) string {
 	key := config.ProfileNameKey(profile)
@@ -224,7 +224,7 @@ func projectRootSharedWithRealUseElsewhere(root, profileKey string) bool {
 // migrateGlobalIntoHome folds a profile's retired global topic section into
 // its home project. Idempotent: once GlobalTopics is drained it only
 // guarantees the home project entry exists. Titles/created sidecars are
-// copied into the home root's .fairpeer; session files are NOT moved — the
+// copied into the home root's .hiq; session files are NOT moved — the
 // home project resolves to the former global session partition (see
 // desktopSessionDirFor), so every migrated topic finds its transcripts.
 func migrateGlobalIntoHome(profile string) {

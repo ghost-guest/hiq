@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
+	"github.com/zzycxz/hiq/internal/proc"
 )
 
 // docState tracks what we last sent the server for a document, so ensureSynced

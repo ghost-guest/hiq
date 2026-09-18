@@ -36,7 +36,7 @@ var linuxScreenshotTools = []screenshotTool{
 // gnome-screenshot, and grim in order. Returns an image.RGBA compatible with
 // the Windows implementation.
 func CaptureFullScreen() (*image.RGBA, error) {
-	tmpFile := "/tmp/fairpeer_screenshot.png"
+	tmpFile := "/tmp/hiq_screenshot.png"
 	defer os.Remove(tmpFile)
 
 	var lastErr error

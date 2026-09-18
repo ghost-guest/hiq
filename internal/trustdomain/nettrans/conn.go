@@ -7,8 +7,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/mobilebridge"
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/mobilebridge"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 // msgIO timeout for individual request/response exchanges. Generous for

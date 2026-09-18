@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // projectTestCfg: 项目甲 = 核心+出口, 项目乙 = 存储. sw1/sw2 ∈ 核心, db1 ∈ 存储,

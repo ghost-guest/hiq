@@ -7,10 +7,10 @@ import (
 	"strconv"
 )
 
-// Config is the [mobilebridge] section of fairpeer.toml. The desktop
-// integration layer (desktop/app.go) fills this from fairpeer's config load
+// Config is the [mobilebridge] section of hiq.toml. The desktop
+// integration layer (desktop/app.go) fills this from hiq's config load
 // and passes it to Bridge — mobilebridge itself never reads TOML, keeping it
-// independent of fairpeer's config internals. See FAIRPEER_SPEC §5.
+// independent of hiq's config internals. See HIQ_SPEC §5.
 type Config struct {
 	Enabled         bool
 	SignalURL       string   // e.g. "wss://signal.example.com"
@@ -38,7 +38,7 @@ type Config struct {
 	KnockServer string // e.g. "stun:stun.example.com:3478"；空 = 不追加
 }
 
-// DefaultConfig matches FAIRPEER_SPEC §5 defaults. The SignalURL placeholder
+// DefaultConfig matches HIQ_SPEC §5 defaults. The SignalURL placeholder
 // is overridden by the QR code's relay field at pairing time per device.
 func DefaultConfig() Config {
 	return Config{

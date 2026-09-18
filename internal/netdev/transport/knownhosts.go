@@ -375,11 +375,11 @@ func (p *HostKeyPolicy) managedPath() string {
 
 // ManagedKnownHostsOverride redirects the default managed known_hosts file
 // for the whole package (tests isolate here instead of touching the user's
-// real state tree). Empty = the fairpeer state dir default.
+// real state tree). Empty = the hiq state dir default.
 var ManagedKnownHostsOverride string
 
 // defaultManagedKnownHosts is the netdev-managed known_hosts file under the
-// fairpeer state tree (os.UserConfigDir()/fairpeer/netdev/known_hosts), beside
+// hiq state tree (os.UserConfigDir()/hiq/netdev/known_hosts), beside
 // secrets.enc.json so sandbox deny rules can cover the whole tree at once.
 func defaultManagedKnownHosts() string {
 	dir, err := os.UserConfigDir()
@@ -387,7 +387,7 @@ func defaultManagedKnownHosts() string {
 		home, _ := os.UserHomeDir()
 		dir = home
 	}
-	return filepath.Join(dir, "fairpeer", "netdev", "known_hosts")
+	return filepath.Join(dir, "hiq", "netdev", "known_hosts")
 }
 
 // TrustKey appends key to the netdev-managed known_hosts (the default

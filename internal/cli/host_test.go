@@ -164,7 +164,7 @@ func notifications(frames []hostFrame, method string) []hostFrame {
 func hostTestProject(t *testing.T) string {
 	t.Helper()
 	project := t.TempDir()
-	if err := os.WriteFile(filepath.Join(project, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(project, "hiq.toml"), []byte(`
 default_model = "local"
 
 [[providers]]
@@ -172,7 +172,7 @@ name = "local"
 kind = "acp-test-provider"
 base_url = "http://example.invalid"
 model = "fake-model"
-api_key_env = "FAIRPEER_TEST_KEY"
+api_key_env = "HIQ_TEST_KEY"
 `), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +184,7 @@ api_key_env = "FAIRPEER_TEST_KEY"
 
 func TestHostProtocolPipe(t *testing.T) {
 	isolateCLIConfigHome(t)
-	t.Setenv("FAIRPEER_TEST_KEY", "test-key")
+	t.Setenv("HIQ_TEST_KEY", "test-key")
 	project := hostTestProject(t)
 	c := startHostClient(t)
 	defer c.finish()
@@ -200,7 +200,7 @@ func TestHostProtocolPipe(t *testing.T) {
 	var cfgRes struct {
 		Configured bool `json:"configured"`
 	}
-	if f := c.call("host/configure", `{"defaultModel":"local/fake-model","providers":[{"name":"pushed","kind":"acp-test-provider","apiKeyEnv":"FAIRPEER_PUSHED_KEY","apiKey":"pushed-key","models":["pushed-model"]}]}`); json.Unmarshal(f.Result, &cfgRes) != nil || !cfgRes.Configured {
+	if f := c.call("host/configure", `{"defaultModel":"local/fake-model","providers":[{"name":"pushed","kind":"acp-test-provider","apiKeyEnv":"HIQ_PUSHED_KEY","apiKey":"pushed-key","models":["pushed-model"]}]}`); json.Unmarshal(f.Result, &cfgRes) != nil || !cfgRes.Configured {
 		t.Fatalf("host/configure = %+v err=%+v", cfgRes, f.Error)
 	}
 
@@ -227,7 +227,7 @@ func TestHostProtocolPipe(t *testing.T) {
 	for _, e := range list.Entries {
 		names[e.Name] = true
 	}
-	if !names["hello.txt"] || !names["fairpeer.toml"] {
+	if !names["hello.txt"] || !names["hiq.toml"] {
 		t.Fatalf("fs/list entries missing expected files: %+v", list.Entries)
 	}
 

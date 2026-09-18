@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // VLM is the single vision-language-model entry: it sends an image (as a base64

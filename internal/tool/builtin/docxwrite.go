@@ -531,7 +531,7 @@ func nextRIdBase(relsXML string, relErr error) int {
 // maxNumIdInNumbering scans a word/numbering.xml body for <w:num w:numId="N">
 // entries and returns the maximum N, so appended ordered lists can allocate
 // numIds that don't collide with the base document's existing definitions.
-// Returns 1 (the legacy decimal numId fairpeer always defines) when the part
+// Returns 1 (the legacy decimal numId hiq always defines) when the part
 // is absent/unreadable — append then behaves like full-write (lists use 2,3,…).
 func maxNumIdInNumbering(numberingXML string) int {
 	if numberingXML == "" {

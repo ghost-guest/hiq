@@ -14,7 +14,7 @@ func TestScrubUserPaths(t *testing.T) {
 	cases := map[string]string{
 		`at C:\Users\yuhua\proj\app.ts:12:3`:      `at C:\Users\_\proj\app.ts:12:3`,
 		`at c:\users\someone\x.go`:                `at c:\users\_\x.go`,
-		`/home/bob/.config/fairpeer/config.toml`:  `/home/_/.config/fairpeer/config.toml`,
+		`/home/bob/.config/hiq/config.toml`:  `/home/_/.config/hiq/config.toml`,
 		`/Users/alice/Library/Logs`:               `/Users/_/Library/Logs`,
 		`Error: ENOENT open '/home/bob/secret'`:   `Error: ENOENT open '/home/_/secret'`,
 		`no user path here: /usr/lib/node`:        `no user path here: /usr/lib/node`,

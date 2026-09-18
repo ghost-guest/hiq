@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/evidence"
+	"github.com/zzycxz/hiq/internal/evidence"
 )
 
 func TestMergeDecisionsIsMonotonic(t *testing.T) {

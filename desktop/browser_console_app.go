@@ -31,10 +31,10 @@ import (
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"github.com/zzycxz/fairpeer/internal/boot"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/boot"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // --- console primitives -----------------------------------------------------------
@@ -493,7 +493,7 @@ func userSkillsDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".fairpeer", "skills"), nil
+	return filepath.Join(home, ".hiq", "skills"), nil
 }
 
 var skillNameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-_]*$`)

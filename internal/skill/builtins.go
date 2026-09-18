@@ -1,6 +1,6 @@
 package skill
 
-// Built-in skills ship with fairpeer and back the dedicated subagent tools
+// Built-in skills ship with hiq and back the dedicated subagent tools
 // (explore / research / review / security_review) plus the inline `test`
 // playbook. A user/project file with the same name overrides the built-in (see
 // Store.List / Store.Read). Tool names in the bodies match internal/tool/builtin.
@@ -209,7 +209,7 @@ Your final answer:
 
 The 'task' the parent gave you is the research question. Stay on it.`
 
-const builtinInstallCapabilityBody = `This skill is INLINED. Use it when the user asks to install a fairpeer MCP server or skill from a URL, local file, local folder, .mcp.json, or package name. For removing a previously installed skill or MCP server, follow the "Uninstall" rules at the bottom — same tool, different op.
+const builtinInstallCapabilityBody = `This skill is INLINED. Use it when the user asks to install a hiq MCP server or skill from a URL, local file, local folder, .mcp.json, or package name. For removing a previously installed skill or MCP server, follow the "Uninstall" rules at the bottom — same tool, different op.
 
 Operate as an installer, not as a shell-script guesser:
 1. Extract the source string exactly from the user's request. It may be an https URL, GitHub URL, local path, .mcp.json, executable path, or npm package name.
@@ -315,7 +315,7 @@ Lead each turn with a one-line status (e.g. "▸ running go test ./… ", "▸ 2
 const builtinInitBody = `This skill is INLINED — you run in the parent loop. The user invoked /init: bootstrap (or refresh) this project's AGENTS.md — the durable memory file folded into every future session. Analyze the codebase, then write a concise, high-signal AGENTS.md.
 
 How to operate:
-1. Check for an existing memory doc first: list the project root and look for AGENTS.md / fairpeer.md / fairpeer.md / CLAUDE.md. If one exists, read it and IMPROVE it in place (fix stale facts, fill gaps) — write back to that same filename, don't clobber it wholesale or create a second file.
+1. Check for an existing memory doc first: list the project root and look for AGENTS.md / hiq.md / hiq.md / CLAUDE.md. If one exists, read it and IMPROVE it in place (fix stale facts, fill gaps) — write back to that same filename, don't clobber it wholesale or create a second file.
 2. Explore enough to be accurate, not exhaustive:
    - Project shape: ls / directory listing, the manifest (go.mod, package.json, pyproject.toml, Cargo.toml, …), the README.
    - Build / test / run commands: derive them from the manifest + scripts and verify the exact names — don't guess.
@@ -629,7 +629,7 @@ func builtinSkills() []Skill {
 		},
 		{
 			Name:        "install-capability",
-			Description: "Install or uninstall fairpeer capabilities — a capability is either a skill or an MCP server. Sources: URL, GitHub/raw file, local path/folder, .mcp.json, executable, or package name (ANY source, plus uninstall; for browsing the official MCP Registry use Settings → MCP 与工具 → 远程市场). Plans with install_source (op=install or op=uninstall) before applying, surfacing per-action riskLevel.",
+			Description: "Install or uninstall hiq capabilities — a capability is either a skill or an MCP server. Sources: URL, GitHub/raw file, local path/folder, .mcp.json, executable, or package name (ANY source, plus uninstall; for browsing the official MCP Registry use Settings → MCP 与工具 → 远程市场). Plans with install_source (op=install or op=uninstall) before applying, surfacing per-action riskLevel.",
 			Body:        builtinInstallCapabilityBody,
 			Scope:       ScopeBuiltin,
 			Path:        "(builtin)",

@@ -21,7 +21,7 @@ export type { DictKey };
 export type LangPref = "" | "en" | "zh";
 
 const DICTS: Record<Locale, Record<DictKey, string>> = { en, zh };
-const STORAGE_KEY = "fairpeer-lang";
+const STORAGE_KEY = "hiq-lang";
 
 // currentLocale mirrors the active locale for callers outside React (lib/tools.ts).
 let currentLocale: Locale = "en";

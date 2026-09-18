@@ -28,8 +28,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // defaultStreamIdleTimeout caps how long a started SSE stream may go silent before

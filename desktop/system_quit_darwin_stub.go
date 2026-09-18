@@ -9,7 +9,7 @@ func installSystemQuitHook() {
 	// No operation on amd64 macOS builds.
 }
 
-//export fairpeerMarkSystemQuit
-func fairpeerMarkSystemQuit() {
+//export hiqMarkSystemQuit
+func hiqMarkSystemQuit() {
 	// No operation on amd64 macOS builds.
 }

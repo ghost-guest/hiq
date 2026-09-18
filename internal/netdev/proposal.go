@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev/driver"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev/driver"
 )
 
 // Proposal pipeline (NETDEV_SPEC §6.2–6.4): the ONLY write path. The agent

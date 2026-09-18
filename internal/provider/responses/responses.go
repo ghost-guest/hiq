@@ -20,9 +20,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/provider/openai"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider/openai"
 )
 
 const (
@@ -359,7 +359,7 @@ func (c *client) buildRequestBody(req provider.Request) (map[string]any, bool, [
 			"format": map[string]any{"type": "json_object"},
 		}
 	}
-	// fairpeer Request.Temperature is a plain float64 (0 = unset); upstream
+	// hiq Request.Temperature is a plain float64 (0 = unset); upstream
 	// used a pointer. Treat 0 as "omit" — responses consumers set it explicitly.
 	if req.Temperature != 0 && !c.caps.ignoresTemperature {
 		body["temperature"] = req.Temperature
@@ -637,7 +637,7 @@ func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<-
 		case "response.completed", "response.incomplete", "response.failed":
 			terminal = true
 			// Upstream also emitted a ChunkReasoning{ReasoningState: incomplete}
-			// marker here; fairpeer's Chunk has no ReasoningState field, and the
+			// marker here; hiq's Chunk has no ReasoningState field, and the
 			// terminal usage/done chunks below already close the turn. Leave the
 			// marker out rather than adding an unused field.
 			completedResponseID = terminalResponseID(event)

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/usagecatalog"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/usagecatalog"
 )
 
 // Output-ceiling observability (open-vetta 移植 N-1).

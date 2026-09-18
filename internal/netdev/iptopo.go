@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // iptopo.go — the LOCAL topology view (the user's rendering doctrine):

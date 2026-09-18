@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 // replanTeam is a two-member team where only "后端" covers the go skill, so a

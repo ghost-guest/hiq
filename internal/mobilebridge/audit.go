@@ -7,11 +7,11 @@ import (
 // Audit logs ONLY metadata about mobile-side activity: devIds (truncated),
 // command types, connection lifecycle, errors. It NEVER logs command inputs,
 // conversation text, file contents, or any business data — that would defeat
-// the privacy promise. Retention is local (FAIRPEER_SPEC §11.2④).
+// the privacy promise. Retention is local (HIQ_SPEC §11.2④).
 type Audit struct{ log *slog.Logger }
 
 func NewAudit(level string) *Audit {
-	// 用 fairpeer 全局 slog（startup 时 route 到 app.log）。原来用 os.Stdout，
+	// 用 hiq 全局 slog（startup 时 route 到 app.log）。原来用 os.Stdout，
 	// 但 wails GUI 应用没有控制台，stdout 不可见，dc_open/cmd/conn_open 等
 	// 关键日志全丢了。level 跟随全局配置（[mobilebridge] log_level=debug 时
 	// 整个 app.log 已是 debug 级）。

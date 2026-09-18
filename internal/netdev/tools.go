@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev/driver"
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev/driver"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // HostKeyPrompt is the interactive TOFU hook. nil (default) = strict mode:

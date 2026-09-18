@@ -16,8 +16,8 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 func init() { tool.RegisterBuiltin(webFetch{}) }
@@ -263,7 +263,7 @@ func fetchOnce(client *http.Client, reqCtx context.Context, target string) ([]by
 	}
 	// A plain UA + Accept tip the server toward returning text/HTML rather
 	// than minified asset bundles or binary content.
-	req.Header.Set("User-Agent", "fairpeer-web-fetch/1.0")
+	req.Header.Set("User-Agent", "hiq-web-fetch/1.0")
 	req.Header.Set("Accept", "text/html,text/plain,text/markdown,application/json,*/*;q=0.5")
 
 	resp, err := client.Do(req)

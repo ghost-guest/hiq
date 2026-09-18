@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/bot"
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/bot"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 const (
@@ -492,7 +492,7 @@ func (a *adapter) sendMessage(ctx context.Context, msg bot.OutboundMessage) (bot
 		"msg": map[string]interface{}{
 			"from_user_id":  "",
 			"to_user_id":    msg.ChatID,
-			"client_id":     fmt.Sprintf("fairpeer-%d", time.Now().UnixNano()),
+			"client_id":     fmt.Sprintf("hiq-%d", time.Now().UnixNano()),
 			"message_type":  weixinMsgTypeBot,
 			"message_state": weixinMsgStateDone,
 			"item_list": []map[string]interface{}{

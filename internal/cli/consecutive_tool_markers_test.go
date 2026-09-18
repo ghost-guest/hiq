@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // 3 parallel Bash(ls) in one turn, ids "call_<n>" (no "shell-" prefix), each

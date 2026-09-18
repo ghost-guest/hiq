@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/nilutil"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 const autoPlanClassifierPrompt = `You classify whether a coding-agent user request should first enter read-only planning mode.

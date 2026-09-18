@@ -3,7 +3,7 @@ package team
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 func TestSuggestAssigneeBySkill(t *testing.T) {

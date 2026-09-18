@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/deferred"
+	"github.com/zzycxz/hiq/internal/deferred"
 )
 
 // Mode is the user-configurable autonomy level. See the package doc.

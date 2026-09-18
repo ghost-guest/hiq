@@ -1,8 +1,8 @@
-# 参与 fairpeer 开发贡献
+# 参与 hiq 开发贡献
 
-感谢您对参与 fairpeer 贡献感兴趣！本指南涵盖了您开始贡献所需了解的一切。
+感谢您对参与 hiq 贡献感兴趣！本指南涵盖了您开始贡献所需了解的一切。
 
-有关完整的架构概述和命名规范，请参阅 [fairpeer.md](./fairpeer.md)。
+有关完整的架构概述和命名规范，请参阅 [hiq.md](./hiq.md)。
 
 ## 前置要求
 
@@ -13,8 +13,8 @@
 ## 快速开始
 
 ```bash
-git clone https://github.com/zzycxz/fairpeer.git
-cd fairpeer
+git clone https://github.com/zzycxz/hiq.git
+cd hiq
 make build    # 编译 CLI 二进制文件
 make test     # 运行完整的测试套件
 ```
@@ -23,8 +23,8 @@ make test     # 运行完整的测试套件
 
 | 目录 | 用途 |
 |-----------|---------|
-| `cmd/fairpeer` | CLI 入口点 (极简 — 委托给 `internal/cli` 处理) |
-| `cmd/fairpeer-plugin-example` | 参考 MCP stdio 插件示例 |
+| `cmd/hiq` | CLI 入口点 (极简 — 委托给 `internal/cli` 处理) |
+| `cmd/hiq-plugin-example` | 参考 MCP stdio 插件示例 |
 | `cmd/e2ebench` | 端到端基准测试套件 |
 | `internal/agent` | Agent 循环、会话、协调器、压缩机制、风暴拦截 |
 | `internal/cli` | TUI、子命令、配置向导、Markdown 渲染 |
@@ -38,7 +38,7 @@ make test     # 运行完整的测试套件
 | `internal/plugin` | MCP 客户端 (stdio + Streamable HTTP) |
 | `internal/event` | 类型化的事件流 (Sink 接口) |
 | `internal/hook` | 钩子拦截 (PreToolUse, PostToolUse, UserPromptSubmit, Stop) |
-| `internal/memory` | fairpeer.md 知识分层 + 自动记忆存储 |
+| `internal/memory` | hiq.md 知识分层 + 自动记忆存储 |
 | `internal/skill` | Markdown 技能发现机制 + 内置技能 |
 | `internal/sandbox` | 操作系统级沙盒 (macOS 的 Seatbelt) |
 | `internal/permission` | 每次调用的权限策略: 允许/询问/拒绝 规则 |
@@ -153,7 +153,7 @@ ci: add golangci-lint and govulncheck
 
 1. 在 `internal/bot/mychannel/` 中创建频道专属适配器
 2. 在 `internal/bot/gateway.go` 中注册
-3. 在 `fairpeer.example.toml` 中添加配置说明
+3. 在 `hiq.example.toml` 中添加配置说明
 4. 为频道特有的消息添加 i18n 字符串
 
 ## 提交更改

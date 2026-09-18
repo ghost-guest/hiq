@@ -52,7 +52,7 @@
 
 ## 四、P0-2：pptx_to_svg 移植与 Beautify 路线（PPTX 输入产品线）
 
-**问题**：fairpeer 对 PPTX 输入只有 python-pptx 浅层遍历。ppt-master 有完整反向解析器（17 模块：图表/自定义几何/效果/表格/文本/预设形状/超链接/EMU 单位/主题色解析），是其 Beautify（保文字页序 1:1 重排版式）与 readPPTX 的地基。**这是 fairpeer 最大的产品空白**："我有份旧 PPT 帮我弄好看"是办公高频需求。
+**问题**：hiq 对 PPTX 输入只有 python-pptx 浅层遍历。ppt-master 有完整反向解析器（17 模块：图表/自定义几何/效果/表格/文本/预设形状/超链接/EMU 单位/主题色解析），是其 Beautify（保文字页序 1:1 重排版式）与 readPPTX 的地基。**这是 hiq 最大的产品空白**："我有份旧 PPT 帮我弄好看"是办公高频需求。
 
 **分 Phase**：
 
@@ -86,7 +86,7 @@
 - **SVG 创作辅助件**：移植/改写 `preset_shape_svg`（PPT 170+ 预设几何 → SVG path）、`shape_boolean_svg`、`svg_position_calculator` 为 skill 脚本；SKILL.md 指引模型"复杂 path 用辅助件生成，禁手算"。
 - **公式**：`latex_render` 改 matplotlib mathtext 后端（免装 LaTeX），输出 PNG 嵌入（同规则 11 内联）。
 - **超链接 / 图表带数据**：参考其 native-hyperlinks / native-data-interface 文档，在 svg_to_pptx 侧做直通属性（`data-href` 标记 → DrawingML 关系）。
-- **图搜增强**：Settings 可选 Pexels/Pixabay key 层（fairpeer 官方 key 内置或用户自配，检测到即优先，百度兜底不变）；`provider_searxng.py` 对接本地 SearXNG 聚合 Bing/Baidu（Swarm-OS 已有 searxng-standalone）。
+- **图搜增强**：Settings 可选 Pexels/Pixabay key 层（hiq 官方 key 内置或用户自配，检测到即优先，百度兜底不变）；`provider_searxng.py` 对接本地 SearXNG 聚合 Bing/Baidu（Swarm-OS 已有 searxng-standalone）。
 
 ## 八、P3：体验债
 

@@ -1,4 +1,4 @@
-// Package compose implements fairpeer's structured development workflow:
+// Package compose implements hiq's structured development workflow:
 // after a plan is approved, a multi-task feature runs through Implement →
 // Verify → (Review) with bounded retries, instead of a single execution
 // turn that never validates the result.
@@ -23,8 +23,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // MaxImplementAttempts bounds the Implement→Verify retry loop. After this many

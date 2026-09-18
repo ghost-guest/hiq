@@ -16,7 +16,7 @@ python-pptx>=0.6.21
 cairosvg>=0.5.0
 resvg-py>=0.1.0
 
-# TOML 解析（qa_compare.py 读 fairpeer config.toml；Python 3.11+ 用内置 tomllib）
+# TOML 解析（qa_compare.py 读 hiq config.toml；Python 3.11+ 用内置 tomllib）
 tomli>=2.0; python_version < '3.11' 
 
 # 图片处理（尺寸校正、水印去除、宽高比修复）

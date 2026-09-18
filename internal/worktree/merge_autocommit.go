@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/fileutil"
+	"github.com/zzycxz/hiq/internal/fileutil"
 )
 
 var gitNoOptionalLocks = []string{"GIT_OPTIONAL_LOCKS=0"}

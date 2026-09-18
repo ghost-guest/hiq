@@ -1,7 +1,7 @@
 export type DisplayMode = "standard" | "compact" | "minimal";
 
-const DISPLAY_MODE_KEY = "fairpeer-display-mode";
-const DISPLAY_MODE_EVENT = "fairpeer:display-mode";
+const DISPLAY_MODE_KEY = "hiq-display-mode";
+const DISPLAY_MODE_EVENT = "hiq:display-mode";
 
 export function getDisplayMode(): DisplayMode {
   if (typeof localStorage === "undefined") return "standard";

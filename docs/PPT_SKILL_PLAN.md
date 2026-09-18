@@ -1,7 +1,7 @@
 ﻿# PPT Skill 瀹炴柦鏂规
 
 ## 涓€銆佺洰鏍?
-灏?PPT 鐢熸垚鑳藉姏灏佽涓?fairpeer 鐨勭嫭绔?skill 瀹夎鍖呫€傜敤鎴烽€氳繃鑷劧璇█鎸囦护鍗冲彲鐢熸垚涓撲笟 PPT锛屼笉渚濊禆瀹屾暣 ppt-auto 椤圭洰銆?
+灏?PPT 鐢熸垚鑳藉姏灏佽涓?hiq 鐨勭嫭绔?skill 瀹夎鍖呫€傜敤鎴烽€氳繃鑷劧璇█鎸囦护鍗冲彲鐢熸垚涓撲笟 PPT锛屼笉渚濊禆瀹屾暣 ppt-auto 椤圭洰銆?
 ## 浜屻€佹灦鏋?
 ```
 鐢ㄦ埛锛?鍋氫竴涓崕涓烘櫤绠椾腑蹇冪殑PPT"
@@ -14,7 +14,7 @@
 - 鐢ㄦ埛鎸囧畾 > 閰嶇疆榛樿鍊?
 ## 涓夈€佹枃浠剁粨鏋?
 ```
-fairpeer/skills/ppt-auto/
+hiq/skills/ppt-auto/
 鈹溾攢鈹€ SKILL.md                    # 娴佺▼鎸囧紩锛堢粰妯″瀷璇伙級
 鈹溾攢鈹€ template_config.json        # 榛樿璁捐绾︽潫锛堢敤鎴峰彲缂栬緫锛?鈹溾攢鈹€ templates/
 鈹?  鈹斺攢鈹€ 涓浗绉诲姩妯℃澘.pptx        # 榛樿妯℃澘锛堟墦鍖呭唴缃級
@@ -109,7 +109,7 @@ COM 鎺ュ彛锛?- PowerPoint: `comtypes.client.CreateObject("PowerPoint.Applica
 ### Phase 2锛氱鍒扮楠岃瘉 鉁?
 - [x] 鐢ㄥ唴缃?Python 娴嬭瘯 analyze_template.py锛圥owerPoint COM 姝ｅ父锛?- [x] 鐢ㄥ唴缃?Python 娴嬭瘯 svg_to_pptx.py锛圫VG 杞?PPTX 鎴愬姛锛?- [x] 楠岃瘉 comtypes 杩愯鏃朵緷璧栵紙tools/ 涓嶈兘鍒犻櫎锛?- [x] 淇璺緞缂栫爜闂锛坥s.path.normpath锛?
 ### Phase 3锛氬彂甯冿紙寰呭畾锛?
-- [ ] 闆嗘垚鍒?fairpeer exe 瀹夎鍖?- [ ] 娴嬭瘯鏂扮幆澧冨畨瑁?- [ ] 缂栧啓鐢ㄦ埛鏂囨。
+- [ ] 闆嗘垚鍒?hiq exe 瀹夎鍖?- [ ] 娴嬭瘯鏂扮幆澧冨畨瑁?- [ ] 缂栧啓鐢ㄦ埛鏂囨。
 
 ## 涓冦€佸凡鐭ラ檺鍒?
 1. **鍔炲叕杞欢渚濊禆**锛氶渶瑕?PowerPoint 鎴?WPS锛堢敤浜庢ā鏉垮垎鏋愶級

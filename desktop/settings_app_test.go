@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 func TestWithFreshSystemPromptReplacesExistingSystemMessage(t *testing.T) {
@@ -108,7 +108,7 @@ func TestSaveProviderFiltersNonChatModels(t *testing.T) {
 		BaseURL:   "https://api.example.com/v1",
 		Models:    []string{"test-model-5-asr", "test-model-a", "test-model-5-tts"},
 		Default:   "test-model-5-asr",
-		APIKeyEnv: "FAIRPEER_API_KEY",
+		APIKeyEnv: "HIQ_API_KEY",
 	}); err != nil {
 		t.Fatalf("SaveProvider: %v", err)
 	}

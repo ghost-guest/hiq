@@ -6,7 +6,7 @@
 // would need.
 //
 // CodeGraph is fetched on first use into a per-version cache (see Install) rather
-// than shipped in the fairpeer binary, which keeps installs small. Resolve finds
+// than shipped in the hiq binary, which keeps installs small. Resolve finds
 // the cached launcher; an explicit config path, a system-installed `codegraph` on
 // PATH, and a bundle placed beside the executable are also honored. boot injects
 // the resolved launcher as one more stdio plugin, pinned to the project root via
@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
+	"github.com/zzycxz/hiq/internal/proc"
 )
 
 const initTimeout = 30 * time.Second
@@ -42,7 +42,7 @@ Use grep/read_file for content search (comments, strings, config values) and whe
 
 The codegraph_* tools above and the "codegraph" entry in the MCP/plugin list are the SAME code-intelligence runtime (built-in tool mode vs 'codegraph serve --mcp' server mode) — disabling or uninstalling one side affects both.`
 
-// BundleDirName is the optional directory, beside the fairpeer executable, where
+// BundleDirName is the optional directory, beside the hiq executable, where
 // an operator can place an unpacked CodeGraph bundle for offline use. Its
 // launcher lives at <BundleDirName>/bin/codegraph, with the bundled node runtime
 // and lib/ beside it; the launcher resolves those relative to itself, so the
@@ -75,7 +75,7 @@ func Resolve(override string) (string, bool) {
 	return "", false
 }
 
-// bundled looks for the CodeGraph launcher unpacked beside the fairpeer binary.
+// bundled looks for the CodeGraph launcher unpacked beside the hiq binary.
 // The executable path is symlink-resolved first so a launcher installed via a
 // symlink (e.g. a package manager's bin shim) still points at the real bundle.
 func bundled() (string, bool) {

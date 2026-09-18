@@ -3,7 +3,7 @@ package netdev
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // Word-table coverage — the spec's §2.3 samples, bilingual, three per class.

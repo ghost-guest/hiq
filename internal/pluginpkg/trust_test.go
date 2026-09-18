@@ -11,14 +11,14 @@ import (
 // exercised against a package that spans both declarative and executing
 // surfaces.
 const trustFullManifest = `{
-  "apiVersion": "fairpeer.io/plugin/v2",
+  "apiVersion": "hiq.io/plugin/v2",
   "name": "full",
   "version": "1.0.0",
   "contributes": {
     "skills": ["skills"],
     "commands": ["commands"],
     "prompts": ["prompts"],
-    "themes": ["themes/*.fairpeer-theme"]
+    "themes": ["themes/*.hiq-theme"]
   },
   "hooks": {"PreToolUse": [{"match": "Bash", "command": "./pre.sh"}]},
   "mcpServers": {"srv": {"type": "stdio", "command": "./srv"}},
@@ -34,7 +34,7 @@ func writeTrustPlugin(t *testing.T, extra string) Package {
 	writeTestFile(t, filepath.Join(root, "skills", "demo", "SKILL.md"), "---\ndescription: demo\n---\nDemo")
 	writeTestFile(t, filepath.Join(root, "commands", "ship.md"), "---\ndescription: ship\n---\nShip")
 	writeTestFile(t, filepath.Join(root, "prompts", "plan.md"), "---\ndescription: plan\n---\nPlan")
-	writeTestFile(t, filepath.Join(root, "themes", "neon.fairpeer-theme"), "bytes")
+	writeTestFile(t, filepath.Join(root, "themes", "neon.hiq-theme"), "bytes")
 	writeTestFile(t, filepath.Join(root, "pre.sh"), "#!/bin/sh\n")
 	writeTestFile(t, filepath.Join(root, "srv"), "#!/bin/sh\n")
 	writeTestFile(t, filepath.Join(root, "run"), "#!/bin/sh\n")
@@ -143,7 +143,7 @@ func TestRequestedTrustReadsManifestHint(t *testing.T) {
 func TestParseRejectsUnknownTrustTier(t *testing.T) {
 	root := t.TempDir()
 	writeV2Plugin(t, root, `{
-  "apiVersion": "fairpeer.io/plugin/v2",
+  "apiVersion": "hiq.io/plugin/v2",
   "name": "typo",
   "trust": "root"
 }`)

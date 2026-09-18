@@ -3,7 +3,7 @@ package main
 // remote_ssh_trust.go — first-connect host-key confirmation for SSH. The
 // transport itself rejects unknown keys (no silent TOFU); the wizard surfaces
 // the fingerprint via SSHInspectHost, the user confirms, and SSHTrustHost
-// writes the key into the fairpeer-managed known_hosts so the supervised dial
+// writes the key into the hiq-managed known_hosts so the supervised dial
 // accepts it afterwards. Conflicting keys always fail hard inside the
 // known_hosts callback.
 
@@ -59,7 +59,7 @@ func sshFetchHostKey(host, port string) (ssh.PublicKey, error) {
 }
 
 // sshKnownHostsCallback builds a verifier over the system files plus the
-// fairpeer-managed file (mirrors the transport's HostKeyPolicy sources).
+// hiq-managed file (mirrors the transport's HostKeyPolicy sources).
 func sshKnownHostsCallback(managed string) (ssh.HostKeyCallback, error) {
 	if managed != "" {
 		if err := os.MkdirAll(filepath.Dir(managed), 0o700); err == nil {
@@ -81,7 +81,7 @@ func sshKnownHostsCallback(managed string) (ssh.HostKeyCallback, error) {
 	}
 	if len(files) == 0 {
 		// knownhosts.New needs at least one file; an empty temp file works.
-		tmp, err := os.CreateTemp("", "fairpeer-empty-knownhosts-*")
+		tmp, err := os.CreateTemp("", "hiq-empty-knownhosts-*")
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +93,7 @@ func sshKnownHostsCallback(managed string) (ssh.HostKeyCallback, error) {
 }
 
 // SSHInspectHost fetches the host key fingerprint and reports whether the key
-// is already trusted (system known_hosts or the fairpeer-managed file).
+// is already trusted (system known_hosts or the hiq-managed file).
 func (a *App) SSHInspectHost(host, port, user string) (SSHHostInfo, error) {
 	host = strings.TrimSpace(host)
 	if host == "" {

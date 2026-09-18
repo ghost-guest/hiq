@@ -1,4 +1,4 @@
-// Command netprobe is fairpeer's in-network probe binary (NETDEV_SPEC §5.1):
+// Command netprobe is hiq's in-network probe binary (NETDEV_SPEC §5.1):
 // run it ON a jump host inside the management network (copy it there manually
 // for now — automated SFTP deployment ships later), point it at a CIDR, and
 // it probes TCP ports and ICMP reachability from that network position — the
@@ -173,7 +173,7 @@ func icmpPing(ipStr string, timeout time.Duration) bool {
 
 	msg := icmp.Message{
 		Type: ipv4.ICMPTypeEcho, Code: 0,
-		Body: &icmp.Echo{ID: os.Getpid() & 0xffff, Seq: 1, Data: []byte("fairpeer-netprobe")},
+		Body: &icmp.Echo{ID: os.Getpid() & 0xffff, Seq: 1, Data: []byte("hiq-netprobe")},
 	}
 	b, err := msg.Marshal(nil)
 	if err != nil {

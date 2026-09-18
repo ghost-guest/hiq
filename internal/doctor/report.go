@@ -9,13 +9,13 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/codegraph"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	runtimepkg "github.com/zzycxz/fairpeer/internal/runtime"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/codegraph"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netclient"
+	runtimepkg "github.com/zzycxz/hiq/internal/runtime"
+	"github.com/zzycxz/hiq/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
 type Options struct {
@@ -247,7 +247,7 @@ func Collect(opts Options) Report {
 
 func RenderText(r Report) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "fairpeer %s doctor\n", r.Version)
+	fmt.Fprintf(&b, "hiq %s doctor\n", r.Version)
 	fmt.Fprintf(&b, "  system       %s/%s\n", r.OS, r.Arch)
 	if r.CWD != "" {
 		fmt.Fprintf(&b, "  cwd          %s\n", r.CWD)
@@ -336,7 +336,7 @@ func RenderText(r Report) string {
 	case r.Secrets.Backend == "unavailable":
 		backendLine += " (keystore locked or reset: stored secrets read as unset until it is restored)"
 	case r.Secrets.Degraded:
-		backendLine += " (degraded: machine-bound encryption recomputable by any local process; set FAIRPEER_SECRET_PASSPHRASE or use a system with a keychain/secret service)"
+		backendLine += " (degraded: machine-bound encryption recomputable by any local process; set HIQ_SECRET_PASSPHRASE or use a system with a keychain/secret service)"
 	}
 	fmt.Fprintf(&b, "  backend      %s\n", backendLine)
 	fmt.Fprintf(&b, "  store        %s\n", valueOr(r.Secrets.Path, "unavailable"))

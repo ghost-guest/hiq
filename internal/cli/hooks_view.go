@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/hook"
+	"github.com/zzycxz/hiq/internal/hook"
 )
 
 func renderHooks(width int, hooks []hook.ResolvedHook, trusted bool, projectDefines bool) string {
@@ -28,9 +28,9 @@ func renderHooks(width int, hooks []hook.ResolvedHook, trusted bool, projectDefi
 	case projectDefines && !trusted:
 		b.WriteString(viewHint(viewCompactText("project hooks are not trusted; run /hooks trust to enable shell-command hooks", viewBudget(width, 2))))
 	case trusted:
-		b.WriteString(viewHint(viewCompactText("project trusted · config: project .fairpeer/settings.json + global ~/.fairpeer/settings.json", viewBudget(width, 2))))
+		b.WriteString(viewHint(viewCompactText("project trusted · config: project .hiq/settings.json + global ~/.hiq/settings.json", viewBudget(width, 2))))
 	default:
-		b.WriteString(viewHint(viewCompactText("project not trusted · config: project .fairpeer/settings.json + global ~/.fairpeer/settings.json", viewBudget(width, 2))))
+		b.WriteString(viewHint(viewCompactText("project not trusted · config: project .hiq/settings.json + global ~/.hiq/settings.json", viewBudget(width, 2))))
 	}
 	return strings.TrimRight(b.String(), "\n")
 }

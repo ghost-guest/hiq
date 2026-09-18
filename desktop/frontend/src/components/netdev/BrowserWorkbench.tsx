@@ -44,7 +44,7 @@ export function BrowserWorkbench({ hidden, onClose }: { hidden: boolean; onClose
   }, [hidden, refreshTabs]);
 
   // Console mirror: poll a fresh screenshot while visible (manual browsing in
-  // the controlled browser shows up near-live, not only after fairpeer acts).
+  // the controlled browser shows up near-live, not only after hiq acts).
   useEffect(() => {
     if (hidden || source !== "console") return;
     void app.BrowserConsoleScreenshot().then(setImg).catch(() => undefined);
@@ -60,7 +60,7 @@ export function BrowserWorkbench({ hidden, onClose }: { hidden: boolean; onClose
       .then(() => {
         // Elements live in the right dock; refs die with the old page, so
         // broadcast the switch and let the dock re-fetch its element list.
-        window.dispatchEvent(new CustomEvent("fairpeer:browser-console-changed"));
+        window.dispatchEvent(new CustomEvent("hiq:browser-console-changed"));
         void refreshTabs();
       })
       .catch(() => undefined)

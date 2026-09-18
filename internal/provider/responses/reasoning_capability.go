@@ -1,6 +1,6 @@
 package responses
 
-import "github.com/zzycxz/fairpeer/internal/provider"
+import "github.com/zzycxz/hiq/internal/provider"
 
 // The effort vocabulary of a relayed DeepSeek SKU is resolved in
 // ReasoningForConfig below via deepSeekModelID (vendor.go), shared with the

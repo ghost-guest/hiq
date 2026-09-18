@@ -1,6 +1,6 @@
-# fairpeer 功能全景
+# hiq 功能全景
 
-> fairpeer 是面向通用多模型生态的企业级全场景 AI 助手，基于 Wails 桌面框架（Go 后端 + React 前端）构建。单一静态二进制，零运行时依赖，支持 Windows / macOS / Linux。
+> hiq 是面向通用多模型生态的企业级全场景 AI 助手，基于 Wails 桌面框架（Go 后端 + React 前端）构建。单一静态二进制，零运行时依赖，支持 Windows / macOS / Linux。
 
 ---
 
@@ -35,11 +35,11 @@
 
 | 模式 | 命令 | 说明 |
 |------|------|------|
-| 终端 TUI | `fairpeer chat` | Charm Bubble Tea 沉浸式终端 |
-| API 服务 | `fairpeer serve` | HTTP/SSE 编程接口 |
+| 终端 TUI | `hiq chat` | Charm Bubble Tea 沉浸式终端 |
+| API 服务 | `hiq serve` | HTTP/SSE 编程接口 |
 | 桌面客户端 | 双击图标启动 | 原生多标签页 UI |
-| IM 机器人 | `fairpeer bot start` | 飞书/微信/QQ 网关 |
-| ACP 服务 | `fairpeer acp` | Agent Control Protocol 远程控制 |
+| IM 机器人 | `hiq bot start` | 飞书/微信/QQ 网关 |
+| ACP 服务 | `hiq acp` | Agent Control Protocol 远程控制 |
 
 ---
 
@@ -297,8 +297,8 @@
 │                                                         │
 │  发现来源：                                              │
 │  • 内置（随二进制发布）                                   │
-│  • 项目（.fairpeer/skills/）                             │
-│  • 全局（~/.fairpeer/skills/）                           │
+│  • 项目（.hiq/skills/）                             │
+│  • 全局（~/.hiq/skills/）                           │
 │  • 自定义路径（config 配置）                              │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐   │
@@ -469,7 +469,7 @@
 - **动画效果**：支持 fade、fly、zoom 等动画
 - **过渡效果**：支持 fade、slide、zoom 等过渡
 - **CUA 驱动**：像人一样操作 WPS Presentation（打开→感知→点击→输入）
-- **嵌入二进制**，首次运行释放到 `~/.fairpeer/skills/ppt-auto/`
+- **嵌入二进制**，首次运行释放到 `~/.hiq/skills/ppt-auto/`
 
 ---
 
@@ -597,7 +597,7 @@
 
 **格式**：TOML
 
-**加载顺序**：命令行 flag > 项目 `./fairpeer.toml` > 用户 `~/.config/fairpeer/config.toml` > 内置默认
+**加载顺序**：命令行 flag > 项目 `./hiq.toml` > 用户 `~/.config/hiq/config.toml` > 内置默认
 
 **密钥**：通过 `api_key_env` 从环境变量读取，不写入配置文件
 
@@ -634,7 +634,7 @@ api_key_env = "QWEN_API_KEY"
 - CLI（所有工具描述、帮助文本）
 - 工具输出（错误信息、状态提示）
 
-`language` 配置项或自动检测（`$LANG` / `$FAIRPEER_LANG`）。
+`language` 配置项或自动检测（`$LANG` / `$HIQ_LANG`）。
 
 ---
 

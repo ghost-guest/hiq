@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/memory"
+	"github.com/zzycxz/hiq/internal/memory"
 )
 
 func TestForModel_QwenFamilyAddon(t *testing.T) {
@@ -37,7 +37,7 @@ func TestExtractHostChecksFromStructuredSection(t *testing.T) {
 		Scope: memory.ScopeProject,
 		Body: strings.Join([]string{
 			"# Project rules",
-			"## fairpeer host checks",
+			"## hiq host checks",
 			"- verify: go test ./internal/...",
 			"* verify: git diff --check",
 			"- verify: go test ./internal/...",
@@ -61,7 +61,7 @@ func TestExtractHostChecksFromStructuredSection(t *testing.T) {
 
 func TestExtractHostChecksIgnoresOrdinaryGuidance(t *testing.T) {
 	docs := []memory.Source{{
-		Path: "fairpeer.md",
+		Path: "hiq.md",
 		Body: "Always run go test before committing.\n\n- verify: go test ./...",
 	}}
 
@@ -72,8 +72,8 @@ func TestExtractHostChecksIgnoresOrdinaryGuidance(t *testing.T) {
 
 func TestExtractHostChecksIsCaseInsensitive(t *testing.T) {
 	docs := []memory.Source{{
-		Path: "fairpeer.md",
-		Body: "## fairpeer HOST checks\n- verify: go test ./...",
+		Path: "hiq.md",
+		Body: "## hiq HOST checks\n- verify: go test ./...",
 	}}
 
 	checks := ExtractHostChecks(docs)

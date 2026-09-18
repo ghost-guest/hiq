@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 func TestNormalizeBotInstallTarget(t *testing.T) {
@@ -193,7 +193,7 @@ func TestRememberBotConnectionRemoteStoresStableScope(t *testing.T) {
 		Label:         "project",
 		Enabled:       true,
 		Status:        "connected",
-		WorkspaceRoot: "/tmp/fairpeer-project",
+		WorkspaceRoot: "/tmp/hiq-project",
 	}, nil); err != nil {
 		t.Fatalf("upsert project connection: %v", err)
 	}
@@ -207,7 +207,7 @@ func TestRememberBotConnectionRemoteStoresStableScope(t *testing.T) {
 			projectMapping = conn.SessionMappings[0]
 		}
 	}
-	if projectMapping.Scope != "project" || projectMapping.WorkspaceRoot != "/tmp/fairpeer-project" || projectMapping.RemoteID != "wxid_project" {
+	if projectMapping.Scope != "project" || projectMapping.WorkspaceRoot != "/tmp/hiq-project" || projectMapping.RemoteID != "wxid_project" {
 		t.Fatalf("project mapping = %+v, want project scope and workspace", projectMapping)
 	}
 }
@@ -239,7 +239,7 @@ func TestRememberBotConnectionRemoteStoresSessionPath(t *testing.T) {
 	}
 
 	// 次轮：拿到 sessionPath → SessionID 应补填为 "path:xxx"。
-	const path = "/home/u/.config/fairpeer/sessions/bot_abc.jsonl"
+	const path = "/home/u/.config/hiq/sessions/bot_abc.jsonl"
 	if err := app.rememberBotConnectionRemote("feishu-feishu", "ou_test", "", "", path); err != nil {
 		t.Fatalf("remember remote (with session): %v", err)
 	}

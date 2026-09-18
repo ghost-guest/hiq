@@ -103,9 +103,9 @@ func TestValidateAllowsKeylessLocalProvider(t *testing.T) {
 	// Keyed providers still require their env to resolve.
 	cfg.Providers = append(cfg.Providers, ProviderEntry{
 		Name: "keyed", Kind: "openai", BaseURL: "https://x.example.com",
-		Model: "m", APIKeyEnv: "FAIRPEER_TEST_MISSING_KEY",
+		Model: "m", APIKeyEnv: "HIQ_TEST_MISSING_KEY",
 	})
-	t.Setenv("FAIRPEER_TEST_MISSING_KEY", "")
+	t.Setenv("HIQ_TEST_MISSING_KEY", "")
 	if err := cfg.Validate("keyed/m"); err == nil {
 		t.Fatal("keyed provider with unresolved env must fail validation")
 	}

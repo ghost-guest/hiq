@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/boot"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/boot"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // GatewayConfig 是 BotGateway 的配置。
@@ -63,7 +63,7 @@ type AllowlistConfig struct {
 	Groups   map[Platform][]string
 }
 
-// BotGateway 是 fairpeer bot 消息网关，管理 Controller 生命周期、session 并发、
+// BotGateway 是 hiq bot 消息网关，管理 Controller 生命周期、session 并发、
 // 事件渲染和平台适配器。
 type BotGateway struct {
 	cfg      GatewayConfig

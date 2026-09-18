@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/filelock"
+	"github.com/zzycxz/hiq/internal/filelock"
 )
 
 // All workspaces share a fixed set of hashed path-lock files. Hash collisions

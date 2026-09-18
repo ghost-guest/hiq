@@ -46,7 +46,7 @@ func TestValidateNetDev(t *testing.T) {
 }
 
 // TestNetDevPinnedToUserConfig is the supply-chain guard: a project
-// fairpeer.toml declaring [netdev] devices must NOT survive the merge, while
+// hiq.toml declaring [netdev] devices must NOT survive the merge, while
 // the user config's own [netdev] must.
 func TestNetDevPinnedToUserConfig(t *testing.T) {
 	// os.UserConfigDir on Windows = %AppData%; on Unix = $XDG_CONFIG_HOME|$HOME/.config.
@@ -57,7 +57,7 @@ func TestNetDevPinnedToUserConfig(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 
 	// Minimal isolated user config carrying the real [netdev].
-	userDir := filepath.Join(cfgRoot, "fairpeer")
+	userDir := filepath.Join(cfgRoot, "hiq")
 	if err := os.MkdirAll(userDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ address = "198.51.100.7"
 [netdev.discovery]
 scopes = ["198.51.100.0/24"]
 `
-	if err := os.WriteFile(filepath.Join(proj, "fairpeer.toml"), []byte(projectTOML), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(proj, "hiq.toml"), []byte(projectTOML), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

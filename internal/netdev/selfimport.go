@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // ImportPreview is the human-review diff for one import run.
@@ -78,8 +78,8 @@ func (m *Manager) ImportPreview(path string) (*ImportPreview, error) {
 	if err := json.Unmarshal(raw, &f); err != nil {
 		return nil, fmt.Errorf("解析导出 JSON 失败: %w", err)
 	}
-	if f.Product != "fairpeer-netdev" {
-		return nil, fmt.Errorf("不是 fairpeer 运维导出文件（产品标识=%q）", f.Product)
+	if f.Product != "hiq-netdev" {
+		return nil, fmt.Errorf("不是 hiq 运维导出文件（产品标识=%q）", f.Product)
 	}
 	pv := &ImportPreview{ExportedAt: f.ExportedAt, Source: path, FindingsSeen: len(f.Findings)}
 

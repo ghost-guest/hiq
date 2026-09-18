@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
-	"github.com/zzycxz/fairpeer/internal/secrets"
-	"github.com/zzycxz/fairpeer/internal/shellparse"
+	"github.com/zzycxz/hiq/internal/proc"
+	"github.com/zzycxz/hiq/internal/secrets"
+	"github.com/zzycxz/hiq/internal/shellparse"
 )
 
 const ProbeTimeout = 2 * time.Second

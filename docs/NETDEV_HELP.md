@@ -72,7 +72,7 @@
 | 可写实验沙箱 | Cisco DevNet Sandboxes：https://developer.cisco.com/sandbox/ （免费预约 IOS XE） |
 | 自建仿真 | GNS3 / EVE-NG / 华为 eNSP（本地） |
 
-## 7. 开发侧问题（fairpeer 自身）
+## 7. 开发侧问题（hiq 自身）
 
 | 需求 | 去哪 |
 |---|---|

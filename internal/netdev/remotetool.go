@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
-	"github.com/zzycxz/fairpeer/internal/trustdomain/nettrans"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/trustdomain/nettrans"
 )
 
 // The agent-facing surface of the trust domain (TRUSTDOMAIN_SPEC §7.3/§15):
@@ -48,7 +48,7 @@ func SharedRemoteNode(cfg *config.Config) (*trustdomain.Node, error) {
 		}
 		chain, err := store.Load()
 		if err != nil {
-			remoteErr = fmt.Errorf("trustdomain: 未入域（先 fairpeer trustdomain init/join）: %w", err)
+			remoteErr = fmt.Errorf("trustdomain: 未入域（先 hiq trustdomain init/join）: %w", err)
 			return
 		}
 		var node *trustdomain.Node
@@ -100,7 +100,7 @@ func (t *fleetTool) Name() string { return "netdev_fleet" }
 
 func (t *fleetTool) Description() string {
 	return "Show THIS host's private trust-domain fleet board: members (identity, display name, admin/revoked state), each member's latest self-attestation (version/policy/audit head), chain height, and whether the quorum emergency brake (PAUSE) is engaged. " +
-		"Read-only and local — it never contacts peers by itself. Use it first when a task mentions the fleet, other fairpeer hosts, or before netdev_remote calls."
+		"Read-only and local — it never contacts peers by itself. Use it first when a task mentions the fleet, other hiq hosts, or before netdev_remote calls."
 }
 
 func (t *fleetTool) Schema() json.RawMessage {
@@ -163,8 +163,8 @@ type remoteTool struct{ cfg *config.Config }
 func (t *remoteTool) Name() string { return "netdev_remote" }
 
 func (t *remoteTool) Description() string {
-	return "Run a READ-ONLY delegated diagnostic on ANOTHER fairpeer fleet member over the trust domain (netdev resources today: netdev/health, netdev/triage). " +
-		"Pick the target host:port from netdev_fleet/bootstrap peers. A capability token covering (resource, operation) must already be issued to THIS host — the tool selects it automatically and refuses otherwise (ask an admin: fairpeer trustdomain token). " +
+	return "Run a READ-ONLY delegated diagnostic on ANOTHER hiq fleet member over the trust domain (netdev resources today: netdev/health, netdev/triage). " +
+		"Pick the target host:port from netdev_fleet/bootstrap peers. A capability token covering (resource, operation) must already be issued to THIS host — the tool selects it automatically and refuses otherwise (ask an admin: hiq trustdomain token). " +
 		"Refused when the fleet PAUSE brake is engaged."
 }
 
@@ -208,11 +208,11 @@ func (t *remoteTool) Execute(_ context.Context, args json.RawMessage) (string, e
 	now := uint64(time.Now().Unix())
 	st := node.State()
 	if st.Paused {
-		return "", errors.New("netdev_remote: fleet PAUSE engaged — delegated work refused until an admin resumes (fairpeer trustdomain resume)")
+		return "", errors.New("netdev_remote: fleet PAUSE engaged — delegated work refused until an admin resumes (hiq trustdomain resume)")
 	}
 	tok := findCoveringToken(st, node.Identity(), a.Resource, a.Operation, now)
 	if tok == nil {
-		return "", fmt.Errorf("netdev_remote: no capability token covers %s %s — ask an admin: fairpeer trustdomain token <本机ID前缀> %s %s <秒>",
+		return "", fmt.Errorf("netdev_remote: no capability token covers %s %s — ask an admin: hiq trustdomain token <本机ID前缀> %s %s <秒>",
 			a.Resource, a.Operation, a.Resource, a.Operation)
 	}
 

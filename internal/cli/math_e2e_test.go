@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // TestMathStreamingEndToEnd drives the real streaming path (ingestEvent →

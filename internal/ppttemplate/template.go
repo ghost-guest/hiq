@@ -5,7 +5,7 @@
 // visible PPT generation (a screen_perceive round is ~8s; a coordinate-driven
 // add is instant).
 //
-// Templates live in a fixed directory (<user-config>/fairpeer/ppt-templates/)
+// Templates live in a fixed directory (<user-config>/hiq/ppt-templates/)
 // so the user just drops JSON files there; the desktop settings page lists them
 // and lets the user pick the active one. No upload UI, no DB — files on disk.
 package ppttemplate
@@ -18,7 +18,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/assets"
+	"github.com/zzycxz/hiq/internal/assets"
 )
 
 // Template is one PPT template spec, parsed from a JSON file in the templates
@@ -131,7 +131,7 @@ func (t Template) ToView() View {
 	return View{ID: t.ID, Name: name}
 }
 
-// DefaultDir returns the templates directory (<user-config>/fairpeer/ppt-templates),
+// DefaultDir returns the templates directory (<user-config>/hiq/ppt-templates),
 // creating it and seeding an example template on first use. Returns "" if the
 // user config dir is unavailable.
 func DefaultDir() string {
@@ -139,7 +139,7 @@ func DefaultDir() string {
 	if err != nil || base == "" {
 		return ""
 	}
-	dir := filepath.Join(base, "fairpeer", "ppt-templates")
+	dir := filepath.Join(base, "hiq", "ppt-templates")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return dir // return the path even on error; LoadDir will report it
 	}
@@ -155,7 +155,7 @@ func DefaultDir() string {
 // SkillTemplatesDir returns the PPT skill's templates directory if it exists.
 // This allows the settings page to also show templates bundled with the skill.
 //
-// Lookup order: the embedded-skill release dir (~/.fairpeer/skills/ppt-auto/
+// Lookup order: the embedded-skill release dir (~/.hiq/skills/ppt-auto/
 // templates, where EnsurePPTAutoSkill writes it) first, then the legacy exe-
 // sibling and user-config locations as fallbacks for older installs.
 func SkillTemplatesDir() string {
@@ -163,11 +163,11 @@ func SkillTemplatesDir() string {
 	if dir := assets.PPTAutoTemplatesDir(); dir != "" {
 		return dir
 	}
-	// Legacy: exe-sibling .fairpeer layout (pre-embed releases).
+	// Legacy: exe-sibling .hiq layout (pre-embed releases).
 	exePath, err := os.Executable()
 	if err == nil {
 		exeDir := filepath.Dir(exePath)
-		skillDir := filepath.Join(exeDir, ".fairpeer", "skills", "ppt-auto", "templates")
+		skillDir := filepath.Join(exeDir, ".hiq", "skills", "ppt-auto", "templates")
 		if _, err := os.Stat(skillDir); err == nil {
 			return skillDir
 		}
@@ -175,7 +175,7 @@ func SkillTemplatesDir() string {
 	// Legacy: user-config layout.
 	base, err := os.UserConfigDir()
 	if err == nil {
-		skillDir := filepath.Join(base, "fairpeer", "skills", "ppt-auto", "templates")
+		skillDir := filepath.Join(base, "hiq", "skills", "ppt-auto", "templates")
 		if _, err := os.Stat(skillDir); err == nil {
 			return skillDir
 		}

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 const legacyEventLog = `{"type":"model.turn.started","id":1,"ts":"t","turn":0,"model":"test-provider"}

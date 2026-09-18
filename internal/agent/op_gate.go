@@ -37,7 +37,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // Budget constants (ported from Reasonix budget.go, tuned to the same values
@@ -113,7 +113,7 @@ type opFacts struct {
 }
 
 // decide is the pure decision function (ported from Reasonix Decide, simplified
-// to the 5 cases that matter for FairPeer's model). Order matters — earlier
+// to the 5 cases that matter for Hiq's model). Order matters — earlier
 // rules short-circuit:
 //
 //  1. readOnly → allow (diagnosis must always be possible, even after a stop)
@@ -141,7 +141,7 @@ func decide(f opFacts) opRoute {
 // calls that differ only in JSON whitespace share a fingerprint, so a model
 // re-running the "same" operation with cosmetic arg changes is still detected.
 // (Reasonix separates operation vs authorization fingerprints using a preview
-// field; FairPeer has no preview layer, so one fingerprint suffices.)
+// field; Hiq has no preview layer, so one fingerprint suffices.)
 func opFingerprint(call provider.ToolCall) string {
 	h := sha256.New()
 	fmt.Fprintf(h, "tool=%s\n", call.Name)
@@ -151,7 +151,7 @@ func opFingerprint(call provider.ToolCall) string {
 
 // isQualifyingFailure reports whether a failed tool result should count against
 // the failure budget (ported from Reasonix QualifyingFailure, adapted to
-// FairPeer's toolOutcome). Safety boundaries are NOT reliability signals:
+// Hiq's toolOutcome). Safety boundaries are NOT reliability signals:
 //
 //   - success (errMsg == "") → no
 //   - blocked by permission/plan-mode/hook → no (a deny is a policy decision,
@@ -276,7 +276,7 @@ func (g *opGate) beforeMutation(fp string) (message string, stop bool) {
 // per-op failure threshold. Natural language only — the model/user never sees
 // "fingerprint" or "threshold". Chinese-first because the model-facing nudge
 // doubles as the user-facing context.
-const opStopMessage = "\n\n[操作恢复] 该操作已连续失败 %d 次，FairPeer 已停止重复尝试它。已完成的工作已保留。请换一种方法（改参数、换工具、或拆分步骤），或在下一条消息里说明如何继续。其他无关操作不受影响。"
+const opStopMessage = "\n\n[操作恢复] 该操作已连续失败 %d 次，Hiq 已停止重复尝试它。已完成的工作已保留。请换一种方法（改参数、换工具、或拆分步骤），或在下一条消息里说明如何继续。其他无关操作不受影响。"
 
 // alreadyStoppedMessage is returned to the model when it re-proposes an
 // operation that was already stopped this turn.

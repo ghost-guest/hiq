@@ -33,7 +33,7 @@ func (t *installSourceTool) fetchText(ctx context.Context, sourceURL string) (st
 		return "", newErr(ErrSourceUnreadable, "%s: %v", sourceURL, err)
 	}
 	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", "fairpeer-install/1.0")
+		req.Header.Set("User-Agent", "hiq-install/1.0")
 	}
 	resp, err := t.httpClient.Do(req)
 	if err != nil {

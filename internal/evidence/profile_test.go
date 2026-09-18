@@ -77,7 +77,7 @@ func TestClassifyEffectKillShellIsHostStateOnly(t *testing.T) {
 
 func TestClassifyWriteScopeScratchWriteFile(t *testing.T) {
 	workspace := t.TempDir()
-	scratchPath := filepath.Join(os.TempDir(), "fairpeer-scope-probe.py")
+	scratchPath := filepath.Join(os.TempDir(), "hiq-scope-probe.py")
 	if got := ClassifyWriteScope(scratchPath, workspace, nil); got != WriteScopeScratch {
 		t.Fatalf("write_file /tmp = %s, want scratch", got)
 	}

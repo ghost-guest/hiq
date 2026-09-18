@@ -7,13 +7,13 @@ import (
 )
 
 // TestGenSampleGongwenDoc generates a sample 公文 .docx to the user's Desktop
-// for visual inspection. Skipped unless FAIRPEER_GEN_SAMPLE=1 is set, so it
+// for visual inspection. Skipped unless HIQ_GEN_SAMPLE=1 is set, so it
 // never runs in normal CI/test runs. Run with:
 //
-//	FAIRPEER_GEN_SAMPLE=1 go test ./internal/tool/builtin/ -run TestGenSampleGongwenDoc -v
+//	HIQ_GEN_SAMPLE=1 go test ./internal/tool/builtin/ -run TestGenSampleGongwenDoc -v
 func TestGenSampleGongwenDoc(t *testing.T) {
-	if os.Getenv("FAIRPEER_GEN_SAMPLE") != "1" {
-		t.Skip("set FAIRPEER_GEN_SAMPLE=1 to generate the sample doc")
+	if os.Getenv("HIQ_GEN_SAMPLE") != "1" {
+		t.Skip("set HIQ_GEN_SAMPLE=1 to generate the sample doc")
 	}
 	home, _ := os.UserHomeDir()
 	out := filepath.Join(home, "Desktop", "公文样例.docx")

@@ -1,6 +1,6 @@
 package event
 
-import "github.com/zzycxz/fairpeer/internal/nilutil"
+import "github.com/zzycxz/hiq/internal/nilutil"
 
 // CheckedSink is an optional durability-aware sink capability. Callers use it
 // at side-effect boundaries (tool dispatch, user prompts, terminal commits)

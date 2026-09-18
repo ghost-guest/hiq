@@ -10,9 +10,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/frontmatter"
-	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/frontmatter"
+	"github.com/zzycxz/hiq/internal/skill"
 )
 
 const (
@@ -110,9 +110,9 @@ func (t *installSourceTool) skillInstallRoot(scope string) (string, error) {
 		if t.home == "" {
 			return "", newErr(ErrSourceUnreadable, "global skill install requires a home directory")
 		}
-		return filepath.Join(t.home, ".fairpeer", skill.SkillsDirname), nil
+		return filepath.Join(t.home, ".hiq", skill.SkillsDirname), nil
 	}
-	return filepath.Join(t.root, ".fairpeer", skill.SkillsDirname), nil
+	return filepath.Join(t.root, ".hiq", skill.SkillsDirname), nil
 }
 
 // skillCanonicalPath computes the canonical install destination:
@@ -134,7 +134,7 @@ func (t *installSourceTool) skillCanonicalPath(name, scope string) (string, erro
 func (t *installSourceTool) verifySkill(scope, name string, act *action) error {
 	custom := []string(nil)
 	if scope == "project" {
-		cfg := config.LoadForEdit(filepath.Join(t.root, "fairpeer.toml"))
+		cfg := config.LoadForEdit(filepath.Join(t.root, "hiq.toml"))
 		custom = cfg.SkillCustomPaths()
 	} else {
 		cfg := config.LoadForEdit(t.configPath(scope))

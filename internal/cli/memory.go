@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/zzycxz/fairpeer/internal/i18n"
+	"github.com/zzycxz/hiq/internal/i18n"
 )
 
 // showMemory reports what memory is loaded and where it lives — the TUI analog

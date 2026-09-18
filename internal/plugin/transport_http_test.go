@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // mcpHTTPServer is a minimal Streamable HTTP MCP server for tests. When sse is

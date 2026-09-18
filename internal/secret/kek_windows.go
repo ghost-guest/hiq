@@ -20,7 +20,7 @@ func platformKekProviders() []kekProvider {
 	return []kekProvider{dpapiKekProvider{}}
 }
 
-func (dpapiKekProvider) Name() string  { return "dpapi" }
+func (dpapiKekProvider) Name() string    { return "dpapi" }
 func (dpapiKekProvider) Available() bool { return true }
 
 func (dpapiKekProvider) Create(id string) ([]byte, []byte, error) {

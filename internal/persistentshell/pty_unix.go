@@ -10,7 +10,7 @@ import (
 
 	"github.com/creack/pty"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
+	"github.com/zzycxz/hiq/internal/proc"
 )
 
 type unixPTY struct {

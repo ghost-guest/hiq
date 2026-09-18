@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/calendar"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/calendar"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // Calendar tools for coWork. The calendar store is injected at boot via

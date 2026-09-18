@@ -9,9 +9,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/plugin"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/plugin"
 )
 
 func TestParseMCPAddStdio(t *testing.T) {
@@ -159,7 +159,7 @@ func TestRenderMCPStatusShowsFailures(t *testing.T) {
 
 func TestRenderMCPManagerListGroupsRuntimeAndConfiguredServers(t *testing.T) {
 	p := &mcpManager{snapshot: mcpSnapshot{
-		configPath: "fairpeer.toml",
+		configPath: "hiq.toml",
 		servers: []mcpServerView{
 			{Name: "codegraph", Transport: "stdio", Status: "connected", BuiltIn: true, Tools: 4},
 			{Name: "github", Transport: "stdio", Status: "deferred", Configured: true, Tier: "lazy", Tools: 12},
@@ -171,7 +171,7 @@ func TestRenderMCPManagerListGroupsRuntimeAndConfiguredServers(t *testing.T) {
 		"Manage MCP servers",
 		"3 servers",
 		"Built-in MCPs",
-		"User MCPs (fairpeer.toml)",
+		"User MCPs (hiq.toml)",
 		"codegraph",
 		"connected",
 		"github",
@@ -205,7 +205,7 @@ func TestRenderMCPManagerAuthFailureActions(t *testing.T) {
 		stage: mcpStageDetail,
 		name:  "figma",
 		snapshot: mcpSnapshot{
-			configPath: "fairpeer.toml",
+			configPath: "hiq.toml",
 			servers: []mcpServerView{{
 				Name: "figma", Transport: "http", Status: "failed", Configured: true,
 				Tier: "lazy", URL: "https://mcp.figma.com", Error: "connect: 401 unauthorized",
@@ -264,7 +264,7 @@ func TestRenderMCPManagerRemoteDeferredAuthHint(t *testing.T) {
 		stage: mcpStageDetail,
 		name:  "dida",
 		snapshot: mcpSnapshot{
-			configPath: "fairpeer.toml",
+			configPath: "hiq.toml",
 			servers: []mcpServerView{{
 				Name: "dida", Transport: "http", Status: "deferred", Configured: true,
 				Tier: "lazy", URL: "https://mcp.dida365.com",
@@ -292,7 +292,7 @@ func TestRenderMCPManagerDetailCompactsConfigPath(t *testing.T) {
 		stage: mcpStageDetail,
 		name:  "github",
 		snapshot: mcpSnapshot{
-			configPath: "/Users/example/Library/Application Support/fairpeer/config.toml",
+			configPath: "/Users/example/Library/Application Support/hiq/config.toml",
 			servers: []mcpServerView{{
 				Name: "github", Transport: "stdio", Status: "deferred", Configured: true,
 				Tier: "lazy", Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-github"},
@@ -305,7 +305,7 @@ func TestRenderMCPManagerDetailCompactsConfigPath(t *testing.T) {
 			t.Fatalf("detail line exceeds width 80 (%d): %q\n%s", visibleWidth(line), line, got)
 		}
 	}
-	if strings.Contains(got, "Application Support/fairpeer/config.toml") {
+	if strings.Contains(got, "Application Support/hiq/config.toml") {
 		t.Fatalf("long config path should be compacted:\n%s", got)
 	}
 }
@@ -314,7 +314,7 @@ func TestMCPEditConfigLaunchUsesVisualBeforeEditor(t *testing.T) {
 	t.Setenv("VISUAL", "vim")
 	t.Setenv("EDITOR", "nano")
 
-	path := "/tmp/fairpeer config.toml"
+	path := "/tmp/hiq config.toml"
 	launch, err := mcpEditConfigLaunchCommand(path, func(string) (string, error) {
 		t.Fatal("lookPath should not be called when VISUAL is set")
 		return "", errors.New("unexpected lookup")
@@ -344,7 +344,7 @@ func TestMCPEditConfigLaunchEditorWithArgs(t *testing.T) {
 	t.Setenv("VISUAL", "code --wait")
 	t.Setenv("EDITOR", "")
 
-	path := "/tmp/fairpeer.toml"
+	path := "/tmp/hiq.toml"
 	launch, err := mcpEditConfigLaunchCommand(path, func(string) (string, error) {
 		t.Fatal("lookPath should not be called when VISUAL is set")
 		return "", errors.New("unexpected lookup")
@@ -374,7 +374,7 @@ func TestMCPEditConfigLaunchEditorRejectsShellMetachars(t *testing.T) {
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", "vim; rm -rf /tmp/should-not-exist")
 
-	path := "/tmp/fairpeer.toml"
+	path := "/tmp/hiq.toml"
 	launch, err := mcpEditConfigLaunchCommand(path, func(string) (string, error) {
 		t.Fatal("lookPath should not be called when EDITOR is set")
 		return "", errors.New("unexpected lookup")
@@ -399,11 +399,11 @@ func TestMCPEditConfigLaunchEditorRejectsShellMetachars(t *testing.T) {
 // the behavior of the prior sh -lc path for users who set values such as
 // EDITOR="$HOME/bin/myeditor" verbatim.
 func TestMCPEditConfigLaunchEditorExpandsEnvVar(t *testing.T) {
-	t.Setenv("FAIRPEER_TEST_EDITOR_BIN", "/opt/custom/bin/myed")
-	t.Setenv("VISUAL", "$FAIRPEER_TEST_EDITOR_BIN --flag")
+	t.Setenv("HIQ_TEST_EDITOR_BIN", "/opt/custom/bin/myed")
+	t.Setenv("VISUAL", "$HIQ_TEST_EDITOR_BIN --flag")
 	t.Setenv("EDITOR", "")
 
-	path := "/tmp/fairpeer.toml"
+	path := "/tmp/hiq.toml"
 	launch, err := mcpEditConfigLaunchCommand(path, func(string) (string, error) {
 		t.Fatal("lookPath should not be called when VISUAL is set")
 		return "", errors.New("unexpected lookup")
@@ -426,7 +426,7 @@ func TestMCPEditConfigLaunchFallsBackToTerminalEditor(t *testing.T) {
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", "")
 
-	launch, err := mcpEditConfigLaunchCommand("/tmp/fairpeer.toml", func(name string) (string, error) {
+	launch, err := mcpEditConfigLaunchCommand("/tmp/hiq.toml", func(name string) (string, error) {
 		if name == "vim" {
 			return "/usr/bin/vim", nil
 		}
@@ -441,7 +441,7 @@ func TestMCPEditConfigLaunchFallsBackToTerminalEditor(t *testing.T) {
 	if launch.editor != "vim" {
 		t.Fatalf("editor = %q, want vim", launch.editor)
 	}
-	if len(launch.cmd.Args) != 2 || launch.cmd.Args[0] != "/usr/bin/vim" || launch.cmd.Args[1] != "/tmp/fairpeer.toml" {
+	if len(launch.cmd.Args) != 2 || launch.cmd.Args[0] != "/usr/bin/vim" || launch.cmd.Args[1] != "/tmp/hiq.toml" {
 		t.Fatalf("terminal editor args=%v", launch.cmd.Args)
 	}
 }
@@ -450,7 +450,7 @@ func TestMCPEditConfigLaunchUsesSystemDefaultLast(t *testing.T) {
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", "")
 
-	path := "/tmp/fairpeer.toml"
+	path := "/tmp/hiq.toml"
 	launch, err := mcpEditConfigLaunchCommand(path, func(string) (string, error) {
 		return "", errors.New("not found")
 	})
@@ -473,7 +473,7 @@ func TestApplyMCPModeDropsLegacyTier(t *testing.T) {
 	isolateUserConfig(t)
 	cfg := config.Default()
 	cfg.Plugins = []config.PluginEntry{{Name: "github", Command: "npx", Args: []string{"server"}, Tier: "lazy"}}
-	if err := cfg.SaveTo("fairpeer.toml"); err != nil {
+	if err := cfg.SaveTo("hiq.toml"); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
@@ -481,7 +481,7 @@ func TestApplyMCPModeDropsLegacyTier(t *testing.T) {
 	m.mcp = &mcpManager{
 		stage: mcpStageMode,
 		name:  "github",
-		snapshot: mcpSnapshot{configPath: "fairpeer.toml", servers: []mcpServerView{{
+		snapshot: mcpSnapshot{configPath: "hiq.toml", servers: []mcpServerView{{
 			Name: "github", Transport: "stdio", Status: "deferred", Configured: true, Tier: "lazy",
 		}}},
 	}
@@ -494,7 +494,7 @@ func TestApplyMCPModeDropsLegacyTier(t *testing.T) {
 	if len(loaded.Plugins) != 1 || loaded.Plugins[0].Tier != "" {
 		t.Fatalf("tier should be migrated away, plugins=%+v", loaded.Plugins)
 	}
-	raw, err := os.ReadFile("fairpeer.toml")
+	raw, err := os.ReadFile("hiq.toml")
 	if err != nil {
 		t.Fatalf("read config: %v", err)
 	}
@@ -507,8 +507,8 @@ func TestApplyMCPModeRecordsPluginConnectFailure(t *testing.T) {
 	isolateUserConfig(t)
 	t.Setenv("PATH", "")
 	cfg := config.Default()
-	cfg.Plugins = []config.PluginEntry{{Name: "broken", Command: "definitely-missing-fairpeer-mcp", Tier: "lazy"}}
-	if err := cfg.SaveTo("fairpeer.toml"); err != nil {
+	cfg.Plugins = []config.PluginEntry{{Name: "broken", Command: "definitely-missing-hiq-mcp", Tier: "lazy"}}
+	if err := cfg.SaveTo("hiq.toml"); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
@@ -519,7 +519,7 @@ func TestApplyMCPModeRecordsPluginConnectFailure(t *testing.T) {
 	m.mcp = &mcpManager{
 		stage: mcpStageMode,
 		name:  "broken",
-		snapshot: mcpSnapshot{configPath: "fairpeer.toml", servers: []mcpServerView{{
+		snapshot: mcpSnapshot{configPath: "hiq.toml", servers: []mcpServerView{{
 			Name: "broken", Transport: "stdio", Status: "deferred", Configured: true, Tier: "lazy",
 		}}},
 	}
@@ -542,11 +542,11 @@ func TestApplyMCPModeRecordsPluginConnectFailure(t *testing.T) {
 func TestApplyMCPModeRecordsCodegraphConnectFailure(t *testing.T) {
 	isolateUserConfig(t)
 	t.Setenv("PATH", "")
-	t.Setenv("FAIRPEER_CACHE_DIR", t.TempDir())
+	t.Setenv("HIQ_CACHE_DIR", t.TempDir())
 	cfg := config.Default()
 	cfg.Codegraph.Enabled = false
 	cfg.Codegraph.Tier = "eager"
-	if err := cfg.SaveTo("fairpeer.toml"); err != nil {
+	if err := cfg.SaveTo("hiq.toml"); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
@@ -557,7 +557,7 @@ func TestApplyMCPModeRecordsCodegraphConnectFailure(t *testing.T) {
 	m.mcp = &mcpManager{
 		stage: mcpStageMode,
 		name:  "codegraph",
-		snapshot: mcpSnapshot{configPath: "fairpeer.toml", servers: []mcpServerView{{
+		snapshot: mcpSnapshot{configPath: "hiq.toml", servers: []mcpServerView{{
 			Name: "codegraph", Transport: "stdio", Status: "disabled", BuiltIn: true, Configured: true, Tier: "background",
 		}}},
 	}
@@ -585,7 +585,7 @@ func TestDisableCodegraphPersistsEnabledFalse(t *testing.T) {
 	cfg := config.Default()
 	cfg.Codegraph.Enabled = true
 	cfg.Codegraph.Tier = "background"
-	if err := cfg.SaveTo("fairpeer.toml"); err != nil {
+	if err := cfg.SaveTo("hiq.toml"); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
@@ -595,7 +595,7 @@ func TestDisableCodegraphPersistsEnabledFalse(t *testing.T) {
 	m.mcp = &mcpManager{
 		stage: mcpStageDetail,
 		name:  "codegraph",
-		snapshot: mcpSnapshot{configPath: "fairpeer.toml", servers: []mcpServerView{{
+		snapshot: mcpSnapshot{configPath: "hiq.toml", servers: []mcpServerView{{
 			Name: "codegraph", Transport: "stdio", Status: "connected", BuiltIn: true, Configured: true, AutoStart: true, Tier: "background",
 		}}},
 	}

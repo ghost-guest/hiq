@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/shellsafe"
+	"github.com/zzycxz/hiq/internal/shellsafe"
 )
 
 // ClassifyEffect returns the concrete effect profile for one invocation.

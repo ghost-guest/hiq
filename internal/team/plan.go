@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 // PlannedTask is one card the leader proposes when decomposing a goal.

@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // Global (empty-root) sessions must resolve to ONE fixed, profile-partitioned

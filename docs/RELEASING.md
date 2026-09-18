@@ -1,6 +1,6 @@
 # Releasing
 
-How fairpeer ships, who can ship what, and the canary-before-stable flow.
+How hiq ships, who can ship what, and the canary-before-stable flow.
 
 ## Branch model: trunk + tags
 
@@ -17,7 +17,7 @@ provides the pre-release buffer instead of a long-lived branch.
 
 | Surface | Stable | Pre-release buffer |
 |---|---|---|
-| npm | `latest` (0.x), `next` (1.x) | `canary` (`npm i fairpeer@canary`) |
+| npm | `latest` (0.x), `next` (1.x) | `canary` (`npm i hiq@canary`) |
 | Desktop | R2 `latest/` pointer | R2 `canary/` pointer (R2-only — never on the GitHub releases page) |
 
 A canary build is isolated: it **never** moves `latest` / `next` / desktop `latest/`.
@@ -47,7 +47,7 @@ the `release` environment deployment.
    - Desktop: Actions → **Release desktop** → `channel: canary`, `base_version: 1.4.0`
    - CLI: Actions → **Release npm** → `base_version: 1.4.0`
    - Publishes `1.4.0-canary.N` to the desktop R2 `canary/` pointer (no GitHub release) and npm `@canary`.
-3. **Test** — testers install `fairpeer@canary` (CLI) or grab the desktop canary
+3. **Test** — testers install `hiq@canary` (CLI) or grab the desktop canary
    build from its R2 link, and report bugs.
 4. **Fix** on `main` via PRs; re-cut the canary as needed (`canary.N` bumps).
 5. **Ship stable** when the canary is clean — push the three tags:
@@ -59,7 +59,7 @@ the `release` environment deployment.
    Each stable run **waits for zzycxz to approve the `release` environment** before publishing.
 6. **Promote to default install** (optional, when 1.x should become the bare `npm i` target):
    ```sh
-   npm dist-tag add fairpeer@1.4.0 latest
+   npm dist-tag add hiq@1.4.0 latest
    ```
 7. **Next cycle** — the canary rolls on toward `1.5.0`.
 

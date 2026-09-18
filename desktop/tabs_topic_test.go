@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
 )
 
 func waitForTabReady(t *testing.T, app *App, tabID string) *WorkspaceTab {
@@ -299,7 +299,7 @@ func TestLegacySessionsMigrateIntoGlobalTopics(t *testing.T) {
 func TestV05LegacyEventSessionsImportIntoGlobalTopic(t *testing.T) {
 	home := isolateDesktopUserDirs(t)
 
-	legacyDir := filepath.Join(home, ".fairpeer", "sessions")
+	legacyDir := filepath.Join(home, ".hiq", "sessions")
 	destDir := config.SessionDir()
 	writeLegacyEventSession(t, legacyDir, "v053-chat.events.jsonl", "hello from v0.53", "hi from v0.53", time.Now().Add(-time.Hour))
 

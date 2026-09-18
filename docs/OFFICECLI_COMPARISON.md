@@ -1,4 +1,4 @@
-# OfficeCLI vs FairPeer 办公能力对比分析
+# OfficeCLI vs Hiq 办公能力对比分析
 
 > **日期**: 2026-08-04 | **状态**: 分析完成
 
@@ -23,7 +23,7 @@
 
 ### 2.1 Word 文档
 
-| 能力 | OfficeCLI | FairPeer | 优势方 |
+| 能力 | OfficeCLI | Hiq | 优势方 |
 |------|-----------|----------|--------|
 | **创建文档** | ✅ 完整支持 | ❌ 无原生支持 | OfficeCLI |
 | **读取文档** | ✅ 结构化 JSON | ✅ markitdown 提取文本 | OfficeCLI |
@@ -36,13 +36,13 @@
 | **模板填充** | ✅ 支持 | ❌ 无 | OfficeCLI |
 | **HTML 预览** | ✅ 内置渲染 | ❌ 无 | OfficeCLI |
 
-**结论：** OfficeCLI 在 Word 方面**全面领先**，FairPeer 无 Word 编辑能力。
+**结论：** OfficeCLI 在 Word 方面**全面领先**，Hiq 无 Word 编辑能力。
 
 ---
 
 ### 2.2 Excel 电子表格
 
-| 能力 | OfficeCLI | FairPeer | 优势方 |
+| 能力 | OfficeCLI | Hiq | 优势方 |
 |------|-----------|----------|--------|
 | **创建表格** | ✅ 完整支持 | ❌ 无原生支持 | OfficeCLI |
 | **读取数据** | ✅ 结构化 JSON | ✅ openpyxl 提取 | OfficeCLI |
@@ -55,21 +55,21 @@
 | **CSV/TSV 导入** | ✅ 支持 | ❌ 无 | OfficeCLI |
 | **HTML 预览** | ✅ 内置渲染 | ❌ 无 | OfficeCLI |
 
-**结论：** OfficeCLI 在 Excel 方面**全面领先**，FairPeer 无 Excel 编辑能力。
+**结论：** OfficeCLI 在 Excel 方面**全面领先**，Hiq 无 Excel 编辑能力。
 
 ---
 
 ### 2.3 PowerPoint 演示文稿
 
-| 能力 | OfficeCLI | FairPeer | 优势方 |
+| 能力 | OfficeCLI | Hiq | 优势方 |
 |------|-----------|----------|--------|
-| **创建 PPT** | ✅ 命令行创建 | ✅ SVG/模板两种路线 | **FairPeer** |
+| **创建 PPT** | ✅ 命令行创建 | ✅ SVG/模板两种路线 | **Hiq** |
 | **读取 PPT** | ✅ 结构化 JSON | ✅ python-pptx 提取 | 平手 |
-| **修改 PPT** | ✅ DOM 级修改 | ✅ SVG 重绘 + 模板填充 | **FairPeer** |
-| **设计自由度** | ⚠️ 基础形状/文本 | ✅ SVG 完全自由设计 | **FairPeer** |
-| **模板支持** | ⚠️ 基础模板 | ✅ 深度模板系统 | **FairPeer** |
-| **颜色智能** | ❌ 手动指定 | ✅ 模板颜色自动检测 | **FairPeer** |
-| **VLM 集成** | ❌ 无 | ✅ 视觉模型辅助设计 | **FairPeer** |
+| **修改 PPT** | ✅ DOM 级修改 | ✅ SVG 重绘 + 模板填充 | **Hiq** |
+| **设计自由度** | ⚠️ 基础形状/文本 | ✅ SVG 完全自由设计 | **Hiq** |
+| **模板支持** | ⚠️ 基础模板 | ✅ 深度模板系统 | **Hiq** |
+| **颜色智能** | ❌ 手动指定 | ✅ 模板颜色自动检测 | **Hiq** |
+| **VLM 集成** | ❌ 无 | ✅ 视觉模型辅助设计 | **Hiq** |
 | **图表生成** | ✅ 完整 | ⚠️ 有限支持 | OfficeCLI |
 | **动画支持** | ✅ 完整 | ⚠️ 有限支持 | OfficeCLI |
 | **3D 模型** | ✅ .glb 支持 | ❌ 无 | OfficeCLI |
@@ -77,15 +77,15 @@
 | **实时预览** | ✅ watch 模式 | ❌ 无 | OfficeCLI |
 | **HTML 预览** | ✅ 内置渲染 | ❌ 无 | OfficeCLI |
 
-**结论：** FairPeer 在 PPT **设计质量**方面领先，OfficeCLI 在 **功能完整性** 方面领先。
+**结论：** Hiq 在 PPT **设计质量**方面领先，OfficeCLI 在 **功能完整性** 方面领先。
 
 ---
 
-## 三、FairPeer 的独特优势
+## 三、Hiq 的独特优势
 
 ### 3.1 PPT 设计质量
 
-FairPeer 的 PPT 能力专注于**设计质量**，而非功能数量：
+Hiq 的 PPT 能力专注于**设计质量**，而非功能数量：
 
 | 优势 | 说明 |
 |------|------|
@@ -98,9 +98,9 @@ FairPeer 的 PPT 能力专注于**设计质量**，而非功能数量：
 
 ### 3.2 邮件集成
 
-FairPeer 有完整的邮件集成，OfficeCLI 无此能力：
+Hiq 有完整的邮件集成，OfficeCLI 无此能力：
 
-| 能力 | FairPeer |
+| 能力 | Hiq |
 |------|----------|
 | **多账号支持** | Gmail、Outlook、QQ、163 等 |
 | **发送邮件** | SMTP 支持 |
@@ -110,9 +110,9 @@ FairPeer 有完整的邮件集成，OfficeCLI 无此能力：
 
 ### 3.3 日历/任务
 
-FairPeer 有日历和任务管理，OfficeCLI 无此能力：
+Hiq 有日历和任务管理，OfficeCLI 无此能力：
 
-| 能力 | FairPeer |
+| 能力 | Hiq |
 |------|----------|
 | **定时任务** | cron 表达式支持 |
 | **日历集成** | ICS 格式支持 |
@@ -155,21 +155,21 @@ OfficeCLI 支持实时预览，修改即时可见：
 
 ---
 
-## 五、FairPeer 需要做的工作
+## 五、Hiq 需要做的工作
 
 ### 5.1 集成 OfficeCLI（推荐）
 
-**方案：** 将 OfficeCLI 作为 FairPeer 的外部工具集成
+**方案：** 将 OfficeCLI 作为 Hiq 的外部工具集成
 
 **优势：**
 - 无需重复开发 Word/Excel 编辑能力
 - 利用 OfficeCLI 的 HTML 渲染引擎
 - 利用 OfficeCLI 的实时预览
-- 保持 FairPeer PPT 设计优势
+- 保持 Hiq PPT 设计优势
 
 **实现方式：**
 ```toml
-# fairpeer.toml
+# hiq.toml
 [tools.officecli]
 enabled = true
 path = "/usr/local/bin/officecli"  # 或自动检测
@@ -177,7 +177,7 @@ path = "/usr/local/bin/officecli"  # 或自动检测
 
 **工具映射：**
 ```
-FairPeer 工具          →  OfficeCLI 命令
+Hiq 工具          →  OfficeCLI 命令
 ─────────────────────────────────────────
 word_create           →  officecli create report.docx
 word_read             →  officecli view report.docx text
@@ -191,7 +191,7 @@ ppt_validate          →  officecli validate slides.pptx
 
 ### 5.2 增强 PPT 能力
 
-**保留 FairPeer 的 PPT 设计优势，增强功能完整性：**
+**保留 Hiq 的 PPT 设计优势，增强功能完整性：**
 
 | 增强项 | 说明 | 优先级 |
 |--------|------|--------|
@@ -203,7 +203,7 @@ ppt_validate          →  officecli validate slides.pptx
 
 ### 5.3 增强 Word/Excel 能力
 
-**如果不想依赖 OfficeCLI，可以增强 FairPeer 的 Word/Excel 能力：**
+**如果不想依赖 OfficeCLI，可以增强 Hiq 的 Word/Excel 能力：**
 
 | 增强项 | 说明 | 优先级 |
 |--------|------|--------|
@@ -222,21 +222,21 @@ ppt_validate          →  officecli validate slides.pptx
 **优势：**
 - 快速获得 Word/Excel 编辑能力
 - 利用 OfficeCLI 的 HTML 渲染引擎
-- 保持 FairPeer PPT 设计优势
+- 保持 Hiq PPT 设计优势
 - 减少开发工作量
 
 **工作量：** 2-3 天
 
 **实施步骤：**
 1. 添加 OfficeCLI 作为外部工具
-2. 创建 FairPeer 工具映射
+2. 创建 Hiq 工具映射
 3. 更新文档
 
 ### 方案 B：独立开发 Word/Excel 能力
 
 **优势：**
 - 完全自主控制
-- 深度集成 FairPeer 架构
+- 深度集成 Hiq 架构
 
 **劣势：**
 - 开发工作量大（2-3 周）
@@ -247,7 +247,7 @@ ppt_validate          →  officecli validate slides.pptx
 ### 方案 C：混合方案（最佳）
 
 **结合两者优势：**
-1. **PPT** — 使用 FairPeer 原生能力（设计质量更好）
+1. **PPT** — 使用 Hiq 原生能力（设计质量更好）
 2. **Word/Excel** — 集成 OfficeCLI（功能更完整）
 3. **预览** — 使用 OfficeCLI 的 HTML 渲染引擎
 
@@ -257,23 +257,23 @@ ppt_validate          →  officecli validate slides.pptx
 
 ## 七、总结
 
-| 维度 | OfficeCLI | FairPeer | 推荐方案 |
+| 维度 | OfficeCLI | Hiq | 推荐方案 |
 |------|-----------|----------|----------|
 | **Word** | ⭐⭐⭐⭐⭐ | ⭐ | 集成 OfficeCLI |
 | **Excel** | ⭐⭐⭐⭐⭐ | ⭐ | 集成 OfficeCLI |
-| **PPT 设计** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 保留 FairPeer |
-| **PPT 功能** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | 增强 FairPeer |
-| **邮件** | ⭐ | ⭐⭐⭐⭐⭐ | 保留 FairPeer |
-| **日历/任务** | ⭐ | ⭐⭐⭐⭐⭐ | 保留 FairPeer |
+| **PPT 设计** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 保留 Hiq |
+| **PPT 功能** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | 增强 Hiq |
+| **邮件** | ⭐ | ⭐⭐⭐⭐⭐ | 保留 Hiq |
+| **日历/任务** | ⭐ | ⭐⭐⭐⭐⭐ | 保留 Hiq |
 | **HTML 预览** | ⭐⭐⭐⭐⭐ | ⭐ | 集成 OfficeCLI |
 
 **最终建议：**
 1. **集成 OfficeCLI** — 快速获得 Word/Excel 编辑能力
-2. **保留 FairPeer PPT** — 设计质量更好
-3. **增强 FairPeer PPT** — 添加图表、动画等功能
-4. **保留 FairPeer 邮件/日历** — 独特优势
+2. **保留 Hiq PPT** — 设计质量更好
+3. **增强 Hiq PPT** — 添加图表、动画等功能
+4. **保留 Hiq 邮件/日历** — 独特优势
 
-**FairPeer 的定位：**
+**Hiq 的定位：**
 - **PPT 设计** — 最强（SVG 自由设计 + VLM）
 - **Word/Excel** — 通过 OfficeCLI 获得完整能力
 - **邮件/日历** — 独特优势
@@ -281,4 +281,4 @@ ppt_validate          →  officecli validate slides.pptx
 
 ---
 
-**FairPeer + OfficeCLI = 最完整的 AI 办公解决方案！**
+**Hiq + OfficeCLI = 最完整的 AI 办公解决方案！**

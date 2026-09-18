@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/hiq/internal/skill"
 )
 
 var githubAPIBaseURL = "https://api.github.com"

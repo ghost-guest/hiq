@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/winsandbox"
+	"github.com/zzycxz/hiq/internal/winsandbox"
 )
 
 func TestWindowsCommandWrapsWithHelper(t *testing.T) {
@@ -81,7 +81,7 @@ func TestConvertWindowsSandboxSpec(t *testing.T) {
 		Network:             true,
 	}
 	got := convertWindowsSandboxSpec(spec, true)
-	if !got.Writable || !got.Network || got.TempPrefix != "fairpeer-sandbox-" {
+	if !got.Writable || !got.Network || got.TempPrefix != "hiq-sandbox-" {
 		t.Fatalf("converted flags = %+v", got)
 	}
 	if len(got.WritableRoots) != 1 || got.WritableRoots[0] != spec.WriteRoots[0] {

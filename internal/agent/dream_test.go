@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // TestDreamStateRecordAndRead verifies the run history round-trips through
@@ -15,7 +15,7 @@ import (
 // status display, so it must be reliable on its own.
 func TestDreamStateRecordAndRead(t *testing.T) {
 	dir := t.TempDir()
-	sessionsDir := filepath.Join(dir, ".fairpeer", "sessions")
+	sessionsDir := filepath.Join(dir, ".hiq", "sessions")
 	if err := os.MkdirAll(sessionsDir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}

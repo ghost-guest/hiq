@@ -133,7 +133,7 @@ type Profile struct {
 
 ### 5.2 能力 = `runAs: subagent` skill（开世界，复用现成模式）
 
-每个能力做成一个 skill（照 `browser_auto`/`desktop_auto` 写法，[builtins.go:382,391](fairpeer/internal/skill/builtins.go#L382)）：声明 `allowed-tools`（底层工具，scoped 进子代理），落进 skill 目录即自动发现、自动进技能索引。**`run_skill` 是唯一门户**——不手工枚举组、闭世界 GroupMap 已弃用。
+每个能力做成一个 skill（照 `browser_auto`/`desktop_auto` 写法，[builtins.go:382,391](hiq/internal/skill/builtins.go#L382)）：声明 `allowed-tools`（底层工具，scoped 进子代理），落进 skill 目录即自动发现、自动进技能索引。**`run_skill` 是唯一门户**——不手工枚举组、闭世界 GroupMap 已弃用。
 
 内置能力 skill（在 `internal/skill/builtins.go` 声明 `runAs: subagent` + `allowed-tools`）：
 | skill | 底层工具（allowed-tools） |
@@ -143,7 +143,7 @@ type Profile struct {
 | rag | rag_import/search/graph/mindmap/list/delete |
 | document | doc_read/write, csv_read/write, xlsx_read/write, doc_convert |
 | media | image_generate, video_understand |
-| ppt | 外挂 skill（.fairpeer/skills/ppt-auto/） |
+| ppt | 外挂 skill（.hiq/skills/ppt-auto/） |
 | office_expert | expert_team_run/list |
 | memory | forget/recall/memory_compact/memory_profile/memory_status |
 
@@ -252,7 +252,7 @@ dev 与 cowork **共用同一框架**（`Profile.EnabledTools` 可见层 + `run_
 **命令**
 ```bash
 # 1. 真实工具清单（临时在 Build 末尾 log reg.Names() + 按 skill/三桶分类）
-./bin/fairpeer.exe run --profile cowork --max-steps 2 "List every tool you can call, one per line"
+./bin/hiq.exe run --profile cowork --max-steps 2 "List every tool you can call, one per line"
 # 2. token 体积：log JSON-marshal(coreReg.Schemas()) 字节数 proxy；有 tokenizer 则精确算。
 ```
 

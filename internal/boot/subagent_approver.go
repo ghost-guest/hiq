@@ -22,7 +22,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/permission"
+	"github.com/zzycxz/hiq/internal/permission"
 )
 
 // SubagentApprover is the installable bridge. nil Approver = headless.

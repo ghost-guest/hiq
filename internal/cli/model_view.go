@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/i18n"
+	"github.com/zzycxz/hiq/internal/i18n"
 )
 
 func renderModels(width int, refs []string, active string) string {

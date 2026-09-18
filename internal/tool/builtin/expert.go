@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/experts"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/experts"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // Expert-team tools (coWork). These expose the multi-model collaboration engine

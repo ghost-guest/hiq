@@ -18,7 +18,7 @@ function eq(a: unknown, b: unknown, label: string) {
 console.log("\nattachment display");
 
 const named = parseAttachmentRefsForDisplay(
-  "review @[DS30000.sl2](.fairpeer/attachments/clipboard-20260610-121238.444775-000002.sl2) and @[park.png](.fairpeer/attachments/clipboard-20260610-121238.444775-000001.png)",
+  "review @[DS30000.sl2](.hiq/attachments/clipboard-20260610-121238.444775-000002.sl2) and @[park.png](.hiq/attachments/clipboard-20260610-121238.444775-000001.png)",
 );
 
 eq(named.text, "review and", "removes named display refs from message text");
@@ -26,13 +26,13 @@ eq(
   named.attachments.map((a) => ({ path: a.path, name: a.name, kind: a.kind, ext: a.ext })),
   [
     {
-      path: ".fairpeer/attachments/clipboard-20260610-121238.444775-000002.sl2",
+      path: ".hiq/attachments/clipboard-20260610-121238.444775-000002.sl2",
       name: "DS30000.sl2",
       kind: "file",
       ext: "SL2",
     },
     {
-      path: ".fairpeer/attachments/clipboard-20260610-121238.444775-000001.png",
+      path: ".hiq/attachments/clipboard-20260610-121238.444775-000001.png",
       name: "park.png",
       kind: "image",
       ext: "PNG",
@@ -46,7 +46,7 @@ eq(
   "sorts images before files while keeping groups stable",
 );
 eq(
-  replaceAttachmentRefsForDisplay("see @[DS30000.sl2](.fairpeer/attachments/clipboard-20260610-121238.444775-000002.sl2)"),
+  replaceAttachmentRefsForDisplay("see @[DS30000.sl2](.hiq/attachments/clipboard-20260610-121238.444775-000002.sl2)"),
   "see [file:DS30000.sl2]",
   "compact previews use named display refs",
 );

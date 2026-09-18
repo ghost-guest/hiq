@@ -220,9 +220,9 @@ func TestPricingSymbolCustom(t *testing.T) {
 // --- AuthError ---
 
 func TestAuthErrorWithKeyEnv(t *testing.T) {
-	e := &AuthError{Provider: "test-provider", KeyEnv: "FAIRPEER_API_KEY", Status: 401}
+	e := &AuthError{Provider: "test-provider", KeyEnv: "HIQ_API_KEY", Status: 401}
 	msg := e.Error()
-	for _, want := range []string{"test-provider", "FAIRPEER_API_KEY", "401", "invalid or expired"} {
+	for _, want := range []string{"test-provider", "HIQ_API_KEY", "401", "invalid or expired"} {
 		if !contains(msg, want) {
 			t.Errorf("AuthError.Error() missing %q: %s", want, msg)
 		}

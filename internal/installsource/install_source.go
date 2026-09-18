@@ -17,9 +17,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/skill"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/skill"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // MCPConnectResult is what the ConnectMCP callback returns. Disconnect is
@@ -108,7 +108,7 @@ func (*installSourceTool) Name() string   { return "install_source" }
 func (*installSourceTool) ReadOnly() bool { return false }
 
 func (*installSourceTool) Description() string {
-	return "Plan, install, or uninstall a fairpeer skill or MCP server from a URL, local file/folder, .mcp.json, executable, or package name. Two-phase: with apply=false (default) returns a deterministic plan with per-action risk level; with apply=true copies/registers skills or connects and persists MCP servers after validation. op='uninstall' removes a previously installed skill (by name) or MCP server (by name) from the active config and the live session."
+	return "Plan, install, or uninstall a hiq skill or MCP server from a URL, local file/folder, .mcp.json, executable, or package name. Two-phase: with apply=false (default) returns a deterministic plan with per-action risk level; with apply=true copies/registers skills or connects and persists MCP servers after validation. op='uninstall' removes a previously installed skill (by name) or MCP server (by name) from the active config and the live session."
 }
 
 func (*installSourceTool) Schema() json.RawMessage {
@@ -186,7 +186,7 @@ func (t *installSourceTool) Execute(ctx context.Context, raw json.RawMessage) (s
 			Mode:     req.Mode,
 			PlanID:   planID,
 			Warnings: warnings,
-			Next:     "No installable fairpeer skill or MCP server was detected. Ask the user for a direct SKILL.md, skill root, .mcp.json, MCP endpoint, or package name.",
+			Next:     "No installable hiq skill or MCP server was detected. Ask the user for a direct SKILL.md, skill root, .mcp.json, MCP endpoint, or package name.",
 		}
 		return marshalJSON(out), nil
 	}
@@ -397,9 +397,9 @@ func (t *installSourceTool) resolveSkillPath(name, scope string) (string, bool) 
 		if t.home == "" {
 			return "", false
 		}
-		root = filepath.Join(t.home, ".fairpeer", skill.SkillsDirname)
+		root = filepath.Join(t.home, ".hiq", skill.SkillsDirname)
 	} else {
-		root = filepath.Join(t.root, ".fairpeer", skill.SkillsDirname)
+		root = filepath.Join(t.root, ".hiq", skill.SkillsDirname)
 	}
 	flat := filepath.Join(root, name+".md")
 	if _, err := lstat(flat); err == nil {
@@ -458,7 +458,7 @@ func (t *installSourceTool) configPath(scope string) string {
 			return p
 		}
 	}
-	return filepath.Join(t.root, "fairpeer.toml")
+	return filepath.Join(t.root, "hiq.toml")
 }
 
 func (t *installSourceTool) normalizeScope(scope string) string {

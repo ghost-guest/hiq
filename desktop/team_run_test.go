@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
-	teampkg "github.com/zzycxz/fairpeer/internal/team"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
+	teampkg "github.com/zzycxz/hiq/internal/team"
 )
 
 // teamTestApp builds an App wired to a throwaway team store, so the pool,

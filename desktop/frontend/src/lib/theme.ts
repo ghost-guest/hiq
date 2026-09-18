@@ -45,8 +45,8 @@ const LEGACY_STYLE_MAP: Record<string, ThemeStyle> = {
 const DEFAULT_THEME_STYLE: ThemeStyle = "hearth";
 const DEFAULT_THEME: Theme = "light";
 
-const THEME_KEY = "fairpeer-theme";
-const STYLE_KEY = "fairpeer-theme-style";
+const THEME_KEY = "hiq-theme";
+const STYLE_KEY = "hiq-theme-style";
 let currentTheme: Theme = DEFAULT_THEME;
 let currentThemeStyle: ThemeStyle = DEFAULT_THEME_STYLE;
 

@@ -2,12 +2,12 @@ package agent
 
 import (
 	"context"
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // TestPlanModeBlocksWriters proves the read-only gate refuses non-ReadOnly

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/desktop/internal/update"
+	"github.com/zzycxz/hiq/desktop/internal/update"
 )
 
 func TestNormalizeVersion(t *testing.T) {
@@ -117,11 +117,11 @@ func TestCheckSHA256(t *testing.T) {
 }
 
 func TestExtractBinary(t *testing.T) {
-	want := []byte("#!/bin/sh\necho fairpeer\n")
+	want := []byte("#!/bin/sh\necho hiq\n")
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(gz)
-	files := map[string][]byte{"README": []byte("ignore me"), "fairpeer-desktop": want}
+	files := map[string][]byte{"README": []byte("ignore me"), "hiq-desktop": want}
 	for name, body := range files {
 		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o755, Size: int64(len(body)), Typeflag: tar.TypeReg}); err != nil {
 			t.Fatal(err)
@@ -133,7 +133,7 @@ func TestExtractBinary(t *testing.T) {
 	tw.Close()
 	gz.Close()
 
-	got, err := extractBinary(buf.Bytes(), "fairpeer-desktop")
+	got, err := extractBinary(buf.Bytes(), "hiq-desktop")
 	if err != nil {
 		t.Fatalf("extractBinary: %v", err)
 	}

@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"github.com/zzycxz/fairpeer/internal/config"
-	projectkbpkg "github.com/zzycxz/fairpeer/internal/projectkb"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/config"
+	projectkbpkg "github.com/zzycxz/hiq/internal/projectkb"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // Project knowledge hub (项目知识中枢) desktop wiring.

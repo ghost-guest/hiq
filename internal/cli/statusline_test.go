@@ -9,14 +9,14 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/agent/testutil"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/agent/testutil"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // TestRunStatuslineCmd checks the custom status-line runner: it returns the
@@ -213,10 +213,10 @@ func TestStatuslinePutsGitIdentityOnModeRow(t *testing.T) {
 	if len(lines) != 2 {
 		t.Fatalf("status block lines = %d, want 2:\n%s", len(lines), strings.Join(lines, "\n"))
 	}
-	if !strings.Contains(lines[0], "effort auto · fairpeer@codex/demo (+3 -1 ?2)") {
+	if !strings.Contains(lines[0], "effort auto · hiq@codex/demo (+3 -1 ?2)") {
 		t.Fatalf("mode row should include effort before git identity:\n%s", strings.Join(lines, "\n"))
 	}
-	if strings.Contains(lines[1], "fairpeer@codex/demo") {
+	if strings.Contains(lines[1], "hiq@codex/demo") {
 		t.Fatalf("data row should not include git identity:\n%s", strings.Join(lines, "\n"))
 	}
 	if !strings.Contains(lines[1], "test-model-a") || strings.Contains(lines[1], "effort auto") {
@@ -292,7 +292,7 @@ func renderStatuslineViewWithGitAndEffort(t *testing.T) string {
 	m.label = "test-model-a"
 	m.effortLevel = "auto"
 	m.gitStatus = gitStatus{
-		Repo:      "fairpeer",
+		Repo:      "hiq",
 		Branch:    "codex/demo",
 		Added:     3,
 		Removed:   1,

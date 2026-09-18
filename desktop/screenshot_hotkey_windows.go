@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // Win32 API for keyboard state polling.
@@ -145,7 +145,7 @@ func (h *hotkeyManager) checkKeys() bool {
 // the key is down. syscall.Call returns it as a uintptr (64-bit on amd64), so
 // we mask to the low 16 bits first to drop any sign-extension / upper-word
 // noise, then test the high bit. GetAsyncKeyState is global (not tied to the
-// calling thread's message queue), so it works even when fairpeer lacks focus
+// calling thread's message queue), so it works even when hiq lacks focus
 // and does not require LockOSThread — unlike RegisterHotKey + WM_HOTKEY.
 func isKeyDown(vk uint16) bool {
 	ret, _, _ := procGetAsyncKeyState.Call(uintptr(vk))

@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/fileutil"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/fileutil"
+	"github.com/zzycxz/hiq/internal/provider"
 
 	"crypto/rand"
 	"encoding/hex")
@@ -25,14 +25,14 @@ import (
 // still recognizes it so historical session transcripts saved under the old
 // architecture surface the user's original words in previews/titles instead of
 // the handoff boilerplate (#3860).
-const executorHandoffMarker = "fairpeer executor handoff"
+const executorHandoffMarker = "hiq executor handoff"
 
 // --- session integrity (HMAC) ----------------------------------------------
 //
 // Sessions are JSONL files a local attacker (or a malicious plugin with FS
 // access) could tamper with to inject forged messages/tool calls. We attach an
 // HMAC-SHA256 of the file bytes to a sibling .sig file on Save and verify it on
-// LoadSession. The key is generated once and stored at ~/.fairpeer/session.key
+// LoadSession. The key is generated once and stored at ~/.hiq/session.key
 // (0600); the first run creates it, subsequent runs reuse it. A missing .sig is
 // tolerated (pre-existing sessions, or sessions saved by an older version) so
 // the check is opt-in per-file rather than a hard migration. A PRESENT but
@@ -51,7 +51,7 @@ func loadSessionHMACKey() ([]byte, error) {
 			sessionKeyCache.err = fmt.Errorf("session integrity: cannot resolve home dir: %v", herr)
 			return
 		}
-		keyPath := filepath.Join(home, ".fairpeer", "session.key")
+		keyPath := filepath.Join(home, ".hiq", "session.key")
 		sessionKeyCache.key, sessionKeyCache.err = os.ReadFile(keyPath)
 		if sessionKeyCache.err != nil {
 			if !os.IsNotExist(sessionKeyCache.err) {

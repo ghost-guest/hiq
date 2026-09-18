@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 func discoverTestManager(t *testing.T, scopes ...string) *Manager {

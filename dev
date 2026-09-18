@@ -4,7 +4,7 @@ set -euo pipefail
 root="$(git rev-parse --show-toplevel)"
 desktop_dir="$root/desktop"
 
-vite_port="${FAIRPEER_DESKTOP_VITE_PORT:-}"
+vite_port="${HIQ_DESKTOP_VITE_PORT:-}"
 if [[ $# -gt 0 && "$1" =~ ^[0-9]+$ ]]; then
   vite_port="$1"
   shift
@@ -25,15 +25,15 @@ if (( vite_port < 1024 || vite_port > 36000 )); then
   exit 2
 fi
 
-wails_port="${FAIRPEER_DESKTOP_WAILS_PORT:-$((vite_port + 29000))}"
+wails_port="${HIQ_DESKTOP_WAILS_PORT:-$((vite_port + 29000))}"
 
-export FAIRPEER_DESKTOP_VITE_PORT="$vite_port"
-export FAIRPEER_DESKTOP_DEV=1
+export HIQ_DESKTOP_VITE_PORT="$vite_port"
+export HIQ_DESKTOP_DEV=1
 # pnpm honors npm_config_* not PNPM_CONFIG_*; suppress headless TTY purge prompt + age gate.
 export npm_config_confirm_modules_purge=false
 export npm_config_minimum_release_age=0
 
-echo "fairpeer desktop dev"
+echo "hiq desktop dev"
 echo "  worktree: $root"
 echo "  vite:     http://127.0.0.1:$vite_port"
 echo "  wails:    127.0.0.1:$wails_port"

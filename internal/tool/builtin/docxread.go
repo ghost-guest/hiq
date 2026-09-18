@@ -23,7 +23,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	fileenc "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
+	fileenc "github.com/zzycxz/hiq/internal/fileutil/encoding"
 )
 
 // docxStructure is the JSON shape returned by mode:"structure". It mirrors the

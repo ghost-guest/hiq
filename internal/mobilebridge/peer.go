@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/pion/webrtc/v4"
-	"github.com/zzycxz/fairpeer/internal/mobilebridge/proto"
+	"github.com/zzycxz/hiq/internal/mobilebridge/proto"
 )
 
 // hsState is a Conn's handshake phase. It lives in an atomic so the DC read

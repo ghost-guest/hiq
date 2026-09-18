@@ -35,7 +35,7 @@ func TestClassifyWriteScopeWorkspaceAndOutside(t *testing.T) {
 		t.Fatalf("relative without root = %s, want workspace", got)
 	}
 	volumeRoot := filepath.VolumeName(os.TempDir()) + string(filepath.Separator)
-	outside := filepath.Join(volumeRoot, "fairpeer-outside-home", "Notes", "idea.md")
+	outside := filepath.Join(volumeRoot, "hiq-outside-home", "Notes", "idea.md")
 	if got := ClassifyWriteScope(outside, root, nil); got != WriteScopeOutside {
 		t.Fatalf("outside file = %s, want outside", got)
 	}
@@ -48,7 +48,7 @@ func TestClassifyWriteScopeSessionTempRoot(t *testing.T) {
 		t.Fatalf("session temp = %s, want scratch", got)
 	}
 	volumeRoot := filepath.VolumeName(os.TempDir()) + string(filepath.Separator)
-	named := filepath.Join(volumeRoot, "fairpeer-unowned-scope", "fairpeer-session-tmp-abc", "probe.py")
+	named := filepath.Join(volumeRoot, "hiq-unowned-scope", "hiq-session-tmp-abc", "probe.py")
 	if got := ClassifyWriteScope(named, t.TempDir(), nil); got != WriteScopeOutside {
 		t.Fatalf("unowned named temp = %s, want outside", got)
 	}

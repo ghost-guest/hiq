@@ -1,6 +1,6 @@
 // Package linkpeersignal implements the cloud signaling server (K) for the
-// linkpeer × fairpeer mobile bridge. It is a stateless router: pair matching,
-// public-key exchange, and SDP/ICE forwarding between a desktop fairpeer (S)
+// linkpeer × hiq mobile bridge. It is a stateless router: pair matching,
+// public-key exchange, and SDP/ICE forwarding between a desktop hiq (S)
 // and a mobile linkpeer (C). It never sees business traffic (that flows P2P
 // between S and C) and never holds long-term keys.
 //

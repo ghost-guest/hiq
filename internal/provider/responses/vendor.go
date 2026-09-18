@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // vendorCapabilities describes how a Responses-compatible endpoint deviates

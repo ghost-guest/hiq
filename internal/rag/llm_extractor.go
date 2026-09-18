@@ -20,13 +20,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/zzycxz/fairpeer/internal/apihelper"
+	"github.com/zzycxz/hiq/internal/apihelper"
 )
 
 // LLMExtractorConfig configures the LLM-backed extractor.
 type LLMExtractorConfig struct {
 	BaseURL  string // e.g. "https://api.example.com/v1" ("" = uses apihelper.BaseURL)
-	APIKey   string // env var name to read the key from (e.g. "FAIRPEER_API_KEY"); if empty, reads FAIRPEER_API_KEY
+	APIKey   string // env var name to read the key from (e.g. "HIQ_API_KEY"); if empty, reads HIQ_API_KEY
 	Model    string // chat model to use (e.g. the cowork main model)
 	TwoStage bool   // extract entities then relations in two LLM calls (higher quality, 2× tokens); false = single combined call
 }
@@ -80,7 +80,7 @@ func (e *llmExtractor) Extract(ctx context.Context, chunk string, nodePrompt, ed
 	}
 	apiKey := resolveKey(e.cfg.APIKey)
 	if apiKey == "" {
-		return ExtractResult{}, fmt.Errorf("LLM api key not set (FAIRPEER_API_KEY)")
+		return ExtractResult{}, fmt.Errorf("LLM api key not set (HIQ_API_KEY)")
 	}
 
 	text := truncateChunk(chunk, 6000)
@@ -263,10 +263,10 @@ func parseRelationsJSON(b []byte) ([]Relation, error) {
 	return out, nil
 }
 
-// resolveKey reads the API key from the named env var (default FAIRPEER_API_KEY).
+// resolveKey reads the API key from the named env var (default HIQ_API_KEY).
 func resolveKey(envName string) string {
 	if envName == "" {
-		envName = "FAIRPEER_API_KEY"
+		envName = "HIQ_API_KEY"
 	}
 	return strings.TrimSpace(os.Getenv(envName))
 }

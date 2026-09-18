@@ -28,27 +28,27 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/checkpoint"
-	"github.com/zzycxz/fairpeer/internal/codegraph"
-	"github.com/zzycxz/fairpeer/internal/command"
-	"github.com/zzycxz/fairpeer/internal/compose"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/deferred"
-	"github.com/zzycxz/fairpeer/internal/diff"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/hook"
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/jobs"
-	"github.com/zzycxz/fairpeer/internal/memory"
-	"github.com/zzycxz/fairpeer/internal/nilutil"
-	"github.com/zzycxz/fairpeer/internal/permission"
-	"github.com/zzycxz/fairpeer/internal/plugin"
-	"github.com/zzycxz/fairpeer/internal/present"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
-	"github.com/zzycxz/fairpeer/internal/skill"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/checkpoint"
+	"github.com/zzycxz/hiq/internal/codegraph"
+	"github.com/zzycxz/hiq/internal/command"
+	"github.com/zzycxz/hiq/internal/compose"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/deferred"
+	"github.com/zzycxz/hiq/internal/diff"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/hook"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/jobs"
+	"github.com/zzycxz/hiq/internal/memory"
+	"github.com/zzycxz/hiq/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/permission"
+	"github.com/zzycxz/hiq/internal/plugin"
+	"github.com/zzycxz/hiq/internal/present"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/skill"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // ErrTurnRunning reports that a caller tried to start a second foreground turn
@@ -1583,7 +1583,7 @@ func (c *Controller) notice(text string) {
 }
 
 // Run executes a turn synchronously, returning the agent's error. Used by the
-// headless `fairpeer run` path, where the Sink renders to stdout and the caller
+// headless `hiq run` path, where the Sink renders to stdout and the caller
 // just needs the exit status — no TurnDone event, no cancel bookkeeping.
 func (c *Controller) Run(ctx context.Context, input string) error {
 	c.maybeSessionStart(ctx)
@@ -3230,7 +3230,7 @@ func (c *Controller) AddMCPServer(e config.PluginEntry) (int, error) {
 
 // ConnectMCPServer connects an MCP server entry for this session without writing
 // it to config. Desktop owns config placement so it can keep user-level settings
-// out of project fairpeer.toml while preserving the CLI AddMCPServer semantics.
+// out of project hiq.toml while preserving the CLI AddMCPServer semantics.
 func (c *Controller) ConnectMCPServer(e config.PluginEntry) (int, error) {
 	return c.connectMCPServer(e)
 }
@@ -3699,7 +3699,7 @@ func (c *Controller) Bypass() bool {
 // is disabled.
 
 // QuickAdd appends a one-line note to the doc-memory file for scope (project
-// fairpeer.md by default) — the write side of "#<note>". Returns the file written.
+// hiq.md by default) — the write side of "#<note>". Returns the file written.
 func (c *Controller) QuickAdd(scope memory.Scope, note string) (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

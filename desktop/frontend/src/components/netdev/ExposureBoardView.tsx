@@ -25,8 +25,8 @@ export default function ExposureBoardView({ onJump, onFocusDevice }: Props) {
       const screens = (e as CustomEvent<{ screens?: string[] }>).detail?.screens ?? [];
       if (screens.includes("exposure") || screens.includes("overview")) load();
     };
-    window.addEventListener("fairpeer:netdev-dash", on);
-    return () => window.removeEventListener("fairpeer:netdev-dash", on);
+    window.addEventListener("hiq:netdev-dash", on);
+    return () => window.removeEventListener("hiq:netdev-dash", on);
   }, [load]);
 
   if (!b) return <div className="ndv__card" style={{ padding: 16 }}>{t("ndv.exp.loading")}</div>;

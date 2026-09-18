@@ -1,6 +1,6 @@
 package trajectory
 
-import "github.com/zzycxz/fairpeer/internal/event"
+import "github.com/zzycxz/hiq/internal/event"
 
 func (r *Recorder) RuntimeStateChanged(snapshot event.RuntimeStateSnapshot) {
 	if r != nil {

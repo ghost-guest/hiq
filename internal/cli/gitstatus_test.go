@@ -47,10 +47,10 @@ func TestGitStatusRenderRepoUsesSuppliedRepoStyle(t *testing.T) {
 }
 
 func TestGitStatusRenderWithinCompactsRepoBeforeBranch(t *testing.T) {
-	status := gitStatus{Repo: "VeryLongtest-providerfairpeerWorkspace", Branch: "codex/cli-tui-status-row"}
+	status := gitStatus{Repo: "VeryLongtest-providerhiqWorkspace", Branch: "codex/cli-tui-status-row"}
 
 	full := ansi.Strip(status.RenderWithin(80, statusAutoColor))
-	if full != "VeryLongtest-providerfairpeerWorkspace@codex/cli-tui-status-row" {
+	if full != "VeryLongtest-providerhiqWorkspace@codex/cli-tui-status-row" {
 		t.Fatalf("wide RenderWithin = %q", full)
 	}
 
@@ -68,7 +68,7 @@ func TestGitStatusRenderWithinCompactsRepoBeforeBranch(t *testing.T) {
 
 func TestGitStatusRenderWithinKeepsDirtySuffix(t *testing.T) {
 	status := gitStatus{
-		Repo:      "VeryLongtest-providerfairpeerWorkspace",
+		Repo:      "VeryLongtest-providerhiqWorkspace",
 		Branch:    "codex/cli-tui-status-row",
 		Added:     12,
 		Removed:   3,
@@ -95,8 +95,8 @@ func TestLoadGitStatus(t *testing.T) {
 	root := t.TempDir()
 	runGitForTest(t, root, "init")
 	runGitForTest(t, root, "config", "core.autocrlf", "false")
-	runGitForTest(t, root, "config", "user.email", "fairpeer@example.invalid")
-	runGitForTest(t, root, "config", "user.name", "fairpeer Test")
+	runGitForTest(t, root, "config", "user.email", "hiq@example.invalid")
+	runGitForTest(t, root, "config", "user.name", "hiq Test")
 	writeFileForTest(t, filepath.Join(root, "tracked.txt"), "one\ntwo\n")
 	runGitForTest(t, root, "add", "tracked.txt")
 	runGitForTest(t, root, "commit", "-m", "initial")

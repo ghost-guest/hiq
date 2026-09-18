@@ -11,7 +11,7 @@ package builtin
 // We deliberately stop at three bomb heuristics (total bytes / entry count /
 // ratio). OfficeCLI carries six guards (adds recursion depth, regex timeout,
 // DOM element cap, SSRF), but those defend a multi-tenant server scenario;
-// fairpeer is a local single-user assistant, Go's RE2 can't backtrack, and
+// hiq is a local single-user assistant, Go's RE2 can't backtrack, and
 // encoding/xml doesn't fetch external entities, so the extra guards add cost
 // without covering a real threat.
 

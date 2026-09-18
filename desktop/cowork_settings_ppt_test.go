@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // isolateDesktopConfigDir returns the config dir that isolateDesktopUserDirs sets up.
@@ -31,7 +31,7 @@ func TestCoworkSettingsViewPPTTemplate(t *testing.T) {
 
 	// Seed .pptx files into where DefaultDir() will look (coworkSettingsView
 	// falls back to DefaultDir when SkillTemplatesDir returns "").
-	tplDir := filepath.Join(isolateDesktopConfigDir(), "fairpeer", "ppt-templates")
+	tplDir := filepath.Join(isolateDesktopConfigDir(), "hiq", "ppt-templates")
 	if err := os.MkdirAll(tplDir, 0o755); err != nil {
 		t.Fatal(err)
 	}

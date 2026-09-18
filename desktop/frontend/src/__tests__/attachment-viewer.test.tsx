@@ -29,7 +29,7 @@ vi.mock("../lib/bridge", async (importOriginal) => {
 const { AttachmentViewer, openAttachmentViewer, closeAttachmentViewer } = await import("../components/AttachmentViewer");
 
 function img(name: string) {
-  return { path: `.fairpeer/attachments/${name}`, name, kind: "image" as const, source: "attachment" as const };
+  return { path: `.hiq/attachments/${name}`, name, kind: "image" as const, source: "attachment" as const };
 }
 
 function mount() {

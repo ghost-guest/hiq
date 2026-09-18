@@ -1,6 +1,6 @@
 # PPT Skill
 
-为 fairpeer 提供 PPT 生成能力。用户通过自然语言指令即可生成专业演示文稿。
+为 hiq 提供 PPT 生成能力。用户通过自然语言指令即可生成专业演示文稿。
 
 ## 功能
 
@@ -19,10 +19,10 @@
 
 ### 安装
 
-将 `skills/ppt/` 目录复制到 fairpeer 的 skill 目录。本 skill 需要 **系统 Python 3.10+**，并按 `requirements.txt` 安装依赖（`python3 -m pip install -r requirements.txt`）。大部分依赖为纯 Python，SVG→PPTX 主流程无需 Office/WPS。详细的 Python 环境准备见 `SKILL.md` 的"前置条件"一节。
+将 `skills/ppt/` 目录复制到 hiq 的 skill 目录。本 skill 需要 **系统 Python 3.10+**，并按 `requirements.txt` 安装依赖（`python3 -m pip install -r requirements.txt`）。大部分依赖为纯 Python，SVG→PPTX 主流程无需 Office/WPS。详细的 Python 环境准备见 `SKILL.md` 的"前置条件"一节。
 
 ```
-fairpeer/
+hiq/
 └── skills/
     └── ppt/                    (77MB, 零安装)
         ├── SKILL.md
@@ -45,7 +45,7 @@ fairpeer/
 
 ## 使用
 
-在 fairpeer 中输入自然语言指令：
+在 hiq 中输入自然语言指令：
 
 ```
 "用一个通用模板做一个华为智算中心的汇报PPT"

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // dashboards_test.go — 四屏组装函数表驱动单测（DASHBOARD spec §9.10）。

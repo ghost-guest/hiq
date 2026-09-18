@@ -13,7 +13,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // dbDefaultPort per engine type (tunnel target side).

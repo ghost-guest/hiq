@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"path/filepath"
 
-	"github.com/zzycxz/fairpeer/internal/plugin"
+	"github.com/zzycxz/hiq/internal/plugin"
 )
 
 // sharedPluginHost is a reference-counted plugin.Host shared across desktop tabs

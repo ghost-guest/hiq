@@ -3,7 +3,7 @@ package boot
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 func TestLastAutoAction(t *testing.T) {

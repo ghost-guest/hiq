@@ -6,8 +6,8 @@ import (
 )
 
 func TestCapabilitySIDIsDeterministicAndValid(t *testing.T) {
-	first := deriveCapabilitySID(capabilityWorkspace, `c:\work\fairpeer`)
-	second := deriveCapabilitySID(capabilityWorkspace, `c:\work\fairpeer`)
+	first := deriveCapabilitySID(capabilityWorkspace, `c:\work\hiq`)
+	second := deriveCapabilitySID(capabilityWorkspace, `c:\work\hiq`)
 	if first != second {
 		t.Fatalf("capability SID is not deterministic: %q != %q", first, second)
 	}
@@ -17,8 +17,8 @@ func TestCapabilitySIDIsDeterministicAndValid(t *testing.T) {
 }
 
 func TestCapabilitySIDSeparatesPurposeAndPath(t *testing.T) {
-	workspace := deriveCapabilitySID(capabilityWorkspace, `c:\work\fairpeer`)
-	temp := deriveCapabilitySID(capabilitySessionTemp, `c:\work\fairpeer`)
+	workspace := deriveCapabilitySID(capabilityWorkspace, `c:\work\hiq`)
+	temp := deriveCapabilitySID(capabilitySessionTemp, `c:\work\hiq`)
 	otherWorkspace := deriveCapabilitySID(capabilityWorkspace, `c:\work\other`)
 
 	if workspace == temp {
@@ -30,7 +30,7 @@ func TestCapabilitySIDSeparatesPurposeAndPath(t *testing.T) {
 }
 
 func TestCapabilitySIDSubauthoritiesStayInThirtyBitRange(t *testing.T) {
-	first, second := capabilitySubauthorities(capabilityWorkspace, `c:\work\fairpeer`)
+	first, second := capabilitySubauthorities(capabilityWorkspace, `c:\work\hiq`)
 	const max = uint32(1<<30 - 1)
 	if first < 1 || first > max || second < 1 || second > max {
 		t.Fatalf("subauthorities outside 1..2^30-1: %d, %d", first, second)

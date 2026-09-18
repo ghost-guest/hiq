@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/linkpeersignal"
+	"github.com/zzycxz/hiq/internal/linkpeersignal"
 )
 
 // extractParam pulls a query param from a "scheme://host?k=v&k2=v2" string
@@ -33,7 +33,7 @@ func (h *collectHandler) OnSignalMsg(m SignalMsg) { h.out <- m }
 
 // TestPairingFullFlowWithRealK drives pair/register → exchange → confirm →
 // unpair against a REAL linkpeersignal.Server. This is the K↔S protocol-
-// consistency gate: it proves fairpeer's pairing client and the cloud signal
+// consistency gate: it proves hiq's pairing client and the cloud signal
 // agree on every field, status code, and key encoding (LINKPEER_VERIFICATION_PLAN §3 M1).
 func TestPairingFullFlowWithRealK(t *testing.T) {
 	kSrv := linkpeersignal.NewServer(linkpeersignal.DefaultConfig(), linkpeersignal.NewAudit("error"))

@@ -9,7 +9,7 @@ import (
 )
 
 // usageStateName is the JSON file recording per-skill usage, written beside
-// dream_state.json (the parent of the session dir, i.e. the .fairpeer/ root).
+// dream_state.json (the parent of the session dir, i.e. the .hiq/ root).
 // Like dream_state.json it exists because skill usage is a cross-session
 // concern that must outlive any single agent run.
 const usageStateName = "skill_usage.json"

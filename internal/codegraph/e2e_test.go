@@ -9,31 +9,31 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/plugin"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/plugin"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // TestE2ECodegraphMCP drives the whole integration against a real CodeGraph
 // bundle: index a fixture project, connect via the MCP client pinned to that
 // project (Spec.Dir), and actually call codegraph_search. It is gated on
-// FAIRPEER_CODEGRAPH_E2E so the normal `go test ./...` skips it (no network, no
+// HIQ_CODEGRAPH_E2E so the normal `go test ./...` skips it (no network, no
 // external binary), yet it still compiles every build so it can't bit-rot.
 //
 // Run it with `make e2e-codegraph` (fetches the matching bundle), or manually:
 //
-//	FAIRPEER_CODEGRAPH_E2E=1 FAIRPEER_CODEGRAPH_BIN=/path/to/codegraph \
+//	HIQ_CODEGRAPH_E2E=1 HIQ_CODEGRAPH_BIN=/path/to/codegraph \
 //	  go test ./internal/codegraph/ -run E2E -v -count=1
 //
-// With FAIRPEER_CODEGRAPH_BIN unset it falls back to Resolve("") (bundle / PATH).
+// With HIQ_CODEGRAPH_BIN unset it falls back to Resolve("") (bundle / PATH).
 func TestE2ECodegraphMCP(t *testing.T) {
-	if os.Getenv("FAIRPEER_CODEGRAPH_E2E") == "" {
-		t.Skip("set FAIRPEER_CODEGRAPH_E2E=1 to run the CodeGraph MCP end-to-end test")
+	if os.Getenv("HIQ_CODEGRAPH_E2E") == "" {
+		t.Skip("set HIQ_CODEGRAPH_E2E=1 to run the CodeGraph MCP end-to-end test")
 	}
-	bin := os.Getenv("FAIRPEER_CODEGRAPH_BIN")
+	bin := os.Getenv("HIQ_CODEGRAPH_BIN")
 	if bin == "" {
 		var ok bool
 		if bin, ok = Resolve(""); !ok {
-			t.Fatal("FAIRPEER_CODEGRAPH_E2E is set but no codegraph binary found — set FAIRPEER_CODEGRAPH_BIN to the launcher path")
+			t.Fatal("HIQ_CODEGRAPH_E2E is set but no codegraph binary found — set HIQ_CODEGRAPH_BIN to the launcher path")
 		}
 	}
 	t.Logf("codegraph binary: %s", bin)

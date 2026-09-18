@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/filelock"
+	"github.com/zzycxz/hiq/internal/filelock"
 )
 
 const backgroundGrace = 30 * time.Second
@@ -140,7 +140,7 @@ func (o *Owner) holdScopeLocked() (string, string) {
 }
 
 // New returns a Delivery-session lease owner for workspaceRoot. lockDir is
-// shared by Fairpeer processes and remains outside the user's workspace.
+// shared by Hiq processes and remains outside the user's workspace.
 func New(workspaceRoot, lockDir string, onWait WaitNotice) (*Owner, error) {
 	canonical, compatibility, err := workspaceIdentities(workspaceRoot)
 	if err != nil {
@@ -542,7 +542,7 @@ func (o *Owner) acquireWorkspace(ctx context.Context, mode filelock.Mode, notifi
 }
 
 // acquireCompatibilityRoots keeps the original per-workspace lock protocol in
-// the hierarchy. Previous Fairpeer versions only know these exact lock files,
+// the hierarchy. Previous Hiq versions only know these exact lock files,
 // so descendants take their ancestor locks shared while a whole-workspace
 // writer takes its own root exclusively.
 func (o *Owner) acquireCompatibilityRoots(

@@ -9,7 +9,7 @@ import (
 
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/zzycxz/fairpeer/internal/shellparse"
+	"github.com/zzycxz/hiq/internal/shellparse"
 )
 
 // readOnlyCommands holds single-word commands whose base name alone implies a
@@ -138,7 +138,7 @@ func ClassifyReadOnlyCommand(command string) (base, sub string, fields []string,
 	return "", "", nil, false
 }
 
-const resolvedSubstitutionPlaceholder = "__fairpeer_read_only_substitution__"
+const resolvedSubstitutionPlaceholder = "__hiq_read_only_substitution__"
 
 var substitutionSafeCommands = map[string]bool{
 	"cat": true, "head": true, "tail": true, "ls": true,

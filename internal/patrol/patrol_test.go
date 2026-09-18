@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/deferred"
+	"github.com/zzycxz/hiq/internal/deferred"
 )
 
 // --- helpers ----------------------------------------------------------------

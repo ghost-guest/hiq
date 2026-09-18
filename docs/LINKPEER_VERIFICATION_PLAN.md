@@ -13,7 +13,7 @@
 2. **验证左移**：协议一致性在 M1 就验（Go e2e），不等 M4 真机。
 3. **阻断明确**：每项标注「阻断/非阻断」，阻断项失败必须修，非阻断项记录。
 4. **自动化优先**：CI 跑贯穿验证，人工只做真机/跨网 dogfood。
-5. **对端就绪才集成**：改 fairpeer（M1）前，K 和 linkpeer 的协议契约已验过一致。
+5. **对端就绪才集成**：改 hiq（M1）前，K 和 linkpeer 的协议契约已验过一致。
 
 ---
 
@@ -52,7 +52,7 @@
 |---|---|---|---|
 | 纯 Go 编译 | `CGO_ENABLED=0 go build ./...`（Win/macOS/Linux） | 三平台全过 | ✅ |
 | echo DataChannel | 同进程两 PC 直连，echo 一条消息 | 消息往返成功 | ✅ |
-| 二进制增量 | 编译 fairpeer with/without pion，对比大小 | < 10 MB | ✅（超则评估） |
+| 二进制增量 | 编译 hiq with/without pion，对比大小 | < 10 MB | ✅（超则评估） |
 | 依赖无冲突 | `go mod tidy` + 现有测试全过 | 无 regression | ✅ |
 
 **失败处理**：CGO_ENABLED=0 失败 → 评估独立 bridge 进程 contingency，重新规划 M1。
@@ -106,7 +106,7 @@
 | 验证项 | 方法 | 通过标准 | 阻断 |
 |---|---|---|---|
 | Go e2e 升级 | 真 PeerConnection（非 mock），DataChannel + 握手 + 帧 | 通 | ✅ |
-| 真机配对 | Android 扫 fairpeer 二维码 | 配对成功 + 双向确认 | ✅ |
+| 真机配对 | Android 扫 hiq 二维码 | 配对成功 + 双向确认 | ✅ |
 | 真机连接 | 同 WiFi，DataChannel 建立 + 加密握手 | ENCRYPTED 状态 | ✅ |
 | 命令往返 | 手机发 submit，桌面执行，事件回流 | 端到端通 | ✅ |
 | 加密验证 | Wireshark 抓包看 DataChannel 流量 | 仅 DTLS + 密文，无可读内容 | ✅ |
@@ -165,7 +165,7 @@
 
 | 流水线 | 内容 | 失败动作 |
 |---|---|---|
-| `fairpeer-ci` | `go vet` + `golangci-lint` + `go test ./...` + `CGO_ENABLED=0 go build`（Win/macOS/Linux） | 阻断合并 |
+| `hiq-ci` | `go vet` + `golangci-lint` + `go test ./...` + `CGO_ENABLED=0 go build`（Win/macOS/Linux） | 阻断合并 |
 | `linkpeer-ci` | `dart analyze` + `flutter test` + `flutter build apk --debug` | 阻断合并 |
 | `protocol-compat` | Go/Dart 双向解析 testvectors JSON，字段比对 | 阻断合并 |
 | `invariants` | 跑不变量断言（seq 单调、nonce 不碰撞、devId 自洽、帧版本） | 阻断合并 |

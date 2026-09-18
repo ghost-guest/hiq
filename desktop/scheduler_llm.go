@@ -26,9 +26,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/apihelper"
-	"github.com/zzycxz/fairpeer/internal/boot"
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/apihelper"
+	"github.com/zzycxz/hiq/internal/boot"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // llmResolveTimeTimeout bounds a single LLM time-parse call. PreviewSchedule is a
@@ -66,7 +66,7 @@ func llmParseTime(ctx context.Context, text string, now time.Time) (time.Time, e
 	}
 	apiKey := os.Getenv(apiKeyEnv)
 	if apiKey == "" {
-		apiKey = os.Getenv("FAIRPEER_API_KEY")
+		apiKey = os.Getenv("HIQ_API_KEY")
 	}
 	if apiKey == "" {
 		return time.Time{}, fmt.Errorf("LLM api key not configured")
@@ -75,7 +75,7 @@ func llmParseTime(ctx context.Context, text string, now time.Time) (time.Time, e
 		baseURL = apihelper.BaseURL
 	}
 	if modelName == "" {
-		return time.Time{}, fmt.Errorf("no LLM model configured: set fast_task_model or default_model in fairpeer.toml")
+		return time.Time{}, fmt.Errorf("no LLM model configured: set fast_task_model or default_model in hiq.toml")
 	}
 
 	// Strict output contract: one line "YYYY-MM-DD HH:MM", or "N/A". We give the

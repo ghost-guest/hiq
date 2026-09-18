@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	_ "github.com/zzycxz/fairpeer/internal/provider/openai"
-	"github.com/zzycxz/fairpeer/internal/tool"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/provider"
+	_ "github.com/zzycxz/hiq/internal/provider/openai"
+	"github.com/zzycxz/hiq/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 const (

@@ -12,12 +12,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/boot"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/installsource"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/boot"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/installsource"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
 // settings_app.go is the desktop Settings panel's command surface: it reads the
@@ -244,7 +244,7 @@ func officialProviderHost(baseURL string) string {
 }
 
 // officialProviderKindFromEntry previously detected built-in official providers.
-// FairPeer ships no official presets, so this always returns "".
+// Hiq ships no official presets, so this always returns "".
 func officialProviderKindFromEntry(p config.ProviderEntry) string {
 	return ""
 }
@@ -310,7 +310,7 @@ func providerViewFromEntry(p config.ProviderEntry, builtIn, added bool) Provider
 }
 
 func officialProviderViews(added map[string]bool) []ProviderView {
-	// FairPeer ships no preset official providers, so this is always empty —
+	// Hiq ships no preset official providers, so this is always empty —
 	// but the frontend expects a non-nil [] (not null), so allocate it.
 	return []ProviderView{}
 }
@@ -534,7 +534,7 @@ var configApplyMu sync.Mutex
 // applyConfigChange mutates the user-global config and rebuilds the controller so
 // the change takes effect this session. Desktop settings such as providers and
 // keys are account-level, not per-project: writing them to the global config
-// rather than the cwd's fairpeer.toml is what lets them survive a workspace switch.
+// rather than the cwd's hiq.toml is what lets them survive a workspace switch.
 func (a *App) applyConfigChange(mutate func(*config.Config) error) error {
 	if err := a.applyConfigOnly(mutate); err != nil {
 		return err
@@ -629,9 +629,9 @@ func (a *App) activeWorkspaceRoot() string {
 
 func projectConfigPathForRoot(root string) string {
 	if strings.TrimSpace(root) == "" || root == "." {
-		return "fairpeer.toml"
+		return "hiq.toml"
 	}
-	return filepath.Join(root, "fairpeer.toml")
+	return filepath.Join(root, "hiq.toml")
 }
 
 func sameConfigPath(a, b string) bool {
@@ -890,7 +890,7 @@ func desktopAutoPlanMode(mode string) string {
 }
 
 // officialProviderTemplate returns the provider entries for a curated desktop
-// provider kind. FairPeer ships no preset official providers (it is
+// provider kind. Hiq ships no preset official providers (it is
 // provider-agnostic over the public network), so every kind is unknown until a
 // future template is registered here. Callers receiving this error should
 // surface it to the user as "no official provider templates available".
@@ -1647,7 +1647,7 @@ func (a *App) SkillMarketInstall(installRef, name, scope string, apply bool) (st
 	}
 	// Append install path to the result for user feedback.
 	if name != "" {
-		result += "\n" + filepath.Join(home, ".fairpeer", "skills", name)
+		result += "\n" + filepath.Join(home, ".hiq", "skills", name)
 	}
 	return result, nil
 }

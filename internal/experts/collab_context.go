@@ -12,7 +12,7 @@ package experts
 // untouched — this is a read-side projection only.
 
 import (
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // CollabContextMessages returns a copy of msgs in which every persisted

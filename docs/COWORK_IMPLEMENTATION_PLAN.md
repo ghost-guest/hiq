@@ -1,4 +1,4 @@
-# fairpeer coWork 实施规划
+# hiq coWork 实施规划
 
 > 版本: v2.2 | 最后更新: 2026-06-23 | 状态: Phase 0–3 + 后续 5 项全部完成，待真机测试
 >
@@ -8,7 +8,7 @@
 
 ## 一、产品定位与策略
 
-fairpeer coWork 是 fairpeer 的办公智能体模式。核心诉求：「一个接口直接切换成 coWork」。实现方式：**profile 切换**——一个 profile 是一束 `boot.Options` 覆盖（model + system prompt + skills + tools + MCP servers），切换时复用已证明的 `SetModelForTab` rebuild 流程。
+hiq coWork 是 hiq 的办公智能体模式。核心诉求：「一个接口直接切换成 coWork」。实现方式：**profile 切换**——一个 profile 是一束 `boot.Options` 覆盖（model + system prompt + skills + tools + MCP servers），切换时复用已证明的 `SetModelForTab` rebuild 流程。
 
 ### 策略：MVP 先行（非 v1.0 的全量并行）
 
@@ -25,7 +25,7 @@ v1.0 原计划 18 周/9 Phase 全量并行。v2.0 改为：
 |---|---|---|
 | 「config 有 profile section 可扩展」| `config.go`/`example.toml` **没有** `[profile]` | profile section 从零设计 |
 | 「web_search 是 MCP 通道」| `websearch.go`/`webfetch.go` 是编译进 Go 的 built-in（Brave/Exa/Linkup/AnySearch），非 MCP | 架构图纠错 |
-| 「ppt 复用」| `wps-ppt-mcp-server` 是仓库外独立 Python server，fairpeer **零引用** | 接入是新工作（但省 greenfield）|
+| 「ppt 复用」| `wps-ppt-mcp-server` 是仓库外独立 Python server，hiq **零引用** | 接入是新工作（但省 greenfield）|
 | 「App.tsx 2700 行必须先拆」| 2705 行属实，但 `AppChrome`/`ProjectTree`/`Transcript`/`Composer`/`WorkspacePanel` 已是独立组件 | 不必先全量拆，增量改即可 |
 | 「SetSkillEnabled 可 live 切」| `controller.go:2219` docstring 明说**需 rebuild 才生效** | profile 统一走 rebuild |
 

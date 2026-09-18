@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/filelock"
+	"github.com/zzycxz/hiq/internal/filelock"
 
 	moderncsqlite "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"

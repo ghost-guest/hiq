@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/nilutil"
 )
 
 // Status is a job's lifecycle state.

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 func TestBeaconVerify(t *testing.T) {

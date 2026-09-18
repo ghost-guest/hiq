@@ -167,7 +167,7 @@ Recorded narration:
     parser.add_argument('--template', type=str, default=None,
                         help='PPTX template file. When provided, the output inherits the '
                              'template\'s slide master/layout/background. Auto-detected from '
-                             '~/.fairpeer/ppt-template.pptx if omitted.')
+                             '~/.hiq/ppt-template.pptx if omitted.')
 
     parser.add_argument('--no-compat', action='store_true',
                         help='Disable Office compatibility mode (pure SVG only, requires Office 2019+)')
@@ -570,10 +570,10 @@ Recorded narration:
             else:
                 print("  [warn] metadata.json ignored (top level is not an object)", file=sys.stderr)
 
-    # Auto-detect template: check the fixed path first (~/.fairpeer/ppt-template.pptx).
+    # Auto-detect template: check the fixed path first (~/.hiq/ppt-template.pptx).
     template_path_resolved = Path(args.template) if args.template else None
     if template_path_resolved is None:
-        fixed = Path.home() / '.fairpeer' / 'ppt-template.pptx'
+        fixed = Path.home() / '.hiq' / 'ppt-template.pptx'
         if fixed.exists():
             template_path_resolved = fixed
             if verbose:

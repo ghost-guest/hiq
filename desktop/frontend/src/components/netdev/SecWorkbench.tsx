@@ -83,8 +83,8 @@ export function SecWorkbench({ devices, hidden }: {
   // 场景卡「CVE 清单匹配」直达：切换到 CVE 视图（feed 导入在左栏）。
   useEffect(() => {
     const onCVE = () => setView("cve");
-    window.addEventListener("fairpeer:netdev-cve", onCVE);
-    return () => window.removeEventListener("fairpeer:netdev-cve", onCVE);
+    window.addEventListener("hiq:netdev-cve", onCVE);
+    return () => window.removeEventListener("hiq:netdev-cve", onCVE);
   }, []);
 
   // Finding 卡「建案例」入口（findings 页签 → 本工作台）：事件带首条条目。
@@ -101,8 +101,8 @@ export function SecWorkbench({ devices, hidden }: {
         void refresh().then(() => setCurrentId(saved.id));
       });
     };
-    window.addEventListener("fairpeer:netdev-case", onNew);
-    return () => window.removeEventListener("fairpeer:netdev-case", onNew);
+    window.addEventListener("hiq:netdev-case", onNew);
+    return () => window.removeEventListener("hiq:netdev-case", onNew);
   }, [refresh]);
 
   const save = useCallback(async (c: NetDevIncidentCase) => {

@@ -1,12 +1,12 @@
-# fairpeer configuration.
-# Resolution order: flag > ./fairpeer.toml > ~/.config/fairpeer/config.toml > built-in defaults.
+# hiq configuration.
+# Resolution order: flag > ./hiq.toml > ~/.config/hiq/config.toml > built-in defaults.
 # Secrets come from the environment via api_key_env; never put keys here.
 
 # default_model = "<provider>/<model>"   # uncomment + set after configuring a provider
-# language      = "zh"   # ui language; empty = auto-detect from $LANG / $FAIRPEER_LANG
+# language      = "zh"   # ui language; empty = auto-detect from $LANG / $HIQ_LANG
 
 [ui]
-theme = "auto"   # auto|dark|light; controls CLI colors only; FAIRPEER_THEME can override per run
+theme = "auto"   # auto|dark|light; controls CLI colors only; HIQ_THEME can override per run
 # theme_style = "graphite"   # graphite|aurora|slate|carbon|nocturne|amber|ember|midnight|sandstone|porcelain|linen|glacier
 # shortcut_layout = "desktop"   # classic|desktop; compatibility setting; Shift+Tab toggles Plan, Ctrl+Y toggles YOLO
 
@@ -18,11 +18,11 @@ ask_request = true   # notify when a question is waiting
 
 [agent]
 system_prompt = """
-You are fairpeer, a coding agent focused on executing code tasks.
+You are hiq, a coding agent focused on executing code tasks.
 Use the provided tools to read and write files and run shell commands.
-When asked about your identity, always say you are fairpeer. Never mention
+When asked about your identity, always say you are hiq. Never mention
 Claude, Anthropic, GPT, Qwen, DeepSeek, or any underlying model name —
-you are fairpeer, not any foundation model.
+you are hiq, not any foundation model.
 Principles: understand the request before acting; verify with tools instead of
 guessing; keep changes minimal and correct; briefly summarize what you did."""
 # system_prompt_file = "prompts/system.md"   # overrides system_prompt when set
@@ -40,13 +40,13 @@ compact_force_ratio = 0.9   # force compacting at this high-water mark
 # subagent_model = "<provider>/<model>"   # optional default for runAs=subagent skills
 # subagent_models = { review = "<provider>/<model>", security_review = "<provider>/<model>" }   # per-skill overrides
 # output_style = "explanatory"   # persona/tone folded into the prompt: explanatory | learning | concise,
-#                                  or a custom .fairpeer/output-styles/<name>.md ; empty = default
+#                                  or a custom .hiq/output-styles/<name>.md ; empty = default
 
 # A provider is a vendor endpoint (one base_url + key) that offers one or more
 # models. Use `models = [...]` to expose several under a single entry — switching
 # models reuses the same connection; no need to re-declare base_url/api_key.
-# Uncomment the providers you have an API key for. FairPeer ships NO built-in
-# provider — configure at least one before first run (or use `fairpeer setup`).
+# Uncomment the providers you have an API key for. Hiq ships NO built-in
+# provider — configure at least one before first run (or use `hiq setup`).
 # Keyless local presets (Ollama, llama.cpp) ship built-in for every install —
 # they need no API key and appear below under "Local models". Defining ANY
 # [[providers]] block here replaces the built-in presets wholesale.
@@ -54,7 +54,7 @@ compact_force_ratio = 0.9   # force compacting at this high-water mark
 # ── Direct providers (12 vendors) ──────────────────────────────────────────
 # Each shows the three model roles: default (main chat), fast (background
 # tasks), vision (image recognition). Adjust models as vendors release newer
-# ones — run `fairpeer setup` or the Settings "fetch models" button to
+# ones — run `hiq setup` or the Settings "fetch models" button to
 # auto-discover available models from a configured endpoint.
 
 # ── 通义千问 (Qwen / DashScope) ──
@@ -202,7 +202,7 @@ compact_force_ratio = 0.9   # force compacting at this high-water mark
 
 # ── Local models (no API key) ──────────────────────────────────────────────
 # Local OpenAI-compatible servers. No api_key_env — requests carry an empty
-# Bearer header the server ignores. Run `fairpeer setup` or the Settings
+# Bearer header the server ignores. Run `hiq setup` or the Settings
 # "fetch models" button to list what's actually installed/loaded.
 
 # ── Ollama ── `ollama serve` on the default port; models listed by `ollama list`
@@ -322,11 +322,11 @@ bash_timeout_seconds = 120   # foreground safety cap; set 0 for no tool-local ca
 # [codegraph]
 # enabled      = false
 # auto_install = true
-# path         = ""   # empty = cache, then PATH, then a bundle beside fairpeer
+# path         = ""   # empty = cache, then PATH, then a bundle beside hiq
 # download_url = ""   # custom download mirror for the CodeGraph binary (intranet/air-gapped). When set, replaces the default GitHub source. Example: "https://internal-mirror.corp/codegraph/releases/download"
 
 # Skills are invokable playbooks (SKILL.md / <name>.md with frontmatter), found
-# under .fairpeer/skills, .agents/skills, .agent/skills, .claude/skills (project)
+# under .hiq/skills, .agents/skills, .agent/skills, .claude/skills (project)
 # and the same dirs under ~ (global). Built-ins (explore/research/review/security-review/test)
 # ship out of the box. The model invokes them via run_skill / explore / …; you
 # invoke them via /<name>. Manage with /skill (list, show, enable, disable, new, paths).
@@ -337,10 +337,10 @@ bash_timeout_seconds = 120   # foreground safety cap; set 0 for no tool-local ca
 
 # Hooks run shell commands around the loop (PreToolUse / PostToolUse /
 # UserPromptSubmit / Stop). They are NOT configured here — put them in
-# settings.json: ~/.fairpeer/settings.json (global, always on) and
-# <project>/.fairpeer/settings.json (project, runs only after `/hooks trust`).
+# settings.json: ~/.hiq/settings.json (global, always on) and
+# <project>/.hiq/settings.json (project, runs only after `/hooks trust`).
 # Exit 0 = pass, exit 2 = block (PreToolUse / UserPromptSubmit only). Example
-# ~/.fairpeer/settings.json:
+# ~/.hiq/settings.json:
 #   { "hooks": {
 #       "PreToolUse":  [ { "match": "bash", "command": "my-guard.sh" } ],
 #       "PostToolUse": [ { "match": ".*file", "command": "gofmt -w ." } ],
@@ -354,7 +354,7 @@ bash_timeout_seconds = 120   # foreground safety cap; set 0 for no tool-local ca
 # External stdio plugins (MCP-compatible); each is a standalone executable.
 # [[plugins]]
 # name    = "example"
-# command = "fairpeer-plugin-example"
+# command = "hiq-plugin-example"
 # # Per-call timeout for this MCP server's JSON-RPC calls (default 60s).
 # # Prevents a slow server from blocking the agent indefinitely.
 # call_timeout = "60s"
@@ -362,7 +362,7 @@ bash_timeout_seconds = 120   # foreground safety cap; set 0 for no tool-local ca
 # # start. Use /mcp or the desktop MCP panel to refresh, reconnect, or disable.
 
 # Bot gateway: multi-channel IM bot for QQ, Feishu, WeChat, and Telegram.
-# Start with `fairpeer bot start --channels qq,feishu,weixin,telegram`.
+# Start with `hiq bot start --channels qq,feishu,weixin,telegram`.
 # All secrets are read from environment variables; never put keys here.
 # [bot]
 # enabled    = false
@@ -489,7 +489,7 @@ bash_timeout_seconds = 120   # foreground safety cap; set 0 for no tool-local ca
 # password_env = "COWORK_IMAP_PASSWORD"
 #
 # # Multiple mailboxes (recommended over the single pair above).
-# # [[cowork.email_accounts]] is an array of named accounts so FairPeer can talk
+# # [[cowork.email_accounts]] is an array of named accounts so Hiq can talk
 # # to several mailboxes at once — e.g. a personal Gmail box + a work Outlook box.
 # # Tools pick one by `account` (empty = the default). Passwords are NEVER written
 # # here, only the env-var name; the value lives encrypted in the secrets store
@@ -567,7 +567,7 @@ bash_timeout_seconds = 120   # foreground safety cap; set 0 for no tool-local ca
 # netdev — 网络设备运维 profile（诊断优先；详见 docs/NETDEV_SPEC.md）
 #
 # 安全模型（全部为硬性，不随模式关闭）：
-#   1. 本节是【用户全局】安全控制：项目级 fairpeer.toml 里的 [netdev] 在合并后
+#   1. 本节是【用户全局】安全控制：项目级 hiq.toml 里的 [netdev] 在合并后
 #      会被钉回用户配置——克隆的仓库无法注入设备/跳板/探测范围。
 #   2. 凭证永不写入 TOML：只写 *_env 名，真值由桌面端写入加密密钥库
 #      （netdev/password/<env 名> 命名空间）。
@@ -649,8 +649,8 @@ bash_timeout_seconds = 120   # foreground safety cap; set 0 for no tool-local ca
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# linkpeer mobile bridge (fairpeer ↔ linkpeer phone client)
-# linkpeer is a separate Flutter app that mirrors this fairpeer's conversations
+# linkpeer mobile bridge (hiq ↔ linkpeer phone client)
+# linkpeer is a separate Flutter app that mirrors this hiq's conversations
 # over an end-to-end-encrypted WebRTC P2P link. This section enables the
 # desktop-side bridge. See docs/LINKPEER_*.md for the full design.
 #
@@ -660,7 +660,7 @@ bash_timeout_seconds = 120   # foreground safety cap; set 0 for no tool-local ca
 # ─────────────────────────────────────────────────────────────────────────────
 [mobilebridge]
 # ── 信令模式（零配置上手，2026-08 起）──
-# signal_url 留空 = 内嵌 K：fairpeer 进程内自动起 linkpeersignal
+# signal_url 留空 = 内嵌 K：hiq 进程内自动起 linkpeersignal
 #（0.0.0.0:8080），装完扫码即通（局域网直连零云）——新装机器的默认形态。
 # 填地址 = 外部 K；与 cloud_signal_url 相同 = 仅云模式。
 # enabled          = false                          # master switch (default off)
@@ -719,7 +719,7 @@ bash_timeout_seconds = 120   # foreground safety cap; set 0 for no tool-local ca
 # 设计: docs/TRUSTDOMAIN_SPEC.md。跨 profile 的基础设施，默认关闭；无代币无挖矿，
 # 许可链 = quorum 签名复制日志。链上只放控制面元数据（成员/撤销/令牌/审计锚/自证）。
 #
-# CLI: fairpeer trustdomain init|status|attest|admit|revoke|token|run
+# CLI: hiq trustdomain init|status|attest|admit|revoke|token|run
 #
 # [trustdomain]
 # enabled  = false

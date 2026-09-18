@@ -16,7 +16,7 @@ import (
 // Each direction uses its own key (c2s / s2c) and its own seq counter
 // starting at 0. Receivers reject any seq ≤ their recvMaxSeq to defeat replay.
 //
-// The 2^32-rekey invariant (FAIRPEER_SPEC §11.5): when a direction's seq
+// The 2^32-rekey invariant (HIQ_SPEC §11.5): when a direction's seq
 // approaches 2^32, the connection MUST rekey (new X25519, new keys). This
 // keeps AES-GCM nonce-collision probability negligible for the key's lifetime.
 const (

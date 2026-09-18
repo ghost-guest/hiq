@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 func compileRegexpSafe(s string) (*regexp.Regexp, error) { return regexp.Compile(s) }

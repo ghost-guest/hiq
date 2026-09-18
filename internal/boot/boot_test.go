@@ -18,33 +18,33 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/instruction"
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/plugin"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
-	"github.com/zzycxz/fairpeer/internal/secret"
-	"github.com/zzycxz/fairpeer/internal/skill"
-	"github.com/zzycxz/fairpeer/internal/tool"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/instruction"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/plugin"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/secret"
+	"github.com/zzycxz/hiq/internal/skill"
+	"github.com/zzycxz/hiq/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 
-	// Blank import registers the provider kind the same way cmd/fairpeer's main
+	// Blank import registers the provider kind the same way cmd/hiq's main
 	// does; importing builtin above registers the built-in tools.
-	_ "github.com/zzycxz/fairpeer/internal/provider/openai"
+	_ "github.com/zzycxz/hiq/internal/provider/openai"
 )
 
 // TestBuildFoldsProjectMemoryIntoSystemPrompt is the end-to-end proof of the
-// cache-first wiring: a project fairpeer.md is discovered at boot and folded
+// cache-first wiring: a project hiq.md is discovered at boot and folded
 // into the session's system message (the cached prefix), and the `remember`
 // tool is registered. It builds a real Controller from a throwaway project dir.
 func TestBuildFoldsProjectMemoryIntoSystemPrompt(t *testing.T) {
 	dir := robustTempDir(t)
 	t.Chdir(dir)
 
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -58,9 +58,9 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `)
-	writeFile(t, dir, "fairpeer.md", "Project rule: always run go vet before committing.")
+	writeFile(t, dir, "hiq.md", "Project rule: always run go vet before committing.")
 
 	ctrl, err := Build(context.Background(), Options{}) // RequireKey false: no network/key needed
 	if err != nil {
@@ -75,7 +75,7 @@ api_key_env = "FAIRPEER_TEST_KEY_UNSET"
 		t.Fatalf("base prompt missing from system message:\n%s", sys)
 	}
 	if !strings.Contains(sys, "always run go vet before committing") {
-		t.Fatalf("project fairpeer.md not folded into system message:\n%s", sys)
+		t.Fatalf("project hiq.md not folded into system message:\n%s", sys)
 	}
 	// Base must come first so it stays a valid cache prefix when memory changes.
 	if strings.Index(sys, "BASE SYSTEM PROMPT") > strings.Index(sys, "always run go vet") {
@@ -83,7 +83,7 @@ api_key_env = "FAIRPEER_TEST_KEY_UNSET"
 	}
 
 	if mem := ctrl.Memory(); mem == nil || len(mem.Docs) == 0 {
-		t.Fatal("controller memory set is empty after discovering fairpeer.md")
+		t.Fatal("controller memory set is empty after discovering hiq.md")
 	}
 }
 
@@ -95,7 +95,7 @@ func TestBuildSubagentSkillFailedContinuationPersistsTranscript(t *testing.T) {
 	registerBootSubagentTestProvider()
 	prov := &bootSubagentTestProvider{}
 	setBootSubagentTestProvider(t, prov)
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -247,7 +247,7 @@ func subagentRefFromHistory(t *testing.T, msgs []provider.Message) string {
 }
 
 // TestBuildHeadlessRunRunsTaskSubagentWithoutSessionPath reproduces headless
-// `fairpeer run`: a controller built via Build with NO SetSessionPath (exactly
+// `hiq run`: a controller built via Build with NO SetSessionPath (exactly
 // what internal/cli.runAgent does) must still be able to run a `task` sub-agent.
 // Before the ephemeral fallback this failed with "parent session is required".
 func TestBuildHeadlessRunRunsTaskSubagentWithoutSessionPath(t *testing.T) {
@@ -258,7 +258,7 @@ func TestBuildHeadlessRunRunsTaskSubagentWithoutSessionPath(t *testing.T) {
 	registerHeadlessTaskTestProvider()
 	prov := &headlessTaskTestProvider{}
 	setHeadlessTaskTestProvider(t, prov)
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -463,7 +463,7 @@ func TestBuildHonorsSessionDirOverride(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("AppData", filepath.Join(home, "AppData"))
 	t.Chdir(dir)
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -474,7 +474,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `)
 
 	sessionDir := filepath.Join(t.TempDir(), "desktop-workspace-sessions")
@@ -498,7 +498,7 @@ func TestBuildDiscoversSkills(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Chdir(dir)
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -512,9 +512,9 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `)
-	writeFile(t, dir, ".fairpeer/skills/projskill.md", "---\ndescription: a project skill\n---\nplaybook")
+	writeFile(t, dir, ".hiq/skills/projskill.md", "---\ndescription: a project skill\n---\nplaybook")
 
 	ctrl, err := Build(context.Background(), Options{})
 	if err != nil {
@@ -568,7 +568,7 @@ func TestBuildOmitsDisabledSkillsFromPromptAndRuntimeList(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Chdir(dir)
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -585,9 +585,9 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `)
-	writeFile(t, dir, ".fairpeer/skills/projskill.md", "---\ndescription: a project skill\n---\nplaybook")
+	writeFile(t, dir, ".hiq/skills/projskill.md", "---\ndescription: a project skill\n---\nplaybook")
 
 	ctrl, err := Build(context.Background(), Options{})
 	if err != nil {
@@ -636,7 +636,7 @@ func TestBuildProfileWhitelistHidesSkillsFromPrompt(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Chdir(dir)
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -650,7 +650,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `)
 	// The dev profile's whitelist exposes only coding skills; every other
 	// builtin (browser-auto, email-auto, rag-auto, …) is hidden by the whitelist.
@@ -693,9 +693,9 @@ func TestBuildOmitsExcludedSkillRootsFromPromptAndRuntimeList(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Chdir(dir)
 	excluded := filepath.Join(home, ".agents", "skills")
-	writeFile(t, home, ".fairpeer/skills/keep.md", "---\ndescription: keep\n---\nplaybook")
+	writeFile(t, home, ".hiq/skills/keep.md", "---\ndescription: keep\n---\nplaybook")
 	writeFile(t, home, ".agents/skills/noisy.md", "---\ndescription: noisy\n---\nplaybook")
-	writeFile(t, dir, "fairpeer.toml", fmt.Sprintf(`
+	writeFile(t, dir, "hiq.toml", fmt.Sprintf(`
 default_model = "test-model"
 
 [codegraph]
@@ -712,7 +712,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `, excluded))
 
 	ctrl, err := Build(context.Background(), Options{})
@@ -741,7 +741,7 @@ api_key_env = "FAIRPEER_TEST_KEY_UNSET"
 func TestBuildWithoutMemoryLeavesPromptUnchanged(t *testing.T) {
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -755,7 +755,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `)
 
 	ctrl, err := Build(context.Background(), Options{})
@@ -768,7 +768,7 @@ api_key_env = "FAIRPEER_TEST_KEY_UNSET"
 	// The built-in skills always append a "# Skills" index to the prefix; this
 	// test is about memory, so strip that and assert the remaining base is exactly
 	// the configured prompt — i.e. no *project/ancestor* memory leaked in. (A
-	// user-global fairpeer.md in the real config dir could append; the test
+	// user-global hiq.md in the real config dir could append; the test
 	// environment has none, so the base stands alone.)
 	base := sys
 	if i := strings.Index(sys, "\n\n# Skills"); i >= 0 {
@@ -790,7 +790,7 @@ api_key_env = "FAIRPEER_TEST_KEY_UNSET"
 func TestBuildLanguagePolicyIsAppended(t *testing.T) {
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -804,7 +804,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `)
 
 	ctrl, err := Build(context.Background(), Options{})
@@ -883,11 +883,11 @@ func TestRememberPermissionRuleUsesWorkspaceRoot(t *testing.T) {
 	cwd := robustTempDir(t)
 	workspace := robustTempDir(t)
 	t.Chdir(cwd)
-	writeFile(t, cwd, "fairpeer.toml", `
+	writeFile(t, cwd, "hiq.toml", `
 [permissions]
 allow = ["Bash(cwd*)"]
 `)
-	writeFile(t, workspace, "fairpeer.toml", `
+	writeFile(t, workspace, "hiq.toml", `
 [permissions]
 allow = ["Bash(workspace*)"]
 `)
@@ -895,11 +895,11 @@ allow = ["Bash(workspace*)"]
 	const rule = "Bash(go test ./...)"
 	rememberPermissionRule(workspace, rule)
 
-	cwdCfg := config.LoadForEdit(filepath.Join(cwd, "fairpeer.toml"))
+	cwdCfg := config.LoadForEdit(filepath.Join(cwd, "hiq.toml"))
 	if hasPermissionRule(cwdCfg.Permissions.Allow, rule) {
 		t.Fatalf("remembered rule was written to cwd config: %v", cwdCfg.Permissions.Allow)
 	}
-	workspaceCfg := config.LoadForEdit(filepath.Join(workspace, "fairpeer.toml"))
+	workspaceCfg := config.LoadForEdit(filepath.Join(workspace, "hiq.toml"))
 	if !hasPermissionRule(workspaceCfg.Permissions.Allow, rule) {
 		t.Fatalf("remembered rule missing from workspace config: %v", workspaceCfg.Permissions.Allow)
 	}
@@ -921,7 +921,7 @@ allow = ["Bash(user)"]
 
 	const rule = "Edit(src/app.go)"
 	res := rememberPermissionRule(workspace, rule)
-	if !res.Saved || res.Path != filepath.Join(workspace, "fairpeer.toml") {
+	if !res.Saved || res.Path != filepath.Join(workspace, "hiq.toml") {
 		t.Fatalf("remember result = %+v, want saved to workspace config", res)
 	}
 
@@ -929,7 +929,7 @@ allow = ["Bash(user)"]
 	if hasPermissionRule(userCfg.Permissions.Allow, rule) {
 		t.Fatalf("workspace rule was written to user config: %v", userCfg.Permissions.Allow)
 	}
-	workspaceCfg := config.LoadForEdit(filepath.Join(workspace, "fairpeer.toml"))
+	workspaceCfg := config.LoadForEdit(filepath.Join(workspace, "hiq.toml"))
 	if !hasPermissionRule(workspaceCfg.Permissions.Allow, rule) {
 		t.Fatalf("workspace rule missing from project config: %v", workspaceCfg.Permissions.Allow)
 	}
@@ -960,14 +960,14 @@ allow = ["Bash(user*)"]
 	if !hasPermissionRule(userCfg.Permissions.Allow, rule) {
 		t.Fatalf("empty root should remember into SourcePath config: %v", userCfg.Permissions.Allow)
 	}
-	if _, err := os.Stat(filepath.Join(cwd, "fairpeer.toml")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(cwd, "hiq.toml")); !os.IsNotExist(err) {
 		t.Fatalf("empty root should not create cwd config when SourcePath exists, err=%v", err)
 	}
 }
 
 func TestRememberPermissionRuleSkipsRuleCoveredByExistingAllow(t *testing.T) {
 	workspace := robustTempDir(t)
-	writeFile(t, workspace, "fairpeer.toml", `
+	writeFile(t, workspace, "hiq.toml", `
 [permissions]
 allow = ["Bash(go test:*)"]
 `)
@@ -976,7 +976,7 @@ allow = ["Bash(go test:*)"]
 	if res.Saved || res.CoveredBy != "Bash(go test:*)" {
 		t.Fatalf("remember result = %+v, want already covered", res)
 	}
-	cfg := config.LoadForEdit(filepath.Join(workspace, "fairpeer.toml"))
+	cfg := config.LoadForEdit(filepath.Join(workspace, "hiq.toml"))
 	if len(cfg.Permissions.Allow) != 1 || cfg.Permissions.Allow[0] != "Bash(go test:*)" {
 		t.Fatalf("allow rules = %v, want only existing prefix", cfg.Permissions.Allow)
 	}
@@ -984,7 +984,7 @@ allow = ["Bash(go test:*)"]
 
 func TestRememberPermissionRulePrunesNarrowRulesWhenSavingBroaderRule(t *testing.T) {
 	workspace := robustTempDir(t)
-	writeFile(t, workspace, "fairpeer.toml", `
+	writeFile(t, workspace, "hiq.toml", `
 [permissions]
 allow = ["Bash(go test ./...)", "Bash(go build ./...)"]
 `)
@@ -993,7 +993,7 @@ allow = ["Bash(go test ./...)", "Bash(go build ./...)"]
 	if !res.Saved || res.CoveredBy != "" {
 		t.Fatalf("remember result = %+v, want saved broader rule", res)
 	}
-	cfg := config.LoadForEdit(filepath.Join(workspace, "fairpeer.toml"))
+	cfg := config.LoadForEdit(filepath.Join(workspace, "hiq.toml"))
 	if hasPermissionRule(cfg.Permissions.Allow, "Bash(go test ./...)") {
 		t.Fatalf("narrow go test rule should be pruned: %v", cfg.Permissions.Allow)
 	}
@@ -1012,7 +1012,7 @@ func hasPermissionRule(rules []string, want string) bool {
 }
 
 // TestBuildMigratesLegacyConfigEndToEnd drives the real boot path: a v0.x
-// ~/.fairpeer/config.json with no v1+ config present must be imported during
+// ~/.hiq/config.json with no v1+ config present must be imported during
 // Build — config written, key pinned into the env, and the user told via a notice.
 func TestBuildMigratesLegacyConfigEndToEnd(t *testing.T) {
 	home := robustTempDir(t)
@@ -1020,14 +1020,14 @@ func TestBuildMigratesLegacyConfigEndToEnd(t *testing.T) {
 	t.Setenv("USERPROFILE", home)                               // os.UserHomeDir on Windows
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config")) // os.UserConfigDir on Linux
 	t.Setenv("AppData", filepath.Join(home, "AppData"))         // os.UserConfigDir on Windows
-	t.Setenv("FAIRPEER_API_KEY", "")                            // track for cleanup; migration os.Setenv's it live
+	t.Setenv("HIQ_API_KEY", "")                            // track for cleanup; migration os.Setenv's it live
 
 	proj := robustTempDir(t)
 	t.Chdir(proj)
 	// codegraph off keeps Build offline; it merges over the migrated user config
 	// without dropping the migrated plugins. A test provider is declared because
 	// Default() ships no built-in presets (setup wizard owns first-run config).
-	writeFile(t, proj, "fairpeer.toml", `
+	writeFile(t, proj, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -1038,11 +1038,11 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_API_KEY"
+api_key_env = "HIQ_API_KEY"
 `)
-	writeFile(t, filepath.Join(home, ".fairpeer"), "config.json",
+	writeFile(t, filepath.Join(home, ".hiq"), "config.json",
 		`{"apiKey":"sk-e2e","lang":"zh","mcpServers":{"fs":{"command":"npx","args":["-y","server-fs"]}}}`)
-	writeFile(t, filepath.Join(home, ".fairpeer", "sessions"), "chat-1.events.jsonl",
+	writeFile(t, filepath.Join(home, ".hiq", "sessions"), "chat-1.events.jsonl",
 		`{"type":"user.message","id":1,"ts":"t","turn":0,"text":"hello from v0.x"}`+"\n"+
 			`{"type":"model.final","id":2,"ts":"t","turn":0,"content":"hi","toolCalls":[],"usage":{},"costUsd":0}`+"\n")
 
@@ -1078,11 +1078,11 @@ api_key_env = "FAIRPEER_API_KEY"
 		t.Errorf("migrated config missing plugin/lang:\n%s", data)
 	}
 
-	if got := os.Getenv("FAIRPEER_API_KEY"); got != "sk-e2e" {
-		t.Errorf("FAIRPEER_API_KEY not pinned into env after migration: %q", got)
+	if got := os.Getenv("HIQ_API_KEY"); got != "sk-e2e" {
+		t.Errorf("HIQ_API_KEY not pinned into env after migration: %q", got)
 	}
 
-	if v, ok, err := secret.New(secret.DefaultPath()).Get("FAIRPEER_API_KEY"); err != nil || !ok || v != "sk-e2e" {
+	if v, ok, err := secret.New(secret.DefaultPath()).Get("HIQ_API_KEY"); err != nil || !ok || v != "sk-e2e" {
 		t.Errorf("encrypted store missing migrated key: ok=%v err=%v val=%q", ok, err, v)
 	}
 	if _, err := os.Stat(config.UserCredentialsPath()); !os.IsNotExist(err) {
@@ -1117,7 +1117,7 @@ func TestBuildMigratesLegacySessionsFromConfigSessionDir(t *testing.T) {
 	proj := robustTempDir(t)
 	// Default() ships no built-in presets, so a [[providers]] entry is required
 	// for Build to resolve a default_model without running the setup wizard.
-	writeFile(t, proj, "fairpeer.toml", `
+	writeFile(t, proj, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -1128,7 +1128,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `)
 
 	legacyDir := config.SessionDir()
@@ -1223,7 +1223,7 @@ func TestBuildMigratesLegacyEagerTierToBackground(t *testing.T) {
 	dir := robustTempDir(t)
 	t.Chdir(dir)
 
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -1237,11 +1237,11 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 
 [[plugins]]
 name = "legacy-eager"
-command = "fairpeer-missing-legacy-eager-mcp"
+command = "hiq-missing-legacy-eager-mcp"
 tier = "eager"
 `)
 
@@ -1257,7 +1257,7 @@ tier = "eager"
 	if len(failures) != 1 || failures[0].Name != "legacy-eager" {
 		t.Fatalf("failures = %+v, want background startup failure for migrated legacy eager plugin", failures)
 	}
-	raw, err := os.ReadFile(filepath.Join(dir, "fairpeer.toml"))
+	raw, err := os.ReadFile(filepath.Join(dir, "hiq.toml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1271,7 +1271,7 @@ func TestBuildMigratesLegacyLazyTierToBackground(t *testing.T) {
 	dir := robustTempDir(t)
 	t.Chdir(dir)
 
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -1285,11 +1285,11 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 
 [[plugins]]
 name = "legacy-lazy"
-command = "fairpeer-missing-legacy-lazy-mcp"
+command = "hiq-missing-legacy-lazy-mcp"
 tier = "lazy"
 `)
 
@@ -1305,7 +1305,7 @@ tier = "lazy"
 	if len(failures) != 1 || failures[0].Name != "legacy-lazy" {
 		t.Fatalf("failures = %+v, want background startup failure for migrated legacy lazy plugin", failures)
 	}
-	raw, err := os.ReadFile(filepath.Join(dir, "fairpeer.toml"))
+	raw, err := os.ReadFile(filepath.Join(dir, "hiq.toml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1321,7 +1321,7 @@ func TestBuildColdCodegraphStartsInBackground(t *testing.T) {
 	launcher := writeCodegraphHelper(t, dir)
 	t.Setenv("GO_WANT_HELPER_PROCESS", "1")
 
-	writeFile(t, dir, "fairpeer.toml", fmt.Sprintf(`
+	writeFile(t, dir, "hiq.toml", fmt.Sprintf(`
 default_model = "test-model"
 
 [codegraph]
@@ -1337,7 +1337,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `, launcher))
 
 	var notices []event.Event
@@ -1396,7 +1396,7 @@ func TestBuildWarmCodegraphIgnoresLegacyEagerTier(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	writeFile(t, dir, "fairpeer.toml", fmt.Sprintf(`
+	writeFile(t, dir, "hiq.toml", fmt.Sprintf(`
 default_model = "test-model"
 
 [codegraph]
@@ -1412,7 +1412,7 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `, launcher))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -1434,7 +1434,7 @@ func TestBuildDefaultsToNearestGitRoot(t *testing.T) {
 	if err := os.MkdirAll(subdir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, root, "fairpeer.toml", `
+	writeFile(t, root, "hiq.toml", `
 default_model = "root-model"
 
 [codegraph]
@@ -1448,7 +1448,7 @@ name = "root-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `)
 	t.Chdir(subdir)
 
@@ -1473,7 +1473,7 @@ func TestBuildMigratesLegacyEagerBeforeStatsDemotion(t *testing.T) {
 		}
 	}
 
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "test-model"
 
 [codegraph]
@@ -1487,11 +1487,11 @@ name = "test-model"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "x"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 
 [[plugins]]
 name = "slowserver"
-command = "fairpeer-missing-slow-mcp-binary"
+command = "hiq-missing-slow-mcp-binary"
 tier = "eager"
 `)
 

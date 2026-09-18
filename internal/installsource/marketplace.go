@@ -53,7 +53,7 @@ func BuiltinCatalog() []CatalogEntry {
 func InstalledSkillNames(homeDir string) map[string]string {
 	result := make(map[string]string)
 	for _, root := range []string{
-		filepath.Join(homeDir, ".fairpeer", "skills"),
+		filepath.Join(homeDir, ".hiq", "skills"),
 	} {
 		m := loadManifest(root)
 		for name, entry := range m.Skills {

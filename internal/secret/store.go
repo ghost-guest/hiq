@@ -53,7 +53,7 @@ type Store struct {
 	degraded bool
 }
 
-const userDirname = "fairpeer"
+const userDirname = "hiq"
 
 // storeVersion2 is the on-disk format with the KEK. Files without a version
 // are v1 (per-entry Protect under the legacy platform scheme) and are
@@ -81,7 +81,7 @@ var (
 func New(path string) *Store { return &Store{path: path} }
 
 // DefaultPath returns the canonical store location, beside config.toml and the
-// credentials file: os.UserConfigDir()/fairpeer/secrets.enc.json. This matches
+// credentials file: os.UserConfigDir()/hiq/secrets.enc.json. This matches
 // config.userDir()/desktopConfigDir() so a single migration sweep finds the
 // legacy cowork.env and credentials files.
 func DefaultPath() string {

@@ -1,7 +1,7 @@
 package main
 
 // remote_docker.go — the Docker transport: detects running containers, copies
-// the Linux host binary in via `docker cp`, and spawns `fairpeer host` with
+// the Linux host binary in via `docker cp`, and spawns `hiq host` with
 // `docker exec -i`. Same stdio JSON-RPC pattern as WSL, so one remoteHostLink
 // serves both.
 
@@ -102,9 +102,9 @@ func (t *dockerTransport) Dial(ctx context.Context, ref RemoteRef) (io.Reader, i
 	if !strings.HasPrefix(home, "/") {
 		return nil, nil, nil, fmt.Errorf("docker: unexpected home %q", home)
 	}
-	remoteBin := home + "/.fairpeer/bin/fairpeer"
+	remoteBin := home + "/.hiq/bin/hiq"
 
-	if _, err := dockerOutput("exec", container, "mkdir", "-p", home+"/.fairpeer/bin"); err != nil {
+	if _, err := dockerOutput("exec", container, "mkdir", "-p", home+"/.hiq/bin"); err != nil {
 		return nil, nil, nil, fmt.Errorf("docker: mkdir bin: %w", err)
 	}
 	// docker cp overwrites content; cheap enough to always copy (byte-compare

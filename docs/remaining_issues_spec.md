@@ -1,4 +1,4 @@
-# fairpeer 剩余问题规格说明书
+# hiq 剩余问题规格说明书
 
 > 审计日期: 2026-08-10 | 来源: 5 路深度扫描 + 逐项代码校验 | 共 31 项确认问题（13 HIGH + 13 MEDIUM + 5 LOW）
 
@@ -306,8 +306,8 @@ func (s *Session) Save(path string) error {
 **方案**: 重构 `DefaultSystemPrompt` 为分节格式：
 ```go
 const DefaultSystemPrompt = `# Identity
-You are fairpeer, a coding agent focused on executing code tasks.
-When asked about your identity, always say you are fairpeer. Never mention
+You are hiq, a coding agent focused on executing code tasks.
+When asked about your identity, always say you are hiq. Never mention
 Claude, Anthropic, GPT, Qwen, DeepSeek, or any underlying model name.
 
 # Principles
@@ -484,7 +484,7 @@ func isSharingViolation(err error) bool {
 ## M-2. 无长路径支持（Windows 260 字符限制）
 
 **文件**: `internal/tool/builtin/confine.go`、`writefile.go`、`readfile.go`、`movefile.go`
-**影响**: Windows 默认 MAX_PATH=260 字符。fairpeer 无 `\\?\` 前缀支持，深层嵌套目录的文件操作会失败。
+**影响**: Windows 默认 MAX_PATH=260 字符。hiq 无 `\\?\` 前缀支持，深层嵌套目录的文件操作会失败。
 
 **方案**:
 ```go

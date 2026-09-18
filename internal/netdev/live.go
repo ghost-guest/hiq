@@ -5,7 +5,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
 )
 
 // Live observation (操作实况): every observable moment of the ops surface —

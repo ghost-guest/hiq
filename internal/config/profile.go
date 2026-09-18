@@ -11,7 +11,7 @@ import (
 // A profile does NOT replace configuration; it layers on top of it:
 //
 //   - Model / SubagentModel / Effort override the resolved provider knobs, so a
-//     coWork profile can pin a cheaper/faster model without touching fairpeer.toml.
+//     coWork profile can pin a cheaper/faster model without touching hiq.toml.
 //   - SystemPromptAddon is appended to the resolved system prompt (after the
 //     instruction/output-style/memory/skill folding in boot.Build), so a profile
 //     can bias behaviour (e.g. "you are an office agent") without owning the
@@ -99,7 +99,7 @@ const (
 )
 
 // builtinProfiles are the always-available profiles. They are the floor: a
-// [[profiles]] entry in fairpeer.toml with the same name overrides the builtin,
+// [[profiles]] entry in hiq.toml with the same name overrides the builtin,
 // so users can customise cowork's model or prompt without forking code.
 func builtinProfiles() []Profile {
 	return []Profile{
@@ -110,7 +110,7 @@ func builtinProfiles() []Profile {
 			// (browser/desktop/ppt/email/rag/schedule/document/expert) and the
 			// ops reference card (netdev-help) are disabled — they don't appear
 			// in the index and run_skill reports them disabled. Users who want
-			// them back can override in fairpeer.toml:
+			// them back can override in hiq.toml:
 			//   [[profiles]]
 			//   name = "dev"
 			//   enabled_skills = []   # empty = all skills
@@ -266,7 +266,7 @@ func NetdevPromptAddon(disabledSkills []string) string {
 	return pruneSkillRoutingRows(netdevDefaultPromptAddon, disabledSkills)
 }
 
-// DefaultProfiles returns the profiles effective when fairpeer.toml declares no
+// DefaultProfiles returns the profiles effective when hiq.toml declares no
 // [[profiles]]. The caller (Config.Profiles resolution) merges user entries on
 // top of these by name.
 func DefaultProfiles() []Profile { return builtinProfiles() }

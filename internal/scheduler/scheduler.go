@@ -38,7 +38,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // ScheduledTask is one recurring prompt. Prompt is the agent input fired on each
@@ -622,7 +622,7 @@ func (s *Scheduler) deliverOutput(pusher IMPusher, emailer EmailSender, notifier
 		}
 		to, subject := splitEmailDest(t.OutputDest)
 		if subject == "" {
-			subject = "FairPeer 定时任务：" + t.Name
+			subject = "Hiq 定时任务：" + t.Name
 		}
 		body := fmt.Sprintf("任务：%s\n计划：%s\n\n%s", t.Name, t.Expression, result)
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

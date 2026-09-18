@@ -17,10 +17,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/acp"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/eventwire"
-	"github.com/zzycxz/fairpeer/internal/remotehost"
+	"github.com/zzycxz/hiq/internal/acp"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/eventwire"
+	"github.com/zzycxz/hiq/internal/remotehost"
 )
 
 // remoteProcess is the transport's handle on the host process (kill + wait).

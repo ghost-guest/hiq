@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/evidence"
+	"github.com/zzycxz/hiq/internal/evidence"
 )
 
 // PlanGuard hard-blocks writes while Plan mode is active, including YOLO.

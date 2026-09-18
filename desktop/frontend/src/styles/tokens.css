@@ -1,6 +1,6 @@
 /* tokens.css — design tokens + base primitives (ui-redesign phase A4 split; order-preserving) */
 /*
- * FairPeer desktop — single-column, developer-dense, terminal-flavored chat UI.
+ * Hiq desktop — single-column, developer-dense, terminal-flavored chat UI.
  *
  * Multi-platform notes:
  *  - System font stack only; no web-font fetches (offline-first, consistent).

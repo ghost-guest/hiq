@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // VoiceModelConfigured reports whether a voice model is set ([cowork]

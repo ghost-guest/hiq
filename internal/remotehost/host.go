@@ -24,11 +24,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/acp"
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/eventwire"
+	"github.com/zzycxz/hiq/internal/acp"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/eventwire"
 )
 
 // permissionTimeout bounds how long the host waits for the desktop to answer a
@@ -1179,7 +1179,7 @@ func selfSignedTLSConfig(dir string) (*tls.Config, error) {
 		serial, _ := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 		tmpl := x509.Certificate{
 			SerialNumber: serial,
-			Subject:      pkix.Name{CommonName: "fairpeer-remote-host"},
+			Subject:      pkix.Name{CommonName: "hiq-remote-host"},
 			NotBefore:    time.Now().Add(-time.Hour),
 			NotAfter:     time.Now().AddDate(10, 0, 0),
 			KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,

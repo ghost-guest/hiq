@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/eventwire"
-	"github.com/zzycxz/fairpeer/internal/store"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/eventwire"
+	"github.com/zzycxz/hiq/internal/store"
 )
 
 func testSessionPath(t *testing.T) string {

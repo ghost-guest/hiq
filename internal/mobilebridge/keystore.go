@@ -9,9 +9,9 @@ import (
 var ErrNotFound = errors.New("key not found")
 
 // KeyStore persists long-term secrets: this device's Ed25519 private key and
-// each paired peer's public key. Production wires this to fairpeer's
-// secret.Store (DPAPI-encrypted at rest, FAIRPEER_SPEC §6); tests use
-// MemoryKeyStore. The abstraction keeps mobilebridge testable without fairpeer internals.
+// each paired peer's public key. Production wires this to hiq's
+// secret.Store (DPAPI-encrypted at rest, HIQ_SPEC §6); tests use
+// MemoryKeyStore. The abstraction keeps mobilebridge testable without hiq internals.
 type KeyStore interface {
 	Get(key string) ([]byte, error) // ErrNotFound if missing
 	Set(key string, val []byte) error

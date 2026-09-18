@@ -24,6 +24,10 @@ import (
 // machine-local key rather than a user password, and a same-user attacker has
 // far cheaper paths — so the portability win of zero CGO wins here.
 
+// keyringService is the Keychain / Secret Service entry name. It is a
+// wire-format constant, not branding: renaming it would orphan the KEK of every
+// existing macOS/Linux install, so it keeps its pre-rebrand spelling. Windows
+// (DPAPI) never touches it.
 const (
 	keyringService  = "fairpeer.secret"
 	keyringProbeAcc = "availability-probe"

@@ -11,12 +11,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/bot"
-	"github.com/zzycxz/fairpeer/internal/bot/feishu"
-	"github.com/zzycxz/fairpeer/internal/bot/qq"
-	"github.com/zzycxz/fairpeer/internal/bot/telegram"
-	"github.com/zzycxz/fairpeer/internal/bot/weixin"
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/bot"
+	"github.com/zzycxz/hiq/internal/bot/feishu"
+	"github.com/zzycxz/hiq/internal/bot/qq"
+	"github.com/zzycxz/hiq/internal/bot/telegram"
+	"github.com/zzycxz/hiq/internal/bot/weixin"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 func botCommand(args []string, version string) int {
@@ -181,7 +181,7 @@ func botStart(args []string, version string) int {
 		gw.Stop()
 	}()
 
-	fmt.Fprintf(os.Stderr, "fairpeer bot starting (model: %s, channels: %s)...\n", modelName, *channels)
+	fmt.Fprintf(os.Stderr, "hiq bot starting (model: %s, channels: %s)...\n", modelName, *channels)
 	fmt.Fprintf(os.Stderr, "version: %s\n", version)
 
 	if err := gw.Start(ctx); err != nil {
@@ -311,7 +311,7 @@ func botDoctor(args []string) int {
 		} else if weixin.HasSavedAccount(bc.Weixin.AccountID) {
 			addCheck("bot.weixin.token", "ok", "saved iLink account is available")
 		} else {
-			addCheck("bot.weixin.token", "missing", bc.Weixin.TokenEnv+" is not set; run `fairpeer bot weixin-login` to save an iLink account")
+			addCheck("bot.weixin.token", "missing", bc.Weixin.TokenEnv+" is not set; run `hiq bot weixin-login` to save an iLink account")
 		}
 	} else {
 		addCheck("bot.weixin", "disabled", "")
@@ -401,18 +401,18 @@ func botWeixinLogin(args []string) int {
 		return 1
 	}
 	fmt.Printf("\n微信登录成功: account_id=%s user_id=%s base_url=%s\n", result.AccountID, result.UserID, result.BaseURL)
-	fmt.Println("凭据已保存到 fairpeer 用户配置目录；也可以把 [bot.weixin] account_id 设置为该 account_id。")
+	fmt.Println("凭据已保存到 hiq 用户配置目录；也可以把 [bot.weixin] account_id 设置为该 account_id。")
 
 	return 0
 }
 
 func botUsage() {
-	fmt.Print(`fairpeer bot — multi-channel IM bot gateway (QQ / Feishu / WeChat / Telegram)
+	fmt.Print(`hiq bot — multi-channel IM bot gateway (QQ / Feishu / WeChat / Telegram)
 
 Usage:
-  fairpeer bot start   [--channels qq,feishu,weixin,telegram] [--dir PATH] [--model NAME]
-  fairpeer bot doctor  [--json]
-  fairpeer bot weixin-login [--timeout SECONDS]
+  hiq bot start   [--channels qq,feishu,weixin,telegram] [--dir PATH] [--model NAME]
+  hiq bot doctor  [--json]
+  hiq bot weixin-login [--timeout SECONDS]
 
 Subcommands:
   start         启动 bot 网关
@@ -420,12 +420,12 @@ Subcommands:
   weixin-login  微信 iLink 二维码登录
 
 Examples:
-  fairpeer bot start --channels qq,feishu
-  fairpeer bot start --dir /path/to/project --model provider/model
-  fairpeer bot doctor --json
+  hiq bot start --channels qq,feishu
+  hiq bot start --dir /path/to/project --model provider/model
+  hiq bot doctor --json
 
 Configuration:
-  Edit fairpeer.toml:
+  Edit hiq.toml:
     [bot]           enabled / model / max_steps
     [bot.allowlist]  enabled / qq_users / feishu_users / weixin_users / telegram_users
     [bot.qq]         enabled / app_id / app_secret_env

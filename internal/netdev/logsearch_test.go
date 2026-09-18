@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // matchLogLines is the pure half of the fan-out search: pattern matching over

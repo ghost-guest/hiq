@@ -195,7 +195,7 @@ type DefaultTab = "today" | "mail" | "files" | "overview" | "browser";
 // open set: per the pane-system's context-driven principle the tab appears
 // when browsing activity starts (or via the "+" menu), not by default.
 const DEFAULT_TAB_CATALOG: readonly DefaultTab[] = ["today", "mail", "files", "overview"];
-const COWORK_DOCK_TABS_KEY = "fairpeer.coworkDockTabs";
+const COWORK_DOCK_TABS_KEY = "hiq.coworkDockTabs";
 
 function DefaultDock({
   cwd,
@@ -789,7 +789,7 @@ function filterRagTree(nodes: RagNodeView[], q: string): RagNodeView[] {
 
 type RagTab = "collections" | "files" | "extract";
 const RAG_TAB_CATALOG: readonly RagTab[] = ["collections", "files", "extract"];
-const COWORK_RAG_DOCK_TABS_KEY = "fairpeer.coworkRagDockTabs";
+const COWORK_RAG_DOCK_TABS_KEY = "hiq.coworkRagDockTabs";
 
 function RagDock({
   onClose,

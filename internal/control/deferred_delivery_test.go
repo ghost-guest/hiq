@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/deferred"
+	"github.com/zzycxz/hiq/internal/deferred"
 )
 
 // Push delivery's "context only" mode: the result must join the next outgoing

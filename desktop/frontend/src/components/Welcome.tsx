@@ -78,7 +78,7 @@ export function Welcome({
   return (
     <div className={`welcome welcome--brand${isCowork ? " welcome--cowork" : ""}${isNetdev ? " welcome--netdev" : ""}`}>
       <span className="welcome__brand">
-        <img src={logoWordmark} className="welcome__brand-logo" alt="FairPeer" draggable={false} />
+        <img src={logoWordmark} className="welcome__brand-logo" alt="Hiq" draggable={false} />
       </span>
       <h2 className="welcome__title">{title}</h2>
       <div className="welcome__tag">

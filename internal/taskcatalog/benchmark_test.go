@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 func BenchmarkWarmFirstPageHundredThousandTasks(b *testing.B) {

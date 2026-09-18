@@ -114,8 +114,8 @@ export function BrowserConsolePanel({ onInsertComposer }: { onInsertComposer?: (
       void refreshState();
       void app.BrowserConsoleElements().then(setElements).catch(() => undefined);
     };
-    window.addEventListener("fairpeer:browser-console-changed", onConsoleChanged);
-    return () => window.removeEventListener("fairpeer:browser-console-changed", onConsoleChanged);
+    window.addEventListener("hiq:browser-console-changed", onConsoleChanged);
+    return () => window.removeEventListener("hiq:browser-console-changed", onConsoleChanged);
   }, [refreshState]);
 
   // While keep-alive is armed, poll the session state so the 上次刷新 clock
@@ -335,7 +335,7 @@ export function BrowserConsolePanel({ onInsertComposer }: { onInsertComposer?: (
         <button
           type="button"
           className="ndv-brc__view-launch"
-          onClick={() => window.dispatchEvent(new CustomEvent("fairpeer:netdev-bench", { detail: "browser" }))}
+          onClick={() => window.dispatchEvent(new CustomEvent("hiq:netdev-bench", { detail: "browser" }))}
           title={t("brc.viewerHint")}
         >
           <Monitor size={12} />

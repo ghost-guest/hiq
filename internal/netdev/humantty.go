@@ -25,7 +25,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
 )
 
 // HumanTTYState is the terminal session lifecycle.

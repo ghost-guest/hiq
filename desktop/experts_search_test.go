@@ -13,8 +13,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 func TestLastAssistantText(t *testing.T) {

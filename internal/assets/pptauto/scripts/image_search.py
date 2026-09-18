@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Keyless web image search via Baidu Images (fairpeer multi-user default).
+"""Keyless web image search via Baidu Images (hiq multi-user default).
 
 Usage:
     python image_search.py --query "数据中心 机房" --out <project>/images/hero.png
     python image_search.py --query "cloud computing" --dir <project>/images --n 3
     python image_search.py --query "server rack" --min-width 800 --aspect landscape
 
-WHY Baidu: fairpeer ships to many users who must NOT be asked to register API
+WHY Baidu: hiq ships to many users who must NOT be asked to register API
 keys. Bing's HTML serves junk to cookie-less clients (verified: relevant
 queries returned cached celebrity/shop images); Baidu's acjson API returns
 relevant results after a BAIDUID cookie warm-up on www.baidu.com — no key, no

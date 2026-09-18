@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 func newStaleModelTab(model string) (*App, *WorkspaceTab) {

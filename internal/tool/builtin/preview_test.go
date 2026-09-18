@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/diff"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/diff"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // TestWritersImplementPreviewer locks in that every file-writer exposes the
@@ -55,7 +55,7 @@ func TestPreviewMatchesExecute(t *testing.T) {
 			tool: editFile{},
 			seed: "hello world\n",
 			args: func(p string) map[string]any {
-				return map[string]any{"path": p, "old_string": "world", "new_string": "fairpeer"}
+				return map[string]any{"path": p, "old_string": "world", "new_string": "hiq"}
 			},
 		},
 		{
@@ -65,7 +65,7 @@ func TestPreviewMatchesExecute(t *testing.T) {
 			args: func(p string) map[string]any {
 				return map[string]any{"path": p, "edits": []map[string]any{
 					{"old_string": "package old", "new_string": "package new"},
-					{"old_string": "old", "new_string": "fairpeer", "replace_all": true},
+					{"old_string": "old", "new_string": "hiq", "replace_all": true},
 				}}
 			},
 		},

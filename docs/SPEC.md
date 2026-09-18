@@ -1,6 +1,6 @@
-# fairpeer 工程规格
+# hiq 工程规格
 
-> fairpeer 是一个智能编程 Agent：它是一个轻量级的核心骨架，负责驱动多个大模型，**所有的能力均由配置和插件提供**。本文档是项目的工程契约 —— 代码必须遵循此规范。如需修改，请先修改本契约文档，再修改代码。
+> hiq 是一个智能编程 Agent：它是一个轻量级的核心骨架，负责驱动多个大模型，**所有的能力均由配置和插件提供**。本文档是项目的工程契约 —— 代码必须遵循此规范。如需修改，请先修改本契约文档，再修改代码。
 
 ## 1. 设计原则
 
@@ -16,14 +16,14 @@
 ## 2. 目录布局
 
 ```
-fairpeer/
+hiq/
 ├── go.mod / go.sum          # Go 模块文件；仅依赖 BurntSushi/toml
 ├── Makefile                 # 包含 build / cross / vet / fmt / test 指令
 ├── README.md / README.zh-CN.md
-├── fairpeer.example.toml    # 示例配置文件
+├── hiq.example.toml    # 示例配置文件
 ├── docs/SPEC.md             # 本文件
-├── cmd/fairpeer/main.go     # 主入口；通过空白导入加载内置 providers/tools
-├── cmd/fairpeer-plugin-example/  # 参考 MCP stdio 插件实现（一个可运行的示例）
+├── cmd/hiq/main.go     # 主入口；通过空白导入加载内置 providers/tools
+├── cmd/hiq-plugin-example/  # 参考 MCP stdio 插件实现（一个可运行的示例）
 └── internal/
     ├── cli/                 # 子命令路由、flag 解析、组装、退出码处理
     ├── config/              # TOML 配置加载 (按 flag > project > user > defaults 优先级)
@@ -32,7 +32,7 @@ fairpeer/
     ├── tool/                # Tool 接口 + 注册表
     │   └── builtin/         # 基础文件与终端工具 (read_file/write_file/edit_file/bash/ls/glob/grep)
     ├── permission/          # 权限拦截层：allow/ask/deny 规则判断
-    ├── command/             # 从 .fairpeer/commands/*.md 加载自定义斜杠命令
+    ├── command/             # 从 .hiq/commands/*.md 加载自定义斜杠命令
     ├── plugin/              # stdio JSON-RPC (MCP) 客户端；负责适配远程工具
     └── agent/               # 会话 Session + Agent 主循环
 ```
@@ -101,7 +101,7 @@ type Tool interface {
 - 每个远程工具会被适配成标准的 `Tool` 接口，并注入运行时的注册表中，命名空间统一为 `mcp__<server>__<tool>`（空格转为下划线），以确保标准兼容性并避免冲突。
 - 工具的 MCP `annotations.readOnlyHint` 会映射到 `Tool.ReadOnly()`。它默认为 false（远程工具是黑盒 —— 我们无法确定其副作用），因此插件可以通过在 `tools/list` 中声明 `readOnlyHint: true`，将工具标记为只读，从而接入权限层的只读自动放行机制，以及参与并行调度。
 - `prompts/list` + `prompts/get` 会映射为 `/mcp__<server>__<prompt>` 斜杠命令；`resources/list` + `resources/read` 可以在聊天中通过 `@<server>:<uri>` 进行引用。`/mcp` 命令可显示已连接的服务器及其统计数量。
-- `cmd/fairpeer-plugin-example` 提供了一个可直接运行的 stdio 参考服务器实现（包含 `echo`, `wordcount`），并配有能将其构建为真实二进制文件的端到端测试。
+- `cmd/hiq-plugin-example` 提供了一个可直接运行的 stdio 参考服务器实现（包含 `echo`, `wordcount`），并配有能将其构建为真实二进制文件的端到端测试。
 
 ### 3.4 Agent (`internal/agent`)
 
@@ -119,11 +119,11 @@ type Tool interface {
 
 ### 3.6 上下文管理 (压缩 Compaction)
 
-长时间运行的任务最终会占满模型的上下文窗口。fairpeer 通过 **低频压缩机制** 来解决这个问题，并且同样遵循缓存优先设计：
+长时间运行的任务最终会占满模型的上下文窗口。hiq 通过 **低频压缩机制** 来解决这个问题，并且同样遵循缓存优先设计：
 
 - 每个 provider 都会声明自己的 `context_window`（Token 数）。当某一轮返回的 `prompt_tokens` 达到该窗口的 `compactRatio`（默认为 `0.8`）时，执行器会在下一轮开始前触发 **一次** 压缩。
 - 压缩操作会将 session 中间较早的历史对话归纳成一段简明的总结报告 —— 仅使用执行器自身的 provider 进行，不带任何工具 —— 并就地替换：整个 session 会变成 `系统设定 + 总结 + recentKeep`（默认为 8）条原封不动的近期消息。压缩边界会向前对齐到某个工具的返回结果处，确保近期保留的尾部历史绝不会以一条“孤儿”工具消息（其对应的 `tool_calls` 被压缩删除了）开头。
-- 被删除的原始对话会被归档到 `~/.config/fairpeer/archive/<timestamp>.jsonl`（每行一条消息），以确保完整历史可追溯。
+- 被删除的原始对话会被归档到 `~/.config/hiq/archive/<timestamp>.jsonl`（每行一条消息），以确保完整历史可追溯。
 
 这是 **唯一** 会改变 prompt prefix 的地方 —— 一个刻意设计的、低频的“缓存重置点”。在两次压缩之间，session 始终保持追加写入，缓存命中率（核心的观测指标）维持在高水位。将配置设为 `context_window = 0` 即可关闭对应实例的压缩功能。
 
@@ -142,7 +142,7 @@ func (p Policy) Decide(toolName string, readOnly bool, args json.RawMessage) Dec
 
 - **规则语法.** 一条规则可以是 `Tool`（匹配该工具家族下的所有调用）或者 `Tool(specifier)`（当调用的*主体*匹配该标识符时生效）。Bash 和文件变异工具的授权采用标准工具家族形式，例如 `Bash(npm run build)`、`Bash(npm run test:*)` 和 `Edit(docs/**)`。出于兼容性，传统的全小写工具 ID 和 `tool=literal` 规则依然支持加载。`:*` 后缀代表前缀放行；生成的 Bash 前缀规则还会自动拒绝后续引入的 Shell 管道操作符，例如 `Bash(go test:*)` 并不能授权执行 `go test ./... && rm -rf tmp`。旧的 `Bash(go test *)` 前缀规则依然兼容，但新保存的规则将采用 `Bash(go test:*)` 格式。系统通过一组预知键 —— `command` (bash), `path` / `file_path` (文件修改工具), `pattern` (grep/glob) —— 从 JSON 参数中通用提取主体，工具代码无需调整。如果调用参数无法提取出主体，那么只有裸的 `Tool` 规则能匹配。
 - **优先级.** `deny` > `ask` > `allow` > 兜底默认值 (fallback)。默认兜底情况下，只读工具为 `Allow`，写入工具则取决于 `Mode` (默认为 `Ask`)。`deny` 永远最高级，因此一个宽泛的 `allow = ["Bash"]` 依然能被 `deny = ["Bash(rm -rf*)"]` 拦截；反之，`ask` 也能在宽泛的 `allow` 中强制对某个高危子集进行确认拦截。
-- **解析 `Ask`.** 交互式前端（终端 TUI）通过 `Approver` 向用户弹出确认提示 —— 选择允许一次 / 本次会话内允许该范围 / 始终允许该范围（持久化保存） / 拒绝。对于 Bash 操作，默认授权范围是具体的完整命令，用户也可以选择退一步授予较保守的前缀授权（例如 `Bash(go test:*)`），这样同一会话或后续运行类似指令时就不会再次弹窗。对于文件写操作，单次会话授权意味着本会话内自由编辑文件；持久化授权则在具备路径信息时，作为 `Edit(<path>)` 路径规则保存，所有内置的变异类文件工具共享此规则。非交互式运行场景（`fairpeer run`、子代理、无 TTY 等）无法弹窗，它会将所有的 `Ask` 解析为 **允许 (allow)** —— 从而保持其自主运行能力。而在*所有*模式下，`Deny` 都是绝对的阻断：工具绝对不会执行，模型会收到“被拒绝”的反馈，让它自我调整。
+- **解析 `Ask`.** 交互式前端（终端 TUI）通过 `Approver` 向用户弹出确认提示 —— 选择允许一次 / 本次会话内允许该范围 / 始终允许该范围（持久化保存） / 拒绝。对于 Bash 操作，默认授权范围是具体的完整命令，用户也可以选择退一步授予较保守的前缀授权（例如 `Bash(go test:*)`），这样同一会话或后续运行类似指令时就不会再次弹窗。对于文件写操作，单次会话授权意味着本会话内自由编辑文件；持久化授权则在具备路径信息时，作为 `Edit(<path>)` 路径规则保存，所有内置的变异类文件工具共享此规则。非交互式运行场景（`hiq run`、子代理、无 TTY 等）无法弹窗，它会将所有的 `Ask` 解析为 **允许 (allow)** —— 从而保持其自主运行能力。而在*所有*模式下，`Deny` 都是绝对的阻断：工具绝对不会执行，模型会收到“被拒绝”的反馈，让它自我调整。
 - **与计划模式 (Plan mode) 的关系.** 计划模式 (§3.4) 是一种粗粒度的、正交的前置拦截，它无视上述策略直接拒绝*所有*的写操作。权限层则是其底层始终在线的细粒度安全网。
 - **用户决策与工具批准的剥离.** 运行时的工具审批向用户呈现三种状态：`ask` ("需要批准")、`auto` ("自动批准") 和 `yolo` ("Yolo批准")。`auto` 状态下，权限策略会对所有的兜底写操作自动放行，但显式的 ask/deny 规则仍会触发；`yolo` 状态则会跳过所有包含写操作和 Bash 在内的工具层审批弹窗。这两种姿态都无法越俎代庖帮用户回答显式的 `ask` 询问或审批 `exit_plan_mode` 的计划放行。自动计划 (Auto-plan) 也是一个独立的特性开关：当开启时，即使用户处于 YOLO 状态，复杂的任务依然可能进入计划模式。用户批准计划后，控制器会开放一个短暂的 `approvedPlanAutoApproveTools` 执行窗口，让模型一口气完成计划中的写操作而无需再受弹窗打扰；但这个短窗口并不会顺带自动批准未来的后续计划。在无头 (headless) 的 `ask` 执行环境中，任何兜底的自动放行都会在日志中被标记为“模型自作主张 (model assumption)”，而不是用户的显式决策。
 - **协作模式与工具审批的剥离.** 桌面端 Composer 提供的协作模式分为：`normal` ("正常模式")、`plan` ("计划模式") 和 `goal` ("目标模式")。输入 `/goal <objective>` 会启动一个自主的、会话作用域内的活跃目标：控制器会在缓存稳定的系统 prompt 外围，为用户的输入前置目标上下文，并自动连续派发对话，直到模型报告任务完成、连续 3 次返回同一被阻断状态、被用户人工中止，或触发安全轮次上限。阻断状态的匹配做了大小写、空格与标点的归一化处理，避免细微字眼变化导致审计失效；重新启动 Goal 会开启一轮新的阻断审计。`/goal clear` 可清除当前目标。在桌面 UI 切换进入 plan/normal 模式会隐式清除活动目标，从而确保协作模式仅仅是三选一的功能状态，而底层的工具审批姿态仍被严格保留。
@@ -154,14 +154,14 @@ func (p Policy) Decide(toolName string, readOnly bool, args json.RawMessage) Dec
 | YOLO 批准 / `yolo` | 工具审批弹窗自动放行 (除非命中 deny 规则) | 等待用户确认 | 等待用户确认 |
 | 批准计划后的执行窗口 | 已批准计划中的工具调用自动放行 (除非命中 deny) | 今后的计划仍需等待确认 | 等待用户确认 |
 
-在默认开箱状态下（`mode = "ask"`, 无预设规则），`fairpeer run` 表现得和以前一样（在无 TTY 时将 `Ask` 视为允许）；而 `fairpeer chat` 现在会在每一次执行文件写入或 bash 前进行询问。任何 `deny` 规则都会同步强化这两种模式的安全性。
+在默认开箱状态下（`mode = "ask"`, 无预设规则），`hiq run` 表现得和以前一样（在无 TTY 时将 `Ask` 视为允许）；而 `hiq chat` 现在会在每一次执行文件写入或 bash 前进行询问。任何 `deny` 规则都会同步强化这两种模式的安全性。
 
 ### 3.8 斜杠命令 (`internal/command`)
 
 终端 TUI 支持输入 `/command`。共有三种命令共享同一个分发入口：
 
 - **内置动作** (`/compact`, `/new`, `/clear`, `/effort`, `/mcp`, `/help`) 纯粹在本地操作会话状态，不会发送给模型。`/new` 会开启新会话，同时将上一次的会话存档备用。`/clear` 需要确认，确认后直接丢弃当前上下文且不存档；它不会删除项目层面的通用记忆。
-- **自定义命令** 是位于 `.fairpeer/commands/`（项目级）和 `~/.config/fairpeer/commands/`（用户级）下的 Markdown 文件；如果同名，项目级覆盖用户级。文件 `review.md` 将映射为 `/review` 命令；子目录会创建命名空间（`git/commit.md` → `/git:commit`）。调用它们会将内容渲染后作为下一轮用户输入发送给模型。
+- **自定义命令** 是位于 `.hiq/commands/`（项目级）和 `~/.config/hiq/commands/`（用户级）下的 Markdown 文件；如果同名，项目级覆盖用户级。文件 `review.md` 将映射为 `/review` 命令；子目录会创建命名空间（`git/commit.md` → `/git:commit`）。调用它们会将内容渲染后作为下一轮用户输入发送给模型。
 - **MCP Prompts** (§3.3) 映射为 `/mcp__<server>__<prompt>`。
 
 ```markdown
@@ -226,14 +226,14 @@ type Chunk struct {
 
 ## 5. 配置体系 (TOML)
 
-配置文件解析优先级：**CLI 启动参数 > 项目配置 `./fairpeer.toml` > 用户全局配置 `~/.config/fairpeer/config.toml` > 系统硬编码默认值**。密钥信息通过 `api_key_env` 环境变量注入，永远不应该被明文写入任何配置文件。如果工作区存在 `.env` 文件，系统启动时会自动加载解析。类似 `max_steps` 这种步数偏好通常应设在用户全局配置中；项目的 `fairpeer.toml` 只在整个代码库需要强制统一步数上限时才覆写它们。
+配置文件解析优先级：**CLI 启动参数 > 项目配置 `./hiq.toml` > 用户全局配置 `~/.config/hiq/config.toml` > 系统硬编码默认值**。密钥信息通过 `api_key_env` 环境变量注入，永远不应该被明文写入任何配置文件。如果工作区存在 `.env` 文件，系统启动时会自动加载解析。类似 `max_steps` 这种步数偏好通常应设在用户全局配置中；项目的 `hiq.toml` 只在整个代码库需要强制统一步数上限时才覆写它们。
 
 ```toml
 default_model = "deepseek"   # provider 的名称 (将指向其默认模型) 或者是 "provider/model" 显式格式
-# language    = "zh"     # 界面语言环境；为空则根据 $LANG / $FAIRPEER_LANG 自动检测
+# language    = "zh"     # 界面语言环境；为空则根据 $LANG / $HIQ_LANG 自动检测
 
 [agent]
-system_prompt = "You are fairpeer, a coding agent..."  # 或者使用 system_prompt_file = "..." 引入外部文件
+system_prompt = "You are hiq, a coding agent..."  # 或者使用 system_prompt_file = "..." 引入外部文件
 max_steps         = 0    # 主执行器允许的工具调用上限；0 代表无限制
 planner_max_steps = 12   # 规划器专属的只读工具调用上限；0 代表无限制
 temperature       = 0.0
@@ -277,7 +277,7 @@ ask   = []                                 # 强制进行人工确认拦截的�
 
 [[plugins]]
 name    = "example"            # type 默认为 "stdio"
-command = "fairpeer-plugin-example"
+command = "hiq-plugin-example"
 args    = []
 # env   = { FOO = "bar" }
 
@@ -288,9 +288,9 @@ args    = []
 # headers = { Authorization = "Bearer ${STRIPE_KEY}" }   # 支持 ${VAR} / ${VAR:-default} 的环境变量安全注入
 ```
 
-初次运行 `fairpeer setup` 会生成一份默认配置，以确保 CLI 能够开箱即用。
+初次运行 `hiq setup` 会生成一份默认配置，以确保 CLI 能够开箱即用。
 
-对于使用其他标准 MCP 客户端的团队，您也可以将项目根目录下的 `.mcp.json` 文件直接放置在此，fairpeer 会使用标准的 `mcpServers` schemas 完美兼容读取该配置（包括 `command`/`args`/`env`, `type`/`url`/`headers` 以及 `${VAR}` 展开）。它会在读取 TOML 文件后合并至内部的 `[[plugins]]`；若出现同名冲突，则以更明确、属于本项目优先级的 `fairpeer.toml` 为准。这确保了已经为标准 MCP 客户端配置好的服务器可以“零改动”地在 fairpeer 中顺滑运行。
+对于使用其他标准 MCP 客户端的团队，您也可以将项目根目录下的 `.mcp.json` 文件直接放置在此，hiq 会使用标准的 `mcpServers` schemas 完美兼容读取该配置（包括 `command`/`args`/`env`, `type`/`url`/`headers` 以及 `${VAR}` 展开）。它会在读取 TOML 文件后合并至内部的 `[[plugins]]`；若出现同名冲突，则以更明确、属于本项目优先级的 `hiq.toml` 为准。这确保了已经为标准 MCP 客户端配置好的服务器可以“零改动”地在 hiq 中顺滑运行。
 
 ```json
 { "mcpServers": {
@@ -316,14 +316,14 @@ Phase 0 阶段已经将所有内置的文件写操作（`write_file`, `edit_file
 
 ## 8. 编译发布
 
-- 本地构建指令: `CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=$(VERSION)" -o fairpeer ./cmd/fairpeer`
+- 本地构建指令: `CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=$(VERSION)" -o hiq ./cmd/hiq`
 - 跨平台交叉编译矩阵涵盖: `darwin|linux|windows` 乘以 `amd64|arm64`。
 - 版本号采用注入机制传递至 ldflags 中 (`git describe --tags --always`)。
 - 分发方式包含: 提供预编译独立二进制包 / `go install` / 未来会提供对应的 `brew tap` 源。
 
 ## 9. 路线图演进 (不在当前版本范围内)
 
-- Sandbox Phase 1: 真正操作系统级别的 `bash` 沙箱禁锢机制，使得不仅仅是文件写入内置工具 (Phase 0) 受到限制，所有的终端命令都完全被囚禁在工作区之内。**针对 macOS 的技术实现 (Seatbelt 依托于 `sandbox-exec`) 现已合入并默认开启** (参考 §5)。未来待完成：(a) 沙箱逃逸探针 —— 自动拦截沙盒拒绝的权限失败并给予用户弹窗选项，询问是否通过权限网开一面“免沙盒”重试一次（而在 `fairpeer run` 中则依然判定失败并交由模型自行排查），这补齐了“默认受限，边缘确认”的最佳实践闭环；(b) 针对 Linux 平台的沙盒支持 (采用 bubblewrap / landlock 技术)。实现手段纯依赖 OS 内置方案以便二进制文件继续保持真正的零外部依赖；Windows 由于技术局限暂不规划进程沙盒。一旦该系统完全成型，原来依赖人工审核的权限持久化机制将逐渐退居二线，成为可选手段。
+- Sandbox Phase 1: 真正操作系统级别的 `bash` 沙箱禁锢机制，使得不仅仅是文件写入内置工具 (Phase 0) 受到限制，所有的终端命令都完全被囚禁在工作区之内。**针对 macOS 的技术实现 (Seatbelt 依托于 `sandbox-exec`) 现已合入并默认开启** (参考 §5)。未来待完成：(a) 沙箱逃逸探针 —— 自动拦截沙盒拒绝的权限失败并给予用户弹窗选项，询问是否通过权限网开一面“免沙盒”重试一次（而在 `hiq run` 中则依然判定失败并交由模型自行排查），这补齐了“默认受限，边缘确认”的最佳实践闭环；(b) 针对 Linux 平台的沙盒支持 (采用 bubblewrap / landlock 技术)。实现手段纯依赖 OS 内置方案以便二进制文件继续保持真正的零外部依赖；Windows 由于技术局限暂不规划进程沙盒。一旦该系统完全成型，原来依赖人工审核的权限持久化机制将逐渐退居二线，成为可选手段。
 - MCP 协议的长尾特性（目前被刻意推迟 —— 生态圈暂未完全成熟）：包括支持 OAuth 2.0 及用于提供身份验证的 `headersHelper`；兼容剩余部分的 `.mcp.json` 作用域加载 (例如本地级别/用户级别 —— 目前项目中只提供了工程目录级的读取，参考 §5)；工具检索机制的后置；`list_changed` 机制实现的事件推送热更新；渠道适配 / 启发性诱导询问 / Roots 支持等；支持那些不只是提供简单外部工具、而是通过插件提供完整的**大模型 Provider 引擎**接入。
 - 支持更加原生的 Generic Provider 抽象以释放更为底层的控制能力（例如原生的 prompt-cache 前缀缓存管理），用以证明我们这套基于接口注册表的体系能从容驾驭超越单一协议格式的通信方案。
-- 实现规则沉淀闭环机制：将用户勾选的“永远允许”权限规则实时写回到项目层级的配置文件中；为 `fairpeer run` 增加通过参数提供会话级别的单次一键全放行 override 配置选项。
+- 实现规则沉淀闭环机制：将用户勾选的“永远允许”权限规则实时写回到项目层级的配置文件中；为 `hiq run` 增加通过参数提供会话级别的单次一键全放行 override 配置选项。

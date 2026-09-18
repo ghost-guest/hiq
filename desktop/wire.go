@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // wireEvent is the JSON shape an event.Event takes when emitted to the webview.

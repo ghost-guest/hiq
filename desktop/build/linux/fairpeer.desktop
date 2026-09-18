@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=fairpeer
-Comment=fairpeer desktop — a Wails shell around the Go kernel
-Exec=fairpeer-desktop
-Icon=fairpeer-desktop
-Categories=Development;Utility;
-Terminal=false
-StartupWMClass=fairpeer-desktop

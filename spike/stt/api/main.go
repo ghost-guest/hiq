@@ -1,8 +1,8 @@
 // Command sttspike verifies STT (speech-to-text) API connectivity against
-// every fairpeer-supported vendor that exposes an OpenAI-compatible (or
+// every hiq-supported vendor that exposes an OpenAI-compatible (or
 // near-compatible) STT endpoint.
 //
-// This is an ISOLATED SPIKE. It does not import or depend on fairpeer in any
+// This is an ISOLATED SPIKE. It does not import or depend on hiq in any
 // way. Run it from spike/stt/api/. API keys are read from environment
 // variables and never written to disk.
 //
@@ -119,7 +119,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprint(os.Stderr, `sttspike — isolated STT API verification (no fairpeer dependency)
+	fmt.Fprint(os.Stderr, `sttspike — isolated STT API verification (no hiq dependency)
 
 Vendors covered (OpenAI-compatible or near): stepfun, zhipu, siliconflow,
 openrouter, mimo, openai. (aliyun/volcengine/xfyun/baidu/tencent use private

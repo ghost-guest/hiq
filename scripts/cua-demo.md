@@ -1,16 +1,16 @@
 # CUA（Computer-Use Agent）Demo 与验证清单
 
-本文件帮你验证 fairpeer 的通用电脑操作能力（CUA）是否跑通。
-CUA 的本质：你下**任意**指令，fairpeer 自主地 **看屏幕 → 决策 → 执行 → 验证**，循环直到完成。
+本文件帮你验证 hiq 的通用电脑操作能力（CUA）是否跑通。
+CUA 的本质：你下**任意**指令，hiq 自主地 **看屏幕 → 决策 → 执行 → 验证**，循环直到完成。
 
-> 前提：本仓库的 `bin/fairpeer.exe` 必须是用最新代码构建的（构建标签 `dev-cua`）。
-> 确认：`./bin/fairpeer.exe version`  应显示 `dev-cua`。
+> 前提：本仓库的 `bin/hiq.exe` 必须是用最新代码构建的（构建标签 `dev-cua`）。
+> 确认：`./bin/hiq.exe version`  应显示 `dev-cua`。
 
 ---
 
 ## 0. 一次性配置（可选但推荐）
 
-编辑 `fairpeer.toml`（没有就 `./bin/fairpeer.exe setup` 生成），加上：
+编辑 `hiq.toml`（没有就 `./bin/hiq.exe setup` 生成），加上：
 
 ```toml
 [network]
@@ -20,7 +20,7 @@ proxy_url = "http://127.0.0.1:7890"   # 换成你自己的代理端口
 
 [cowork]
 browser_headless = false                                              # 有头，更像真人
-browser_user_data_dir = "C:/Users/<你的用户名>/.fairpeer/chrome-profile"  # 持久登录态（路径换成你的）
+browser_user_data_dir = "C:/Users/<你的用户名>/.hiq/chrome-profile"  # 持久登录态（路径换成你的）
 vlm_backend = "openai-compatible"     # 视觉模型后端（用OpenAI-compatible；或 "provider" + vlm_model）
 ```
 
@@ -34,8 +34,8 @@ OPENAI_API_KEY=你的key      # OpenAI-compatible/VLM 后端用
 ## 1. 最小验证：确认工具就位（30 秒）
 
 ```bash
-cd <项目路径>\fairpeer
-./bin/fairpeer.exe chat --profile cowork
+cd <项目路径>\hiq
+./bin/hiq.exe chat --profile cowork
 ```
 
 进入后输入：
@@ -54,7 +54,7 @@ cd <项目路径>\fairpeer
 **目的**：验证"看屏幕→操作任意 App"闭环，不依赖浏览器。
 
 ```bash
-./bin/fairpeer.exe run --profile cowork --max-steps 50 "打开记事本（notepad），输入'CUA测试成功'，然后保存到桌面叫 cua-test.txt"
+./bin/hiq.exe run --profile cowork --max-steps 50 "打开记事本（notepad），输入'CUA测试成功'，然后保存到桌面叫 cua-test.txt"
 ```
 
 **预期行为**（你会看到屏幕上自动发生）：
@@ -63,7 +63,7 @@ cd <项目路径>\fairpeer
 3. Ctrl+S → 在保存对话框输入文件名 → 确认
 
 **检查表**：
-- [ ] fairpeer 自己调用了 screen_perceive / screen_click / screen_type（在终端能看到工具调用）
+- [ ] hiq 自己调用了 screen_perceive / screen_click / screen_type（在终端能看到工具调用）
 - [ ] 记事本里真的出现了文字
 - [ ] 桌面真的生成了 cua-test.txt，内容正确
 - [ ] 全程你只下了那一句话指令，没手动干预
@@ -75,7 +75,7 @@ cd <项目路径>\fairpeer
 **目的**：验证浏览器精确通道 + 代理修复。
 
 ```bash
-./bin/fairpeer.exe run --profile cowork --max-steps 50 "用浏览器打开 github.com，搜索 reasonix，告诉我第一个结果的仓库名和 star 数"
+./bin/hiq.exe run --profile cowork --max-steps 50 "用浏览器打开 github.com，搜索 reasonix，告诉我第一个结果的仓库名和 star 数"
 ```
 
 **预期**：
@@ -106,7 +106,7 @@ cd <项目路径>\fairpeer
 
 第 2 步：
 ```bash
-./bin/fairpeer.exe chat --profile cowork
+./bin/hiq.exe chat --profile cowork
 ```
 输入：
 ```
@@ -126,7 +126,7 @@ cd <项目路径>\fairpeer
 **目的**：验证截图→VLM→坐标点击的降级路径。
 
 ```bash
-./bin/fairpeer.exe chat --profile cowork
+./bin/hiq.exe chat --profile cowork
 ```
 输入：
 ```

@@ -9,11 +9,11 @@ import (
 
 func TestExpandPastedBlocksImage(t *testing.T) {
 	m := &chatTUI{pastedBlocks: []pastedBlock{
-		{label: "[image #1]", text: "@.fairpeer/attachments/clipboard-20260601-010203.000001.png", image: true},
+		{label: "[image #1]", text: "@.hiq/attachments/clipboard-20260601-010203.000001.png", image: true},
 		{label: "[Pasted text #2 · 3 lines]", text: "a\nb\nc"},
 	}}
 	got := m.expandPastedBlocks("look at [image #1] and [Pasted text #2 · 3 lines]")
-	want := "look at @.fairpeer/attachments/clipboard-20260601-010203.000001.png and " +
+	want := "look at @.hiq/attachments/clipboard-20260601-010203.000001.png and " +
 		renderFoldedPasteBlock(m.pastedBlocks[1])
 	if got != want {
 		t.Fatalf("expandPastedBlocks = %q, want %q", got, want)
@@ -24,7 +24,7 @@ func TestExpandPastedBlocksImage(t *testing.T) {
 }
 
 func TestDisplayLineForImageRefs(t *testing.T) {
-	got := displayLineForImageRefs("describe @.fairpeer/attachments/clipboard-20260601-010203.000001.png @.fairpeer/attachments/clipboard-20260601-010204.000002-000002.jpg")
+	got := displayLineForImageRefs("describe @.hiq/attachments/clipboard-20260601-010203.000001.png @.hiq/attachments/clipboard-20260601-010204.000002-000002.jpg")
 	want := "describe [image1] [image2]"
 	if got != want {
 		t.Fatalf("displayLineForImageRefs = %q, want %q", got, want)

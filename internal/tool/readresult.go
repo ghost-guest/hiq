@@ -220,7 +220,7 @@ func ParseReadTrailer(output string) ReadTrailer {
 // window changes it. It says nothing about lines outside the window.
 func WindowDigest(canonicalPath string, w ReadWindow) string {
 	h := sha256.New()
-	h.Write([]byte("fairpeer/read-window/v2\x00"))
+	h.Write([]byte("hiq/read-window/v2\x00"))
 	h.Write([]byte(canonicalPath))
 	h.Write([]byte{0})
 	h.Write([]byte(strconv.Itoa(w.StartLine)))
@@ -239,7 +239,7 @@ func SourceSnapshot(kind ReadSourceKind, canonicalPath, identity string) string 
 		return ""
 	}
 	h := sha256.New()
-	h.Write([]byte("fairpeer/read-source/v2\x00"))
+	h.Write([]byte("hiq/read-source/v2\x00"))
 	h.Write([]byte(kind))
 	h.Write([]byte{0})
 	h.Write([]byte(canonicalPath))

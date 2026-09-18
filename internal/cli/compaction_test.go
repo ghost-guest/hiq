@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // TestCompactionCardLines locks the finished-compaction card: a header naming

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // ConfineBash returns the bash built-in bound to an OS-sandbox spec, overriding
@@ -22,7 +22,7 @@ func ConfineBash(spec sandbox.Spec, timeout ...time.Duration) tool.Tool {
 	return b
 }
 
-// ConfineWebFetch returns the web_fetch built-in bound to fairpeer proxy
+// ConfineWebFetch returns the web_fetch built-in bound to hiq proxy
 // settings while preserving its SSRF-guarded dialer.
 func ConfineWebFetch(proxySpec netclient.ProxySpec) tool.Tool {
 	return webFetch{proxySpec: proxySpec}
@@ -117,7 +117,7 @@ func confineRead(roots []string, target string) error {
 		}
 	}
 	return fmt.Errorf("path %q is outside the read boundary (reads are confined to %s); "+
-		"read inside it, or widen [sandbox] read_roots in fairpeer.toml",
+		"read inside it, or widen [sandbox] read_roots in hiq.toml",
 		target, strings.Join(roots, ", "))
 }
 
@@ -152,7 +152,7 @@ func confine(roots []string, target string) error {
 		}
 	}
 	return fmt.Errorf("path %q is outside the workspace (writes are confined to %s); "+
-		"write inside it, or widen [sandbox] workspace_root / allow_write in fairpeer.toml",
+		"write inside it, or widen [sandbox] workspace_root / allow_write in hiq.toml",
 		target, strings.Join(roots, ", "))
 }
 

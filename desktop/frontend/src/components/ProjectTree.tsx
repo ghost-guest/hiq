@@ -89,7 +89,7 @@ function topicIsActive(node: ProjectNode, activeScope?: string, activeWorkspaceR
   return activeTopicId === node.topicId && activeScope === "project" && activeWorkspaceRoot === node.root;
 }
 
-const TOPIC_SEEN_KEY = "fairpeer.topicSeen";
+const TOPIC_SEEN_KEY = "hiq.topicSeen";
 
 function topicMetaLine(node: ProjectNode, t: Translator): string {
   // Sidebar-parity meta (2026-08-18): compact age only — the turns badge was
@@ -231,7 +231,7 @@ export function ProjectTree({
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [workspaceExpanded, setWorkspaceExpanded] = useState(() => {
     try {
-      const saved = localStorage.getItem(`fairpeer.projectTree.workspaceExpanded.${profile}`);
+      const saved = localStorage.getItem(`hiq.projectTree.workspaceExpanded.${profile}`);
       return saved ? saved === "true" : true;
     } catch {
       return true;
@@ -241,7 +241,7 @@ export function ProjectTree({
     setWorkspaceExpanded(v => {
       const next = !v;
       try {
-        localStorage.setItem(`fairpeer.projectTree.workspaceExpanded.${profile}`, String(next));
+        localStorage.setItem(`hiq.projectTree.workspaceExpanded.${profile}`, String(next));
       } catch {}
       return next;
     });

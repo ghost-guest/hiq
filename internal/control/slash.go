@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/skill"
 )
 
 // SlashItem is one slash-completion suggestion. Insert is the token text placed

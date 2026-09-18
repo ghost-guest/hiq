@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// defaultBaseURL is empty — FairPeer ships no built-in API endpoint. The
+// defaultBaseURL is empty — Hiq ships no built-in API endpoint. The
 // scheduler/RAG direct /chat/completions callers must get their base URL from
 // the resolved provider config (Cowork.FastLLMBaseDomain override, or the
 // fast-task model's provider entry). An empty BaseURL means "not configured".

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/rag"
+	"github.com/zzycxz/hiq/internal/rag"
 )
 
 // mustImportRAGDoc writes a doc to temp and imports it into the store.

@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 
-	_ "github.com/zzycxz/fairpeer/internal/provider/openai"
-	_ "github.com/zzycxz/fairpeer/internal/tool/builtin"
+	_ "github.com/zzycxz/hiq/internal/provider/openai"
+	_ "github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // TestBuildUnknownModelErrorIsActionable: a default_model that doesn't resolve
@@ -18,7 +18,7 @@ import (
 func TestBuildUnknownModelErrorIsActionable(t *testing.T) {
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "definitely-not-configured"
 
 [codegraph]
@@ -29,7 +29,7 @@ name = "test-provider"
 kind = "openai"
 base_url = "https://example.invalid"
 model = "test-model-a"
-api_key_env = "FAIRPEER_TEST_KEY_UNSET"
+api_key_env = "HIQ_TEST_KEY_UNSET"
 `)
 
 	_, err := Build(context.Background(), Options{Sink: event.Discard})
@@ -48,10 +48,10 @@ api_key_env = "FAIRPEER_TEST_KEY_UNSET"
 // builds fine (RequireKey is false so the UI stays reachable) but must emit a
 // notice naming the env var, instead of silently showing a dead/empty model.
 func TestBuildNoticesMissingAPIKey(t *testing.T) {
-	const keyEnv = "FAIRPEER_MISSING_KEY_FOR_TEST"
+	const keyEnv = "HIQ_MISSING_KEY_FOR_TEST"
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	writeFile(t, dir, "fairpeer.toml", `
+	writeFile(t, dir, "hiq.toml", `
 default_model = "x"
 
 [codegraph]

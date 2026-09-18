@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/jobs"
+	"github.com/zzycxz/hiq/internal/jobs"
 )
 
 // TaskRecorder bridges jobs.Manager lifecycle events into the Task Store. It

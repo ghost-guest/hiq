@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/shellparse"
+	"github.com/zzycxz/hiq/internal/shellparse"
 )
 
 // Constraints are explicit user or host limits. They never encode task

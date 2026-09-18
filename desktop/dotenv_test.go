@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // TestUpsertCredential proves a secret lands in the encrypted store, is pinned
@@ -113,13 +113,13 @@ func TestRemoveCredential(t *testing.T) {
 	}
 }
 
-// providerKeyCfg builds a config with one provider keyed on FAIRPEER_API_KEY —
+// providerKeyCfg builds a config with one provider keyed on HIQ_API_KEY —
 // Default() ships no built-in presets, so promotion tests declare their own.
 func providerKeyCfg() *config.Config {
 	cfg := config.Default()
 	cfg.Providers = []config.ProviderEntry{{
 		Name: "test-model", Kind: "openai", BaseURL: "https://example.invalid",
-		Model: "x", APIKeyEnv: "FAIRPEER_API_KEY",
+		Model: "x", APIKeyEnv: "HIQ_API_KEY",
 	}}
 	return cfg
 }
@@ -130,15 +130,15 @@ func providerKeyCfg() *config.Config {
 func TestPromoteProviderKeysLiftsProjectKeyAndStripsHomeEnv(t *testing.T) {
 	home := isolateDesktopUserDirs(t)
 	homeEnv := filepath.Join(home, ".env")
-	if err := os.WriteFile(homeEnv, []byte("FAIRPEER_API_KEY=sk-test\nNPM_TOKEN=secret\n"), 0o600); err != nil {
+	if err := os.WriteFile(homeEnv, []byte("HIQ_API_KEY=sk-test\nNPM_TOKEN=secret\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("FAIRPEER_API_KEY", "sk-test")
+	t.Setenv("HIQ_API_KEY", "sk-test")
 	t.Setenv("NPM_TOKEN", "secret")
 
 	promoteProviderKeysToCredentials(providerKeyCfg())
 
-	if v, ok, err := credentialStore().Get("FAIRPEER_API_KEY"); err != nil || !ok || v != "sk-test" {
+	if v, ok, err := credentialStore().Get("HIQ_API_KEY"); err != nil || !ok || v != "sk-test" {
 		t.Errorf("provider key not promoted into encrypted store: ok=%v err=%v val=%q", ok, err, v)
 	}
 	if _, ok, _ := credentialStore().Get("NPM_TOKEN"); ok {
@@ -146,7 +146,7 @@ func TestPromoteProviderKeysLiftsProjectKeyAndStripsHomeEnv(t *testing.T) {
 	}
 
 	rest, _ := os.ReadFile(homeEnv)
-	if strings.Contains(string(rest), "FAIRPEER_API_KEY") {
+	if strings.Contains(string(rest), "HIQ_API_KEY") {
 		t.Errorf("promoted key must be stripped from ~/.env:\n%s", rest)
 	}
 	if !strings.Contains(string(rest), "NPM_TOKEN=secret") {
@@ -158,18 +158,18 @@ func TestPromoteProviderKeysLiftsProjectKeyAndStripsHomeEnv(t *testing.T) {
 // overwrites a key already in the encrypted store and leaves ~/.env untouched.
 func TestPromoteProviderKeysLeavesExistingCredentialsKey(t *testing.T) {
 	home := isolateDesktopUserDirs(t)
-	if err := credentialStore().Set("FAIRPEER_API_KEY", "sk-global"); err != nil {
+	if err := credentialStore().Set("HIQ_API_KEY", "sk-global"); err != nil {
 		t.Fatalf("seed store: %v", err)
 	}
 	homeEnv := filepath.Join(home, ".env")
-	if err := os.WriteFile(homeEnv, []byte("FAIRPEER_API_KEY=sk-stale\n"), 0o600); err != nil {
+	if err := os.WriteFile(homeEnv, []byte("HIQ_API_KEY=sk-stale\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("FAIRPEER_API_KEY", "sk-global")
+	t.Setenv("HIQ_API_KEY", "sk-global")
 
 	promoteProviderKeysToCredentials(providerKeyCfg())
 
-	if v, _, _ := credentialStore().Get("FAIRPEER_API_KEY"); v != "sk-global" {
+	if v, _, _ := credentialStore().Get("HIQ_API_KEY"); v != "sk-global" {
 		t.Errorf("existing store key was changed: %q", v)
 	}
 	if data, err := os.Stat(homeEnv); err != nil || data.Size() == 0 {
@@ -184,13 +184,13 @@ func TestMigrateCredentialsFileStartup(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(config.UserCredentialsPath()), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(config.UserCredentialsPath(), []byte("# legacy\nFAIRPEER_API_KEY=sk-mig\n"), 0o600); err != nil {
+	if err := os.WriteFile(config.UserCredentialsPath(), []byte("# legacy\nHIQ_API_KEY=sk-mig\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	migrateCredentialsFile()
 
-	if v, ok, err := credentialStore().Get("FAIRPEER_API_KEY"); err != nil || !ok || v != "sk-mig" {
+	if v, ok, err := credentialStore().Get("HIQ_API_KEY"); err != nil || !ok || v != "sk-mig" {
 		t.Errorf("key not migrated into encrypted store: ok=%v err=%v val=%q", ok, err, v)
 	}
 	if _, err := os.Stat(config.UserCredentialsPath()); !os.IsNotExist(err) {

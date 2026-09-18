@@ -31,8 +31,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
-	"github.com/zzycxz/fairpeer/internal/secrets"
+	"github.com/zzycxz/hiq/internal/proc"
+	"github.com/zzycxz/hiq/internal/secrets"
 )
 
 // baseConfig is the -c override set every invocation carries.

@@ -7,7 +7,7 @@ func TestNormalizeLegacyProviderModelsRepairsOfficialProvider(t *testing.T) {
 		Name:      "test-provider",
 		Kind:      "openai",
 		BaseURL:   "https://example.com/largemodel/test-provider/api/v3",
-		APIKeyEnv: "FAIRPEER_API_KEY",
+		APIKeyEnv: "HIQ_API_KEY",
 	}}}
 	normalizeLegacyProviderModels(c)
 	if got := c.Providers[0].Model; got != "" {
@@ -48,7 +48,7 @@ func TestNormalizeDesktopOfficialProviderAccessCanonicalizesLegacyIDs(t *testing
 }
 
 func TestNormalizeDesktopOfficialProviderAccessNoPresetProviders(t *testing.T) {
-	// FairPeer no longer ships a preset test-provider official provider. Declaring
+	// Hiq no longer ships a preset test-provider official provider. Declaring
 	// "test-provider" in provider_access must NOT silently materialize a provider entry;
 	// it just survives as a plain access id (canonicalized to a trimmed name).
 	c := Default()

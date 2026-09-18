@@ -1,8 +1,8 @@
-# fairpeer 桌面端（S）实现规范
+# hiq 桌面端（S）实现规范
 
 > 状态：v1
 > 日期：2026-08-11
-> 范围：fairpeer 桌面端为 linkpeer 提供桥接的**实现层**规范——模块结构、接口、数据流、安全要点、测试。
+> 范围：hiq 桌面端为 linkpeer 提供桥接的**实现层**规范——模块结构、接口、数据流、安全要点、测试。
 > 上游协议：[`LINKPEER_PROTOCOL.md`](./LINKPEER_PROTOCOL.md)。本规范是其 S 端实现的细化。
 
 ---
@@ -10,7 +10,7 @@
 ## 1. 职责边界
 
 **S 做**：
-- 持有 Controller、会话历史、API Key、文件系统（fairpeer 本体）。
+- 持有 Controller、会话历史、API Key、文件系统（hiq 本体）。
 - 维持到 K 的信令长连 WS（被动可达）。
 - 响应 C 的 WebRTC 连接、握手、命令；向 C 广播 wireEvent。
 - 配对管理（生成二维码 + 双向确认 + 吊销）。
@@ -52,7 +52,7 @@ internal/mobilebridge/
 | `desktop/app.go` | `App` 持有 `bridge *mobilebridge.Bridge`；startup 初始化；beforeClose 优雅关闭 |
 | `desktop/tabs.go` | `tabEventSink.Emit` 末尾加一行：若该 tab 被某 C 订阅，转发 wireEvent |
 | `internal/secret/` | 新增 key 命名空间 `mobilebridge.device.{id}.priv`、`mobilebridge.peer.{id}.pub`、`mobilebridge.revoked` |
-| `fairpeer.example.toml` | 新增 `[mobilebridge]` 段 |
+| `hiq.example.toml` | 新增 `[mobilebridge]` 段 |
 
 ---
 
@@ -159,7 +159,7 @@ C DataChannel.Send(密文帧)
 
 ---
 
-## 5. 配置（`fairpeer.toml [mobilebridge]`）
+## 5. 配置（`hiq.toml [mobilebridge]`）
 
 ```toml
 [mobilebridge]
@@ -198,11 +198,11 @@ log_level        = "info"
 
 ## 7. 集成决策：同进程 vs 独立进程
 
-**默认：同进程**（mobilebridge 作为 fairpeer 进程内的 Go package，pion 同进程）。
+**默认：同进程**（mobilebridge 作为 hiq 进程内的 Go package，pion 同进程）。
 - 优点：简单、共享 Controller/App 对象、无 IPC。
-- 风险：pion 依赖进 fairpeer 二进制（增大 ~8MB），可能引入 cgo 破坏单静态二进制。
+- 风险：pion 依赖进 hiq 二进制（增大 ~8MB），可能引入 cgo 破坏单静态二进制。
 
-**Contingency（独立进程）**：若 M0 spike 发现 pion 破坏单二进制，退回独立 `fairpeer-bridge` 进程，fairpeer 主进程通过本地 socket（gRPC/JSON-RPC）与之通信。代价是 IPC 复杂 + 多一个二进制。
+**Contingency（独立进程）**：若 M0 spike 发现 pion 破坏单二进制，退回独立 `hiq-bridge` 进程，hiq 主进程通过本地 socket（gRPC/JSON-RPC）与之通信。代价是 IPC 复杂 + 多一个二进制。
 
 **决策依据**：M0 pion spike 结果（echo DataChannel + `go build` 跨平台 + cgo check）。
 
@@ -307,7 +307,7 @@ mobilebridge **不复用** `BotGateway` 代码。"第 5 个 bot 适配器"是**�
 | 安全 | 平台 token | E2E 加密 + 配对 |
 | 状态 | 每平台 session | 每连接握手 + 会话密钥 |
 
-**共享的只有** `control.Controller` 和 `event.Event`（这是 fairpeer 的稳定内核契约）。所以 mobilebridge 是独立 package，与 bot 平级。
+**共享的只有** `control.Controller` 和 `event.Event`（这是 hiq 的稳定内核契约）。所以 mobilebridge 是独立 package，与 bot 平级。
 
 ### 11.5 GCM 安全边界（连接寿命）
 

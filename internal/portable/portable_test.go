@@ -164,7 +164,7 @@ func TestExportFlatSkillNormalisesLayout(t *testing.T) {
 }
 
 // A second import of the same skill must keep both, and must rewrite the
-// renamed copy's frontmatter name so the two do not collide inside fairpeer.
+// renamed copy's frontmatter name so the two do not collide inside hiq.
 func TestImportRenamesOnConflictAndPatchesFrontmatter(t *testing.T) {
 	src := t.TempDir()
 	dir := writeSkill(t, src, "alpha", nil)
@@ -431,7 +431,7 @@ func TestImportRefusesUnknownOrNewerBundles(t *testing.T) {
 		name string
 		m    *Manifest
 	}{
-		{"unknown kind", &Manifest{Kind: Kind("fairpeer.future"), SchemaVersion: 1, App: AppName}},
+		{"unknown kind", &Manifest{Kind: Kind("hiq.future"), SchemaVersion: 1, App: AppName}},
 		{"newer schema", &Manifest{Kind: KindSkill, SchemaVersion: SchemaVersion + 1, App: AppName}},
 		{"no schema", &Manifest{Kind: KindSkill, App: AppName}},
 		{"foreign app", &Manifest{Kind: KindSkill, SchemaVersion: 1, App: "somethingelse"}},
@@ -568,12 +568,12 @@ func TestScrubAppliesToTextEntriesOnly(t *testing.T) {
 // A memory bundle carries documents and never a session transcript.
 func TestExportMemoryCarriesDocsOnly(t *testing.T) {
 	src := t.TempDir()
-	doc := filepath.Join(src, "fairpeer.md")
+	doc := filepath.Join(src, "hiq.md")
 	if err := os.WriteFile(doc, []byte("# Project memory\n\nFacts.\n"), 0o644); err != nil {
 		t.Fatalf("write doc: %v", err)
 	}
 	bundle := exportToBytes(t, KindMemory, ExportOptions{
-		Docs: []DocSource{{Name: "fairpeer.md", Path: doc}},
+		Docs: []DocSource{{Name: "hiq.md", Path: doc}},
 		Name: "memory",
 		Now:  fixedNow,
 	})
@@ -584,7 +584,7 @@ func TestExportMemoryCarriesDocsOnly(t *testing.T) {
 	if m.Kind != KindMemory {
 		t.Fatalf("kind = %q", m.Kind)
 	}
-	if len(m.Entries) != 1 || m.Entries[0].Path != "fairpeer.md" {
+	if len(m.Entries) != 1 || m.Entries[0].Path != "hiq.md" {
 		t.Fatalf("unexpected entries: %+v", m.Entries)
 	}
 	if m.Items[0].Description != "Project memory" {
@@ -594,7 +594,7 @@ func TestExportMemoryCarriesDocsOnly(t *testing.T) {
 	if _, err := importDir(t, bundle, dest, ImportOptions{Now: fixedNow}); err != nil {
 		t.Fatalf("import: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(dest, "fairpeer.md")); err != nil {
+	if _, err := os.Stat(filepath.Join(dest, "hiq.md")); err != nil {
 		t.Fatalf("doc did not land: %v", err)
 	}
 }

@@ -1,7 +1,7 @@
 # PPT 视觉增强 Spec（图片 / PDF → PPT）
 
 > **状态**：Phase 1-6 全部已实施 ✅（端到端链路接通；merge/字号/触发均测试通过）
-> **范围**：让 fairpeer 能"给一张 PPT 图片（或扫描 PDF）→ 用 VLM 理解 → ppt-auto 生成一页类似的"
+> **范围**：让 hiq 能"给一张 PPT 图片（或扫描 PDF）→ 用 VLM 理解 → ppt-auto 生成一页类似的"
 > **基础**：基于多轮讨论 + ppt-master 调研 + ppt-auto config 体系深调
 > **不属本 spec**：PPT 文件（.pptx）仿写/扩写 —— 那走结构化解析（readPPTX 增强），不靠 VLM，另立 spec
 
@@ -10,7 +10,7 @@
 ## 一、目标与场景
 
 ### 核心场景（本 spec 聚焦）
-**用户给一页 PPT 图片**（截图/参考图）→ fairpeer 用 VLM 理解它怎么做的（文字/布局/密度/颜色/字号比例）→ **ppt-auto 生成一页类似的**（参考生成，非像素复刻）。
+**用户给一页 PPT 图片**（截图/参考图）→ hiq 用 VLM 理解它怎么做的（文字/布局/密度/颜色/字号比例）→ **ppt-auto 生成一页类似的**（参考生成，非像素复刻）。
 
 ### 扩展场景（核心通后接上）
 **扫描/图片式 PDF** → 切成每页图 → 每页走核心场景的 VLM 理解 → ppt-auto 逐页重画。
@@ -36,7 +36,7 @@
 
 ## 三、VLM 从参考图提取什么（4 样）
 
-参考图（一页 PPT 图片）经 VLM，提取 4 样信息，写进 `~/.fairpeer/reference-style.json`：
+参考图（一页 PPT 图片）经 VLM，提取 4 样信息，写进 `~/.hiq/reference-style.json`：
 
 | # | 提取项 | 用途 | 精度 |
 |---|---|---|---|
@@ -104,7 +104,7 @@
 - 字号：拆成结构化字段供自适应函数用（画布/布局结构化留后续）
 
 ### 缺口 3：VLM 4 段 prompt 现状只面向 PDF
-`pdfPageVLMPrompt`（pdf_pages_vision.go）输出自由文本到 `~/.fairpeer/pdf-pages/page-N.json`，不进 config。颜色 VLM（`ppt_template_vision`）只提 6 字段颜色。
+`pdfPageVLMPrompt`（pdf_pages_vision.go）输出自由文本到 `~/.hiq/pdf-pages/page-N.json`，不进 config。颜色 VLM（`ppt_template_vision`）只提 6 字段颜色。
 
 **修法**：图片路线复用 4 段 prompt 的文字/布局/格式/设计提取，但落地成结构化（`reference-style.json`）+ merge 进 config。
 
@@ -146,7 +146,7 @@ VLM 预判断是一次**轻量调用**（只问 A/B：纯文字 vs 有样式）�
 
 ### Phase 2：图片 → VLM → PPT 核心
 **做什么**：单页参考图 → VLM 提取 4 样 → ppt-auto 生成一页。
-- 新 `desktop/reference_image_vision.go`：`AnalyzeReferenceImage(imgPath)` → 读图 → PNG 无损 → `CallVLM`(4段prompt) → 写 `~/.fairpeer/reference-style.json`
+- 新 `desktop/reference_image_vision.go`：`AnalyzeReferenceImage(imgPath)` → 读图 → PNG 无损 → `CallVLM`(4段prompt) → 写 `~/.hiq/reference-style.json`
 - 复用 `pdfPageVLMPrompt`（pdf_pages_vision.go 已有的 4 段常量）
 - ppt-auto SKILL.md 加步骤：读 `reference-style.json`，指导大纲/SVG 设计
 **依赖**：Phase 1（提取了要能用）
@@ -172,7 +172,7 @@ VLM 预判断是一次**轻量调用**（只问 A/B：纯文字 vs 有样式）�
 |---|---|---|
 | `pdf_to_page_images.py`（根目录） | PDF → 每页 PNG（复用 fitz，只渲染不 OCR） | ✅ 已写，Python 语法验证通过 |
 | `desktop/pdf_pages_vision.go` | 调切割脚本 + 逐页 CallVLM（含 `pdfPageVLMPrompt` 4段常量）+ 写 page-N.json | ✅ 已写，desktop 模块 go vet 通过 |
-| `desktop/ppt_template_vision.go` | 模板配色 VLM（`builtin.CallVLM`，写 `ppt-template-style.json`） | ✅ 已有（fairpeer 原生），Phase 2 复用其模式 |
+| `desktop/ppt_template_vision.go` | 模板配色 VLM（`builtin.CallVLM`，写 `ppt-template-style.json`） | ✅ 已有（hiq 原生），Phase 2 复用其模式 |
 
 **关键复用**：`pdfPageVLMPrompt`（4 段：CONTENT/LAYOUT/FORMAT/DESIGN）是图片版和 PDF 版共用的 VLM 提取逻辑，Phase 2 直接用。
 
@@ -202,7 +202,7 @@ ppt-auto 生成的图形受"调色板 + 元素类型白名单（rect/text/line/c
 
 **整体验收命令**：
 ```bash
-cd C:\Users\13852\Desktop\Swarm-OS\fairpeer
+cd C:\Users\13852\Desktop\Swarm-OS\hiq
 go vet ./desktop/...  # desktop 模块（含新 vision 文件）
 go test ./internal/tool/builtin/...  # 不破坏 builtin
 python -c "import ast; ast.parse(open('pdf_to_page_images.py').read())"  # 脚本语法

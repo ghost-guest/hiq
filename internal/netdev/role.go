@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // role.go — the device-class vocabulary shared by the topology icons (T1),

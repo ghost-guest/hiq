@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 func TestDecodePeerKey(t *testing.T) {

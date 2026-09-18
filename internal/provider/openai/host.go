@@ -1,7 +1,7 @@
 package openai
 
 import (
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 	"net/url"
 	"strings"
 )

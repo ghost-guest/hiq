@@ -3,7 +3,7 @@ package permission
 import (
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/shellsafe"
+	"github.com/zzycxz/hiq/internal/shellsafe"
 )
 
 // isReadOnlyBashSubject returns true when a bash command is a statically

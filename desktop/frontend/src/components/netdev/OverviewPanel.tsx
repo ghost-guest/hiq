@@ -7,7 +7,7 @@ import type { NetDevOverviewSnapshot } from "../../lib/types";
 // OverviewPanel — 总览屏（DASHBOARD spec §4.2）。两档一套数据：dock 紧凑
 // 单列（compact）与 bench 双列渲染同一组件（响应式断点 <520/≥800 由容器
 // 宽度决定，这里用 prop 显式分档）。刷新纪律（§3.4/§8.4）：
-//   dock 档零定时器 —— 仅挂载 force + fairpeer:netdev-dash 事件驱动；
+//   dock 档零定时器 —— 仅挂载 force + hiq:netdev-dash 事件驱动；
 //   bench 档由 DashShell 负责 60s 可见兜底，本组件不重复起 timer。
 // 诚实分母（§6）：一切比率 x/y；CVE 无 feed / 基线从未跑 = 引导态不是 0。
 
@@ -60,8 +60,8 @@ export default function OverviewPanel({ compact, actions, onJump, onFocusDevice,
       const screens = (e as CustomEvent<{ screens?: string[] }>).detail?.screens ?? [];
       if (!screens.length || screens.includes("overview")) load(false);
     };
-    window.addEventListener("fairpeer:netdev-dash", on);
-    return () => window.removeEventListener("fairpeer:netdev-dash", on);
+    window.addEventListener("hiq:netdev-dash", on);
+    return () => window.removeEventListener("hiq:netdev-dash", on);
   }, [load]);
 
   const fresh = useMemo(() => {

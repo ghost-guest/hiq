@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // LogFollowEvent is one streaming callback: a chunk of (redacted, line-aligned)

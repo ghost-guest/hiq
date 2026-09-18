@@ -9,12 +9,12 @@ import (
 //
 // The openhanako reference divides plugins into "restricted" and "full-access"
 // around the surfaces it lets a plugin add — extensions/, routes, providers,
-// pages and lifecycle hooks. Fairpeer plugins cannot contribute routes,
+// pages and lifecycle hooks. Hiq plugins cannot contribute routes,
 // providers or pages at all; their executing surfaces are the runtime process,
 // hooks and MCP servers, while skills, agents, commands, prompts and themes are
 // purely declarative (they shape prompts and UI and cannot run anything). A
 // verbatim port would therefore gate the wrong things, so the tiers are
-// re-anchored on Fairpeer's real capability surface instead of copied.
+// re-anchored on Hiq's real capability surface instead of copied.
 //
 // Two tiers:
 //
@@ -165,20 +165,20 @@ func GateForInstalled(installed InstalledPlugin, pkg Package) CapabilityGate {
 
 // SetTrustTier grants a tier to an installed plugin and persists it. Unknown
 // tiers are rejected so a typo cannot silently widen access.
-func SetTrustTier(fairpeerHome, name string, tier TrustTier) error {
+func SetTrustTier(hiqHome, name string, tier TrustTier) error {
 	if !tier.Valid() {
 		return fmt.Errorf("trust tier %q must be %q or %q", tier, TrustRestricted, TrustFullAccess)
 	}
 	stateMu.Lock()
 	defer stateMu.Unlock()
-	st, err := LoadState(fairpeerHome)
+	st, err := LoadState(hiqHome)
 	if err != nil {
 		return err
 	}
 	for i := range st.Plugins {
 		if st.Plugins[i].Name == name {
 			st.Plugins[i].TrustTier = NormalizeTrustTier(tier)
-			return SaveState(fairpeerHome, st)
+			return SaveState(hiqHome, st)
 		}
 	}
 	return fmt.Errorf("plugin %q is not installed", name)

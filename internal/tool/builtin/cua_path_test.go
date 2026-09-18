@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // TestCallVLMProviderPath verifies the PRODUCTION VLM path end-to-end:
 // SetProviderChatRunner (the boot injection point) → CallVLM (backend=provider)
 // → callProviderVLM → the injected runner. This is the exact chain screen_perceive
-// uses in cowork mode now. It does NOT mock the HTTP layer — when FAIRPEER_API_KEY
+// uses in cowork mode now. It does NOT mock the HTTP layer — when HIQ_API_KEY
 // is set it builds a REAL one-shot provider client (mirroring runProviderVLMChat)
 // and hits the live test-model-b endpoint, so a green result means the production
 // vision path genuinely works, not a unit-test stub.

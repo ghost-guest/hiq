@@ -1,10 +1,10 @@
-// Package portable exports and imports fairpeer's shareable assets — skills and
+// Package portable exports and imports hiq's shareable assets — skills and
 // memory documents — as a single zip bundle, so they survive a machine change
 // and can be handed to a teammate.
 //
 // # Why this exists
 //
-// fairpeer ships as one self-contained portable exe: copy the folder and it
+// hiq ships as one self-contained portable exe: copy the folder and it
 // runs. That promise stopped at the data boundary — skills and memory live in
 // directories the user has to find and copy by hand, and a partial copy
 // (or a copy that drags along a stale config.toml) is a support case waiting to
@@ -18,7 +18,7 @@
 //
 // # What a bundle carries
 //
-// A bundle is a zip whose root holds fairpeer-bundle.json plus the assets it
+// A bundle is a zip whose root holds hiq-bundle.json plus the assets it
 // lists. Kinds are skill (one skill), skills (a group) and memory (memory docs).
 //
 // # Two differences from the reference implementation
@@ -37,7 +37,7 @@
 // way out (the export walk only ever descends a whitelist) and on the way in (a
 // denied name is refused even if the zip came from elsewhere) — because the
 // two failures are different: exporting a secret leaks it, importing one
-// plants it. fairpeer's keys are DPAPI-sealed to the machine and user, so a
+// plants it. hiq's keys are DPAPI-sealed to the machine and user, so a
 // bundle that carried them would look like it worked and then fail, which is
 // worse than an honest empty field.
 package portable

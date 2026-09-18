@@ -15,17 +15,17 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/notify"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/notify"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
 // seedTestProvider injects a synthetic "test-provider" onto cfg so tests can
 // exercise model/effort/key flows without relying on a preset official provider
-// (FairPeer ships none by default). It mirrors what the setup wizard would
+// (Hiq ships none by default). It mirrors what the setup wizard would
 // write for a custom OpenAI-compatible provider.
 func seedTestProvider(cfg *config.Config) {
 	cfg.Providers = []config.ProviderEntry{{
@@ -35,7 +35,7 @@ func seedTestProvider(cfg *config.Config) {
 		Model:     "test-provider/test-model",
 		Models:    []string{"test-provider/test-model"},
 		Default:   "test-provider/test-model",
-		APIKeyEnv: "FAIRPEER_API_KEY",
+		APIKeyEnv: "HIQ_API_KEY",
 	}}
 	cfg.DefaultModel = "test-provider"
 }
@@ -125,7 +125,7 @@ func TestMetadataCommandsDoNotProbeTerminalTheme(t *testing.T) {
 			t.Fatalf("version rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, "fairpeer test-version") {
+	if !strings.Contains(out, "hiq test-version") {
 		t.Fatalf("version output = %q", out)
 	}
 
@@ -137,7 +137,7 @@ func TestMetadataCommandsDoNotProbeTerminalTheme(t *testing.T) {
 	if !strings.Contains(out, "Usage:") && !strings.Contains(out, "用法：") {
 		t.Fatalf("help output missing usage:\n%s", out)
 	}
-	if !strings.Contains(out, "fairpeer run  [--model NAME] [--max-steps N] [-c|--continue] [--resume PATH] <task>") {
+	if !strings.Contains(out, "hiq run  [--model NAME] [--max-steps N] [-c|--continue] [--resume PATH] <task>") {
 		t.Fatalf("help output missing run resume flags:\n%s", out)
 	}
 }
@@ -158,7 +158,7 @@ func TestRunDispatchesACPLongFlagAlias(t *testing.T) {
 
 func TestRunMigratesLegacyConfigBeforeConfigOnlyCommands(t *testing.T) {
 	isolateCLIConfigHome(t)
-	legacyPath := filepath.Join(filepath.Dir(config.UserConfigPath()), "fairpeer.toml")
+	legacyPath := filepath.Join(filepath.Dir(config.UserConfigPath()), "hiq.toml")
 	if err := os.MkdirAll(filepath.Dir(legacyPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +194,7 @@ command = "legacy-bin"
 
 func TestRunMetadataCommandsDoNotMigrateLegacyConfig(t *testing.T) {
 	isolateCLIConfigHome(t)
-	legacyPath := filepath.Join(filepath.Dir(config.UserConfigPath()), "fairpeer.toml")
+	legacyPath := filepath.Join(filepath.Dir(config.UserConfigPath()), "hiq.toml")
 	if err := os.MkdirAll(filepath.Dir(legacyPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestRunMetadataCommandsDoNotMigrateLegacyConfig(t *testing.T) {
 			t.Fatalf("version rc = %d, want 0", rc)
 		}
 	})
-	if !strings.Contains(out, "fairpeer test-version") {
+	if !strings.Contains(out, "hiq test-version") {
 		t.Fatalf("version output = %q", out)
 	}
 	if _, err := os.Stat(config.UserConfigPath()); !os.IsNotExist(err) {
@@ -250,7 +250,7 @@ func TestConfigAutoPlanLocalCreatesMinimalProjectOverride(t *testing.T) {
 		t.Fatalf("config auto-plan --local output = %q", out)
 	}
 
-	body, err := os.ReadFile("fairpeer.toml")
+	body, err := os.ReadFile("hiq.toml")
 	if err != nil {
 		t.Fatalf("read project config: %v", err)
 	}
@@ -277,10 +277,10 @@ func TestWelcomePromptMissingKeysRequiresConfigSource(t *testing.T) {
 	if welcomeShouldPromptMissingKeys("", nil) {
 		t.Fatal("built-in defaults without a config source should not prompt for missing provider keys")
 	}
-	if welcomeShouldPromptMissingKeys("fairpeer.toml", errors.New("bad config")) {
+	if welcomeShouldPromptMissingKeys("hiq.toml", errors.New("bad config")) {
 		t.Fatal("invalid config should not enter the missing-key prompt path")
 	}
-	if !welcomeShouldPromptMissingKeys("fairpeer.toml", nil) {
+	if !welcomeShouldPromptMissingKeys("hiq.toml", nil) {
 		t.Fatal("valid config source should enter the missing-key prompt path")
 	}
 }
@@ -288,21 +288,21 @@ func TestWelcomePromptMissingKeysRequiresConfigSource(t *testing.T) {
 func TestProvidersWithMissingKeysOnlyChecksActiveDefaultModel(t *testing.T) {
 	cfg := config.Default()
 	seedTestProvider(cfg)
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 
 	missing := providersWithMissingKeys(cfg)
 	if len(missing) != 1 {
 		t.Fatalf("missing providers = %+v, want only active default model provider", missing)
 	}
-	if missing[0].APIKeyEnv != "FAIRPEER_API_KEY" {
-		t.Fatalf("missing key env = %q, want FAIRPEER_API_KEY", missing[0].APIKeyEnv)
+	if missing[0].APIKeyEnv != "HIQ_API_KEY" {
+		t.Fatalf("missing key env = %q, want HIQ_API_KEY", missing[0].APIKeyEnv)
 	}
 }
 
 func TestProvidersWithMissingKeysIgnoresUnusedBuiltInPresets(t *testing.T) {
 	cfg := config.Default()
 	seedTestProvider(cfg)
-	t.Setenv("FAIRPEER_API_KEY", "test-key")
+	t.Setenv("HIQ_API_KEY", "test-key")
 
 	if missing := providersWithMissingKeys(cfg); len(missing) != 0 {
 		t.Fatalf("missing providers = %+v, want none when key is set", missing)
@@ -318,14 +318,14 @@ func TestProvidersWithMissingKeysIncludesReferencedSecondaryModels(t *testing.T)
 		"review": "test-provider/test-provider/test-model",
 	}
 	cfg.Agent.AutoPlanClassifier = "test-provider/test-provider/test-model"
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 
 	missing := providersWithMissingKeys(cfg)
 	if len(missing) != 1 {
 		t.Fatalf("missing providers = %+v, want test-provider once", missing)
 	}
-	if missing[0].APIKeyEnv != "FAIRPEER_API_KEY" {
-		t.Fatalf("missing key env = %q, want FAIRPEER_API_KEY", missing[0].APIKeyEnv)
+	if missing[0].APIKeyEnv != "HIQ_API_KEY" {
+		t.Fatalf("missing key env = %q, want HIQ_API_KEY", missing[0].APIKeyEnv)
 	}
 }
 
@@ -334,7 +334,7 @@ func TestProvidersWithMissingKeysSkipsDisabledAutoPlanClassifier(t *testing.T) {
 	seedTestProvider(cfg)
 	cfg.Agent.AutoPlan = "off"
 	cfg.Agent.AutoPlanClassifier = "test-provider/test-provider/test-model"
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 
 	if missing := providersWithMissingKeys(cfg); len(missing) != 1 {
 		t.Fatalf("missing providers = %+v, want 1 (default model key missing)", missing)
@@ -347,8 +347,8 @@ func TestProvidersWithMissingKeysSkipsDisabledAutoPlanClassifier(t *testing.T) {
 	if len(missing) != 1 {
 		t.Fatalf("missing providers = %+v, want 1 (same provider for both)", missing)
 	}
-	if missing[0].APIKeyEnv != "FAIRPEER_API_KEY" {
-		t.Fatalf("missing key env = %q, want FAIRPEER_API_KEY", missing[0].APIKeyEnv)
+	if missing[0].APIKeyEnv != "HIQ_API_KEY" {
+		t.Fatalf("missing key env = %q, want HIQ_API_KEY", missing[0].APIKeyEnv)
 	}
 }
 
@@ -422,23 +422,23 @@ func testProviderEntries() []config.ProviderEntry {
 		Kind:      "openai",
 		BaseURL:   "http://localhost:0",
 		Model:     "test-provider/test-model",
-		APIKeyEnv: "FAIRPEER_API_KEY",
+		APIKeyEnv: "HIQ_API_KEY",
 	}}
 }
 
 // TestConfigureKeys verifies that a shared api_key_env (each vendor's SKUs use
 // the same env var) is asked only once, and entered keys become env lines.
 func TestConfigureKeys(t *testing.T) {
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 	selected := testProviderEntries()
 
 	input := "ji-key\n"
 	env := configureKeys(selected, strings.NewReader(input), io.Discard)
 
 	if len(env) != 1 {
-		t.Fatalf("env = %v (want 1: FAIRPEER asked once)", env)
+		t.Fatalf("env = %v (want 1: HIQ asked once)", env)
 	}
-	if env[0] != "FAIRPEER_API_KEY=ji-key" {
+	if env[0] != "HIQ_API_KEY=ji-key" {
 		t.Errorf("env[0] = %q", env[0])
 	}
 }
@@ -451,45 +451,45 @@ func TestConfigureKeys(t *testing.T) {
 // existing value in envLines so the value is re-pinned into .env on
 // re-runs of setup.
 func TestConfigureKeysReusesExistingEnv(t *testing.T) {
-	t.Setenv("FAIRPEER_API_KEY", "preset-ji-key") // reuse this one
+	t.Setenv("HIQ_API_KEY", "preset-ji-key") // reuse this one
 
 	selected := testProviderEntries()
 	var output bytes.Buffer
 	env := configureKeys(selected, strings.NewReader("\n"), &output)
 
 	if len(env) != 1 {
-		t.Fatalf("env = %v (want 1: FAIRPEER reused)", env)
+		t.Fatalf("env = %v (want 1: HIQ reused)", env)
 	}
-	if env[0] != "FAIRPEER_API_KEY=preset-ji-key" {
+	if env[0] != "HIQ_API_KEY=preset-ji-key" {
 		t.Errorf("env[0] = %q, want re-pinned existing value", env[0])
 	}
-	if !strings.Contains(output.String(), "FAIRPEER_API_KEY") {
-		t.Errorf("expected a 'reusing' confirmation for FAIRPEER_API_KEY, got:\n%s", output.String())
+	if !strings.Contains(output.String(), "HIQ_API_KEY") {
+		t.Errorf("expected a 'reusing' confirmation for HIQ_API_KEY, got:\n%s", output.String())
 	}
 }
 
 func TestConfigureKeysCanResetExistingEnv(t *testing.T) {
-	t.Setenv("FAIRPEER_API_KEY", "stale-ji-key") // reset this one
+	t.Setenv("HIQ_API_KEY", "stale-ji-key") // reset this one
 
 	selected := testProviderEntries()
 	var output bytes.Buffer
 	env := configureKeys(selected, strings.NewReader("y\nfresh-ji-key\n"), &output)
 
 	if len(env) != 1 {
-		t.Fatalf("env = %v (want 1: FAIRPEER reset)", env)
+		t.Fatalf("env = %v (want 1: HIQ reset)", env)
 	}
-	if env[0] != "FAIRPEER_API_KEY=fresh-ji-key" {
+	if env[0] != "HIQ_API_KEY=fresh-ji-key" {
 		t.Errorf("env[0] = %q, want freshly entered value", env[0])
 	}
-	if !strings.Contains(output.String(), "[y/N]:") || !strings.Contains(output.String(), "FAIRPEER_API_KEY") {
-		t.Errorf("expected a reset confirmation for FAIRPEER_API_KEY, got:\n%s", output.String())
+	if !strings.Contains(output.String(), "[y/N]:") || !strings.Contains(output.String(), "HIQ_API_KEY") {
+		t.Errorf("expected a reset confirmation for HIQ_API_KEY, got:\n%s", output.String())
 	}
 }
 
 // TestConfigureKeysAllSetDefaultsToReusingInput ensures that when every env var
 // is already populated, pressing Enter at each confirmation keeps the values.
 func TestConfigureKeysAllSetDefaultsToReusingInput(t *testing.T) {
-	t.Setenv("FAIRPEER_API_KEY", "ji")
+	t.Setenv("HIQ_API_KEY", "ji")
 
 	selected := testProviderEntries()
 	env := configureKeys(selected, strings.NewReader("\n"), io.Discard)
@@ -502,24 +502,24 @@ func TestConfigureKeysAllSetDefaultsToReusingInput(t *testing.T) {
 // the wizard with a corrected key would leave the stale value in effect. The
 // store upserts by key, so the fresh key wins for every later config.Load.
 func TestStoreSecretLinesUpsertsReplacesExistingKey(t *testing.T) {
-	t.Setenv("FAIRPEER_API_KEY", "") // also covers the os.Setenv pin path
+	t.Setenv("HIQ_API_KEY", "") // also covers the os.Setenv pin path
 	store := secret.New(filepath.Join(t.TempDir(), "secrets.enc.json"))
 
-	if err := storeSecretLines(store, []string{"FAIRPEER_API_KEY=stale"}); err != nil {
+	if err := storeSecretLines(store, []string{"HIQ_API_KEY=stale"}); err != nil {
 		t.Fatalf("storeSecretLines: %v", err)
 	}
-	if err := storeSecretLines(store, []string{"FAIRPEER_API_KEY=fresh"}); err != nil {
+	if err := storeSecretLines(store, []string{"HIQ_API_KEY=fresh"}); err != nil {
 		t.Fatalf("storeSecretLines: %v", err)
 	}
-	got, ok, err := store.Get("FAIRPEER_API_KEY")
+	got, ok, err := store.Get("HIQ_API_KEY")
 	if err != nil || !ok {
 		t.Fatalf("Get: ok=%v err=%v", ok, err)
 	}
 	if got != "fresh" {
-		t.Errorf("stored FAIRPEER_API_KEY = %q, want %q (upsert should replace)", got, "fresh")
+		t.Errorf("stored HIQ_API_KEY = %q, want %q (upsert should replace)", got, "fresh")
 	}
-	if got := os.Getenv("FAIRPEER_API_KEY"); got != "fresh" {
-		t.Errorf("process env FAIRPEER_API_KEY = %q, want %q (upsert should pin in-process)", got, "fresh")
+	if got := os.Getenv("HIQ_API_KEY"); got != "fresh" {
+		t.Errorf("process env HIQ_API_KEY = %q, want %q (upsert should pin in-process)", got, "fresh")
 	}
 }
 
@@ -582,10 +582,10 @@ func TestFetchOrFallback(t *testing.T) {
 	})
 
 	t.Run("no key set returns static list (offline first-run)", func(t *testing.T) {
-		t.Setenv("FAIRPEER_FETCH_TEST_KEY", "")
+		t.Setenv("HIQ_FETCH_TEST_KEY", "")
 		probe := config.ProviderEntry{
 			BaseURL:   "http://127.0.0.1:1", // unreachable, no listener
-			APIKeyEnv: "FAIRPEER_FETCH_TEST_KEY",
+			APIKeyEnv: "HIQ_FETCH_TEST_KEY",
 			Models:    []string{"preset-a"},
 		}
 		got := fetchOrFallback(&probe, "Test")
@@ -830,7 +830,7 @@ func TestProviderSlug(t *testing.T) {
 
 // TestFilterStaleCustomEntries covers the wizard's auto-cleanup of legacy
 // "custom" / "anthropic" magic-name entries that previous versions wrote
-// into fairpeer.toml. These collide with the wizard's own menu items, so
+// into hiq.toml. These collide with the wizard's own menu items, so
 // they're dropped from the providers list before grouping — but the caller
 // still gets them back in the dropped slice to surface a warning.
 func TestFilterStaleCustomEntries(t *testing.T) {
@@ -904,7 +904,7 @@ func groupByFamilyKeys(ps []config.ProviderEntry, key string) []int {
 }
 
 func TestWriteDefaultConfigDisablesCodegraph(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "fairpeer.toml")
+	path := filepath.Join(t.TempDir(), "hiq.toml")
 	if rc := writeDefaultConfig(path); rc != 0 {
 		t.Fatalf("writeDefaultConfig rc = %d", rc)
 	}
@@ -935,7 +935,7 @@ func captureStderr(t *testing.T, fn func()) string {
 }
 
 func TestProvidersWithMissingKeysOnlyReferenced(t *testing.T) {
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 	cfg := config.Default()
 	seedTestProvider(cfg)
 
@@ -944,19 +944,19 @@ func TestProvidersWithMissingKeysOnlyReferenced(t *testing.T) {
 	for _, p := range got {
 		envs[p.APIKeyEnv] = true
 	}
-	if !envs["FAIRPEER_API_KEY"] {
+	if !envs["HIQ_API_KEY"] {
 		t.Errorf("the default model's missing key must be prompted, got %v", got)
 	}
 }
 
 func TestProvidersWithMissingKeysIncludesPlannerModel(t *testing.T) {
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 	cfg := config.Default()
 	seedTestProvider(cfg)
 	cfg.Agent.PlannerModel = "test-provider"
 
 	got := providersWithMissingKeys(cfg)
-	if len(got) != 1 || got[0].APIKeyEnv != "FAIRPEER_API_KEY" {
+	if len(got) != 1 || got[0].APIKeyEnv != "HIQ_API_KEY" {
 		t.Errorf("planner model's missing key must be prompted, got %+v", got)
 	}
 }

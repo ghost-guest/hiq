@@ -78,7 +78,7 @@ export interface WireFileDiff {
 }
 
 export interface WireAttachment {
-  path: string; // repo-relative, under .fairpeer/attachments/
+  path: string; // repo-relative, under .hiq/attachments/
   kind: string; // "image"
 }
 
@@ -1160,7 +1160,7 @@ export interface MemorySettings {
   root: string; // effective data root (profile/, memory/, projects/ live here)
   defaultRoot: string; // what the root would be with no override
   configuredRoot: string; // raw [memory] root ("" = default in use)
-  rootFromEnv: boolean; // $FAIRPEER_MEMORY_ROOT is overriding the config
+  rootFromEnv: boolean; // $HIQ_MEMORY_ROOT is overriding the config
   globalDir: string; // L1 fact bucket
   sessionDir: string; // L3 fact bucket
   provider: string;
@@ -1488,7 +1488,7 @@ export interface BotSettingsView {
 
 // CoWorkSettingsView mirrors the Go CoWorkSettingsView. Secrets (SMTP/IMAP
 // passwords) are presented as plain fields here; they're persisted to a
-// fairpeer-managed .env (not config.toml). detectedBrowser is a read-only
+// hiq-managed .env (not config.toml). detectedBrowser is a read-only
 // diagnostic from CheckCoworkBrowser. pptTemplates/pptActiveTemplate drive the
 // PPT-template dropdown; pptTemplateDir is where the user drops JSON templates.
 export interface CoWorkSettingsView {

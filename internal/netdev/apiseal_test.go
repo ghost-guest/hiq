@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // The kind=docker/k8s/firewall channels must ride the same operating seal as

@@ -1,5 +1,5 @@
-// Package config loads fairpeer's runtime configuration from TOML. Resolution order:
-// flag > project ./fairpeer.toml > user ~/.config/fairpeer/config.toml > built-in defaults.
+// Package config loads hiq's runtime configuration from TOML. Resolution order:
+// flag > project ./hiq.toml > user ~/.config/hiq/config.toml > built-in defaults.
 // Secrets come from the environment via api_key_env and are never stored in
 // config files.
 package config
@@ -17,8 +17,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 var validSkillName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`)
@@ -38,11 +38,11 @@ func SkillNameKey(name string) string {
 	return name
 }
 
-// Config is fairpeer's runtime configuration.
+// Config is hiq's runtime configuration.
 type Config struct {
 	ConfigVersion int    `toml:"config_version"`
 	DefaultModel  string `toml:"default_model"`
-	Language      string `toml:"language"` // ui/model language tag (e.g. "zh"); empty = auto-detect from $LANG / $FAIRPEER_LANG
+	Language      string `toml:"language"` // ui/model language tag (e.g. "zh"); empty = auto-detect from $LANG / $HIQ_LANG
 	// ReasoningLanguage steers ONLY the visible thinking/reasoning text language
 	// (auto|zh|en), independent of the final-answer language. Default "auto" leaves
 	// it to the provider. It is injected as a transient per-turn block, never into
@@ -592,9 +592,9 @@ type StatuslineConfig struct {
 // search / context / explore / trace / node tools. Enabled is opt-in (default
 // false): users turn it on in Settings or by writing
 // [codegraph] enabled = true; an explicit value always wins. AutoInstall
-// (default true) lets fairpeer fetch the CodeGraph runtime into its cache when
+// (default true) lets hiq fetch the CodeGraph runtime into its cache when
 // CodeGraph is enabled but missing; set false to require an explicit
-// `fairpeer codegraph install` (e.g. for air-gapped or headless runs). Path
+// `hiq codegraph install` (e.g. for air-gapped or headless runs). Path
 // overrides binary resolution; empty resolves the cache, then a `codegraph` on
 // PATH, then a bundle beside the executable. CodeGraph always starts in the
 // background when enabled; legacy tier values are ignored and removed during
@@ -742,7 +742,7 @@ type CoworkConfig struct {
 	// per browser_auto run).
 	BrowserAttachURL string `toml:"browser_attach_url"`
 	// PPTActiveTemplate is the id of the active PPT template (from the templates
-	// dir <user-config>/fairpeer/ppt-templates/<id>.json). When set, the ppt-wizard
+	// dir <user-config>/hiq/ppt-templates/<id>.json). When set, the ppt-wizard
 	// skill generates decks from that template: it opens the template's master_file
 	// in WPS (if any) and places content at the template's pre-defined layout
 	// coordinates, so most slides don't need per-step VLM perception. Empty = no
@@ -782,7 +782,7 @@ type CoworkConfig struct {
 	// return "not configured". Reading uses go-imap + go-message (protocol-level
 	// correct: full SEARCH, RFC 2047 header decoding, multipart MIME).
 	IMAP IMAPConfig `toml:"imap"`
-	// EmailAccounts holds the mailboxes FairPeer can talk to. At load time
+	// EmailAccounts holds the mailboxes Hiq can talk to. At load time
 	// normalizeEmailAccounts folds the legacy single [cowork.smtp]/[cowork.imap]
 	// pair above into EmailAccounts[0] when this slice is empty, so existing
 	// single-account configs keep working unchanged; new configs may use either
@@ -803,13 +803,13 @@ type CoworkConfig struct {
 	ExtractConcurrency int `toml:"extract_concurrency"`
 
 	// ScreenshotEnabled turns on the global-hotkey screenshot-to-VLM feature.
-	// When true, pressing ScreenshotHotkey anywhere (even when FairPeer is in
+	// When true, pressing ScreenshotHotkey anywhere (even when Hiq is in
 	// the background) captures the screen, sends it to ScreenshotVLMModel for
 	// recognition, and replies via IM bot + in-app toast. Default false — the
 	// user opts in via the cowork settings tab.
 	ScreenshotEnabled bool `toml:"screenshot_enabled"`
 	// ScreenshotHotkey is the global hotkey combination (e.g. "Ctrl+Shift+Alt+W").
-	// Detected via GetAsyncKeyState polling so it fires even when FairPeer isn't
+	// Detected via GetAsyncKeyState polling so it fires even when Hiq isn't
 	// focused. Default "Ctrl+Shift+Alt+W".
 	ScreenshotHotkey string `toml:"screenshot_hotkey"`
 	// ScreenshotVLMModel is the model used for screenshot recognition.
@@ -831,7 +831,7 @@ type CoworkConfig struct {
 	ScreenshotPrompt string `toml:"screenshot_prompt"`
 
 	// EStopHotkey is the global EMERGENCY-STOP hotkey for coWork desktop
-	// automation. Pressing it anywhere (even with FairPeer minimized) cancels
+	// automation. Pressing it anywhere (even with Hiq minimized) cancels
 	// the in-flight turn on the active tab — the kill switch for screen_* tools,
 	// whose clicks/typing are irreversible. Registered via Win32 RegisterHotKey
 	// like the screenshot hotkey. Default "Ctrl+Shift+Pause". Set to "off" to
@@ -921,7 +921,7 @@ type SMTPConfig struct {
 }
 
 // EmailAccount bundles one mailbox's inbound (IMAP) and outbound (SMTP) settings
-// under a user-chosen name, so FairPeer can talk to multiple mailboxes at once
+// under a user-chosen name, so Hiq can talk to multiple mailboxes at once
 // (e.g. a personal 139 box and a work CMCC box). Tools/scheduler select an
 // account by Name; the one flagged Default (or else the first) is used when the
 // caller omits a name.
@@ -1190,7 +1190,7 @@ func (c *Config) NetworkProxyMode() string {
 
 // SkillsConfig configures skill discovery. Paths adds extra "custom"-scope skill
 // roots — each a directory of SKILL.md / <name>.md playbooks — scanned between
-// the project roots (.fairpeer/.agents/.agent/.claude under the workspace) and
+// the project roots (.hiq/.agents/.agent/.claude under the workspace) and
 // the global roots. ExcludedPaths hides matching discovery roots without deleting
 // folders. ~, relative paths, and ${VAR} expansion are supported. DisabledSkills
 // hides named skills from the agent prompt, slash invocation, and skill tools
@@ -1299,7 +1299,7 @@ type SandboxConfig struct {
 	// RequireAvailable, when true, makes bash mode "enforce" fail-closed (refuse
 	// all commands) if no OS sandbox is available on this platform, rather than
 	// silently degrading to unconfined. False (default) keeps the graceful
-	// fallback so fairpeer stays usable on unsupported OSes.
+	// fallback so hiq stays usable on unsupported OSes.
 	RequireAvailable bool `toml:"require_available"`
 	// StrictWrites narrows the macOS Seatbelt toolchain-cache grants to true
 	// cache subdirs only (~/.cargo/registry/cache, ~/Library/Caches, …) so a
@@ -1394,7 +1394,7 @@ type AgentConfig struct {
 	FastTaskModel    string            `toml:"fast_task_model"` // lightweight model for dream/distill background tasks
 	// OutputStyle selects a persona/tone block folded into the system prompt at
 	// startup (a built-in like "explanatory"/"learning"/"concise", or a custom
-	// .fairpeer/output-styles/<name>.md). Empty = the unmodified prompt.
+	// .hiq/output-styles/<name>.md). Empty = the unmodified prompt.
 	OutputStyle string `toml:"output_style"`
 	// AutoPlan controls whether interactive turns that look multi-step start in
 	// plan mode automatically: "off" keeps plan mode manual, "on" enables the
@@ -1629,7 +1629,7 @@ type PermissionsConfig struct {
 // static Headers. String fields support ${VAR} / ${VAR:-default} expansion so
 // secrets (bearer tokens, keys) come from the environment, not the file. The
 // fields mirror Claude Code's mcpServers spec, so entries can come from either
-// fairpeer.toml's [[plugins]] or a project-root .mcp.json (see loadMCPJSON).
+// hiq.toml's [[plugins]] or a project-root .mcp.json (see loadMCPJSON).
 type PluginEntry struct {
 	Name    string            `toml:"name"`
 	Type    string            `toml:"type"` // "stdio" (default) | "http" | "sse"
@@ -1700,10 +1700,10 @@ func (c *Config) AutoStartPlugins() []PluginEntry {
 
 // DefaultSystemPrompt is used when config provides none.
 const DefaultSystemPrompt = `# Identity
-You are fairpeer, a coding agent focused on executing code tasks.
-When asked about your identity, always say you are fairpeer. Never mention
+You are hiq, a coding agent focused on executing code tasks.
+When asked about your identity, always say you are hiq. Never mention
 Claude, Anthropic, GPT, Qwen, DeepSeek, or any underlying model name —
-you are fairpeer, not any foundation model.
+you are hiq, not any foundation model.
 
 # Principles
 - Understand the request before acting.
@@ -1778,7 +1778,7 @@ const LanguagePolicy = `Reply in the same language the user is using in their mo
 // Default returns the built-in default configuration with no providers. The
 // keyless local presets (Ollama, llama.cpp) are injected by Load/LoadForEdit
 // when no config file defines [[providers]]; cloud providers stay
-// user-configured via the CLI setup wizard (fairpeer chat/run) or the desktop
+// user-configured via the CLI setup wizard (hiq chat/run) or the desktop
 // onboarding/settings panel. The local presets alone never suppress first-run
 // onboarding (they are skipped by Configured()-gated fallbacks and onboarding
 // checks).
@@ -1812,8 +1812,8 @@ func Default() *Config {
 			CompactRatio:      0.8,
 			CompactForceRatio: 0.9,
 		},
-		// Mode "ask" with no rules keeps `fairpeer run` autonomous (no TTY → ask
-		// resolves to allow) while `fairpeer chat` prompts before writers. Users add
+		// Mode "ask" with no rules keeps `hiq run` autonomous (no TTY → ask
+		// resolves to allow) while `hiq chat` prompts before writers. Users add
 		// deny/allow rules to harden or quiet specific tools.
 		Permissions: PermissionsConfig{Mode: "ask"},
 		// Sandbox on by default: bash is jailed (macOS), network allowed so
@@ -1946,7 +1946,7 @@ func (c *Config) AmbientLocalPreset(name string) bool {
 
 // Load builds the configuration: defaults, then user config, then project
 // config, then MCP servers from Claude Code's .mcp.json, then (lowest priority)
-// the v0.x ~/.fairpeer/config.json's mcpServers. A .env in the working directory
+// the v0.x ~/.hiq/config.json's mcpServers. A .env in the working directory
 // is loaded first so api_key_env can resolve.
 func Load() (*Config, error) {
 	return LoadForRoot(".")
@@ -1955,16 +1955,16 @@ func Load() (*Config, error) {
 // LoadForRoot builds the configuration with project files resolved from root
 // instead of the current working directory. When root is "" or ".", it behaves
 // like Load(). This is the workspace-aware entry point: desktop tabs use it so
-// each project's fairpeer.toml + .env + .mcp.json are resolved independently
+// each project's hiq.toml + .env + .mcp.json are resolved independently
 // without changing the process cwd.
 func LoadForRoot(root string) (*Config, error) {
 	root = resolveRoot(root)
 	loadDotEnvForRoot(root)
 	cfg := Default()
 
-	projectTOML := "fairpeer.toml"
+	projectTOML := "hiq.toml"
 	if root != "." {
-		projectTOML = filepath.Join(root, "fairpeer.toml")
+		projectTOML = filepath.Join(root, "hiq.toml")
 	}
 
 	var tomlSources []string
@@ -1995,7 +1995,7 @@ func LoadForRoot(root string) (*Config, error) {
 	}
 	// toml.DecodeFile replaces [[plugins]] wholesale, so cfg.Plugins now holds
 	// only the last file's. Re-merge by name across all sources (later wins) so a
-	// project fairpeer.toml doesn't drop the global config's MCP servers.
+	// project hiq.toml doesn't drop the global config's MCP servers.
 	plugins, err := mergeTOMLPlugins(tomlSources)
 	if err != nil {
 		return nil, err
@@ -2004,7 +2004,7 @@ func LoadForRoot(root string) (*Config, error) {
 
 	// Claude Code's .mcp.json (project root) is read last and merged into
 	// [[plugins]], so a server configured for Claude works here unchanged.
-	// fairpeer.toml wins on a name collision (see mergeMCPJSON).
+	// hiq.toml wins on a name collision (see mergeMCPJSON).
 	mcpFile := mcpJSONFile
 	if root != "." {
 		mcpFile = filepath.Join(root, mcpJSONFile)
@@ -2015,7 +2015,7 @@ func LoadForRoot(root string) (*Config, error) {
 	}
 	cfg.mergeMCPJSON(entries)
 
-	// Lowest priority: the v0.x ~/.fairpeer/config.json's mcpServers, so upgrading
+	// Lowest priority: the v0.x ~/.hiq/config.json's mcpServers, so upgrading
 	// from the TypeScript line keeps MCP servers without rewriting them. Anything
 	// the v2 config or .mcp.json already declared wins on a name collision.
 	cfg.mergeMCPJSON(loadLegacyMCP(legacyConfigPath()))
@@ -2185,7 +2185,7 @@ func mergeTOMLPlugins(paths []string) ([]PluginEntry, error) {
 	return merged, nil
 }
 
-// LoadForEdit returns a config to seed the `fairpeer setup` wizard when reconfiguring:
+// LoadForEdit returns a config to seed the `hiq setup` wizard when reconfiguring:
 // the built-in defaults with the file at path (if present) decoded on top, so a
 // reconfigure preserves the user's existing providers and agent settings instead
 // of resetting to defaults. .env is loaded so api_key_env resolution works while
@@ -2422,7 +2422,7 @@ func NormalizeLegacyDesktopProviderAccess(c *Config) {
 }
 
 // canonicalDesktopOfficialProviderName normalizes alternative provider names.
-// FairPeer ships no preset official providers, so this is currently a passthrough
+// Hiq ships no preset official providers, so this is currently a passthrough
 // trim; the indirection is kept so future official aliases can plug in here.
 func canonicalDesktopOfficialProviderName(name string) string {
 	return strings.TrimSpace(name)
@@ -2467,11 +2467,11 @@ func retargetDesktopOfficialRef(ref string, _ map[string]bool) string {
 	}
 }
 
-const userDirname = "fairpeer"
+const userDirname = "hiq"
 
-// userDir returns the fairpeer user config dir (~/.config/fairpeer on Linux,
-// ~/Library/Application Support/fairpeer on macOS, %AppData%/fairpeer on Windows).
-// FairPeer is an independent project — no legacy data migration from upstream sources.
+// userDir returns the hiq user config dir (~/.config/hiq on Linux,
+// ~/Library/Application Support/hiq on macOS, %AppData%/hiq on Windows).
+// Hiq is an independent project — no legacy data migration from upstream sources.
 func userDir() string {
 	dir, err := os.UserConfigDir()
 	if err != nil {
@@ -2488,12 +2488,12 @@ func userConfigPath() string {
 	return filepath.Join(dir, "config.toml")
 }
 
-// UserConfigPath is the user-global config file (~/.config/fairpeer/config.toml),
+// UserConfigPath is the user-global config file (~/.config/hiq/config.toml),
 // or "" when the user config dir can't be resolved.
 func UserConfigPath() string { return userConfigPath() }
 
-// UserCredentialsPath is the fairpeer-owned global secrets file, beside
-// config.toml in the user config dir (e.g. ~/.config/fairpeer/credentials). It
+// UserCredentialsPath is the hiq-owned global secrets file, beside
+// config.toml in the user config dir (e.g. ~/.config/hiq/credentials). It
 // holds KEY=value lines loaded into the environment by loadDotEnv. The setup
 // wizard writes API keys here, deliberately NOT named .env: keys never land in a
 // project's own .env (which can't be selectively gitignored), never get
@@ -2519,7 +2519,7 @@ func ArchiveDir() string {
 }
 
 // SessionDir is where chat sessions are persisted (one .jsonl per session).
-// Used by `fairpeer chat --continue` / `--resume` to find the recent ones. Empty
+// Used by `hiq chat --continue` / `--resume` to find the recent ones. Empty
 // if the user config dir can't be resolved — sessions then aren't saved.
 func SessionDir() string {
 	dir := userDir()
@@ -2593,7 +2593,7 @@ func WorkspaceSlug(absPath string) string {
 
 // CacheDir is the per-user cache root for derived/regenerable artefacts: MCP
 // handshake snapshots, plugin startup-latency telemetry. Lives beside the
-// existing dirs (UserConfigDir/fairpeer/...) so the whole fairpeer state tree
+// existing dirs (UserConfigDir/hiq/...) so the whole hiq state tree
 // shares one root the user can wipe in a single rm. Empty when the OS dir is
 // unavailable — callers must tolerate that (caching is best-effort).
 func CacheDir() string {
@@ -2604,11 +2604,11 @@ func CacheDir() string {
 	return filepath.Join(dir, "cache")
 }
 
-// MemoryUserDir returns the root of fairpeer's user DATA tree — the parent of
-// the user-global fairpeer.md/AGENTS.md docs, the portrait layer (profile/),
+// MemoryUserDir returns the root of hiq's user DATA tree — the parent of
+// the user-global hiq.md/AGENTS.md docs, the portrait layer (profile/),
 // the auto-memory store (memory/, projects/<slug>/memory) and per-project
 // session state (projects/<slug>/sessions). It is [memory] root when the user
-// configured one (or $FAIRPEER_MEMORY_ROOT is set), else the OS user config
+// configured one (or $HIQ_MEMORY_ROOT is set), else the OS user config
 // dir based default. Empty when neither resolves, which disables user-scoped
 // memory.
 //
@@ -2620,16 +2620,16 @@ func MemoryUserDir() string {
 }
 
 // ConventionDirs are the parent directories scanned for agent assets (skills,
-// commands), in canonical-first order. .fairpeer is ours; .agents / .agent /
+// commands), in canonical-first order. .hiq is ours; .agents / .agent /
 // .claude let users drop in assets authored for other agent tools without moving
 // files. Shared so skills (internal/skill) and commands (CommandDirs) discover
 // the same set. Note: hooks are NOT scanned across these — a .claude/settings.json
 // uses a different hook schema that can't be parsed as ours, so hooks stay in
-// .fairpeer/settings.json (see internal/hook).
-var ConventionDirs = []string{".fairpeer", ".agents", ".agent", ".claude"}
+// .hiq/settings.json (see internal/hook).
+var ConventionDirs = []string{".hiq", ".agents", ".agent", ".claude"}
 
 // conventionSubdirsAsc joins sub under each ConventionDir of base, in ascending
-// priority (reverse of ConventionDirs) so the canonical .fairpeer ends up the
+// priority (reverse of ConventionDirs) so the canonical .hiq ends up the
 // highest-priority entry — command.Load lets a later directory win on a clash.
 func conventionSubdirsAsc(base, sub string) []string {
 	out := make([]string, 0, len(ConventionDirs))
@@ -2641,9 +2641,9 @@ func conventionSubdirsAsc(base, sub string) []string {
 
 // CommandDirs returns the directories scanned for custom slash commands, lowest
 // priority first, so a later (more specific) directory overrides an earlier one
-// on a name clash. Order: home-dir convention dirs (~/.claude/commands … ~/.fairpeer/commands),
-// the legacy XDG user dir (~/.config/fairpeer/commands), then the project's
-// convention dirs (.claude/commands … .fairpeer/commands). Scanning the .claude /
+// on a name clash. Order: home-dir convention dirs (~/.claude/commands … ~/.hiq/commands),
+// the legacy XDG user dir (~/.config/hiq/commands), then the project's
+// convention dirs (.claude/commands … .hiq/commands). Scanning the .claude /
 // .agents / .agent dirs lets commands authored for other agent tools (same .md +
 // frontmatter format) work here unchanged.
 func CommandDirs() []string {
@@ -2660,7 +2660,7 @@ func CommandDirsForRoot(root string) []string {
 		dirs = append(dirs, conventionSubdirsAsc(home, "commands")...)
 	}
 	if dir, err := os.UserConfigDir(); err == nil {
-		dirs = append(dirs, filepath.Join(dir, "fairpeer", "commands"))
+		dirs = append(dirs, filepath.Join(dir, "hiq", "commands"))
 	}
 	dirs = append(dirs, conventionSubdirsAsc(root, "commands")...)
 	return dirs
@@ -2675,9 +2675,9 @@ func SourcePath() string {
 // root, or "" if none. Equivalent to SourcePath() when root is ".".
 func SourcePathForRoot(root string) string {
 	root = resolveRoot(root)
-	projectTOML := "fairpeer.toml"
+	projectTOML := "hiq.toml"
 	if root != "." {
-		projectTOML = filepath.Join(root, "fairpeer.toml")
+		projectTOML = filepath.Join(root, "hiq.toml")
 	}
 	if _, err := os.Stat(projectTOML); err == nil {
 		return projectTOML

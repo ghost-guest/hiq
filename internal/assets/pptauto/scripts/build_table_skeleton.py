@@ -2,7 +2,7 @@
 """Build a slide SVG from the markdown tables already transcribed in page-N.json.
 
 Usage:
-    python build_table_skeleton.py ~/.fairpeer/pdf-pages/page-3.json \
+    python build_table_skeleton.py ~/.hiq/pdf-pages/page-3.json \
         --title "中国移动智算黑龙江超万卡项目概述" \
         --lead "首个7000P智算集群…" \
         --out <project_dir>/svg_output/slide_03.svg
@@ -124,7 +124,7 @@ def parse_markdown_tables(md):
 
 def load_style(home):
     cfg = {}
-    for cand in (os.path.join(home, ".fairpeer", "skills", "ppt-auto", "template_config.json"),):
+    for cand in (os.path.join(home, ".hiq", "skills", "ppt-auto", "template_config.json"),):
         try:
             with open(cand, "r", encoding="utf-8") as f:
                 cfg = json.load(f)

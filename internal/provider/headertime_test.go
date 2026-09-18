@@ -15,17 +15,17 @@ func TestResponseHeaderTimeoutDefaultAndEnv(t *testing.T) {
 		t.Fatalf("default = %v, want %v", got, DefaultResponseHeaderTimeout)
 	}
 
-	t.Setenv("FAIRPEER_RESPONSE_HEADER_TIMEOUT", "45s")
+	t.Setenv("HIQ_RESPONSE_HEADER_TIMEOUT", "45s")
 	if got := ResponseHeaderTimeout(); got != 45*time.Second {
 		t.Fatalf("duration env = %v, want 45s", got)
 	}
 
-	t.Setenv("FAIRPEER_RESPONSE_HEADER_TIMEOUT", "120")
+	t.Setenv("HIQ_RESPONSE_HEADER_TIMEOUT", "120")
 	if got := ResponseHeaderTimeout(); got != 120*time.Second {
 		t.Fatalf("seconds env = %v, want 120s", got)
 	}
 
-	t.Setenv("FAIRPEER_RESPONSE_HEADER_TIMEOUT", "bogus")
+	t.Setenv("HIQ_RESPONSE_HEADER_TIMEOUT", "bogus")
 	if got := ResponseHeaderTimeout(); got != DefaultResponseHeaderTimeout {
 		t.Fatalf("invalid env should fall back to default, got %v", got)
 	}

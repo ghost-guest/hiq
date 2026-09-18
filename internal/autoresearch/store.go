@@ -16,7 +16,7 @@ import (
 	"strings"
 	"unicode"
 
-	fileencoding "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
+	fileencoding "github.com/zzycxz/hiq/internal/fileutil/encoding"
 )
 
 var safeTaskID = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)

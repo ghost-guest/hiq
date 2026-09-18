@@ -1,6 +1,6 @@
-// This file is a fairpeer-specific addition to the agent package. It holds the
+// This file is a hiq-specific addition to the agent package. It holds the
 // provider-projection helpers ported from upstream Reasonix, adapted to
-// fairpeer's provider.Message (which carries Content/Images/Audio rather than
+// hiq's provider.Message (which carries Content/Images/Audio rather than
 // the upstream Responses-API replay fields). Keeping them in their own file
 // means a future re-port never overwrites the adaptation.
 package agent
@@ -8,7 +8,7 @@ package agent
 import (
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // coalesceProjectionUserRuns keeps provider request copies compatible with

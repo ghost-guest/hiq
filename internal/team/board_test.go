@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 func card(id, title string, status taskmonitor.TaskState, assignee string, deps ...string) Task {

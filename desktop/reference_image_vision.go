@@ -3,7 +3,7 @@ package main
 // reference_image_vision.go — Phase 2 of ppt-vision-enhancement-spec.
 //
 // Analyze a single reference image (typically a one-page PPT screenshot the user
-// gave) with the VLM and write ~/.fairpeer/reference-style.json. ppt-auto reads
+// gave) with the VLM and write ~/.hiq/reference-style.json. ppt-auto reads
 // this in Step 0 to draw a similar slide — text content verbatim, layout+density,
 // font-size ratios, and color/style cues all come from the VLM's description.
 //
@@ -18,7 +18,7 @@ package main
 // (visual / plain-material / colors-only) plus the standalone public entry
 // point. PreparePPTReference orchestrates the calls and hands results here.
 //
-// Output: ~/.fairpeer/reference-style.json = {image, description, + structured
+// Output: ~/.hiq/reference-style.json = {image, description, + structured
 // color fields}. ppt-auto reads `description` for layout/content/font-ratio
 // guidance; merge_vlm_style.py reads the structured color fields (background/
 // accent_colors/is_dark/text_color) to recolor the deck to match the reference.
@@ -75,7 +75,7 @@ Rules:
 - style_keywords: 2-3 style descriptors in Chinese (e.g. "商务简约","科技感","活泼")
 - background_type: "solid" if a flat color background, "image" if a photo/textured background`
 
-// referenceStyleResult is written to ~/.fairpeer/reference-style.json.
+// referenceStyleResult is written to ~/.hiq/reference-style.json.
 //
 // Two kinds of info ride in here:
 //   - Description: the VLM's 4-section markdown (content/layout/format/design) —
@@ -121,7 +121,7 @@ func extractRegionsJSON(desc string) json.RawMessage {
 
 // AnalyzeReferenceImage is the standalone desktop entry point (kept for the
 // frontend bridge contract): read one image, run the merged analyzer + color
-// calls in parallel, write ~/.fairpeer/reference-style.json. The main PPT flow
+// calls in parallel, write ~/.hiq/reference-style.json. The main PPT flow
 // goes through PreparePPTReference, which shares the same writers.
 func (a *App) AnalyzeReferenceImage(imgPath string) error {
 	ctx := context.Background()
@@ -182,7 +182,7 @@ func writePlainReference(srcPath, transcription string) error {
 
 // writeReferenceColorsOnly writes the PDF deck branch: colors without a
 // Description. The per-page layout/content guidance lives in
-// ~/.fairpeer/pdf-pages/page-N.json; this file exists so merge_vlm_style.py
+// ~/.hiq/pdf-pages/page-N.json; this file exists so merge_vlm_style.py
 // picks up the deck-level palette (previously the PDF path had NO color
 // extraction — decks referenced against a PDF ran on template/baseline colors).
 func writeReferenceColorsOnly(srcPath, colorResp string) error {
@@ -215,12 +215,12 @@ func applyColorFields(result *referenceStyleResult, colorResp string) {
 	result.BackgroundType = cs.BackgroundType
 }
 
-// writeRefJSON marshals and writes ~/.fairpeer/reference-style.json.
+// writeRefJSON marshals and writes ~/.hiq/reference-style.json.
 func writeRefJSON(result referenceStyleResult) error {
 	home, _ := os.UserHomeDir()
-	outDir := filepath.Join(home, ".fairpeer")
+	outDir := filepath.Join(home, ".hiq")
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		return fmt.Errorf("ensure ~/.fairpeer: %w", err)
+		return fmt.Errorf("ensure ~/.hiq: %w", err)
 	}
 	data, _ := jsonMarshal(result)
 	refPath := filepath.Join(outDir, "reference-style.json")

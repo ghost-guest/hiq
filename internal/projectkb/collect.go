@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/memory"
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
-	"github.com/zzycxz/fairpeer/internal/team"
+	"github.com/zzycxz/hiq/internal/memory"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/team"
 )
 
 // Scan bounds. Every collector is capped so a sync stays cheap on a large repo

@@ -160,7 +160,7 @@ func RunPKCEFlow(ctx context.Context, cfg OAuthConfig, serverName string, config
 			return
 		}
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`<html><body><h2>Authorization complete</h2><p>You can close this tab and return to fairpeer.</p></body></html>`))
+		w.Write([]byte(`<html><body><h2>Authorization complete</h2><p>You can close this tab and return to hiq.</p></body></html>`))
 		codeCh <- code
 	})}
 	go func() { _ = srv.Serve(ln) }()

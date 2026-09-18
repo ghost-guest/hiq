@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/jobs"
+	"github.com/zzycxz/hiq/internal/jobs"
 )
 
 func newRecorderForTest(t *testing.T, projectDir string) (*TaskRecorder, *FileStore) {

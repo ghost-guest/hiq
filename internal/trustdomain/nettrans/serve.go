@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 // WorkHandler executes an authorized delegation. The embedding service

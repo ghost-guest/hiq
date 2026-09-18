@@ -1,4 +1,4 @@
-# Fairpeer 对标 Codex / Pi 的编码体验升级 Spec
+# Hiq 对标 Codex / Pi 的编码体验升级 Spec
 
 > **状态**: 规划中
 > **基线**: `feat/mindmap-read-loop` 分支 (2026-08-21)
@@ -12,13 +12,13 @@
 
 ## 一、背景与动机
 
-Fairpeer 当前的编码体验在三个维度上落后于 Codex 和 Pi：
+Hiq 当前的编码体验在三个维度上落后于 Codex 和 Pi：
 
 1. **Diff 显示** — 只有 CodeMirror side-by-side MergeView，没有文件级摘要、行数统计、unified diff 模式
 2. **审批 UX** — ApprovalModal 只显示工具名 + subject 文本，看不到实际代码变更和命令内容
 3. **进度展示** — ToolCard 缺少实时流式输出、exit code、stderr 高亮；没有全局 Agent 仪表板
 
-本文档基于对 Codex (`codex-rs/tui`) 和 Pi (`pi/packages`) 源码的逐文件分析，给出 Fairpeer 的分阶段升级方案。
+本文档基于对 Codex (`codex-rs/tui`) 和 Pi (`pi/packages`) 源码的逐文件分析，给出 Hiq 的分阶段升级方案。
 
 ---
 
@@ -26,7 +26,7 @@ Fairpeer 当前的编码体验在三个维度上落后于 Codex 和 Pi：
 
 ### 2.1 技术栈
 
-| 维度 | Fairpeer | Codex | Pi |
+| 维度 | Hiq | Codex | Pi |
 |------|----------|-------|-----|
 | 核心语言 | Go | Rust | TypeScript |
 | 前端框架 | React + Wails (Web 渲染) | ratatui (终端即时渲染) | 自研 pi-tui (终端差分渲染) |
@@ -35,7 +35,7 @@ Fairpeer 当前的编码体验在三个维度上落后于 Codex 和 Pi：
 | 插件体系 | Go plugin | Rust 模块 | Extension API (TS) |
 | 运行形态 | 桌面 GUI | 终端 TUI | 终端 TUI |
 
-### 2.2 Fairpeer 的结构性优势（不可丢弃）
+### 2.2 Hiq 的结构性优势（不可丢弃）
 
 | 能力 | 说明 |
 |------|------|
@@ -55,7 +55,7 @@ Fairpeer 当前的编码体验在三个维度上落后于 Codex 和 Pi：
 
 #### 当前状态
 
-Fairpeer 的 diff 渲染链路：
+Hiq 的 diff 渲染链路：
 
 ```
 ToolCard → DiffView → CodeMirrorDiff (MergeView)
@@ -97,7 +97,7 @@ edit tool → edit-diff.ts → renderCall/renderResult (Extension API)
 
 #### 差距总结
 
-| 特性 | Fairpeer | Codex | Pi |
+| 特性 | Hiq | Codex | Pi |
 |------|----------|-------|-----|
 | 文件级变更摘要 | ❌ | ✅ `A/M/D` 文件列表 | ✅ 缩略 |
 | 行数统计 `+N/-M` | ❌ | ✅ | ✅ |
@@ -133,7 +133,7 @@ edit tool → edit-diff.ts → renderCall/renderResult (Extension API)
 
 #### 差距总结
 
-| 特性 | Fairpeer | Codex |
+| 特性 | Hiq | Codex |
 |------|----------|-------|
 | Diff 预览 | ❌ | ✅ 完整 diff |
 | 命令预览 | ❌ | ✅ bash 高亮 |
@@ -176,7 +176,7 @@ edit tool → edit-diff.ts → renderCall/renderResult (Extension API)
 
 #### 差距总结
 
-| 特性 | Fairpeer | Codex | Pi |
+| 特性 | Hiq | Codex | Pi |
 |------|----------|-------|-----|
 | Shell 实时输出 | ❌ 仅最终结果 | ✅ recent chunks | ✅ partial |
 | Exit code 显示 | ❌ | ✅ | ✅ |
@@ -210,7 +210,7 @@ edit tool → edit-diff.ts → renderCall/renderResult (Extension API)
 
 #### 差距总结
 
-| 特性 | Fairpeer | Codex |
+| 特性 | Hiq | Codex |
 |------|----------|-------|
 | 文本流式 | ✅ | ✅ |
 | Reasoning 流式 | ❌ | ✅ buffer + header |
@@ -751,7 +751,7 @@ Phase 4 (按需)
 
 ### 6.3 参考实现索引
 
-| Fairpeer 组件 | Codex 参考 | Pi 参考 |
+| Hiq 组件 | Codex 参考 | Pi 参考 |
 |---------------|-----------|---------|
 | DiffView | `diff_render.rs` | `edit-diff.ts` |
 | ApprovalModal | `approval_overlay.rs` + `apply_patch_header.rs` | N/A |

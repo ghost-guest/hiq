@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/gitcmd"
+	"github.com/zzycxz/hiq/internal/gitcmd"
 )
 
 const (

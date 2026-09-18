@@ -80,8 +80,8 @@ export default function DashShell({ initialScreen, initialFinding, onClose, onTo
       loadSnap(false);
       loadTicker();
     };
-    window.addEventListener("fairpeer:netdev-dash", on);
-    return () => window.removeEventListener("fairpeer:netdev-dash", on);
+    window.addEventListener("hiq:netdev-dash", on);
+    return () => window.removeEventListener("hiq:netdev-dash", on);
   }, [loadSnap, loadTicker]);
 
   // 投影模式（§4.11）：轮播 + 悬停暂停 + Esc 先退投影。

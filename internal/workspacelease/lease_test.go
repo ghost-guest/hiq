@@ -13,12 +13,12 @@ import (
 )
 
 func TestWorkspaceLeaseHelperProcess(t *testing.T) {
-	if os.Getenv("FAIRPEER_WORKSPACE_LEASE_HELPER") != "1" {
+	if os.Getenv("HIQ_WORKSPACE_LEASE_HELPER") != "1" {
 		return
 	}
-	root := os.Getenv("FAIRPEER_WORKSPACE_LEASE_ROOT")
-	locks := os.Getenv("FAIRPEER_WORKSPACE_LEASE_DIR")
-	ready := os.Getenv("FAIRPEER_WORKSPACE_LEASE_READY")
+	root := os.Getenv("HIQ_WORKSPACE_LEASE_ROOT")
+	locks := os.Getenv("HIQ_WORKSPACE_LEASE_DIR")
+	ready := os.Getenv("HIQ_WORKSPACE_LEASE_READY")
 	o, err := New(root, locks, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -638,10 +638,10 @@ func TestCrossProcessLeaseBlocksAndCrashReleases(t *testing.T) {
 	ready := filepath.Join(t.TempDir(), "ready")
 	cmd := exec.Command(os.Args[0], "-test.run=^TestWorkspaceLeaseHelperProcess$")
 	cmd.Env = append(os.Environ(),
-		"FAIRPEER_WORKSPACE_LEASE_HELPER=1",
-		"FAIRPEER_WORKSPACE_LEASE_ROOT="+root,
-		"FAIRPEER_WORKSPACE_LEASE_DIR="+locks,
-		"FAIRPEER_WORKSPACE_LEASE_READY="+ready,
+		"HIQ_WORKSPACE_LEASE_HELPER=1",
+		"HIQ_WORKSPACE_LEASE_ROOT="+root,
+		"HIQ_WORKSPACE_LEASE_DIR="+locks,
+		"HIQ_WORKSPACE_LEASE_READY="+ready,
 	)
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)

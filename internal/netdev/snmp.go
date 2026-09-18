@@ -9,7 +9,7 @@ import (
 
 	"github.com/gosnmp/gosnmp"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/driver"
+	"github.com/zzycxz/hiq/internal/netdev/driver"
 )
 
 // snmp.go — the metrics channel: SNMP v2c GET / bounded WALK against network

@@ -1,7 +1,7 @@
 package responses
 
 import (
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 	"slices"
 	"strings"
 )

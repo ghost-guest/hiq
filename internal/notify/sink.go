@@ -1,8 +1,8 @@
 package notify
 
 import (
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // Message is the user-visible payload sent to the platform notifier.
@@ -51,17 +51,17 @@ func message(cfg config.NotificationsConfig, e event.Event) (Message, bool) {
 	case event.TurnDone:
 		if cfg.TurnDone {
 			if e.Err != nil {
-				return Message{Title: "fairpeer", Body: "Turn failed"}, true
+				return Message{Title: "hiq", Body: "Turn failed"}, true
 			}
-			return Message{Title: "fairpeer", Body: "Turn finished"}, true
+			return Message{Title: "hiq", Body: "Turn finished"}, true
 		}
 	case event.ApprovalRequest:
 		if cfg.ApprovalRequest {
-			return Message{Title: "fairpeer", Body: "Approval needed"}, true
+			return Message{Title: "hiq", Body: "Approval needed"}, true
 		}
 	case event.AskRequest:
 		if cfg.AskRequest {
-			return Message{Title: "fairpeer", Body: "Question needs your answer"}, true
+			return Message{Title: "hiq", Body: "Question needs your answer"}, true
 		}
 	}
 	return Message{}, false

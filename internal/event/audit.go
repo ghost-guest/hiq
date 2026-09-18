@@ -1,8 +1,8 @@
 package event
 
 import (
-	"github.com/zzycxz/fairpeer/internal/evidence"
-	"github.com/zzycxz/fairpeer/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/evidence"
+	"github.com/zzycxz/hiq/internal/nilutil"
 )
 
 // AnchorSafetyAudit is a content-free shadow decision for an anchor-based

@@ -1,7 +1,7 @@
 // Package patrol gives a session a periodic, self-driven inspection heartbeat:
 // while the user is away, it looks at the workspace on its own and reports what
 // it finds — the "proactive patrol" idea borrowed from openhanako's per-agent
-// heartbeat loop, reimplemented in Go on top of fairpeer's existing pieces.
+// heartbeat loop, reimplemented in Go on top of hiq's existing pieces.
 //
 // Patrol is deliberately thin. It does not run an agent, own a scheduler, or
 // talk to the network. Each tick it (1) asks a Target supplier which sessions

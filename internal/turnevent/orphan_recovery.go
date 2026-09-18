@@ -3,9 +3,9 @@ package turnevent
 import (
 	"errors"
 	"fmt"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/eventwire"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/eventwire"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 type OrphanTool struct {

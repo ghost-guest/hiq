@@ -19,7 +19,7 @@ func TestSessionTempEnvLinuxSandboxedPointsAtVirtualTmp(t *testing.T) {
 }
 
 func TestSessionTempEnvHostPrivate(t *testing.T) {
-	dir := "/tmp/fairpeer-session-tmp-test"
+	dir := "/tmp/hiq-session-tmp-test"
 	env := SessionTempEnv(dir, false)
 	if len(env) != len(SessionTempEnvKeys) {
 		t.Fatalf("env count = %d, want %d", len(env), len(SessionTempEnvKeys))

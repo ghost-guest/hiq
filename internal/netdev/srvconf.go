@@ -21,9 +21,9 @@ import (
 	"sync"
 	"time"
 
-	internaldiff "github.com/zzycxz/fairpeer/internal/diff"
+	internaldiff "github.com/zzycxz/hiq/internal/diff"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // SrvConfVersion is one config-file snapshot.

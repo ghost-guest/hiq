@@ -7,7 +7,7 @@ import (
 
 // isolateConfigHome pins every path the config layer derives from the
 // environment, so a test that writes a config file cannot touch the developer's
-// real ~/.config/fairpeer (the project's mandatory four-variable isolation).
+// real ~/.config/hiq (the project's mandatory four-variable isolation).
 func isolateConfigHome(t *testing.T) {
 	t.Helper()
 	home := t.TempDir()

@@ -19,7 +19,7 @@ type Prompt struct {
 	client      *Client
 }
 
-// PromptArg is one declared prompt argument. fairpeer maps space-separated
+// PromptArg is one declared prompt argument. hiq maps space-separated
 // positional command arguments onto these in order, matching Claude Code.
 type PromptArg struct {
 	Name        string `json:"name"`

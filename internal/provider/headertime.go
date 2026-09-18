@@ -18,10 +18,10 @@ const DefaultResponseHeaderTimeout = 90 * time.Second
 
 // headerTimeoutEnv lets users tune the budget per machine without a rebuild
 // (seconds or a Go duration, e.g. "45s" / "120").
-const headerTimeoutEnv = "FAIRPEER_RESPONSE_HEADER_TIMEOUT"
+const headerTimeoutEnv = "HIQ_RESPONSE_HEADER_TIMEOUT"
 
 // ResponseHeaderTimeout returns the effective header timeout for LLM API
-// transports: FAIRPEER_RESPONSE_HEADER_TIMEOUT when set to a positive
+// transports: HIQ_RESPONSE_HEADER_TIMEOUT when set to a positive
 // duration, otherwise DefaultResponseHeaderTimeout.
 func ResponseHeaderTimeout() time.Duration {
 	v := strings.TrimSpace(os.Getenv(headerTimeoutEnv))

@@ -12,10 +12,10 @@ import (
 // an equivalent config — i.e. the wizard never writes a file it can't read.
 func TestRenderTOMLRoundTrips(t *testing.T) {
 	orig := Default()
-	// FairPeer no longer ships a preset test-provider provider; seed an explicit
+	// Hiq no longer ships a preset test-provider provider; seed an explicit
 	// "test-provider" user entry so the round-trip can exercise provider field
 	// preservation (default_model, base_url, reasoning_protocol, effort).
-	orig.Providers = append(orig.Providers, ProviderEntry{Name: "test-provider", Kind: "openai", BaseURL: "https://example.com/largemodel/test-provider/api/v3", APIKeyEnv: "FAIRPEER_API_KEY"})
+	orig.Providers = append(orig.Providers, ProviderEntry{Name: "test-provider", Kind: "openai", BaseURL: "https://example.com/largemodel/test-provider/api/v3", APIKeyEnv: "HIQ_API_KEY"})
 	orig.DefaultModel = "test-provider"
 	orig.Language = "zh"
 	orig.UI.Theme = "light"
@@ -48,7 +48,7 @@ func TestRenderTOMLRoundTrips(t *testing.T) {
 			Server:   "127.0.0.1",
 			Port:     7890,
 			Username: "user",
-			Password: "${FAIRPEER_PROXY_PASSWORD}",
+			Password: "${HIQ_PROXY_PASSWORD}",
 		},
 	}
 	orig.Skills.Paths = []string{"~/my-skills", "../shared/skills"}
@@ -64,13 +64,13 @@ func TestRenderTOMLRoundTrips(t *testing.T) {
 		Enabled:       true,
 		Status:        "connected",
 		Model:         "test-provider/openai/gpt-oss-120b",
-		WorkspaceRoot: "/tmp/fairpeer-bot",
+		WorkspaceRoot: "/tmp/hiq-bot",
 		Credential:    BotConnectionCredential{AppID: "cli_lark", AppSecretEnv: "LARK_BOT_APP_SECRET"},
 		SessionMappings: []BotConnectionSessionMapping{{
 			RemoteID:      "ou_123",
 			SessionID:     "topic:topic_bot",
 			Scope:         "project",
-			WorkspaceRoot: "/tmp/fairpeer-bot",
+			WorkspaceRoot: "/tmp/hiq-bot",
 			UpdatedAt:     "2026-06-11T00:00:00Z",
 		}},
 	}}
@@ -88,7 +88,7 @@ func TestRenderTOMLRoundTrips(t *testing.T) {
 		},
 	}
 	orig.Plugins = []PluginEntry{
-		{Name: "example", Command: "fairpeer-plugin-example"},
+		{Name: "example", Command: "hiq-plugin-example"},
 		{Name: "stripe", Type: "http", URL: "https://mcp.stripe.com", Headers: map[string]string{"Authorization": "Bearer x"}, AutoStart: boolPtr(false), Tier: "background"},
 	}
 	mm, _ := orig.Provider("test-provider")
@@ -146,10 +146,10 @@ func TestRenderTOMLRoundTrips(t *testing.T) {
 	if got.Agent.PlannerMaxSteps != orig.Agent.PlannerMaxSteps {
 		t.Errorf("planner_max_steps = %d, want %d", got.Agent.PlannerMaxSteps, orig.Agent.PlannerMaxSteps)
 	}
-	if len(got.Bot.Connections) != 1 || got.Bot.Connections[0].Model != "test-provider/openai/gpt-oss-120b" || got.Bot.Connections[0].WorkspaceRoot != "/tmp/fairpeer-bot" {
+	if len(got.Bot.Connections) != 1 || got.Bot.Connections[0].Model != "test-provider/openai/gpt-oss-120b" || got.Bot.Connections[0].WorkspaceRoot != "/tmp/hiq-bot" {
 		t.Errorf("bot connection not preserved: %+v", got.Bot.Connections)
 	}
-	if len(got.Bot.Connections[0].SessionMappings) != 1 || got.Bot.Connections[0].SessionMappings[0].Scope != "project" || got.Bot.Connections[0].SessionMappings[0].WorkspaceRoot != "/tmp/fairpeer-bot" {
+	if len(got.Bot.Connections[0].SessionMappings) != 1 || got.Bot.Connections[0].SessionMappings[0].Scope != "project" || got.Bot.Connections[0].SessionMappings[0].WorkspaceRoot != "/tmp/hiq-bot" {
 		t.Errorf("bot session mapping scope not preserved: %+v", got.Bot.Connections[0].SessionMappings)
 	}
 	if got.Agent.Temperature != orig.Agent.Temperature {

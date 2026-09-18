@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/zzycxz/fairpeer/internal/codegraph"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netclient"
+	"github.com/zzycxz/hiq/internal/codegraph"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netclient"
 )
 
-// codegraphCommand backs `fairpeer codegraph` — managing the CodeGraph
-// code-intelligence runtime that fairpeer otherwise fetches lazily on first use.
+// codegraphCommand backs `hiq codegraph` — managing the CodeGraph
+// code-intelligence runtime that hiq otherwise fetches lazily on first use.
 func codegraphCommand(args []string) int {
 	sub := ""
 	if len(args) > 0 {
@@ -66,17 +66,17 @@ func codegraphStatus() int {
 	if p, ok := codegraph.Resolve(cfg.Codegraph.Path); ok {
 		fmt.Printf("%-13s %s\n", "resolved:", p)
 	} else {
-		fmt.Printf("%-13s %s\n", "resolved:", "(not installed — run `fairpeer codegraph install`)")
+		fmt.Printf("%-13s %s\n", "resolved:", "(not installed — run `hiq codegraph install`)")
 	}
 	return 0
 }
 
 func codegraphUsage() {
-	fmt.Print(`fairpeer codegraph — manage the CodeGraph code-intelligence runtime
+	fmt.Print(`hiq codegraph — manage the CodeGraph code-intelligence runtime
 
 Usage:
-  fairpeer codegraph install   download + cache the runtime for this platform
-  fairpeer codegraph status    show config, cache dir, and resolved launcher
+  hiq codegraph install   download + cache the runtime for this platform
+  hiq codegraph status    show config, cache dir, and resolved launcher
 
 CodeGraph is fetched automatically on first use (unless [codegraph].auto_install
 is false); this command installs it explicitly or reports where it resolves from.

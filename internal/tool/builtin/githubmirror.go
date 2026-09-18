@@ -17,12 +17,12 @@ import (
 //	raw file URLs      -> cdn.jsdelivr.net/gh (global CDN, CN-reachable)
 //	other GitHub URLs  -> prefix mirrors (gh-proxy style), env-tunable
 //
-// via FAIRPEER_GH_MIRRORS (comma-separated base URLs, appended before the
+// via HIQ_GH_MIRRORS (comma-separated base URLs, appended before the
 // original URL). Nothing here is load-bearing: mirrors are only tried after
 // the direct fetch already failed.
 
 // ghMirrorEnv overrides the prefix-mirror list without a rebuild.
-const ghMirrorEnv = "FAIRPEER_GH_MIRRORS"
+const ghMirrorEnv = "HIQ_GH_MIRRORS"
 
 // defaultGhPrefixMirrors are gh-proxy style services: <mirror><original-url>.
 var defaultGhPrefixMirrors = []string{"https://gh-proxy.com/", "https://ghfast.top/"}
@@ -62,7 +62,7 @@ func ghMirrorURLs(rawURL string) []string {
 	}
 
 	// Everything else (repo pages, gists, archives, release assets): prefix
-	// mirrors, user-tunable via FAIRPEER_GH_MIRRORS.
+	// mirrors, user-tunable via HIQ_GH_MIRRORS.
 	var mirrors []string
 	if v := strings.TrimSpace(os.Getenv(ghMirrorEnv)); v != "" {
 		for _, m := range strings.Split(v, ",") {

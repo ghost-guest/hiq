@@ -1,4 +1,4 @@
-// linkpeer-signal is the cloud signaling server (K) for linkpeer × fairpeer.
+// linkpeer-signal is the cloud signaling server (K) for linkpeer × hiq.
 // It is a stateless router: pair matching, public-key exchange, and SDP/ICE
 // forwarding. Deployment via docker-compose (signal + coturn + caddy), see
 // docs/LINKPEER_PROTOCOL.md §10.
@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/linkpeersignal"
+	"github.com/zzycxz/hiq/internal/linkpeersignal"
 )
 
 func main() {

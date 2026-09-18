@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
 // secretEnvOnce bounds the encrypted-store env injection to once per process:
@@ -19,13 +19,13 @@ var secretEnvOnce sync.Once
 // loadDotEnv loads KEY=value files into the process environment without
 // overriding variables that are already set (first file to set a key wins).
 // Order: a project ./.env (read-only back-compat, so a manual project override
-// takes precedence), then the fairpeer-owned global credentials file in the user
+// takes precedence), then the hiq-owned global credentials file in the user
 // config dir (legacy plaintext; boot migrates it into the encrypted secret
 // store, after which it no longer exists), then ~/.env as a legacy fallback.
 // Existing environment variables always win over all three. Finally the
 // encrypted secret store (DPAPI on Windows, AES-GCM elsewhere) is decrypted
 // into the env the same way, so every config consumer — CLI one-shots like
-// `fairpeer models`/`doctor` included, not just the chat boot path — resolves
+// `hiq models`/`doctor` included, not just the chat boot path — resolves
 // provider keys exactly as before the credentials file was encrypted.
 func loadDotEnv() {
 	loadDotEnvForRoot(".")

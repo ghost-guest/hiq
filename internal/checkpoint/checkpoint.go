@@ -1,4 +1,4 @@
-// Package checkpoint is fairpeer's snapshot-based edit safety net. Before a writer
+// Package checkpoint is hiq's snapshot-based edit safety net. Before a writer
 // tool changes a file, the agent records the file's pre-edit content here, keyed
 // to the current user turn; a frontend can then rewind the workspace (and, via the
 // controller, the conversation) to an earlier turn.
@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/diff"
-	fileenc "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
+	"github.com/zzycxz/hiq/internal/diff"
+	fileenc "github.com/zzycxz/hiq/internal/fileutil/encoding"
 )
 
 // FileSnap is one file's state at the moment it was first touched in a turn.

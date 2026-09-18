@@ -10,19 +10,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/acp"
-	"github.com/zzycxz/fairpeer/internal/boot"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
-	"github.com/zzycxz/fairpeer/internal/tool"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/acp"
+	"github.com/zzycxz/hiq/internal/boot"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
-// acpCommand runs fairpeer as an Agent Client Protocol agent: a stdio JSON-RPC
+// acpCommand runs hiq as an Agent Client Protocol agent: a stdio JSON-RPC
 // server that editors and other host clients drive (initialize, session/new,
 // session/prompt, session/cancel). It keeps v2 wire-compatible with the many
 // tools that integrated with v1 over ACP.
@@ -41,7 +41,7 @@ func acpCommand(args []string, version string) int {
 	defer stop()
 
 	factory := &acpFactory{model: *model}
-	info := acp.AgentInfo{Name: "fairpeer", Version: version}
+	info := acp.AgentInfo{Name: "hiq", Version: version}
 	if err := acp.Serve(ctx, os.Stdin, os.Stdout, factory, info); err != nil {
 		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
 		return 1

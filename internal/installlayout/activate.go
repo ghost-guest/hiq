@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/filelock"
+	"github.com/zzycxz/hiq/internal/filelock"
 )
 
 const activationLockName = ".reasonix-activate.lock"

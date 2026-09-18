@@ -1,4 +1,4 @@
-# Fairpeer vs PI — 剩余差距与改进方案
+# Hiq vs PI — 剩余差距与改进方案
 
 > 接续 `fix_tool_visibility_plan.md`，汇总前端可见性修复之后仍存在的 coding 能力差距。
 > 日期：2026-08-10 | 更新：2026-08-10（P1 已完成，方案代码已校正）
@@ -21,7 +21,7 @@
 
 ## 二、差距总览
 
-| # | 差距 | fairpeer 现状 | PI 做法 | 影响 | 优先级 |
+| # | 差距 | hiq 现状 | PI 做法 | 影响 | 优先级 |
 |---|------|--------------|---------|------|--------|
 | 1 | edit_file 不返回 diff | 只返回 `"edited %s"` 一句话 | 返回 `{diff, patch, firstChangedLine}` | LLM 看不到自己改了什么，可能重复修改 | **P1** |
 | 2 | 截断安全缺失 | `finish_reason=length` 只警告，tool call 照常执行 | 拒绝执行所有截断的 tool call | 半截 JSON 参数可能写坏文件 | **P1** |
@@ -273,11 +273,11 @@ func ValidateArgs(schema, args json.RawMessage) error {
 
 ---
 
-## 四、fairpeer 独有优势（PI 没有的，保持）
+## 四、hiq 独有优势（PI 没有的，保持）
 
-这些能力 fairpeer 有而 PI 没有，是差异化优势，**不需要改，只需确保不退化**：
+这些能力 hiq 有而 PI 没有，是差异化优势，**不需要改，只需确保不退化**：
 
-| # | 能力 | fairpeer 实现 | 说明 |
+| # | 能力 | hiq 实现 | 说明 |
 |---|------|--------------|------|
 | 1 | Checkpoint 快照 + Rewind | `internal/checkpoint/` — 每轮自动快照修改的文件，支持代码/对话回滚/fork | PI 完全没有 |
 | 2 | 4 级权限模型 | RiskRead < RiskWriteLocal < RiskExec < RiskExternal，YOLO/Auto/Ask 三模式 | PI 只有 hook 级 block |
@@ -297,22 +297,22 @@ func ValidateArgs(schema, args json.RawMessage) error {
 | 16 | Windows 通知 | BurntToast 长时通知 + "知道了" 按钮 | PI TUI 无桌面通知 |
 | 17 | 编码感知 | GBK/UTF-16/BOM 检测和保留 | PI 仅 UTF-8 |
 | 18 | Session trash + 恢复 | 删除的 session 移到 `.trash/`，可恢复 | PI 无 |
-| 19 | 12 种 Hook 事件 | PreToolUse/PostToolUse/UserPromptSubmit/Stop/PostLLMCall 等 | PI 有更细粒度但 fairpeer 已覆盖核心场景 |
+| 19 | 12 种 Hook 事件 | PreToolUse/PostToolUse/UserPromptSubmit/Stop/PostLLMCall 等 | PI 有更细粒度但 hiq 已覆盖核心场景 |
 
 ---
 
-## 五、PI 独有优势（fairpeer 没有的，可选借鉴）
+## 五、PI 独有优势（hiq 没有的，可选借鉴）
 
-这些能力 PI 有而 fairpeer 没有，**非紧急但值得长期关注**：
+这些能力 PI 有而 hiq 没有，**非紧急但值得长期关注**：
 
 | # | 能力 | PI 实现 | 是否值得引入 |
 |---|------|---------|-------------|
-| 1 | 38 个内置 provider | `packages/ai/src/providers/all.ts` | ⚠️ fairpeer 的 openai kind 已覆盖多数场景，但缺少 Kimi Coding、小米 Token Plan 等中国 vendor 预设 |
-| 2 | 项目信任系统 | `trust-manager.ts` — 项目级 `.pi/` 资源加载需授权 | ⚠️ 安全加分，但 fairpeer 的 hook trust 已覆盖部分场景 |
-| 3 | Session append-only tree | JSONL tree + branch summary + compaction boundary | ⚠️ 更强的会话管理，但 fairpeer 的扁平 session + checkpoint 已够用 |
+| 1 | 38 个内置 provider | `packages/ai/src/providers/all.ts` | ⚠️ hiq 的 openai kind 已覆盖多数场景，但缺少 Kimi Coding、小米 Token Plan 等中国 vendor 预设 |
+| 2 | 项目信任系统 | `trust-manager.ts` — 项目级 `.pi/` 资源加载需授权 | ⚠️ 安全加分，但 hiq 的 hook trust 已覆盖部分场景 |
+| 3 | Session append-only tree | JSONL tree + branch summary + compaction boundary | ⚠️ 更强的会话管理，但 hiq 的扁平 session + checkpoint 已够用 |
 | 4 | Hook 更细粒度 | 20+ 事件含 `before_provider_payload`、`tool_result` patch | ⚠️ 可选扩展，当前 12 种已覆盖核心场景 |
-| 5 | Kitty 图片协议 TUI | 终端内直接渲染图片 | ❌ fairpeer 是桌面 GUI，不需要 |
-| 6 | 多实例 server supervisor | `ServerSupervisor` 管理多 agent 实例 | ❌ fairpeer 是单实例桌面应用 |
+| 5 | Kitty 图片协议 TUI | 终端内直接渲染图片 | ❌ hiq 是桌面 GUI，不需要 |
+| 6 | 多实例 server supervisor | `ServerSupervisor` 管理多 agent 实例 | ❌ hiq 是单实例桌面应用 |
 | 7 | Observability (OTEL) | 结构化生命周期事件，可转 OTEL spans | ⚠️ 长期有价值，短期非必须 |
 
 ---
@@ -367,4 +367,4 @@ func ValidateArgs(schema, args json.RawMessage) error {
 | `docs/fix_tool_visibility_plan.md` | 已完成的 5 项前端可见性修复方案 |
 | `docs/COWORK_HARNESS_SECURITY_PLAN.md` | cowork 模式安全方案 |
 | `internal/diff/diff.go` | Myers diff 算法实现（edit_file diff 可复用） |
-| `internal/checkpoint/checkpoint.go` | Checkpoint 快照系统（fairpeer 独有优势） |
+| `internal/checkpoint/checkpoint.go` | Checkpoint 快照系统（hiq 独有优势） |

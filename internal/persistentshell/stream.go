@@ -4,7 +4,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/shellrun"
+	"github.com/zzycxz/hiq/internal/shellrun"
 )
 
 // maxIncompleteEscape bounds the escape-sequence fragment carried between PTY

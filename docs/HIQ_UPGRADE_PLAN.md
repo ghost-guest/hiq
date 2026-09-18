@@ -1,6 +1,6 @@
-# Fairpeer 全量提升方案
+# Hiq 全量提升方案
 
-> 输入：三轮对标调研（vs Codex CLI / vs Pi，见 `fairpeer_vs_codex_pi_upgrade_plan.md` 第一~九节）＋ 两份前档（`fairpeer_vs_pi_remaining_gaps.md`、`fix_tool_visibility_plan.md`）。
+> 输入：三轮对标调研（vs Codex CLI / vs Pi，见 `hiq_vs_codex_pi_upgrade_plan.md` 第一~九节）＋ 两份前档（`hiq_vs_pi_remaining_gaps.md`、`fix_tool_visibility_plan.md`）。
 > 输出：本档——可执行的工程实施方案，含全量问题总账、分阶段任务、里程碑、依赖与风险。
 > 日期：2026-08-21。主轴：编码体验；协同：办公（cowork）/运维（netdev）三界面同步受益。
 
@@ -201,7 +201,7 @@
 |---|------|------|----|
 | 5-1 | 成本聚合 | 跨 session/按天/按模型汇总（serve wire 已有 Cost 字段，缺聚合与 UI）；进阶：pi 式 cache re-billed 损失估算（与 cache_shape 联动）。0-6 的自然延伸，**建议提前** | ~200 |
 | 5-2 | 崩溃 turn 恢复 | codex `recover_turn_if_idle` 模式：重开识别未完成 turn 并续跑（依赖 4-1 更自然） | 大 |
-| 5-3 | 本地模型接入 | Ollama/llama.cpp provider 预设 + 模型加载管理面板（fairpeer 预设体系接入成本低） | ~200 |
+| 5-3 | 本地模型接入 | Ollama/llama.cpp provider 预设 + 模型加载管理面板（hiq 预设体系接入成本低） | ~200 |
 | 5-4 | 行号跳编辑器 | diff/文件预览加"在编辑器打开"（`vscode://file/<abs>:<line>`） | ~40 |
 | 5-5 | 会话 HTML 导出/分享 | 补 HTML 格式（React DOM 渲染产物已在，比 pi 的 ANSI 转换容易） | ~100 |
 | 5-6 | 图片生成工具 | 附件管线已就绪，补内置工具 + 设置 provider | ~80 |
@@ -219,7 +219,7 @@
 | **M4 工程深化** | 第 7-10 周 | 阶段 4（按价值排序：4-5 → 4-6 → 4-7 → 4-3 → 4-4；4-1/4-2 视 mobile 需求启动） | E 类按序关闭 |
 | **M5 生态** | 按需 | 阶段 5（5-1 建议随 M4 做） | F 类按产品节奏 |
 
-总量核对（自查修正，2026-08-21）：**问题 54 项**（A9 + B9 + C6 + D10 + E10 + F10）、**任务 49 个**（阶段 0×10 + 1×9 + 2×6 + 3×11 + 4×7 + 5×6；初版误记"42 个"）；其中小时级 3 个、接线级 13 个、组件级 18 个、架构级 8 个。**三方合流定稿（58 问题/51 任务，新增 2-7 Agent 仪表板、5-7 权限粒度及 4 项新问题）以 `FAIRPEER_UPGRADE_SPEC.md` 为准。**
+总量核对（自查修正，2026-08-21）：**问题 54 项**（A9 + B9 + C6 + D10 + E10 + F10）、**任务 49 个**（阶段 0×10 + 1×9 + 2×6 + 3×11 + 4×7 + 5×6；初版误记"42 个"）；其中小时级 3 个、接线级 13 个、组件级 18 个、架构级 8 个。**三方合流定稿（58 问题/51 任务，新增 2-7 Agent 仪表板、5-7 权限粒度及 4 项新问题）以 `HIQ_UPGRADE_SPEC.md` 为准。**
 
 ---
 
@@ -264,15 +264,15 @@
 
 | 前档 | 处置 |
 |------|------|
-| `fairpeer_vs_pi_remaining_gaps.md` | P2 → 本档 0-2；P3-1 → 3-1；P3-2 → 3-2（编号收编） |
+| `hiq_vs_pi_remaining_gaps.md` | P2 → 本档 0-2；P3-1 → 3-1；P3-2 → 3-2（编号收编） |
 | `fix_tool_visibility_plan.md` | 已完成项并入第三节回归保护 |
-| `fairpeer_vs_codex_pi_upgrade_plan.md` | 问题论证与证据来源；本档任务编号与其 roadmap 兼容（阶段 3 重排：旧 3-10→新 3-5，旧 3-11→新 3-10） |
+| `hiq_vs_codex_pi_upgrade_plan.md` | 问题论证与证据来源；本档任务编号与其 roadmap 兼容（阶段 3 重排：旧 3-10→新 3-5，旧 3-11→新 3-10） |
 
 ---
 
 ## 十、外部方案交叉验证（Gemini spec，2026-08-21）
 
-> **归属更正**：本节验证的对象是用户粘贴的 **Gemini** 方案（初版误标为 `fairpeer-codex-pi-upgrade-spec.md`）；该文件实为 **MiMo** 的前端 UX 方案（另一个视角），其交叉验证与合流见 `FAIRPEER_UPGRADE_SPEC.md` 附录 A。以下验证结论只依赖源码事实，不受署名影响，均维持有效。
+> **归属更正**：本节验证的对象是用户粘贴的 **Gemini** 方案（初版误标为 `hiq-codex-pi-upgrade-spec.md`）；该文件实为 **MiMo** 的前端 UX 方案（另一个视角），其交叉验证与合流见 `HIQ_UPGRADE_SPEC.md` 附录 A。以下验证结论只依赖源码事实，不受署名影响，均维持有效。
 
 外部 spec（架构重构视角）与本档（产品能力视角）交叉核对，全部断言已回源码验证。
 

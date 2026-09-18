@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/driver"
+	"github.com/zzycxz/hiq/internal/netdev/driver"
 	"strings"
 	"time"
 )

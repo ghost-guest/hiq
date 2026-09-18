@@ -20,7 +20,7 @@ import (
 //	macOS    random KEK in the Keychain (via /usr/bin/security, zero CGO)
 //	Linux    random KEK in the Secret Service (gnome-keyring/KWallet, D-Bus)
 //	         — headless (no session keyring): passphrase-derived (argon2id) if
-//	         FAIRPEER_SECRET_PASSPHRASE[_FILE] is configured, else a
+//	         HIQ_SECRET_PASSPHRASE[_FILE] is configured, else a
 //	         machine-bound fallback flagged as degraded (see kek_machine.go)
 //
 // kekId (random per store) doubles as the derivation salt for the

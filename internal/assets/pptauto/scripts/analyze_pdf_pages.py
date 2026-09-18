@@ -13,13 +13,13 @@ submit path) and completes the missing pages: renders every page to PNG,
 VLM-describes the ones lacking a page-N.json, idempotently reusing whatever the
 desktop already analyzed.
 
-Writes ~/.fairpeer/pdf-pages/page-N.json in the exact shape the desktop path
+Writes ~/.hiq/pdf-pages/page-N.json in the exact shape the desktop path
 produces (page/image/total_pages/verdict/description/error), so ppt-auto Step 3
 consumes both sources uniformly. Never touches reference-style.json (deck
 colors are the desktop's job; clobbering them here would break idempotency).
 
 VLM access reuses qa_compare's config layering (user config.toml + project
-fairpeer.toml merged like the Go loader). Any failure degrades per page — one
+hiq.toml merged like the Go loader). Any failure degrades per page — one
 bad page records its error and the rest proceed. Exits 0 with a JSON summary
 (complete_step needs successful bash receipts); usage errors exit 1.
 """
@@ -123,7 +123,7 @@ def render_pages(pdf_path, out_dir, scale):
 def main():
     ap = argparse.ArgumentParser(description="Complete per-page VLM analysis of a reference PDF.")
     ap.add_argument("pdf_path")
-    ap.add_argument("--home", default=None, help="home dir containing .fairpeer/ (default: ~)")
+    ap.add_argument("--home", default=None, help="home dir containing .hiq/ (default: ~)")
     ap.add_argument("--pool", type=int, default=3, help="concurrent VLM calls (providers rate-limit)")
     ap.add_argument("--scale", type=int, default=2, help="page render scale")
     ap.add_argument("--max", type=int, default=8, dest="max_batch",
@@ -133,7 +133,7 @@ def main():
     args = ap.parse_args()
 
     home = args.home or os.path.expanduser("~")
-    out_dir = os.path.join(home, ".fairpeer", "pdf-pages")
+    out_dir = os.path.join(home, ".hiq", "pdf-pages")
 
     def summary(total, analyzed, skipped, failed, note=""):
         obj = {"total": total, "analyzed": analyzed, "skipped_existing": skipped,
@@ -142,12 +142,12 @@ def main():
 
     pdf_path = args.pdf_path
     if not os.path.isfile(pdf_path):
-        # The task prompt may relay a wrong path (e.g. ~/.fairpeer/attachments
+        # The task prompt may relay a wrong path (e.g. ~/.hiq/attachments
         # instead of the workspace copy). reference-style.json's source_path is
         # the canonical absolute path the desktop analyzed — fall back to it
         # instead of letting the agent go searching the whole disk.
         try:
-            with open(os.path.join(home, ".fairpeer", "reference-style.json"), "r", encoding="utf-8") as f:
+            with open(os.path.join(home, ".hiq", "reference-style.json"), "r", encoding="utf-8") as f:
                 src = str(json.load(f).get("source_path") or "")
             if src and os.path.isfile(src):
                 pdf_path = src
@@ -175,7 +175,7 @@ def main():
         return 0
 
     # VLM access: any failure here is a skip, never a blocker.
-    cfg, config_dir = qa_compare.load_fairpeer_config()
+    cfg, config_dir = qa_compare.load_hiq_config()
     vlm, why_not = (None, "vlm_config_missing")
     if cfg is not None:
         vlm, why_not = qa_compare.resolve_vlm(cfg, config_dir)

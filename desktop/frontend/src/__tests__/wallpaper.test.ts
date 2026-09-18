@@ -52,7 +52,7 @@ import type { WallpaperView } from "../lib/types";
 
 const HEARTH = {
   active: true,
-  url: "/__fairpeer_wallpaper/wallpaper.png?v=1758000000",
+  url: "/__hiq_wallpaper/wallpaper.png?v=1758000000",
   name: "wallpaper.png",
   blur: 18,
   dim: 45,
@@ -101,7 +101,7 @@ describe("applyWallpaper", () => {
     expect(attrs.get("data-wallpaper-blur")).toBe("18");
     // Resolved to an absolute URL: the property is substituted into a stylesheet
     // rule, where a relative url() would be ambiguous.
-    expect(vars.get("--app-bg-image")).toBe('url("http://localhost/__fairpeer_wallpaper/wallpaper.png?v=1758000000")');
+    expect(vars.get("--app-bg-image")).toBe('url("http://localhost/__hiq_wallpaper/wallpaper.png?v=1758000000")');
     expect(vars.get("--app-bg-blur-px")).toBe("18");
     expect(vars.get("--app-bg-dim-pct")).toBe("45");
     // The surface opacity is what keeps text legible over the photo.

@@ -38,7 +38,7 @@ func TestLegacyNativeManifestRejected(t *testing.T) {
 func TestV1NativeManifestRejected(t *testing.T) {
 	root := t.TempDir()
 	manifest := `{
-  "apiVersion": "fairpeer.io/plugin/v1",
+  "apiVersion": "hiq.io/plugin/v1",
   "name": "old",
   "version": "1.0.0"
 }`

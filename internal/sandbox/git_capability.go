@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
-	"github.com/zzycxz/fairpeer/internal/secrets"
+	"github.com/zzycxz/hiq/internal/proc"
+	"github.com/zzycxz/hiq/internal/secrets"
 )
 
 // discoverGitCapability shares the shell inventory snapshot but remains a

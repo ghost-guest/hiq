@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // dashboards.go — 大屏家族的四个屏组装函数（DASHBOARD spec §2.1）。全部

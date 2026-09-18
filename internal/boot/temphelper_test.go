@@ -19,7 +19,7 @@ import (
 // without reintroducing the flake.
 func robustTempDir(t *testing.T) string {
 	t.Helper()
-	dir, err := os.MkdirTemp("", "fairpeer-test-*")
+	dir, err := os.MkdirTemp("", "hiq-test-*")
 	if err != nil {
 		t.Fatalf("robustTempDir: %v", err)
 	}

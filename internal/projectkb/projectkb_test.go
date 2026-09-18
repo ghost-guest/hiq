@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/memory"
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
-	"github.com/zzycxz/fairpeer/internal/team"
+	"github.com/zzycxz/hiq/internal/memory"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/team"
 )
 
 // workDir returns a scratch directory INSIDE the project tree. The project's

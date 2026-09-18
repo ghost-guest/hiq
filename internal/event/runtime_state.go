@@ -1,8 +1,8 @@
 package event
 
 import (
-	goaldomain "github.com/zzycxz/fairpeer/internal/goal"
-	"github.com/zzycxz/fairpeer/internal/nilutil"
+	goaldomain "github.com/zzycxz/hiq/internal/goal"
+	"github.com/zzycxz/hiq/internal/nilutil"
 )
 
 // Todo is the v2 execution protocol's complete current-turn todo item. It is

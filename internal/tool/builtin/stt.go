@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // STT (speech-to-text) is the single voice entry: it sends audio (as a base64

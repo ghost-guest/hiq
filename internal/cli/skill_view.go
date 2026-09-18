@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/hiq/internal/skill"
 )
 
 const skillShowMaxLines = 80
@@ -76,6 +76,6 @@ func renderSkillPaths(width int, roots []skill.Root) string {
 		fmt.Fprintf(&b, "  %2d. %s %s %s\n",
 			r.Priority+1, scope, status, viewCompactPath(r.Dir, viewBudget(width, leftWidth)))
 	}
-	b.WriteString(viewHint(viewCompactText("priority: project > custom > global > builtin · configure [skills] paths in fairpeer.toml", viewBudget(width, 2))))
+	b.WriteString(viewHint(viewCompactText("priority: project > custom > global > builtin · configure [skills] paths in hiq.toml", viewBudget(width, 2))))
 	return strings.TrimRight(b.String(), "\n")
 }

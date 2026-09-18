@@ -3,8 +3,8 @@ package netdev
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // The agent's netdev tools and the desktop bridge must share ONE Manager:

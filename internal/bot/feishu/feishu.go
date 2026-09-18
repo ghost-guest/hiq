@@ -19,8 +19,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/bot"
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/bot"
+	"github.com/zzycxz/hiq/internal/config"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
 	larknormalize "github.com/larksuite/oapi-sdk-go/v3/channel/normalize"
@@ -500,7 +500,7 @@ func (a *adapter) sdkClient() (*lark.Client, error) {
 	opts := []lark.ClientOptionFunc{
 		lark.WithLogLevel(larkcore.LogLevelError),
 		lark.WithReqTimeout(15 * time.Second),
-		lark.WithSource("fairpeer"),
+		lark.WithSource("hiq"),
 	}
 	if feishuDomain(a.cfg.Domain) == "lark" {
 		opts = append(opts, lark.WithOpenBaseUrl(lark.LarkBaseUrl), lark.WithOAuthBaseUrl(lark.OAuthBaseUrlLark))

@@ -1,4 +1,4 @@
-// Per-plugin startup latency tracking for MCP servers. fairpeer uses these
+// Per-plugin startup latency tracking for MCP servers. hiq uses these
 // samples to decide whether a chronically slow plugin should be demoted from
 // "eager" to "lazy" loading for the rest of a session — see Recommend.
 //
@@ -18,7 +18,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 const (

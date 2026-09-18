@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	teampkg "github.com/zzycxz/fairpeer/internal/team"
+	teampkg "github.com/zzycxz/hiq/internal/team"
 )
 
 // teamSharedHistoryToolName is the member-visible name of the archive pager.

@@ -1,4 +1,4 @@
-# fairpeer 使用指南
+# hiq 使用指南
 
 <a href="../README.md">README</a>
 &nbsp;·&nbsp;
@@ -22,12 +22,12 @@
 
 ## 配置
 
-优先级：**flag > `./fairpeer.toml` > `~/.config/fairpeer/config.toml` > 内置默认值**。
+优先级：**flag > `./hiq.toml` > `~/.config/hiq/config.toml` > 内置默认值**。
 密钥经环境变量通过 `api_key_env` 注入，绝不写入配置文件。
 
 ```toml
 default_model = "deepseek/deepseek-v4-pro"   # 执行器；设 [agent].planner_model 可加规划器
-# language    = "zh"               # 界面语言；为空则按 $LANG / $FAIRPEER_LANG 自动检测
+# language    = "zh"               # 界面语言；为空则按 $LANG / $HIQ_LANG 自动检测
 
 [ui]
 # shortcut_layout = "desktop"      # classic|desktop；兼容旧配置
@@ -69,7 +69,7 @@ allow = ["Bash(go test:*)"]                  # 从不询问
 
 [[plugins]]
 name    = "example"
-command = "fairpeer-plugin-example"
+command = "hiq-plugin-example"
 ```
 
 完整 schema 与每个字段的契约见 [`SPEC.md` §5](./SPEC.md#5-configuration-toml)。
@@ -119,9 +119,9 @@ command = "fairpeer-plugin-example"
 权限逐次调用把关：`deny` > `ask` > `allow` > 兜底。Bash 和文件修改都要审核；
 只读工具一般不需要。审核规则不是按“按钮文案”存，而是按权限规则匹配，比如
 `Bash(npm run build)`、`Bash(npm run test:*)`、`Edit(docs/**)` 这种形式。
-`fairpeer chat` 会在 writer 调用前征求同意（普通工具为 `1` 本次 · `2` 本会话允许此范围 · `3` 总是允许此范围（保存） · `4` 拒绝；Bash 可额外选择命令前缀授权）；
+`hiq chat` 会在 writer 调用前征求同意（普通工具为 `1` 本次 · `2` 本会话允许此范围 · `3` 总是允许此范围（保存） · `4` 拒绝；Bash 可额外选择命令前缀授权）；
 其中 Bash 默认按具体命令记，也可按安全推导出的命令前缀记（如 `Bash(go test:*)`）；文件编辑类工具的本会话授权按编辑能力记，持久授权则写入 `Edit(<path>)` 文件路径规则；
-`fairpeer run` 保持自主运行但仍然遵守 `deny`。
+`hiq run` 保持自主运行但仍然遵守 `deny`。
 
 权限是**策略**（哪些调用放行/询问），**沙盒**是**强制**：文件写工具
 （`write_file` / `edit_file` / `multi_edit`）拒绝 `[sandbox] workspace_root`
@@ -133,7 +133,7 @@ command = "fairpeer-plugin-example"
 
 ## 插件（MCP）
 
-fairpeer 是一个 MCP 客户端。`[[plugins]]` 的 `type` 选择传输：`stdio`（默认）启动本地子进
+hiq 是一个 MCP 客户端。`[[plugins]]` 的 `type` 选择传输：`stdio`（默认）启动本地子进
 程（`command`/`args`/`env`）；`http`（Streamable HTTP）连接远程 `url`，可带静态
 `headers`（`${VAR}` / `${VAR:-default}` 从环境展开，密钥不入文件）。工具以
 `mcp__<server>__<tool>` 暴露给模型，与 Claude Code 一致；声明 MCP `readOnlyHint: true`
@@ -141,14 +141,14 @@ fairpeer 是一个 MCP 客户端。`[[plugins]]` 的 `type` 选择传输：`stdi
 
 服务器的 **prompts** 会暴露成 `/mcp__<server>__<prompt>` 斜杠命令（命令后空格分隔参
 数）；**resources** 通过在消息里写 `@<server>:<uri>` 拉入；`/mcp` 列出已连接服务器及
-各自暴露的内容。`make build` 还会产出 `bin/fairpeer-plugin-example`——一个可直接运行的
+各自暴露的内容。`make build` 还会产出 `bin/hiq-plugin-example`——一个可直接运行的
 stdio 参考实现（`echo`、`wordcount`、一个 `review` prompt、一个 style-guide 资源），
 可照抄。
 
 ```toml
 [[plugins]]                       # 本地 stdio 服务器
 name    = "example"
-command = "fairpeer-plugin-example"
+command = "hiq-plugin-example"
 
 [[plugins]]                       # 远程 Streamable HTTP 服务器
 name    = "stripe"
@@ -160,9 +160,9 @@ headers = { Authorization = "Bearer ${STRIPE_KEY}" }
 启用的 MCP 服务器会在会话开始后于后台自动连接，因此工具上线期间聊天仍可正常使用。
 用 `/mcp` 或桌面端 MCP 面板可刷新状态、重连服务器、查看失败原因，或在当前会话内禁用某个服务器。
 
-**已有 Claude Code 的 `.mcp.json`？** 直接放到项目根目录，fairpeer 会原样读取——其
+**已有 Claude Code 的 `.mcp.json`？** 直接放到项目根目录，hiq 会原样读取——其
 `mcpServers` 规范（`command`/`args`/`env`、`type`/`url`/`headers`、`${VAR}` 展开）
-与 `[[plugins]]` 字段一一对应。两处来源会合并加载；同名时以 `fairpeer.toml` 为准。
+与 `[[plugins]]` 字段一一对应。两处来源会合并加载；同名时以 `hiq.toml` 为准。
 
 ```json
 {
@@ -173,17 +173,17 @@ headers = { Authorization = "Bearer ${STRIPE_KEY}" }
 }
 ```
 
-**从 `0.x` 升级？** 旧的 `~/.fairpeer/config.json` 仍会被读取（读其 `mcpServers`、并遵从
+**从 `0.x` 升级？** 旧的 `~/.hiq/config.json` 仍会被读取（读其 `mcpServers`、并遵从
 `mcpDisabled`），作为最低优先级来源——所以 MCP 服务器照常可用；方便时再把它们挪进
-`fairpeer.toml` 的 `[[plugins]]` 或 `.mcp.json`。
+`hiq.toml` 的 `[[plugins]]` 或 `.mcp.json`。
 
 ## 斜杠命令
 
-`fairpeer chat` 里，内置命令（`/compact`、`/new`、`/clear`、`/rewind`、`/tree`、`/branch`、`/switch`、`/todo`、`/model`、`/mcp`、`/skills`、`/hooks`、`/memory`、`/output-style`、`/sandbox`、`/language`、`/auto-plan`、`/help`）在本地执行——`/help` 可列出全部。
+`hiq chat` 里，内置命令（`/compact`、`/new`、`/clear`、`/rewind`、`/tree`、`/branch`、`/switch`、`/todo`、`/model`、`/mcp`、`/skills`、`/hooks`、`/memory`、`/output-style`、`/sandbox`、`/language`、`/auto-plan`、`/help`）在本地执行——`/help` 可列出全部。
 `/new` 会开启新会话，同时保存之前的 transcript 供历史记录和恢复使用；`/clear` 会二次确认，确认后丢弃当前上下文且不保存。
 `/tree` 查看已保存的对话分支，`/branch [name]` 从当前对话末端分支，`/branch <turn> [name]`
 从较早的 checkpoint 轮次分支，`/switch <id|name>` 切换到另一个分支。**自定义命令**
-是放在 `.fairpeer/commands/`（项目）或 `~/.config/fairpeer/commands/`（用户）下的 Markdown 文件——
+是放在 `.hiq/commands/`（项目）或 `~/.config/hiq/commands/`（用户）下的 Markdown 文件——
 `review.md` 即 `/review`，子目录构成命名空间（`git/commit.md` → `/git:commit`）。文件正文
 是 prompt 模板，调用即作为一轮对话发出。
 
@@ -200,16 +200,16 @@ Review the staged diff. Focus on $ARGUMENTS, list bugs with file:line.
 
 ## @ 引用
 
-在消息里写 `@` 引用，fairpeer 会在发送前解析成带标签的上下文块：`@path/to/file`（或
+在消息里写 `@` 引用，hiq 会在发送前解析成带标签的上下文块：`@path/to/file`（或
 `@dir`）注入本地文件内容（或目录清单），`@<server>:<uri>` 注入 MCP 资源。本地路径**只有
 真实存在**时才当作引用，普通 `@mention` 保持原文。敲 `/` 或 `@` 会弹出补全菜单——斜杠
 命令，或**逐层**的文件导航（一次只列当前一层目录、可下钻进子目录）外加 MCP 资源。
 
 ## 双模型协同
 
-`fairpeer setup` 刻意保持首次体验极简：选 provider → 输入 key（所选 provider 的所有
+`hiq setup` 刻意保持首次体验极简：选 provider → 输入 key（所选 provider 的所有
 SKU 都会启用）。若要让两个模型协同（执行器 + 规划器，各自独立、缓存稳定的
-session），向导后手动在 `fairpeer.toml` 加一行即可：
+session），向导后手动在 `hiq.toml` 加一行即可：
 
 ```toml
 [agent]
@@ -217,27 +217,27 @@ planner_model = "deepseek/deepseek-v4-flash"   # 作为低频规划器
 planner_max_steps = 12           # 暂停前允许的只读工具调用轮数
 ```
 
-Planner 会看到已加载的 `fairpeer.md` / `AGENTS.md` 记忆，并拿到一小组只读研究工具，
+Planner 会看到已加载的 `hiq.md` / `AGENTS.md` 记忆，并拿到一小组只读研究工具，
 因此可以先检查相关文件再把计划交给执行器。写入类和流程类工具仍只给执行器使用。
 `max_steps` 限制执行器；`planner_max_steps` 只限制规划器，两者都可设为 `0` 表示不限。
 
 个人偏好的轮数上限建议放在用户级配置。只有当某个仓库确实需要团队共享覆盖时，
-再写进项目的 `./fairpeer.toml`，例如超大代码库需要更高的 planner 上限。
+再写进项目的 `./hiq.toml`，例如超大代码库需要更高的 planner 上限。
 
 Subagent skills 默认继承执行器模型。设置 `subagent_model` 可让它们统一走另一个已配置
 模型；设置 `subagent_models` 则只覆盖 `review`、`security_review` 等指定 skill。
 
 交互式前端中，计划模式默认手动开启。设置 `agent.auto_plan = "on"` 后，看起来复杂
-的任务会自动进入 plan mode：fairpeer 先只读生成计划，待用户批准后才
+的任务会自动进入 plan mode：hiq 先只读生成计划，待用户批准后才
 编辑文件或执行有副作用的命令。`auto_plan_classifier` 可以指定便宜的 provider，例如
 `deepseek/deepseek-v4-flash`；它只在边界输入上调用，分类失败会回退到启发式规则。也可以用
-`fairpeer chat` 里的 `/auto-plan off|on` 修改用户级设置，或在 shell/脚本里用
-`fairpeer config auto-plan off|on`。只有明确想写项目级覆盖时，才给 shell 命令加
+`hiq chat` 里的 `/auto-plan off|on` 修改用户级设置，或在 shell/脚本里用
+`hiq config auto-plan off|on`。只有明确想写项目级覆盖时，才给 shell 命令加
 `--local`。
 
 ## 办公自动化
 
-fairpeer 提供完整的 Office 文档处理能力，通过 `document-auto` 和 `ppt-auto` Skill 实现。
+hiq 提供完整的 Office 文档处理能力，通过 `document-auto` 和 `ppt-auto` Skill 实现。
 
 ### Word 文档
 
@@ -304,13 +304,13 @@ fairpeer 提供完整的 Office 文档处理能力，通过 `document-auto` 和 
 
 ```bash
 # 创建 PPT
-fairpeer run "创建一个关于AI的PPT演示文稿"
+hiq run "创建一个关于AI的PPT演示文稿"
 
 # 使用模板
-fairpeer run "使用模板创建PPT，主题是数字化转型"
+hiq run "使用模板创建PPT，主题是数字化转型"
 
 # 带动画效果
-fairpeer run "为PPT添加淡入动画效果"
+hiq run "为PPT添加淡入动画效果"
 ```
 
 支持的功能：

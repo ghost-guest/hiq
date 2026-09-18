@@ -2,7 +2,7 @@
 
 > 状态：v1
 > 日期：2026-08-11
-> 范围：对 [FAIRPEER_SPEC](./LINKPEER_FAIRPEER_SPEC.md)、[SIGNAL_SPEC](./LINKPEER_SIGNAL_SPEC.md)、[LINKPEER_SPEC](./LINKPEER_LINKPEER_SPEC.md) 三份规范做**横向一致性验证**和**攻击者视角安全复审**，确认设计正确、无遗漏。
+> 范围：对 [HIQ_SPEC](./LINKPEER_HIQ_SPEC.md)、[SIGNAL_SPEC](./LINKPEER_SIGNAL_SPEC.md)、[LINKPEER_SPEC](./LINKPEER_LINKPEER_SPEC.md) 三份规范做**横向一致性验证**和**攻击者视角安全复审**，确认设计正确、无遗漏。
 > 上游：[PROTOCOL](./LINKPEER_PROTOCOL.md)。
 
 ---
@@ -260,10 +260,10 @@ Go 端 `go test -fuzz`，Dart 端 `package:fuzz`。CI nightly 跑 fuzz 累计 �
 
 | # | 问题 | 修复 | 位置 |
 |---|---|---|---|
-| 11 | FAIRPEER_SPEC 多 C 广播与 PROTOCOL 不一致 | tabs 改 set 映射 + 双向 | FAIRPEER_SPEC §11.1 |
+| 11 | HIQ_SPEC 多 C 广播与 PROTOCOL 不一致 | tabs 改 set 映射 + 双向 | HIQ_SPEC §11.1 |
 | 12 | WS 认证依赖 sessionToken，K 重启失效 | 改完全无状态认证（pub+sig 自洽） | PROTOCOL §4.1 / SIGNAL_SPEC §13.1 |
-| 13 | 缺 Bridge 生命周期顺序 | 启动/关闭流程 | FAIRPEER_SPEC §11.2 |
-| 14 | 缺错误降级矩阵 | 7 类错误处理 | FAIRPEER_SPEC §11.3 |
+| 13 | 缺 Bridge 生命周期顺序 | 启动/关闭流程 | HIQ_SPEC §11.2 |
+| 14 | 缺错误降级矩阵 | 7 类错误处理 | HIQ_SPEC §11.3 |
 | 15 | 缺 App 生命周期协调 | 后台/前台/被杀/冷启 | LINKPEER_SPEC §11.1 |
 | 16 | 缺增量同步协议 | resync 命令 + S 环形缓冲 | LINKPEER_SPEC §11.2 |
 | 17 | 缺错误 UX 状态机 | 7 类错误 UI | LINKPEER_SPEC §11.3 |
@@ -271,6 +271,6 @@ Go 端 `go test -fuzz`，Dart 端 `package:fuzz`。CI nightly 跑 fuzz 累计 �
 | 19 | 缺离线命令队列 | submit 排队补发 | LINKPEER_SPEC §11.5 |
 | 20 | 缺流式渲染性能策略 | 节流 + 虚拟列表 + 懒加载 | LINKPEER_SPEC §11.6 |
 | 21 | 缺 App 锁 | 生物识别 + 隐私屏幕 | LINKPEER_SPEC §11.7 |
-| 22 | 缺 GCM 连接寿命边界 | seq 到 2^32 rekey | FAIRPEER_SPEC §11.5 / §7 不变量 |
+| 22 | 缺 GCM 连接寿命边界 | seq 到 2^32 rekey | HIQ_SPEC §11.5 / §7 不变量 |
 | 23 | 缺测试向量 | 标准向量跨端对照 | §8.1 |
 | 24 | 缺 fuzz 计划 | 6 类目标 | §8.2 |

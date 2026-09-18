@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strconv"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
+	"github.com/zzycxz/hiq/internal/proc"
 )
 
 // setShellKillTree hides the child's console and makes a cancelled command kill

@@ -1,6 +1,6 @@
 package readcoord
 
-import "github.com/zzycxz/fairpeer/internal/tool"
+import "github.com/zzycxz/hiq/internal/tool"
 
 // Associate runs after the reader captured its source. It reuses a requirement
 // on that exact source without reopening completed coverage or resetting budgets.

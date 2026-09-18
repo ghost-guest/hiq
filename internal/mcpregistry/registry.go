@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/fileutil"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/fileutil"
 )
 
 const DefaultBaseURL = "https://registry.modelcontextprotocol.io"
@@ -46,7 +46,7 @@ func New(cachePath string) *Client {
 	}
 }
 
-// Entry is one registry server reduced to the configuration fairpeer can
+// Entry is one registry server reduced to the configuration hiq can
 // install without prompting for missing secrets or server-specific arguments.
 type Entry struct {
 	Name              string   `json:"name"`
@@ -218,7 +218,7 @@ func (c *Client) fetch(ctx context.Context, query string, limit int) ([]Entry, e
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "fairpeer-mcp-registry/dev")
+	req.Header.Set("User-Agent", "hiq-mcp-registry/dev")
 	client := c.HTTP
 	if client == nil {
 		client = &http.Client{Timeout: 15 * time.Second}

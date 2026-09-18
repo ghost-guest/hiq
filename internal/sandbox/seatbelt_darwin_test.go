@@ -180,7 +180,7 @@ func TestCommandUnwrappedWhenOff(t *testing.T) {
 
 func TestProfileDeniesProtectedWriteRoots(t *testing.T) {
 	home := t.TempDir()
-	state := canonicalDir(filepath.Join(home, ".fairpeer"))
+	state := canonicalDir(filepath.Join(home, ".hiq"))
 	sessions := filepath.Join(state, "sessions")
 	if err := os.MkdirAll(sessions, 0o755); err != nil {
 		t.Fatal(err)
@@ -259,12 +259,12 @@ func TestSandboxEnforcesWrites(t *testing.T) {
 	if err != nil {
 		t.Skipf("no home dir: %v", err)
 	}
-	workRoot, err := os.MkdirTemp(home, ".fairpeer-sbtest-work-*")
+	workRoot, err := os.MkdirTemp(home, ".hiq-sbtest-work-*")
 	if err != nil {
 		t.Skipf("cannot create work dir under home: %v", err)
 	}
 	t.Cleanup(func() { os.RemoveAll(workRoot) })
-	outside, err := os.MkdirTemp(home, ".fairpeer-sbtest-out-*")
+	outside, err := os.MkdirTemp(home, ".hiq-sbtest-out-*")
 	if err != nil {
 		t.Skipf("cannot create outside dir under home: %v", err)
 	}
@@ -318,7 +318,7 @@ func TestGoBuildUnderSandbox(t *testing.T) {
 	if err != nil {
 		t.Skipf("no home dir: %v", err)
 	}
-	work, err := os.MkdirTemp(home, ".fairpeer-sbtest-go-*")
+	work, err := os.MkdirTemp(home, ".hiq-sbtest-go-*")
 	if err != nil {
 		t.Skipf("cannot create work dir under home: %v", err)
 	}

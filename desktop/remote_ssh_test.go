@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/remotehost"
+	"github.com/zzycxz/hiq/internal/remotehost"
 )
 
 func TestSSHTransportE2E(t *testing.T) {
@@ -78,7 +78,7 @@ func TestSSHTransportE2E(t *testing.T) {
 		DefaultModel: "pushed/fake-model",
 		Providers: []remotehost.ProviderSnapshot{{
 			Name: "pushed", Kind: "openai", BaseURL: "http://127.0.0.1:9/v1",
-			APIKeyEnv: "FAIRPEER_PUSHED_KEY", APIKey: "sk-smoke", Models: []string{"fake-model"},
+			APIKeyEnv: "HIQ_PUSHED_KEY", APIKey: "sk-smoke", Models: []string{"fake-model"},
 		}},
 	}, &cfgRes); err != nil || !cfgRes.Configured {
 		t.Fatalf("configure: %v %+v", err, cfgRes)
@@ -88,7 +88,7 @@ func TestSSHTransportE2E(t *testing.T) {
 	if err := link.call(ctx, "session/new", remotehost.SessionNewParams{SessionID: "smoke", Cwd: "/etc"}, &newRes); err != nil {
 		t.Fatalf("session/new: %v", err)
 	}
-	if !strings.HasPrefix(newRes.SessionPath, "/root/.config/fairpeer/") && !strings.HasPrefix(newRes.SessionPath, "/root/") {
+	if !strings.HasPrefix(newRes.SessionPath, "/root/.config/hiq/") && !strings.HasPrefix(newRes.SessionPath, "/root/") {
 		t.Fatalf("sessionPath = %s", newRes.SessionPath)
 	}
 	var read remotehost.FsReadResult

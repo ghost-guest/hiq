@@ -9,15 +9,15 @@ import (
 
 // TestConvertMDToGongwenDocx reads the Huawei ADS markdown written by GLM-5.2,
 // converts each line to 公文-format DocSections, and writes a real .docx via
-// writeDOCX. Skipped unless FAIRPEER_GEN_SAMPLE=1. This is the reliable path:
+// writeDOCX. Skipped unless HIQ_GEN_SAMPLE=1. This is the reliable path:
 // the model authors the CONTENT (markdown, no JSON-escaping risk), and a
 // deterministic Go converter owns the FORMAT (the 公文 styles), which is the
 // clean split the docxwrite.go header describes.
 //
-//	FAIRPEER_GEN_SAMPLE=1 go test ./internal/tool/builtin/ -run TestConvertMDToGongwenDocx -v
+//	HIQ_GEN_SAMPLE=1 go test ./internal/tool/builtin/ -run TestConvertMDToGongwenDocx -v
 func TestConvertMDToGongwenDocx(t *testing.T) {
-	if os.Getenv("FAIRPEER_GEN_SAMPLE") != "1" {
-		t.Skip("set FAIRPEER_GEN_SAMPLE=1 to run the markdown→docx conversion")
+	if os.Getenv("HIQ_GEN_SAMPLE") != "1" {
+		t.Skip("set HIQ_GEN_SAMPLE=1 to run the markdown→docx conversion")
 	}
 	wd, _ := os.Getwd()
 	// The markdown lives at <repo>/output/华为智驾_内容.md; tests run from

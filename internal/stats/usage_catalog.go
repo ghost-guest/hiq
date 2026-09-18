@@ -7,8 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/usagecatalog"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/usagecatalog"
 )
 
 type usageManager struct {
@@ -110,7 +110,7 @@ func (m *usageManager) close(ctx context.Context) error {
 	return closeErr
 }
 
-// The single usage catalog projects the single authoritative Fairpeer stats
+// The single usage catalog projects the single authoritative Hiq stats
 // directory. Test/custom writers retain the exact JSONL implementation rather
 // than accidentally sharing rollups with the production cache database.
 func sameUsageDirectory(left, right string) bool {

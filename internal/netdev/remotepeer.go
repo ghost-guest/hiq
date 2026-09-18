@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
-	"github.com/zzycxz/fairpeer/internal/trustdomain/nettrans"
+	"github.com/zzycxz/hiq/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/trustdomain/nettrans"
 )
 
 // RemoteWorkHandler adapts netdev's read-only diagnostics onto the trust

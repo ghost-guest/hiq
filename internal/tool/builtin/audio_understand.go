@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // audio_understand is the audio counterpart to image_understand: it reads an
 // audio file (typically a user-uploaded attachment referenced as
-// @.fairpeer/attachments/x.mp3) and transcribes it via the configured voice
+// @.hiq/attachments/x.mp3) and transcribes it via the configured voice
 // model (CallSTT), returning the transcript as text.
 //
 // Single-track audio path: user audio is NEVER sent to the main model as an
@@ -48,7 +48,7 @@ const audioUnderstandMaxBytes = 25 * 1024 * 1024
 func (audioUnderstand) Name() string { return "audio_understand" }
 
 func (audioUnderstand) Description() string {
-	return "Transcribe a user-uploaded audio file: read an audio file (the path appears in the conversation as an <audio path=\"...\"> reference, e.g. .fairpeer/attachments/xxx.mp3) and return its speech-to-text transcript via the configured voice model. Use this whenever the user attached an audio clip and you need to know what is said in it — the main model cannot hear the audio bytes directly. Once you have the transcript you can answer, translate, or summarize it with your normal text abilities."
+	return "Transcribe a user-uploaded audio file: read an audio file (the path appears in the conversation as an <audio path=\"...\"> reference, e.g. .hiq/attachments/xxx.mp3) and return its speech-to-text transcript via the configured voice model. Use this whenever the user attached an audio clip and you need to know what is said in it — the main model cannot hear the audio bytes directly. Once you have the transcript you can answer, translate, or summarize it with your normal text abilities."
 }
 
 func (audioUnderstand) Schema() json.RawMessage {
@@ -57,7 +57,7 @@ func (audioUnderstand) Schema() json.RawMessage {
   "properties":{
     "path":{
       "type":"string",
-      "description":"Audio file path — use the path from the <audio path=\"...\"> reference in the conversation (e.g. .fairpeer/attachments/xxx.mp3)."
+      "description":"Audio file path — use the path from the <audio path=\"...\"> reference in the conversation (e.g. .hiq/attachments/xxx.mp3)."
     }
   },
   "required":["path"]

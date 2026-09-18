@@ -20,8 +20,8 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/text/encoding/simplifiedchinese"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/driver"
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/netdev/driver"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
 )
 
 // simDevice is an in-process SSH server emulating a Huawei-VRP-like CLI:

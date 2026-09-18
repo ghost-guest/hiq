@@ -18,11 +18,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	_ "github.com/zzycxz/fairpeer/internal/provider/openai" // registers the "openai" provider kind
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/provider"
+	_ "github.com/zzycxz/hiq/internal/provider/openai" // registers the "openai" provider kind
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 type liveFactory struct{ prov provider.Provider }
@@ -35,9 +35,9 @@ func (f *liveFactory) NewSession(_ context.Context, p SessionParams) (*control.C
 }
 
 func TestLiveTestProviderPrompt(t *testing.T) {
-	key := os.Getenv("FAIRPEER_API_KEY")
+	key := os.Getenv("HIQ_API_KEY")
 	if key == "" {
-		t.Skip("FAIRPEER_API_KEY not set")
+		t.Skip("HIQ_API_KEY not set")
 	}
 	prov, err := provider.New("openai", provider.Config{
 		Name:    "test-provider",

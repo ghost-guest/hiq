@@ -8,7 +8,7 @@ package permission
 // vs allows-with-autonomy (everything else).
 //
 // Adapted from openworker's risk.py 4-level model (READ/WRITE_LOCAL/EXEC/
-// EXTERNAL), with FairPeer-specific defaults: MCP tools (mcp__*) default to
+// EXTERNAL), with Hiq-specific defaults: MCP tools (mcp__*) default to
 // EXTERNAL (safe default — an external server's tool is treated as outward
 // until configured otherwise), and builtin outward tools (email_send,
 // rag_delete) are table-driven so adding one is a one-line change, not a code

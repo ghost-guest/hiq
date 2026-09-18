@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // 1x1 red PNG — minimal valid image. Used by cua_path_test.go too; duplicated

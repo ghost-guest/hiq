@@ -203,7 +203,7 @@ feed 未导入时 `CVENeedsFeed=true`：风险区块显示"先导入 feed"引导
 ### 3.4 事件驱动刷新（v2.0：写侧推送替代纯轮询）
 
 - 后端在 findings/审计/jobs/cutover/待确认区/notify **写入成功后**发一个窗口事件
-  `fairpeer:netdev-dash`（payload 仅带 `{screens:[...]}` 变更屏枚举，不带数据本体——数据
+  `hiq:netdev-dash`（payload 仅带 `{screens:[...]}` 变更屏枚举，不带数据本体——数据
   仍走桥方法拉取，避免事件里出现未脱敏内容）。
 - 前端消费：dock 迷你总览**零定时器**（纯事件驱动刷新）；bench 当前屏收到事件即拉一次。
 - 60s 轮询降级为**兜底**：仅 bench 可见时启用（§4.4 第 4 条暂停规则不变）。
@@ -232,7 +232,7 @@ feed 未导入时 `CVENeedsFeed=true`：风险区块显示"先导入 feed"引导
 |---|---|
 | 割接模式 running/hold | 割接屏 |
 | 分层发现 run 运行中（DiscoveryRunState 活跃） | 发现屏 |
-| 经 `fairpeer://finding/<id>` 深链进入 | 调查链屏（高亮该 Finding 所在链） |
+| 经 `hiq://finding/<id>` 深链进入 | 调查链屏（高亮该 Finding 所在链） |
 | 其余 | 总览屏 |
 
 **入口三件套**（§4.4 bench 家族约定，五屏一致）：bench chip + 命令面板项（`?bench=overview|
@@ -304,7 +304,7 @@ dock 迷你总览与 bench 总览**必须读同一份 OverviewSnapshot**——�
   6. 暴露面无 feed 且无 findings：引导"导入 CVE feed / 跑一次基线"；
   7. 割接屏无进行中变更：显示最近一次已收尾变更 + "从提案中心发起"入口。
 - **统一设备聚焦**：五屏中任何设备（矩阵行/链上节点/割接设备条/漏斗条目）点击 → 发
-  `fairpeer:netdev-device-focus` 事件 `{device}` → 既有设备面板打开。全家族一套处理器，
+  `hiq:netdev-device-focus` 事件 `{device}` → 既有设备面板打开。全家族一套处理器，
   禁止各屏私写点击逻辑。
 - i18n：全部文案进 zh/en locale（`ndv.ovw.*`、`ndv.dash.*`、`ndv.chain.*` 键族）。
 
@@ -317,7 +317,7 @@ dock 迷你总览与 bench 总览**必须读同一份 OverviewSnapshot**——�
 | 1 | Dock"总览"页签（默认落地） | 页签体系；打开即见，零成本发现 |
 | 2 | Dock 总览卡片头部"**大屏查看**"按钮 | LogPanel 的 `onOpenWorkbench` 同款（NetDevLayout.tsx:1280——日志工作台今天的主打开路径） |
 | 3 | Bench 条"大屏"chip | `ndv-bench` 既有 chips（对话/日志/安全）；首次经入口 2 打开后 bench 条常驻（`logsBenchEverOpened` 同机制） |
-| 4 | 命令面板 + `?bench=<screen>` 深链（五屏各一项） | `fairpeer:netdev-bench` 自定义事件与 `?bench=` 参数两条既有通道（:424-434） |
+| 4 | 命令面板 + `?bench=<screen>` 深链（五屏各一项） | `hiq:netdev-bench` 自定义事件与 `?bench=` 参数两条既有通道（:424-434） |
 | 5 | 快捷键 **`o`**（无输入焦点时 toggle 总览：再按回对话）；**Alt+1..5** 五屏直切 | 与 `r` 刷新、`/` 搜索同一无修饰单键家族（:462 注释"快捷键最小集"） |
 | 6 | 左下角运维导航"总览"按钮（§4.5） | 既有底栏语法（icon+label，active/badge 规则见 §4.5） |
 
@@ -404,7 +404,7 @@ devices，active 态）、立即巡检（直接动作 + 五项子菜单 + busy �
 ```
 
 - **组装**：`BuildInvestigationChain(caseID, findingID, hours)`——零新数据面。案例过滤走
-  cases.go entries；`findingID` 非空时高亮包含该 Finding 的子链（`fairpeer://finding/<id>`
+  cases.go entries；`findingID` 非空时高亮包含该 Finding 的子链（`hiq://finding/<id>`
   深链的落点）。跨案例聚合视图 v1 不做（§11）。
 - **渲染**：分层 SVG（选型记录 §4.10），六列固定、确定性布局；节点卡片带类型色标签 +
   标题级摘要（不含输出全文，点击深链原文）。
@@ -486,8 +486,8 @@ devices，active 态）、立即巡检（直接动作 + 五项子菜单 + busy �
 
 ### 4.12 深链路由（把断头路接通）
 
-- **`fairpeer://` 系统协议（已实施，Windows 首版）**：HKCU 用户级注册（启动幂等，
-  FAIRPEER_DEV 跳过防 dev 抢注）；热路径 = 第二实例 args 路由（单实例基建已在，
+- **`hiq://` 系统协议（已实施，Windows 首版）**：HKCU 用户级注册（启动幂等，
+  HIQ_DEV 跳过防 dev 抢注）；热路径 = 第二实例 args 路由（单实例基建已在，
   OnSecondInstanceLaunch 解析后 EventsEmit）；冷路径 = 启动 argv 暂存 → 前端 boot 经
   NetDevConsumeDeepLink 取走。**路由表（导航型 only，永久红线——approve/execute 之类
   动作型目的地永久拒绝）**：`finding/<id>`→调查链高亮 · `case/<id>`→调查链 ·
@@ -497,7 +497,7 @@ devices，active 态）、立即巡检（直接动作 + 五项子菜单 + busy �
   **产地**：割接决策点/验证门未过推送（此前无推送，本轮补，带 cutover 链接——
   半夜窗口期的"回来决策"召回）；早报推送副本尾附三屏直达链接（应用内渲染的原文
   不变）；Finding 卡"复制链接"按钮（上下文分享给同事——链接是跨人协作载体）。
-- **`fairpeer:netdev-device-focus`**：§4.3 统一设备聚焦事件（窗口事件，进程内）。
+- **`hiq:netdev-device-focus`**：§4.3 统一设备聚焦事件（窗口事件，进程内）。
 - `?bench=<screen>` 五枚参数与命令面板五项一一对应（§4.4 入口 4）。
 
 ---
@@ -613,7 +613,7 @@ DRT 用五级 severity（critical×10/high×5/medium×2/low×0.5）；我们 Fin
 
 ### 8.4 刷新纪律
 
-- 写侧 `fairpeer:netdev-dash` 事件（§3.4）：dock 迷你总览零定时器、bench 事件即拉；
+- 写侧 `hiq:netdev-dash` 事件（§3.4）：dock 迷你总览零定时器、bench 事件即拉；
 - 兜底轮询仅 bench 可见时（割接屏例外条款见 §4.4）；
 - journal 写入与事件发送均 best-effort，失败静默、兜底轮询保证最终一致。
 
@@ -631,7 +631,7 @@ DRT 用五级 severity（critical×10/high×5/medium×2/low×0.5）；我们 Fin
    `?bench=<screen>`×5/`o`+Alt+1..5/左下角导航）；Esc 层级链正确（投影 → bench → 对话 →
    cutover 不串）；bench 不可见或窗口失焦时兜底轮询暂停、割接屏例外生效；"收起右侧栏"
    toggle 后底部左侧导航可唤回；全部数字可深链到正确页签+过滤。
-3. **场景感知**：割接 running 时开大屏落割接屏；发现 run 活跃落发现屏；`fairpeer://finding/x`
+3. **场景感知**：割接 running 时开大屏落割接屏；发现 run 活跃落发现屏；`hiq://finding/x`
    落调查链屏并高亮；手动切换后会话内记住。
 4. **同源一致性**（核心）：`buildOverviewData()` 快照单测——构造已知 findings/jobs/proposals
    fixture，断言各计数与 Stats 各字段；早报（D3 重构后）的客观数据段与快照字段一一对应
@@ -649,7 +649,7 @@ DRT 用五级 severity（critical×10/high×5/medium×2/low×0.5）；我们 Fin
     天滚动；三件失败注入不 fail 生产者；压实函数按 fixture 断言。
 12. **审计重放**：30 天窗口截取正确；缓存 key 失效（追加一条即重算）；10k 条注入计时
     ≤50ms（CI 宽松上限 ×5）。
-13. **事件驱动**：findings/jobs 写入触发 `fairpeer:netdev-dash`；dock 迷你零定时器断言
+13. **事件驱动**：findings/jobs 写入触发 `hiq:netdev-dash`；dock 迷你零定时器断言
     （组件内无 setInterval）；bench 收到事件拉取一次。
 14. i18n：zh/en 双语全键覆盖（含五屏/投影/统计条）。
 15. 回归：11 个既有页签不受影响；既有 `r`/`/`/Esc 快捷键不与 `o`/Alt+N 冲突；live 页签
@@ -679,7 +679,7 @@ D5 L1 三件 journal（1-2 天，可与 D4 并行；R2 端口突变卡依赖它�
 | COMPLETION_SPEC R4 | **已落地**（结构化提案步骤/割接模式/restore-verify），割接屏数据齐备 |
 | proposal watching 状态修复（评审发现的死状态 bug） | Inflight.ProposalsWatchable v1.0 已删；若恢复观察期字段需先修 |
 | OPS spec Phase 1（Request/Run） | 落地后总览在途区块扩展"进行中的请求/计划"行——本 spec 的扩展点 |
-| ~~fairpeer:// 协议注册~~ | **已实施**（Windows 首版：HKCU + 单实例 args 路由 + 冷启动 argv + fail-closed 解析；macOS 打包版随 plist 声明另议） |
+| ~~hiq:// 协议注册~~ | **已实施**（Windows 首版：HKCU + 单实例 args 路由 + 冷启动 argv + fail-closed 解析；macOS 打包版随 plist 声明另议） |
 
 ---
 
@@ -707,8 +707,8 @@ D5 L1 三件 journal（1-2 天，可与 D4 并行；R2 端口突变卡依赖它�
 缓存）、D2（OverviewPanel 两档 + dock 总览页签默认落地 + 一次性补种 flag）、D3（早报
 三计数同源，快照失败回退旧口径）、D4（壳 DashShell：五页签/场景感知/投影轮播/底条
 ticker；调查链六列分层 SVG/割接流水线/发现漏斗/暴露面矩阵；`o` 键 + Alt+1..5 +
-`?bench=dash&screen=&finding=` + bench chip + 左下导航 8 项 + `fairpeer:netdev-dash`
-写侧推送 + `fairpeer://finding` 应用内拦截 + `fairpeer:netdev-device-focus` 统一聚焦）、
+`?bench=dash&screen=&finding=` + bench chip + 左下导航 8 项 + `hiq:netdev-dash`
+写侧推送 + `hiq://finding` 应用内拦截 + `hiq:netdev-device-focus` 统一聚焦）、
 D5（R1 巡检 journal 含 ifBrief 行数启发式 + R2 端口突变含 FirstSeen 回填 +
 R3 syslog 计数按天滚动 + R4 转正账本 + 90 天压实；四屏组装函数与三件 journal 全部
 表驱动单测覆盖）。
@@ -716,7 +716,7 @@ R3 syslog 计数按天滚动 + R4 转正账本 + 90 天压实；四屏组装函�
 **入口三件套补全（复查轮）**：命令面板五项（⌘K → 大屏·总览/调查链/割接/发现/
 暴露面）、dock 总览卡片"大屏查看"按钮、Finding 卡"证据链"按钮、割接视图头部
 "进入割接大屏"、提案中心割接卡入口、发现对话框"查看发现大屏"、attack-path 卡
-"放大"——全部经 `fairpeer:netdev-open-screen` 事件抵达壳。补测：riskLevelFromScore
+"放大"——全部经 `hiq:netdev-open-screen` 事件抵达壳。补测：riskLevelFromScore
 表驱动（desktop）、journal 失败注入（broken dir 不 panic、best-effort 静默）、
 审计 10k 重放计时（实测 24.7ms ≤ 预算 50ms）、前端渲染冒烟 + dock 档零定时器
 源码断言（dash-boards.test.tsx，已入 npm test 序列）。
@@ -747,7 +747,7 @@ context→overview。§0 的"11 个页签"为历史快照，现状以本节为�
    子串兜底），过滤 chip 一键清除；jobs/audit 跳转仍只切页签（面板无过滤态）。
 2. **图实一致性口径 = 设计 ↔ IP 规划**（两份离线存量）；spec 原文的"快照"侧是
    LLDP 活探测，不为看屏发起连接（纯读不变量优先），活快照对账留待巡检侧落库后并入。
-3. ~~`fairpeer://finding/<id>` 接收端为应用内锚点拦截~~ **系统注册已实施**（§4.12）：
+3. ~~`hiq://finding/<id>` 接收端为应用内锚点拦截~~ **系统注册已实施**（§4.12）：
    应用内拦截保留（markdown 里的链接直达），系统通路（热/冷路径）与产地扩展同轮落地。
    现实约束保留一条：IM 客户端是否将自定义 scheme 渲染为可点链接不在我们控制内
    （飞书/钉钉部分版本只自动链 http(s)）——bot 命令路径（/netdev 详情）仍是移动端/

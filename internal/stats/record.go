@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/filelock"
-	"github.com/zzycxz/fairpeer/internal/usagecatalog"
+	"github.com/zzycxz/hiq/internal/filelock"
+	"github.com/zzycxz/hiq/internal/usagecatalog"
 )
 
 // dayLayout names one stats file per UTC-free local day, e.g. 2026-08-02.jsonl.
@@ -181,7 +181,7 @@ func fmtHash(hash []byte) string {
 
 // ensureRecordBoundary separates a torn trailing JSON object from the next
 // append. The caller holds the cross-process append lock, so checking the last
-// byte and repairing it cannot race another Fairpeer writer.
+// byte and repairing it cannot race another Hiq writer.
 func ensureRecordBoundary(f *os.File) error {
 	st, err := f.Stat()
 	if err != nil || st.Size() == 0 {

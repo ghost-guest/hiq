@@ -9,7 +9,7 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // Custom wallpaper for the desktop shell.
@@ -26,7 +26,7 @@ import (
 const (
 	// wallpaperRoutePrefix is served by wallpaperMiddleware through the Wails
 	// AssetServer, bypassing the embedded frontend bundle.
-	wallpaperRoutePrefix = "/__fairpeer_wallpaper/"
+	wallpaperRoutePrefix = "/__hiq_wallpaper/"
 
 	// wallpaperMaxBytes caps the accepted source image. A larger file is
 	// rejected with a readable message instead of freezing the webview while it
@@ -59,7 +59,7 @@ type WallpaperView struct {
 }
 
 // wallpaperDir is <user config dir>/wallpapers. It sits beside config.toml and
-// credentials so all fairpeer-owned user state lives in one place.
+// credentials so all hiq-owned user state lives in one place.
 func wallpaperDir() string {
 	cfgPath := config.UserConfigPath()
 	if cfgPath == "" {
@@ -251,7 +251,7 @@ func removeStoredWallpapers(dir string) {
 }
 
 // wallpaperMiddleware serves stored wallpaper images over
-// /__fairpeer_wallpaper/{file}. Only a flat file name with an accepted image
+// /__hiq_wallpaper/{file}. Only a flat file name with an accepted image
 // extension inside the wallpaper directory is served — no traversal, no other
 // files on disk. The image is not secret, but the route stays deliberately
 // narrow so a compromised webview cannot use it to read arbitrary files.

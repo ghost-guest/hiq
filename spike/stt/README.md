@@ -1,6 +1,6 @@
 # STT 技术验证（Spike）
 
-> 目的：在**不改 fairpeer 任何代码**的前提下，把“语音输入”功能的 4 个技术风险点跑通，用实测数据指导后续集成方案。验证文件保留，后续集成可参考。
+> 目的：在**不改 hiq 任何代码**的前提下，把“语音输入”功能的 4 个技术风险点跑通，用实测数据指导后续集成方案。验证文件保留，后续集成可参考。
 
 ## 风险点
 
@@ -16,7 +16,7 @@
 ```
 spike/stt/
 ├── README.md          本文件（含结论矩阵）
-├── api/               后端 API 验证（独立 Go module，不依赖 fairpeer）
+├── api/               后端 API 验证（独立 Go module，不依赖 hiq）
 │   ├── go.mod
 │   └── main.go        gen / test / matrix / providers 子命令
 ├── mic/
@@ -81,7 +81,7 @@ go run . matrix -files ../samples/beep.wav,../samples/voice.webm,../samples/voic
 
 **结论：6 家端点路径全部正确、全部可达、错误响应都是结构化 JSON。** 之前担心的智谱 `/paas/v4` 前缀、OpenRouter `/api/v1` 双层路径、MiMo 走 chat 端点，全部实测通过。OpenAI 在本环境也能直连（无需代理）。
 
-### 1. 全景厂家分类（fairpeer 支持的 15 家独立厂商）
+### 1. 全景厂家分类（hiq 支持的 15 家独立厂商）
 
 | 分类 | 厂商 | STT | 本 spike 覆盖 |
 |---|---|---|---|
@@ -123,7 +123,7 @@ go run . matrix -files ../samples/beep.wav,../samples/voice.webm,../samples/voic
 | 环境 | MediaRecorder 默认 type | 备注 |
 |---|---|---|
 | Chrome (Windows) | _待填_ | 预期 `audio/webm;codecs=opus` |
-| Edge (WebView2) | _待填_ | fairpeer Wails 用的内核 |
+| Edge (WebView2) | _待填_ | hiq Wails 用的内核 |
 | Safari | _待填_ | 预期 `audio/mp4` |
 
 ### 4. 四个问题的回答

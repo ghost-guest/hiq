@@ -1,6 +1,6 @@
-# fairpeer-server（linkpeer-signal 云端信令 K）
+# hiq-server（linkpeer-signal 云端信令 K）
 
-linkpeer × fairpeer 的**无状态信令路由器**：配对撮合、公钥交换、SDP/ICE 中转。
+linkpeer × hiq 的**无状态信令路由器**：配对撮合、公钥交换、SDP/ICE 中转。
 不碰任何业务数据/私钥，重启即清空，靠客户端持钥自洽认证。
 
 ## 架构（docker-compose 三件套）
@@ -19,10 +19,10 @@ linkpeer × fairpeer 的**无状态信令路由器**：配对撮合、公钥交�
   relay 仅在打洞全败（双对称 NAT）时启用。要回到纯 STUN：turnserver.conf
   加回 `no-udp-relay` + `no-tcp-relay` 并关掉 relay 端口段。
 
-## 独立编译（不依赖 fairpeer 主体）
+## 独立编译（不依赖 hiq 主体）
 
 ```bash
-# 在 fairpeer 仓库根目录
+# 在 hiq 仓库根目录
 CGO_ENABLED=0 go build -o linkpeer-signal ./cmd/linkpeer-signal
 ./linkpeer-signal -config deploy/linkpeer-signal/signal.toml
 ```

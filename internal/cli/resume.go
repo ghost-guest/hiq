@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/i18n"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/i18n"
 )
 
 const resumeListCap = 10

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/filelock"
+	"github.com/zzycxz/hiq/internal/filelock"
 )
 
 // SchemaVersion is the on-disk shape of a session's deferred-task file. Bump it

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 func TestNormalizeSkillContent(t *testing.T) {

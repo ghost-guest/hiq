@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // TestImageUnderstandIntegration verifies the four integration points that
@@ -21,7 +21,7 @@ import (
 //     actually SEE this tool and can decide to call it. A hidden or
 //     un-registered tool is invisible to the model.
 //  3. Workspace.Tools() binds workDir into the tool instance, so a relative
-//     attachment path (".fairpeer/attachments/x.png") resolves under the
+//     attachment path (".hiq/attachments/x.png") resolves under the
 //     workspace rather than the process cwd.
 //  4. The tool's JSON schema parses and advertises the prompt parameter the
 //     agent must fill in — the entire design hinges on the agent authoring the

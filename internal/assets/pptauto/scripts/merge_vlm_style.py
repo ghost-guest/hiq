@@ -10,8 +10,8 @@ PROBLEM this fixes:
   not actually true in code.
 
 WHAT this does:
-  Reads ~/.fairpeer/ppt-template-style.json (and, when Phase 2 produces it,
-  ~/.fairpeer/reference-style.json) and merges their colors into the given
+  Reads ~/.hiq/ppt-template-style.json (and, when Phase 2 produces it,
+  ~/.hiq/reference-style.json) and merges their colors into the given
   template_config.json IN PLACE. After this runs, the config that ppt-auto and
   check_svg.py read already reflects VLM-extracted colors — no LLM discipline needed.
 
@@ -28,7 +28,7 @@ SCOPE (deliberately narrow, per PPT vision spec):
 
 Usage:
     python merge_vlm_style.py <template_config.json> [--home <home_dir>]
-    # reads ~/.fairpeer/{ppt-template-style,reference-style}.json (whichever exist),
+    # reads ~/.hiq/{ppt-template-style,reference-style}.json (whichever exist),
     # merges into <template_config.json> in place.
     # Last stdout line: {"merged": [<files>], "config": <path>}
 """
@@ -131,15 +131,15 @@ def merge(config_path, home_dir):
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
 
-    fairpeer = os.path.join(home_dir, ".fairpeer")
+    hiq = os.path.join(home_dir, ".hiq")
     # Apply LOWEST priority first so higher priority overwrites.
     # (reference-style wins over template-style wins over baseline.)
     # allow_background_type only for the template source — see
     # _apply_vlm_style for why a reference's background_type must not
     # flip a template-less deck into template mode.
     sources = [
-        ("ppt-template-style.json", os.path.join(fairpeer, "ppt-template-style.json"), True),
-        ("reference-style.json", os.path.join(fairpeer, "reference-style.json"), False),
+        ("ppt-template-style.json", os.path.join(hiq, "ppt-template-style.json"), True),
+        ("reference-style.json", os.path.join(hiq, "reference-style.json"), False),
     ]
     applied = []
     for name, path, allow_bt in sources:
@@ -167,7 +167,7 @@ def merge(config_path, home_dir):
 def main():
     ap = argparse.ArgumentParser(description="Merge VLM style into template_config.json.")
     ap.add_argument("config_path", help="Path to template_config.json (merged in place)")
-    ap.add_argument("--home", default=None, help="Home dir containing .fairpeer/ (default: ~)")
+    ap.add_argument("--home", default=None, help="Home dir containing .hiq/ (default: ~)")
     args = ap.parse_args()
 
     if not os.path.isfile(args.config_path):

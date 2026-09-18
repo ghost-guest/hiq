@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/shellparse"
+	"github.com/zzycxz/hiq/internal/shellparse"
 )
 
 // CommandMatches reports whether a cited verification command is proven by a

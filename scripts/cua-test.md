@@ -1,20 +1,20 @@
-# fairpeer CUA 测试序列（重新设计版）
+# hiq CUA 测试序列（重新设计版）
 
 三个**互相独立**的测试，由易到难。每个都是一条命令，可直接复制粘贴。
-**核心目的**：验证 fairpeer 能不能自主地"看屏幕→操作→验证"。
+**核心目的**：验证 hiq 能不能自主地"看屏幕→操作→验证"。
 
-> 前提：`bin/fairpeer.exe` 是 dev-cua 版本。先确认：`./bin/fairpeer.exe version`
+> 前提：`bin/hiq.exe` 是 dev-cua 版本。先确认：`./bin/hiq.exe version`
 > 全程在 Git Bash 或 PowerShell 里跑都行，命令是跨 shell 通用的。
 
 ---
 
 ## 测试 1（必做，最简单）：验证"看屏幕"闭环
 
-**这一步不操作任何东西，只让 fairpeer 截图并描述。** 用来确认 screen_perceive / image_understand 链路通。
+**这一步不操作任何东西，只让 hiq 截图并描述。** 用来确认 screen_perceive / image_understand 链路通。
 
 ```bash
-cd <项目路径>/fairpeer
-./bin/fairpeer.exe run --profile cowork --max-steps 10 "截一张当前屏幕的图，然后告诉我屏幕上现在开着哪些窗口、每个窗口的标题是什么。不要点击或操作任何东西，只看。"
+cd <项目路径>/hiq
+./bin/hiq.exe run --profile cowork --max-steps 10 "截一张当前屏幕的图，然后告诉我屏幕上现在开着哪些窗口、每个窗口的标题是什么。不要点击或操作任何东西，只看。"
 ```
 
 **判断标准**：
@@ -35,14 +35,14 @@ cd <项目路径>/fairpeer
 ### 第 2a 步：只开记事本（不输入不保存）
 
 ```bash
-cd <项目路径>/fairpeer
-./bin/fairpeer.exe run --profile cowork --max-steps 15 "用 bash 工具执行命令 'notepad.exe' 打开 Windows 记事本，然后截图确认它已经打开了。只需要打开它，不要输入任何文字。"
+cd <项目路径>/hiq
+./bin/hiq.exe run --profile cowork --max-steps 15 "用 bash 工具执行命令 'notepad.exe' 打开 Windows 记事本，然后截图确认它已经打开了。只需要打开它，不要输入任何文字。"
 ```
 
 > 明确告诉它"用 bash 执行 notepad.exe"——避免它走 start 菜单那条容易失败的路径。
 
 **判断标准**：
-- ✅ 记事本窗口真的弹出来了，fairpeer 截图后说"已打开"
+- ✅ 记事本窗口真的弹出来了，hiq 截图后说"已打开"
 - ❌ 如果 bash 报 `notepad not found`，换成：`cmd.exe /c start notepad`
 
 ### 第 2b 步：在已开的记事本里输入（手动开好记事本，再跑这个）
@@ -50,8 +50,8 @@ cd <项目路径>/fairpeer
 先**你自己手动**打开一个记事本（开始菜单→记事本），点一下编辑区让它获得焦点。然后：
 
 ```bash
-cd <项目路径>/fairpeer
-./bin/fairpeer.exe run --profile cowork --max-steps 15 "屏幕上已经打开了一个记事本窗口并且编辑区有焦点。用 screen_type 工具输入文字 'Hello from CUA'，然后截图确认文字已经出现在记事本里。"
+cd <项目路径>/hiq
+./bin/hiq.exe run --profile cowork --max-steps 15 "屏幕上已经打开了一个记事本窗口并且编辑区有焦点。用 screen_type 工具输入文字 'Hello from CUA'，然后截图确认文字已经出现在记事本里。"
 ```
 
 **判断标准**：
@@ -63,14 +63,14 @@ cd <项目路径>/fairpeer
 ## 测试 3（浏览器）：验证 GitHub 操作 + 代理修复
 
 ```bash
-cd <项目路径>/fairpeer
-./bin/fairpeer.exe run --profile cowork --max-steps 40 "用 browser_open 打开 https://github.com，等页面加载后用 browser_snapshot 看页面结构，找到搜索框，用 browser_type 输入 'reasonix' 并回车搜索，然后告诉我第一个搜索结果的仓库名和 star 数。每一步操作后都要重新 snapshot 确认。"
+cd <项目路径>/hiq
+./bin/hiq.exe run --profile cowork --max-steps 40 "用 browser_open 打开 https://github.com，等页面加载后用 browser_snapshot 看页面结构，找到搜索框，用 browser_type 输入 'reasonix' 并回车搜索，然后告诉我第一个搜索结果的仓库名和 star 数。每一步操作后都要重新 snapshot 确认。"
 ```
 
 **判断标准**：
 - ✅ 浏览器打开 GitHub **不报 context canceled** → 代理/headless 修复生效
 - ✅ 用 snapshot + ref 操作，返回正确结果（`esengine/DeepSeek-Reasonix`，约 23.7k star）
-- ❌ 如果 GitHub 打不开 / 一直转圈 → 代理没配好，在 `fairpeer.toml` 加：
+- ❌ 如果 GitHub 打不开 / 一直转圈 → 代理没配好，在 `hiq.toml` 加：
   ```toml
   [network]
   proxy_mode = "custom"
@@ -83,7 +83,7 @@ cd <项目路径>/fairpeer
 
 **每个测试，请贴这两样：**
 
-1. **fairpeer 终端输出的最后 30 行左右**（包含它调用了哪些工具、有没有报错）
+1. **hiq 终端输出的最后 30 行左右**（包含它调用了哪些工具、有没有报错）
 2. **一句话结论**：成功了还是失败了，实际现象是什么
 
 格式示例：
@@ -103,7 +103,7 @@ cd <项目路径>/fairpeer
 
 | 现象 | 处理 |
 |---|---|
-| `fairpeer.exe: command not found` | 用 `./bin/fairpeer.exe`（带 `./`），或先 `cd` 到 fairpeer 目录 |
+| `hiq.exe: command not found` | 用 `./bin/hiq.exe`（带 `./`），或先 `cd` 到 hiq 目录 |
 | 报 `OPENAI_API_KEY not set` | 设环境变量：`export OPENAI_API_KEY=你的key`（Git Bash） |
 | screen_perceive 报 EOF | OpenAI-compatible API 连不上，检查网络/代理；确认跑的是 dev-cua 新二进制 |
 | browser 报 context canceled | 代理没配，见测试3说明 |

@@ -11,7 +11,7 @@ type capabilityPurpose string
 const (
 	capabilityWorkspace   capabilityPurpose = "workspace-write"
 	capabilitySessionTemp capabilityPurpose = "session-temp-write"
-	capabilityHashDomain                    = "fairpeer/windows-write-capability/v1"
+	capabilityHashDomain                    = "hiq/windows-write-capability/v1"
 )
 
 // deriveCapabilitySID returns an unforgeable-in-practice Windows capability

@@ -21,8 +21,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
-	"github.com/zzycxz/fairpeer/internal/secrets"
+	"github.com/zzycxz/hiq/internal/proc"
+	"github.com/zzycxz/hiq/internal/secrets"
 
 	"golang.org/x/sys/windows"
 )

@@ -20,9 +20,9 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev"
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
 )
 
 // NetDevDeviceView is one device row in the settings UI. Password never
@@ -892,8 +892,8 @@ func startBriefingScheduler(a *App) {
 					if report, err := a.NetDevDailyBriefing(); err == nil && strings.TrimSpace(report) != "" {
 						// 直达链接只追加在推送副本上（应用内渲染的早报原文不变，
 						// 验收口径不受影响）；这些链接在 IM 里点开落对应大屏。
-						push := report + "\n\n直达：调查链 fairpeer://screen/chain ｜ 暴露面 fairpeer://screen/exposure ｜ 总览 fairpeer://screen/overview"
-						netdev.NotifyPushText("briefing", "[fairpeer 运维] 每日早报", push)
+						push := report + "\n\n直达：调查链 hiq://screen/chain ｜ 暴露面 hiq://screen/exposure ｜ 总览 hiq://screen/overview"
+						netdev.NotifyPushText("briefing", "[hiq 运维] 每日早报", push)
 						slog.Info("scheduled netdev briefing pushed", "bytes", len(report))
 					} else if err != nil {
 						slog.Warn("scheduled netdev briefing failed", "err", err)
@@ -2572,7 +2572,7 @@ func (a *App) NetDevNotifyTest() error {
 	if !netdev.NotifyConfigured() {
 		return fmt.Errorf("还没有配置任何通知出口——先填 Webhook、IM 直推或 SMTP 任意一项并保存")
 	}
-	netdev.NotifyPushText("test", "[fairpeer 运维] 通知测试", "这是一条测试消息——看到它说明告警推送链路畅通。真正的告警会带设备、证据与「回复 /netdev 详情 <编号>」提示。")
+	netdev.NotifyPushText("test", "[hiq 运维] 通知测试", "这是一条测试消息——看到它说明告警推送链路畅通。真正的告警会带设备、证据与「回复 /netdev 详情 <编号>」提示。")
 	return nil
 }
 

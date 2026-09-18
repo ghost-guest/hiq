@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
-	"github.com/zzycxz/fairpeer/internal/permission"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/permission"
 )
 
 // guardrailManager is testManager plus a group assignment and guardrails, so

@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
+	"github.com/zzycxz/hiq/internal/proc"
 )
 
 // TmuxRunner is the narrow command surface used by Adapter. Implementations

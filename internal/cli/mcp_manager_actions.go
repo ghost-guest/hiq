@@ -12,10 +12,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/mcpdiag"
-	"github.com/zzycxz/fairpeer/internal/plugin"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/mcpdiag"
+	"github.com/zzycxz/hiq/internal/plugin"
 )
 
 func (m chatTUI) applyMCPAction(v mcpServerView, action mcpAction) (tea.Model, tea.Cmd) {
@@ -380,7 +380,7 @@ func mcpConfigLocation() string {
 	if path := config.UserConfigPath(); path != "" {
 		return path
 	}
-	return "fairpeer.toml"
+	return "hiq.toml"
 }
 
 type mcpEditConfigLaunch struct {

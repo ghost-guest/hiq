@@ -25,8 +25,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/fileutil"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/fileutil"
 )
 
 // Kind is the string tag of a Record. It mirrors event.Kind's meaningful subset —

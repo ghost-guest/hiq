@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/zzycxz/fairpeer/internal/bot"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/bot"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // newBotBridge 构造桌面 bot 桥 hub，把 deps 绑到 App 方法上，并从配置加载已持久化的订阅。

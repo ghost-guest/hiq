@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 // fleet is a real-socket three-node fleet: two founding admins (quorum 2)

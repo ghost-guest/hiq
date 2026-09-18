@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // ContractEntry is the provider-visible contract for a tool schema snapshot.
@@ -85,7 +85,7 @@ func (r *Registry) contractEntries(providerVisibleOnly bool) []ContractEntry {
 func RenderContractMarkdown(entries []ContractEntry) string {
 	var b strings.Builder
 	b.WriteString("# Tool Contract\n\n")
-	b.WriteString("This document records the provider-visible contract for Fairpeer compile-time built-in tools. It is generated from the same canonical schema path used by the runtime registry.\n\n")
+	b.WriteString("This document records the provider-visible contract for Hiq compile-time built-in tools. It is generated from the same canonical schema path used by the runtime registry.\n\n")
 	b.WriteString("| Tool | Read-only | Description |\n")
 	b.WriteString("| --- | --- | --- |\n")
 	for _, e := range entries {

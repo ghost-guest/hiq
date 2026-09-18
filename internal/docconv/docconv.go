@@ -19,8 +19,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
-	"github.com/zzycxz/fairpeer/internal/runtime"
+	"github.com/zzycxz/hiq/internal/proc"
+	"github.com/zzycxz/hiq/internal/runtime"
 )
 
 // Result is the JSON shape emitted by doc_converter.py (and ocr_pdf.py).
@@ -66,11 +66,11 @@ func ScriptCandidates(name string) []string {
 			filepath.Join(dir, "..", "..", "..", name),
 		)
 	}
-	// ~/.fairpeer/scripts is where boot releases the EMBEDDED copies
+	// ~/.hiq/scripts is where boot releases the EMBEDDED copies
 	// (assets.EnsureHelperScripts) — the only probe guaranteed to resolve for a
 	// packaged binary launched from an arbitrary location/cwd.
 	if home, err := os.UserHomeDir(); err == nil && home != "" {
-		candidates = append(candidates, filepath.Join(home, ".fairpeer", "scripts", name))
+		candidates = append(candidates, filepath.Join(home, ".hiq", "scripts", name))
 	}
 	return candidates
 }

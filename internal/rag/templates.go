@@ -36,7 +36,7 @@ type FieldMeta struct {
 // Built-in template definitions (always available even without Hyper-Extract).
 // Only templates with REAL differentiated extraction logic are listed here.
 // general/hypergraph, general/list, general/model were removed: they existed as
-// placeholders mirroring Hyper-Extract's Python type system, but fairpeer's Go
+// placeholders mirroring Hyper-Extract's Python type system, but hiq's Go
 // extractor has no hyperedge/list/model support (no custom prompts, fixed
 // binary-graph result shape), so selecting them produced identical output to
 // general/graph. The five domain templates below each carry distinct prompts.

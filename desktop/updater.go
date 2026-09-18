@@ -22,9 +22,9 @@ import (
 	"github.com/minio/selfupdate"
 	"golang.org/x/mod/semver"
 
-	"github.com/zzycxz/fairpeer/desktop/internal/update"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netclient"
+	"github.com/zzycxz/hiq/desktop/internal/update"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netclient"
 )
 
 // updater.go is the transport-free core of the desktop auto-updater: manifest
@@ -34,7 +34,7 @@ import (
 
 // Manifest endpoints — GitHub releases as the sole source.
 const (
-	ghReleasesBase = "https://github.com/zzycxz/fairpeer/releases"
+	ghReleasesBase = "https://github.com/zzycxz/hiq/releases"
 	httpTimeout    = 15 * time.Second
 )
 
@@ -266,7 +266,7 @@ func extractBinary(targz []byte, name string) ([]byte, error) {
 // applyLinux replaces the running binary with the one inside the downloaded
 // tar.gz; the caller relaunches afterwards.
 func applyLinux(targz []byte) error {
-	bin, err := extractBinary(targz, "fairpeer-desktop")
+	bin, err := extractBinary(targz, "hiq-desktop")
 	if err != nil {
 		return err
 	}
@@ -296,7 +296,7 @@ func applyWindows(newExe []byte) error {
 
 	// Write a batch script that waits for the current process to exit, replaces
 	// the binary, cleans up, and relaunches.
-	batPath := filepath.Join(filepath.Dir(currentExe), "fairpeer-update.bat")
+	batPath := filepath.Join(filepath.Dir(currentExe), "hiq-update.bat")
 	bat := fmt.Sprintf(`@echo off
 :wait
 timeout /t 1 /nobreak >nul

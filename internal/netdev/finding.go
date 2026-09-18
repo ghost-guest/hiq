@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // Findings (NETDEV_SPEC §10.2): the diagnostic hand's conclusions, each with

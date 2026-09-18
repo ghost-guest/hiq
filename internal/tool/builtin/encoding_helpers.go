@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	fileenc "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
+	fileenc "github.com/zzycxz/hiq/internal/fileutil/encoding"
 )
 
 // maxWriteBytes caps the content length a writer tool will accept. Without it a

@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/jobs"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/jobs"
+	"github.com/zzycxz/hiq/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/tool"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -292,7 +292,7 @@ func defaultBashShellPATH(ctx context.Context) string {
 	if shell == "" {
 		return ""
 	}
-	const marker = "__FAIRPEER_BASH_PATH__="
+	const marker = "__HIQ_BASH_PATH__="
 	script := "printf '\\n" + marker + "%s\\n' \"$PATH\""
 	for _, args := range [][]string{
 		{"-l", "-i", "-c", script},

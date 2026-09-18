@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // TestManagerConcurrentAccess hammers every public Manager method from many

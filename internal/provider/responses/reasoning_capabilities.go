@@ -1,6 +1,6 @@
 package responses
 
-import "github.com/zzycxz/fairpeer/internal/provider"
+import "github.com/zzycxz/hiq/internal/provider"
 
 func (c *client) ReasoningReplayCapabilities() provider.ReasoningReplayCapabilities {
 	fallback := ""

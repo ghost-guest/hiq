@@ -197,7 +197,7 @@ func TestStatsPathLayout(t *testing.T) {
 	if p == "" {
 		t.Fatal("statsPath returned empty")
 	}
-	wantSuffix := filepath.Join("fairpeer", "cache", "mcp")
+	wantSuffix := filepath.Join("hiq", "cache", "mcp")
 	if got := filepath.Dir(p); !strings.HasSuffix(got, wantSuffix) {
 		t.Fatalf("parent = %q, want suffix %q", got, wantSuffix)
 	}

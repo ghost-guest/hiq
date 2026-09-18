@@ -1,4 +1,4 @@
-// Package remotehost is the fairpeer remote-workspace host: a headless process
+// Package remotehost is the hiq remote-workspace host: a headless process
 // (spawned inside WSL, a container, or over SSH) that owns the real controllers
 // for remote workspaces and exposes them to the desktop over a stdio NDJSON
 // JSON-RPC connection. The desktop is a thin client: turns, tools, files, git,
@@ -14,7 +14,7 @@ package remotehost
 import (
 	"encoding/json"
 
-	"github.com/zzycxz/fairpeer/internal/eventwire"
+	"github.com/zzycxz/hiq/internal/eventwire"
 )
 
 // --- host-level ------------------------------------------------------------

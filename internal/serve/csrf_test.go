@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/control"
+	"github.com/zzycxz/hiq/internal/control"
 )
 
 // TestServeRejectsNonJSONPost guards the CSRF defense: a state-changing POST that

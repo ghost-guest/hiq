@@ -28,7 +28,7 @@ import (
 	cdptarget "github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // Browser automation tools (Phase 1 of coWork). These drive a real Chromium via
@@ -159,7 +159,7 @@ func initBrowserDownloadDir() error {
 		if err != nil || base == "" {
 			base = os.TempDir()
 		}
-		dir := filepath.Join(base, "fairpeer", "browser-downloads")
+		dir := filepath.Join(base, "hiq", "browser-downloads")
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			browserDownloadDirErr = fmt.Errorf("create download dir: %w", err)
 			return
@@ -418,7 +418,7 @@ var browserPoolCtx context.Context
 // the resolved proxy). They shape the chromedp allocator: a persistent profile
 // keeps login state across sessions; a non-headless browser behaves more like a
 // human user and avoids headless rendering quirks on anti-bot sites; the proxy
-// routes the browser through the same network path as the rest of fairpeer.
+// routes the browser through the same network path as the rest of hiq.
 // Injected via SetBrowserLaunchOptions at boot so this file stays free of a
 // config import cycle.
 type browserLaunchOptions struct {
@@ -493,7 +493,7 @@ func ensureBrowserAllocator() (context.Context, string, error) {
 	if globalBrowserLaunch.userDataDir != "" {
 		opts = append(opts, chromedp.UserDataDir(globalBrowserLaunch.userDataDir))
 	}
-	// Route the browser through the same proxy as the rest of fairpeer. Without
+	// Route the browser through the same proxy as the rest of hiq. Without
 	// this the browser ignores [network] proxy and goes direct, which fails on
 	// sites (incl. GitHub) that are only reachable through a configured proxy.
 	if globalBrowserLaunch.proxyServer != "" {
@@ -2376,7 +2376,7 @@ func unwrapJSONString(s string) string {
 // refuses to click them (clicking opens a native OS file-chooser dialog that
 // blocks the browser process and can't be dismissed via CDP).
 //
-// The path must be readable by the BROWSER process, not just fairpeer. For a
+// The path must be readable by the BROWSER process, not just hiq. For a
 // locally-launched browser that's the same machine, so any absolute path the
 // user can read works. For an attached remote browser, the path must be valid
 // on the remote host.
@@ -2435,7 +2435,7 @@ func (browserUploadFile) Execute(ctx context.Context, args json.RawMessage) (str
 
 	// Validate the files exist locally first — gives a clear error before
 	// hitting CDP, which would just fail with an opaque "set files" error.
-	// NOTE: this checks the fairpeer process's view; for an attached remote
+	// NOTE: this checks the hiq process's view; for an attached remote
 	// browser, the path also needs to exist on the remote host, which we can't
 	// verify here. The check is best-effort: if it passes locally but the
 	// browser is remote and the path is wrong, setFileInputFiles will error.
@@ -2628,16 +2628,16 @@ func persistBrowserPath(path string) error {
 // internal/tool/builtin; config is a sibling). We resolve the same XDG/home
 // location directly.
 func browserConfigFilePath() string {
-	// Respect XDG_CONFIG_HOME if set, else ~/.config/fairpeer/config.toml — same
+	// Respect XDG_CONFIG_HOME if set, else ~/.config/hiq/config.toml — same
 	// logic as config.userConfigPath.
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, "fairpeer", "config.toml")
+		return filepath.Join(xdg, "hiq", "config.toml")
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		home = "."
 	}
-	return filepath.Join(home, ".config", "fairpeer", "config.toml")
+	return filepath.Join(home, ".config", "hiq", "config.toml")
 }
 
 // upsertCoworkBrowserPath inserts or replaces the browser_path line under the
@@ -3155,7 +3155,7 @@ func (s *browserSession) currentKeepInterval() time.Duration {
 
 // sessionKeepaliveTick performs one refresh cycle. The reaper-side lastUsed
 // refresh happens even when the site-side half fails — a degraded keep-alive
-// still preserves the fairpeer session.
+// still preserves the hiq session.
 func sessionKeepaliveTick(s *browserSession, mode, url string) error {
 	if s.ctx.Err() != nil {
 		return errors.New("session closed")
@@ -3551,7 +3551,7 @@ func browserAttachmentsDir() string {
 	// Mirror web_fetch / image_understand's attachment convention so screenshots
 	// are discovered by the same attachment UI.
 	if wd, err := os.Getwd(); err == nil {
-		return filepath.Join(wd, ".fairpeer", "attachments")
+		return filepath.Join(wd, ".hiq", "attachments")
 	}
-	return filepath.Join(os.TempDir(), "fairpeer-browser")
+	return filepath.Join(os.TempDir(), "hiq-browser")
 }

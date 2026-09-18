@@ -13,13 +13,13 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/checkpoint"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/checkpoint"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 type blockingTurnRunner struct{ started chan struct{} }
@@ -438,14 +438,14 @@ func TestMainManagerFollowsTranscriptWithoutTopPadding(t *testing.T) {
 	m := newChatTUI(ctrl, "", make(chan event.Event, 1), 80)
 	m0, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
 	m = m0.(chatTUI)
-	m.wrappedLines = []string{"fairpeer chat", "› /mcp"}
+	m.wrappedLines = []string{"hiq chat", "› /mcp"}
 
 	out := ansi.Strip(m.renderTranscriptWithMainManager("Manage MCP servers\n1 servers"))
 	lines := strings.Split(out, "\n")
 	if len(lines) < 4 {
 		t.Fatalf("rendered manager area too short:\n%s", out)
 	}
-	if !strings.Contains(lines[0], "fairpeer chat") || !strings.Contains(lines[1], "/mcp") {
+	if !strings.Contains(lines[0], "hiq chat") || !strings.Contains(lines[1], "/mcp") {
 		t.Fatalf("transcript lines should stay above manager:\n%s", out)
 	}
 	if strings.TrimSpace(lines[2]) != "" {
@@ -806,7 +806,7 @@ func isolateUserConfig(t *testing.T) {
 	t.Setenv("HOME", root)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(root, "config"))
 	appData := filepath.Join(root, "AppData")
-	os.MkdirAll(filepath.Join(appData, "fairpeer"), 0o755)
+	os.MkdirAll(filepath.Join(appData, "hiq"), 0o755)
 	t.Setenv("AppData", appData) // os.UserConfigDir reads AppData on Windows
 	t.Chdir(root)
 }
@@ -919,7 +919,7 @@ func TestAutoPlanCommandPersistsAndUpdatesController(t *testing.T) {
 
 func TestAutoPlanCommandWritesUserConfigNotProjectConfig(t *testing.T) {
 	isolateUserConfig(t)
-	projectPath := filepath.Join(mustGetwd(t), "fairpeer.toml")
+	projectPath := filepath.Join(mustGetwd(t), "hiq.toml")
 	if err := os.WriteFile(projectPath, []byte("[agent]\nauto_plan = \"off\"\n"), 0o644); err != nil {
 		t.Fatalf("write project config: %v", err)
 	}
@@ -981,7 +981,7 @@ func TestLanguageCommandAutoClearsPinnedLanguage(t *testing.T) {
 
 func TestLanguageCommandAutoClearsLowerPriorityUserOverride(t *testing.T) {
 	isolateUserConfig(t)
-	t.Setenv("FAIRPEER_LANG", "")
+	t.Setenv("HIQ_LANG", "")
 	t.Setenv("LC_ALL", "")
 	t.Setenv("LC_MESSAGES", "")
 	t.Setenv("LANG", "")
@@ -997,7 +997,7 @@ func TestLanguageCommandAutoClearsLowerPriorityUserOverride(t *testing.T) {
 		t.Fatalf("save user config: %v", err)
 	}
 	projectCfg := config.Default()
-	if err := projectCfg.SaveTo("fairpeer.toml"); err != nil {
+	if err := projectCfg.SaveTo("hiq.toml"); err != nil {
 		t.Fatalf("save project config: %v", err)
 	}
 

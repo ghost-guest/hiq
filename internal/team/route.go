@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 // AssignCandidate is a scored member for a task, surfaced so the UI can show

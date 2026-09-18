@@ -5,7 +5,7 @@ import (
 
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/zzycxz/fairpeer/internal/shellparse"
+	"github.com/zzycxz/hiq/internal/shellparse"
 )
 
 // StaticWritePaths proves the complete write surface of a deliberately small

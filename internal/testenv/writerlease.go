@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/filelock"
+	"github.com/zzycxz/hiq/internal/filelock"
 )
 
 // ReportLeakedFileLocks summarizes leaked locks without failing the binary. Use

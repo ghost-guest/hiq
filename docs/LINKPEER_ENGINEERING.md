@@ -46,7 +46,7 @@
 |---|---|
 | 内存（C） | 常驻 < 150 MB |
 | 包大小（C） | Android APK < 25 MB、iOS IPA < 30 MB（WebRTC 库占大头） |
-| 桌面 S 增量 | fairpeer 二进制因 pion 增大 < 8 MB |
+| 桌面 S 增量 | hiq 二进制因 pion 增大 < 8 MB |
 | 并发（S） | ≤ 4 个 C 连接；超过拒绝新连 |
 
 ### 1.5 可靠性
@@ -103,10 +103,10 @@ P2P 最难测。分层：
 
 | 流水线 | 触发 | 内容 |
 |---|---|---|
-| `fairpeer-ci` | push/PR | `go test ./...` + `go build` 跨平台 + golangci-lint |
+| `hiq-ci` | push/PR | `go test ./...` + `go build` 跨平台 + golangci-lint |
 | `linkpeer-ci` | push/PR | `flutter test` + `dart analyze` + `flutter build apk --debug` |
 | `protocol-compat` | release | 跑 Go-Dart 协议消息兼容表 |
-| `release` | tag | 出 fairpeer 二进制（含 mobilebridge）+ Android APK + K docker image |
+| `release` | tag | 出 hiq 二进制（含 mobilebridge）+ Android APK + K docker image |
 
 ---
 
@@ -136,7 +136,7 @@ K 自身也暴露 `coturn` 的 STUN 请求 QPS（coturn 有 stats 接口）。
 | `pair_total{result=fail}` 10 分钟 > 100 | warn（疑似爆破） |
 | CPU > 80% 持续 5 分钟 | warn |
 
-### 3.3 S 端诊断（桌面 fairpeer）
+### 3.3 S 端诊断（桌面 hiq）
 
 mobilebridge 在设置页暴露：
 - 当前状态（OFFLINE / ONLINE / RECONNECTING）。
@@ -152,7 +152,7 @@ mobilebridge 在设置页暴露：
 ```
 ✓ App 能访问信令服务（GET /healthz）
 ✓ STUN 反射成功（拿到公网 IP:port）
-✗ 信令上能找到桌面端（→ 桌面离线？开 fairpeer）
+✗ 信令上能找到桌面端（→ 桌面离线？开 hiq）
 ✗ ICE 候选仅 host（→ 都在 NAT 后，切同 WiFi 或配公网）
 ✓ 握手密钥校验通过
 ```
@@ -176,16 +176,16 @@ mobilebridge 在设置页暴露：
 
 ### 4.1 版本号
 
-- **三端独立语义化版本**：`fairpeer` / `linkpeer` / `linkpeer-signal` 各自 `MAJOR.MINOR.PATCH`。
+- **三端独立语义化版本**：`hiq` / `linkpeer` / `linkpeer-signal` 各自 `MAJOR.MINOR.PATCH`。
 - **协议版本 `ver` 独立**（当前 1），与三端 app 版本解耦。协议 ver 升 = 不兼容，需三端协同发布。
 - 客户端在 ClientHello 里报 `ver`，不匹配 → 升级提示。
 
-### 4.2 fairpeer 桌面端发版（含 mobilebridge）
+### 4.2 hiq 桌面端发版（含 mobilebridge）
 
-- **feature flag**：`fairpeer.toml [mobilebridge] enabled = false` 默认关。
+- **feature flag**：`hiq.toml [mobilebridge] enabled = false` 默认关。
 - 灰度：先在 dev 构建开 → beta 用户开 → 稳定版默认开。
 - mobilebridge 不开时，pion 依赖仍打进二进制但零运行开销（不初始化）。
-- 用户从 fairpeer v0.2.x 起获得移动端能力（具体版本号随发布定）。
+- 用户从 hiq v0.2.x 起获得移动端能力（具体版本号随发布定）。
 
 ### 4.3 linkpeer Android 发布
 
@@ -215,14 +215,14 @@ K **无状态**，滚动重启不影响客户端——重启期间在连 WS 断�
 ### 4.6 灰度 / 回滚
 
 - linkpeer 移动端：Play Store 分阶段发布（10% → 50% → 100%）。
-- fairpeer：自有更新通道，可按比例推送。
+- hiq：自有更新通道，可按比例推送。
 - 出问题：停止灰度 + 推修复版 + 必要时协议 ver 协调。
 
 ---
 
 ## 5. 配置管理
 
-### 5.1 `fairpeer.toml [mobilebridge]` 完整字段
+### 5.1 `hiq.toml [mobilebridge]` 完整字段
 
 ```toml
 [mobilebridge]
@@ -238,7 +238,7 @@ max_connections  = 4                        # 同时最多几个 C
 log_level        = "info"                   # mobilebridge 模块日志级别
 ```
 
-加载：复用 fairpeer 现有 config 加载链路（`internal/config`）。
+加载：复用 hiq 现有 config 加载链路（`internal/config`）。
 
 ### 5.2 linkpeer 配置
 
@@ -265,7 +265,7 @@ log_level        = "info"                   # mobilebridge 模块日志级别
 **monorepo 子目录**（推荐），对称于 `desktop/`：
 
 ```
-fairpeer/                       # 现有仓库
+hiq/                       # 现有仓库
 ├── internal/mobilebridge/      # 桌面侧桥接（Go）
 ├── cmd/linkpeer-signal/        # 信令服务（Go）
 ├── desktop/                    # 现有桌面端
@@ -340,7 +340,7 @@ S(桌面)
 ### 7.3 法规
 
 - 个人信息保护法（中国）/ GDPR：因不采集，无需特别处理；隐私政策仍需写明"不采集"。
-- 开源协议：linkpeer 代码拟用与 fairpeer 同 license（见 LICENSE）。
+- 开源协议：linkpeer 代码拟用与 hiq 同 license（见 LICENSE）。
 - 第三方库 license 清单：发布前 `flutter_oss_licenses` 生成。
 
 ---
@@ -349,13 +349,13 @@ S(桌面)
 
 | 风险 | 概率 | 影响 | 缓解 |
 |---|---|---|---|
-| pion/webrtc 引入 cgo 破坏 fairpeer 单二进制 | 中 | 高 | M0 前 spike，若破则评估备选（如独立 bridge 进程） |
+| pion/webrtc 引入 cgo 破坏 hiq 单二进制 | 中 | 高 | M0 前 spike，若破则评估备选（如独立 bridge 进程） |
 | 双对称 NAT 打不通率高 | 高 | 中 | 多 STUN + UPnP + 同 LAN + 清晰失败 UX；留 TURN 接缝 |
 | iOS 后台保活不达标 | 高 | 中 | MVP 仅前台，文档明示；后期 APNs |
 | Go/Dart 协议漂移 | 中 | 中 | CI 协议兼容测试 |
 | 信令 K 被墙 | 低（自建） | 高 | 可换 K 域名/IP；二维码带 relay，灵活切 |
 | 公网 STUN 不稳 | 中 | 低 | 自建为主，公共兜底 |
-| fairpeer 二进制变大影响分发 | 低 | 低 | pion 增量 < 8MB，可接受 |
+| hiq 二进制变大影响分发 | 低 | 低 | pion 增量 < 8MB，可接受 |
 
 ---
 
@@ -364,9 +364,9 @@ S(桌面)
 | 里程碑 | DoD |
 |---|---|
 | **M0** | K 单测过、docker-compose 起来、`/healthz` 绿、STUN 反射可用、限速生效 |
-| **M0 spike** | pion 加进 fairpeer `go.mod`、echo DataChannel 跑通、`go build ./...` 跨平台纯 Go 不破 |
+| **M0 spike** | pion 加进 hiq `go.mod`、echo DataChannel 跑通、`go build ./...` 跨平台纯 Go 不破 |
 | **M1** | S 端配对+信令长连+握手+帧单测全过；Go e2e（双 goroutine 模拟 C/S）通 |
-| **M2** | 同 WiFi Android 真机 ↔ fairpeer 桌面，对话流端到端通；加密帧验证 |
+| **M2** | 同 WiFi Android 真机 ↔ hiq 桌面，对话流端到端通；加密帧验证 |
 | **M3** | 跨网（4G ↔ 家宽）打洞成功率统计；失败 UX 全套；ICE restart 验证 |
 | **M4** | 对话 Tab 全功能（豆包样式）在 Android 可用；历史回看；审批交互 |
 | **M5** | 办公 Tab 触发桌面、结果预览 |
@@ -376,7 +376,7 @@ S(桌面)
 
 ## 10. 容量规划（K，5000+ S 并发规模）
 
-> 前提：K 承担至少 5000 台 fairpeer 桌面端的敲门。这改变了 §1.4 的"单 VPS 1C1G"假设——本节是规模化的工程参数。
+> 前提：K 承担至少 5000 台 hiq 桌面端的敲门。这改变了 §1.4 的"单 VPS 1C1G"假设——本节是规模化的工程参数。
 
 ### 10.1 并发推算
 
@@ -438,7 +438,7 @@ Go runtime：goroutine per WS 2 个（读+写），7500 × 2 = 15000 goroutine�
 
 ### 10.6 限速策略调整（防误伤共享 NAT）
 
-5000 用户中，某些公司 / 学校会共享一个公网 IP（如 100 台 fairpeer 同出口）。旧"每 IP 20/小时"会误伤。调整为主按 devId：
+5000 用户中，某些公司 / 学校会共享一个公网 IP（如 100 台 hiq 同出口）。旧"每 IP 20/小时"会误伤。调整为主按 devId：
 
 | 维度 | 上限 |
 |---|---|

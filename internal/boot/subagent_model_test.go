@@ -3,8 +3,8 @@ package boot
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/skill"
 )
 
 func TestSubagentModelRefUsesConfiguredDefault(t *testing.T) {

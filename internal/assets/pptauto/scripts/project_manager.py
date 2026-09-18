@@ -699,7 +699,7 @@ class ProjectManager:
             elif is_within_path(source_path, REPO_ROOT):
                 effective_move = True
                 print(
-                    f"note: {source_path} is inside the fairpeer repo; moved "
+                    f"note: {source_path} is inside the hiq repo; moved "
                     f"(not copied) to avoid accidental commit. Pass --copy to override.",
                     file=sys.stderr,
                 )

@@ -15,7 +15,7 @@ func ExportICS(path string, events []Event) error {
 	cal := ics.NewCalendar()
 	cal.SetMethod(ics.MethodPublish)
 	cal.SetCalscale("GREGORIAN")
-	cal.SetXWRCalName("FairPeer Calendar")
+	cal.SetXWRCalName("Hiq Calendar")
 
 	for _, e := range events {
 		event := cal.AddEvent(e.ID)

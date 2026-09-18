@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/secrets"
+	"github.com/zzycxz/hiq/internal/secrets"
 )
 
 func TestFormatSectionSortsAndRedacts(t *testing.T) {
@@ -43,7 +43,7 @@ func TestFormatSectionSortsAndRedacts(t *testing.T) {
 }
 
 func TestRunProbesReportsMissingCommand(t *testing.T) {
-	results := RunProbes(context.Background(), []string{"__fairpeer_missing_probe__ --version"})
+	results := RunProbes(context.Background(), []string{"__hiq_missing_probe__ --version"})
 	if len(results) != 1 {
 		t.Fatalf("results len = %d, want 1", len(results))
 	}

@@ -1,15 +1,15 @@
-// Command fairpeer-plugin-example is a reference fairpeer plugin: a minimal MCP stdio
+// Command hiq-plugin-example is a reference hiq plugin: a minimal MCP stdio
 // server speaking newline-delimited JSON-RPC 2.0 on stdin/stdout. It exists to
 // document the contract end-to-end (the protocol the internal/plugin client
 // drives) and to give users a working example to copy.
 //
-// Wire it up in fairpeer.toml:
+// Wire it up in hiq.toml:
 //
 //	[[plugins]]
 //	name    = "example"
-//	command = "fairpeer-plugin-example"
+//	command = "hiq-plugin-example"
 //
-// Then fairpeer surfaces its tools as "mcp__example__echo" / "mcp__example__wordcount",
+// Then hiq surfaces its tools as "mcp__example__echo" / "mcp__example__wordcount",
 // its prompt as the "/mcp__example__review" slash command, and its resource as
 // the "@example:doc://style-guide" reference.
 //
@@ -23,7 +23,7 @@
 //   - resources/list             → {resources: [{uri, name, description, mimeType}]}
 //   - resources/read {uri}       → {contents: [{uri, mimeType, text}]}
 //
-// Logs go to stderr (fairpeer forwards plugin stderr to the terminal); stdout is
+// Logs go to stderr (hiq forwards plugin stderr to the terminal); stdout is
 // reserved for JSON-RPC so it must never carry stray prose.
 package main
 
@@ -38,11 +38,11 @@ import (
 )
 
 // version is overridable via -ldflags "-X main.version=...". Reported in
-// initialize's serverInfo so fairpeer (and humans) can see which build is running.
+// initialize's serverInfo so hiq (and humans) can see which build is running.
 var version = "dev"
 
 func main() {
-	log.SetPrefix("fairpeer-plugin-example: ")
+	log.SetPrefix("hiq-plugin-example: ")
 	log.SetFlags(0)
 	if err := serve(os.Stdin, os.Stdout); err != nil {
 		log.Fatal(err)
@@ -76,7 +76,7 @@ const (
 	codeInvalidParams  = -32602
 )
 
-// serve runs the read-dispatch-reply loop until stdin closes (fairpeer closed the
+// serve runs the read-dispatch-reply loop until stdin closes (hiq closed the
 // pipe / is shutting down). Each line is one JSON-RPC message.
 func serve(in *os.File, out *os.File) error {
 	r := bufio.NewReader(in)
@@ -123,7 +123,7 @@ func handleLine(line []byte, w *bufio.Writer) error {
 				"prompts":   map[string]any{},
 				"resources": map[string]any{},
 			},
-			"serverInfo": map[string]any{"name": "fairpeer-plugin-example", "version": version},
+			"serverInfo": map[string]any{"name": "hiq-plugin-example", "version": version},
 		}
 	case "tools/list":
 		resp.Result = map[string]any{"tools": toolList()}
@@ -165,7 +165,7 @@ type toolDef struct {
 }
 
 // tools is the registry. Both demo tools are read-only and declare it via the
-// readOnlyHint annotation, so fairpeer runs them in parallel batches and (with the
+// readOnlyHint annotation, so hiq runs them in parallel batches and (with the
 // permission layer) auto-allows them without prompting.
 var tools = []toolDef{
 	{
@@ -259,7 +259,7 @@ func textResult(text string, isError bool) map[string]any {
 
 // --- prompts ---
 
-// promptList advertises the server's prompts. They surface in fairpeer as
+// promptList advertises the server's prompts. They surface in hiq as
 // /mcp__example__<name> slash commands.
 func promptList() []map[string]any {
 	return []map[string]any{{
@@ -272,7 +272,7 @@ func promptList() []map[string]any {
 }
 
 // getPrompt renders a prompt into MCP messages. The returned text becomes the
-// next user turn in fairpeer, so it's phrased as an instruction to the model.
+// next user turn in hiq, so it's phrased as an instruction to the model.
 func getPrompt(params json.RawMessage) (any, *rpcError) {
 	var p struct {
 		Name      string            `json:"name"`

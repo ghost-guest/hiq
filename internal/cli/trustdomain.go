@@ -14,23 +14,23 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev"
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 
-	"github.com/zzycxz/fairpeer/internal/trustdomain/nettrans"
+	"github.com/zzycxz/hiq/internal/trustdomain/nettrans"
 )
 
 // trustdomainCommand is the offline-capable surface of the trust domain
 // (docs/TRUSTDOMAIN_SPEC.md §15). Subcommands:
 //
-//	fairpeer trustdomain init [--name X] [--data-dir D] [--force]
-//	fairpeer trustdomain status [--data-dir D]
-//	fairpeer trustdomain attest [--version V] [--policy H] [--data-dir D]
-//	fairpeer trustdomain admit <key-file> [--name N] [--admin] [--data-dir D]
-//	fairpeer trustdomain revoke <id-prefix> [--reason R] [--data-dir D]
-//	fairpeer trustdomain token <subject-prefix> <resource> <ops> <ttl-sec> [--data-dir D]
-//	fairpeer trustdomain run [--data-dir D] [--tick-sec N]
+//	hiq trustdomain init [--name X] [--data-dir D] [--force]
+//	hiq trustdomain status [--data-dir D]
+//	hiq trustdomain attest [--version V] [--policy H] [--data-dir D]
+//	hiq trustdomain admit <key-file> [--name N] [--admin] [--data-dir D]
+//	hiq trustdomain revoke <id-prefix> [--reason R] [--data-dir D]
+//	hiq trustdomain token <subject-prefix> <resource> <ops> <ttl-sec> [--data-dir D]
+//	hiq trustdomain run [--data-dir D] [--tick-sec N]
 //
 // Flags and positionals may appear in any order (tdExtractFlags). Power
 // ops (admit/revoke) need admin quorum: they succeed offline on a
@@ -89,7 +89,7 @@ func trustdomainCommand(args []string, _ string) int {
 	}
 }
 
-const trustdomainUsage = `用法: fairpeer trustdomain <子命令> [参数]（flag 与位置参数顺序任意）
+const trustdomainUsage = `用法: hiq trustdomain <子命令> [参数]（flag 与位置参数顺序任意）
 
   init    创建域：生成本机身份密钥 + 创世块（单管理员 quorum=1 引导域）
   status  读取账本：链头/成员/令牌/检查点/公告板
@@ -207,7 +207,7 @@ func tdChain(env *tdEnv) (*trustdomain.Chain, error) {
 	}
 	c, err := store.Load()
 	if err != nil {
-		return nil, fmt.Errorf("读取账本（先 fairpeer trustdomain init）: %w", err)
+		return nil, fmt.Errorf("读取账本（先 hiq trustdomain init）: %w", err)
 	}
 	return c, nil
 }
@@ -233,7 +233,7 @@ func tdInit(args []string) int {
 		fmt.Fprintln(os.Stderr, "init 不接受位置参数")
 		return 2
 	}
-	name := tdStr(flags, "name", "fairpeer-domain")
+	name := tdStr(flags, "name", "hiq-domain")
 	force := tdHas(flags, "force")
 
 	env, err := tdPrepare(flags["data-dir"])
@@ -345,7 +345,7 @@ func tdAttest(args []string) int {
 func tdAdmit(args []string) int {
 	rest, flags := tdExtractFlags(args, "name", "admin", "data-dir")
 	if len(rest) != 1 {
-		fmt.Fprintln(os.Stderr, "用法: fairpeer trustdomain admit <公钥文件> [--name N] [--admin]")
+		fmt.Fprintln(os.Stderr, "用法: hiq trustdomain admit <公钥文件> [--name N] [--admin]")
 		return 2
 	}
 	raw, err := os.ReadFile(rest[0])
@@ -381,7 +381,7 @@ func tdAdmit(args []string) int {
 func tdRevoke(args []string) int {
 	rest, flags := tdExtractFlags(args, "reason", "data-dir")
 	if len(rest) != 1 {
-		fmt.Fprintln(os.Stderr, "用法: fairpeer trustdomain revoke <成员ID前缀> [--reason R]")
+		fmt.Fprintln(os.Stderr, "用法: hiq trustdomain revoke <成员ID前缀> [--reason R]")
 		return 2
 	}
 	env, err := tdPrepare(flags["data-dir"])
@@ -413,7 +413,7 @@ func tdRevoke(args []string) int {
 func tdToken(args []string) int {
 	rest, flags := tdExtractFlags(args, "data-dir")
 	if len(rest) != 4 {
-		fmt.Fprintln(os.Stderr, "用法: fairpeer trustdomain token <成员ID前缀> <资源> <操作,操作> <有效期秒>")
+		fmt.Fprintln(os.Stderr, "用法: hiq trustdomain token <成员ID前缀> <资源> <操作,操作> <有效期秒>")
 		return 2
 	}
 	ttl, err := strconv.ParseUint(rest[3], 10, 64)
@@ -469,7 +469,7 @@ func tdIdentity(args []string) int {
 func tdJoin(args []string) int {
 	rest, flags := tdExtractFlags(args, "data-dir")
 	if len(rest) != 2 {
-		fmt.Fprintln(os.Stderr, "用法: fairpeer trustdomain join <成员地址 host:port> <域ID>")
+		fmt.Fprintln(os.Stderr, "用法: hiq trustdomain join <成员地址 host:port> <域ID>")
 		return 2
 	}
 	addr, domainID := rest[0], rest[1]
@@ -495,7 +495,7 @@ func tdJoin(args []string) int {
 	st := chain.State()
 	fmt.Printf("已加入域 %s（高度 %d，成员 %d 名，quorum %d/%d）\n",
 		domainID, chain.Height(), len(st.MemberIDs()), st.QuorumM, len(st.Admins()))
-	fmt.Printf("下一步: fairpeer trustdomain run --data-dir %s --bootstrap %s\n", env.dir, addr)
+	fmt.Printf("下一步: hiq trustdomain run --data-dir %s --bootstrap %s\n", env.dir, addr)
 	return 0
 }
 
@@ -696,7 +696,7 @@ func tdSync(args []string) int {
 func tdExec(args []string) int {
 	rest, flags := tdExtractFlags(args, "data-dir", "ttl")
 	if len(rest) != 5 {
-		fmt.Fprintln(os.Stderr, "用法: fairpeer trustdomain exec <成员地址> <令牌ID> <资源> <操作> <载荷JSON> [--ttl 秒]")
+		fmt.Fprintln(os.Stderr, "用法: hiq trustdomain exec <成员地址> <令牌ID> <资源> <操作> <载荷JSON> [--ttl 秒]")
 		return 2
 	}
 	addr, tokenID, resource, operation, payloadStr := rest[0], rest[1], rest[2], rest[3], rest[4]
@@ -735,7 +735,7 @@ func tdExec(args []string) int {
 func tdQuorum(args []string) int {
 	rest, flags := tdExtractFlags(args, "data-dir")
 	if len(rest) != 1 {
-		fmt.Fprintln(os.Stderr, "用法: fairpeer trustdomain quorum <m>  （只能升高）")
+		fmt.Fprintln(os.Stderr, "用法: hiq trustdomain quorum <m>  （只能升高）")
 		return 2
 	}
 	m, err := strconv.Atoi(rest[0])
@@ -821,7 +821,7 @@ func tdPause(args []string, resume bool) int {
 func tdDelegate(args []string) int {
 	rest, flags := tdExtractFlags(args, "data-dir")
 	if len(rest) != 5 {
-		fmt.Fprintln(os.Stderr, "用法: fairpeer trustdomain delegate <父令牌ID> <成员ID前缀> <资源> <操作,操作> <有效期秒>")
+		fmt.Fprintln(os.Stderr, "用法: hiq trustdomain delegate <父令牌ID> <成员ID前缀> <资源> <操作,操作> <有效期秒>")
 		return 2
 	}
 	ttl, err := strconv.ParseUint(rest[4], 10, 64)
@@ -856,7 +856,7 @@ func tdDelegate(args []string) int {
 func tdSuccession(args []string) int {
 	rest, flags := tdExtractFlags(args, "data-dir")
 	if len(rest) < 3 {
-		fmt.Fprintln(os.Stderr, "用法: fairpeer trustdomain succession <小时> <成员ID前缀>...（至少一名继任者）")
+		fmt.Fprintln(os.Stderr, "用法: hiq trustdomain succession <小时> <成员ID前缀>...（至少一名继任者）")
 		return 2
 	}
 	hours, err := strconv.ParseUint(rest[0], 10, 32)
@@ -903,7 +903,7 @@ func tdSuccession(args []string) int {
 func tdPromote(args []string) int {
 	rest, flags := tdExtractFlags(args, "data-dir")
 	if len(rest) > 1 {
-		fmt.Fprintln(os.Stderr, "用法: fairpeer trustdomain promote [成员ID前缀]（默认本机）")
+		fmt.Fprintln(os.Stderr, "用法: hiq trustdomain promote [成员ID前缀]（默认本机）")
 		return 2
 	}
 	env, err := tdPrepare(flags["data-dir"])

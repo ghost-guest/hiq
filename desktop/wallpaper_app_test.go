@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
-// isolateUserConfig redirects the fairpeer user config dir at a temp directory
-// so these tests never read or write the real %AppData%\fairpeer (which holds
+// isolateUserConfig redirects the hiq user config dir at a temp directory
+// so these tests never read or write the real %AppData%\hiq (which holds
 // the user's actual wallpaper).
 func isolateUserConfig(t *testing.T) string {
 	t.Helper()

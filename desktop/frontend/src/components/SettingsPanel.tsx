@@ -383,7 +383,7 @@ function MobileSection() {
     setKMode(mode);
     try {
       await app.MobileBridgeSetKMode(mode, externalKURL);
-      setErr("信令模式已保存，重启 fairpeer 后生效");
+      setErr("信令模式已保存，重启 hiq 后生效");
     } catch (e) { setErr(String((e as Error)?.message ?? e)); }
   };
 
@@ -536,7 +536,7 @@ function MobileSection() {
               />
             )}
             <p className="mobile-pair-panel__desc" style={{ marginTop: 6 }}>
-              内嵌 K 开箱即用（装完扫码就通，局域网直连零云）；改动重启 fairpeer 生效。
+              内嵌 K 开箱即用（装完扫码就通，局域网直连零云）；改动重启 hiq 生效。
             </p>
           </div>
           <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(128,128,128,0.2)" }}>
@@ -1297,7 +1297,7 @@ type HookScope = "global" | "project";
 
 // HooksSection edits the hooks store (settings.json) for either scope (global or
 // project), with a JSON editor (copy/paste/format) and the project-trust gate.
-// Ported from DeepSeek-Reasonix, adapted to fairpeer's onChanged signature.
+// Ported from DeepSeek-Reasonix, adapted to hiq's onChanged signature.
 function HooksSection({ onChanged }: { onChanged: () => void }) {
   const t = useT();
   const [scope, setScope] = useState<HookScope>("global");

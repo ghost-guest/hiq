@@ -14,7 +14,7 @@ import (
 
 	"github.com/gosnmp/gosnmp"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 const trapRingCap = 500

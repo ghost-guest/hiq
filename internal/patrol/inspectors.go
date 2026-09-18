@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/gitcmd"
+	"github.com/zzycxz/hiq/internal/gitcmd"
 )
 
 // gitProbeTimeout bounds each git invocation. Patrol must never block the loop

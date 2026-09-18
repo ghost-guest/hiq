@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 func snapshot(id, session string, version uint64, updated time.Time) taskmonitor.TaskSnapshot {

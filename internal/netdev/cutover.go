@@ -427,9 +427,9 @@ func (m *Manager) cutoverRunner(ctx context.Context, id string) {
 			_ = saveCutover(c)
 			_ = AppendAudit(Audit{Device: "(cutover)", Command: "hold " + id + " @" + step.Label, Class: "cutover", Status: AuditFailure, Error: gateErr.Error()})
 			// 深链召回（§4.12）：半夜窗口期的"回来决策"——IM 推送带
-			// fairpeer://cutover/<id>，点开直达割接大屏（无出口配置时静默）。
-			NotifyPushText("cutover", "[fairpeer 运维] 割接验证门未过："+c.Name,
-				"步骤 "+step.Label+" 验证未过，已停在回退决策点。\n"+c.HoldNote+"\nfairpeer://cutover/"+c.ID)
+			// hiq://cutover/<id>，点开直达割接大屏（无出口配置时静默）。
+			NotifyPushText("cutover", "[hiq 运维] 割接验证门未过："+c.Name,
+				"步骤 "+step.Label+" 验证未过，已停在回退决策点。\n"+c.HoldNote+"\nhiq://cutover/"+c.ID)
 			return
 		}
 
@@ -442,8 +442,8 @@ func (m *Manager) cutoverRunner(ctx context.Context, id string) {
 			c.HoldNote = "决策点：" + impact + " — 继续 or 回退，决策是人按的"
 			c.Status = CutoverHold
 			_ = saveCutover(c)
-			NotifyPushText("cutover", "[fairpeer 运维] 割接到达决策点："+c.Name,
-				c.HoldNote+"\nfairpeer://cutover/"+c.ID)
+			NotifyPushText("cutover", "[hiq 运维] 割接到达决策点："+c.Name,
+				c.HoldNote+"\nhiq://cutover/"+c.ID)
 			_ = AppendAudit(Audit{Device: "(cutover)", Command: "hold " + id + " @" + step.Label + " (decision)", Class: "cutover", Status: AuditOK})
 			return
 		}

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/sandbox"
 )
 
 func TestBashMergesLoginShellPath(t *testing.T) {
@@ -22,12 +22,12 @@ func TestBashMergesLoginShellPath(t *testing.T) {
 	if err := os.Mkdir(bin, 0o755); err != nil {
 		t.Fatalf("mkdir bin: %v", err)
 	}
-	probe := filepath.Join(bin, "fairpeer-path-probe")
+	probe := filepath.Join(bin, "hiq-path-probe")
 	if err := os.WriteFile(probe, []byte("#!/bin/sh\nprintf 'shell-path-ok\\n'\n"), 0o755); err != nil {
 		t.Fatalf("write probe: %v", err)
 	}
 	loginShell := filepath.Join(dir, "login-shell")
-	if err := os.WriteFile(loginShell, []byte("#!/bin/sh\nprintf '\\n__FAIRPEER_BASH_PATH__=%s\\n' '"+bin+":/usr/bin:/bin"+"'\n"), 0o755); err != nil {
+	if err := os.WriteFile(loginShell, []byte("#!/bin/sh\nprintf '\\n__HIQ_BASH_PATH__=%s\\n' '"+bin+":/usr/bin:/bin"+"'\n"), 0o755); err != nil {
 		t.Fatalf("write login shell: %v", err)
 	}
 
@@ -35,7 +35,7 @@ func TestBashMergesLoginShellPath(t *testing.T) {
 	t.Setenv("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
 
 	b := bash{shell: sandbox.Shell{Kind: sandbox.ShellBash, Path: "/bin/sh"}}
-	args, _ := json.Marshal(map[string]string{"command": "fairpeer-path-probe"})
+	args, _ := json.Marshal(map[string]string{"command": "hiq-path-probe"})
 
 	out, err := b.Execute(context.Background(), args)
 	if err != nil {

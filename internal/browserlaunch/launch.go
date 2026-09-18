@@ -41,7 +41,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
+	"github.com/zzycxz/hiq/internal/proc"
 )
 
 // launchReadyTimeout caps how long Launch waits for CDP to become reachable.
@@ -104,7 +104,7 @@ type LaunchOptions struct {
 	Headless bool
 	// Proxy is the --proxy-server value (e.g. "http://127.0.0.1:7890"). Empty =
 	// no proxy (direct). The driven browser should reach the network the same way
-	// fairpeer's other traffic does, so this mirrors the chromedp browser_* tools
+	// hiq's other traffic does, so this mirrors the chromedp browser_* tools
 	// (see boot.go resolveBrowserProxyURL). Authenticated proxies (user:pass@)
 	// are NOT supported by --proxy-server; the caller must strip credentials.
 	Proxy string
@@ -144,7 +144,7 @@ func Launch(ctx context.Context, opts LaunchOptions) (*Handle, error) {
 	ownTempDir := false
 	userDataDir := opts.UserDataDir
 	if userDataDir == "" {
-		td, err := os.MkdirTemp("", "fairpeer-browser-")
+		td, err := os.MkdirTemp("", "hiq-browser-")
 		if err != nil {
 			return nil, fmt.Errorf("browserlaunch: create temp profile: %w", err)
 		}
@@ -364,7 +364,7 @@ func buildChromeArgs(port int, userDataDir string, opts LaunchOptions) []string 
 	}
 	if opts.Proxy != "" {
 		// Route the browser through the user's configured proxy so the agent
-		// reaches the same sites fairpeer's other traffic does (e.g. a CN proxy
+		// reaches the same sites hiq's other traffic does (e.g. a CN proxy
 		// for GitHub). --proxy-server takes a scheme://host:port URL; auth is not
 		// supported here (caller strips credentials).
 		args = append(args, "--proxy-server="+opts.Proxy)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/memory"
+	"github.com/zzycxz/hiq/internal/memory"
 )
 
 // VerifyCheck is a host-observable project check extracted from structured
@@ -54,7 +54,7 @@ func FromContext(ctx context.Context) []VerifyCheck {
 	return append([]VerifyCheck(nil), checks...)
 }
 
-// ExtractHostChecks reads only the structured "fairpeer host checks" section.
+// ExtractHostChecks reads only the structured "hiq host checks" section.
 // Ordinary project instructions remain guidance and do not become hard gates.
 func ExtractHostChecks(docs []memory.Source) []VerifyCheck {
 	seen := map[string]bool{}
@@ -64,7 +64,7 @@ func ExtractHostChecks(docs []memory.Source) []VerifyCheck {
 		for i, raw := range strings.Split(doc.Body, "\n") {
 			line := strings.TrimRight(raw, "\r")
 			if heading, ok := markdownHeading(line); ok {
-				inSection = strings.EqualFold(heading, "fairpeer host checks")
+				inSection = strings.EqualFold(heading, "hiq host checks")
 				continue
 			}
 			if !inSection {

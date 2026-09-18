@@ -1,6 +1,6 @@
 package event
 
-import "github.com/zzycxz/fairpeer/internal/nilutil"
+import "github.com/zzycxz/hiq/internal/nilutil"
 
 // SubagentLifecycleInfo is content-free host telemetry for one child
 // transition. It intentionally excludes prompts, reasoning, tool output, and

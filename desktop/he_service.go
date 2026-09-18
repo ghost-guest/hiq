@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
-	"github.com/zzycxz/fairpeer/internal/rag"
-	runtimepkg "github.com/zzycxz/fairpeer/internal/runtime"
+	"github.com/zzycxz/hiq/internal/proc"
+	"github.com/zzycxz/hiq/internal/rag"
+	runtimepkg "github.com/zzycxz/hiq/internal/runtime"
 )
 
 const (

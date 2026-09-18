@@ -192,7 +192,7 @@ func (s *Store) Update(id string, mut func(*Team)) (Team, error) {
 // BuiltinTeams are the seed rosters shown on first run, so the panel isn't
 // empty. Users can edit/delete them.
 //
-// Each roster is designed around an office-automation closed loop with FairPeer's
+// Each roster is designed around an office-automation closed loop with Hiq's
 // existing capabilities (docx/xlsx/mindmap/scheduler/email) — this is our
 // differentiator vs. single-persona "expert cards": multiple models collaborate
 // in parallel/debate/pipeline rather than one model wearing one hat.

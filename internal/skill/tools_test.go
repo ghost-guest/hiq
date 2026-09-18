@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 func TestRunSkillInline(t *testing.T) {
 	home := t.TempDir()
-	writeSkill(t, home, ".fairpeer/skills/note.md", "---\ndescription: take a note\n---\nDo the thing.")
+	writeSkill(t, home, ".hiq/skills/note.md", "---\ndescription: take a note\n---\nDo the thing.")
 	tl := NewRunSkillTool(New(Options{HomeDir: home, DisableBuiltins: true}), nil)
 
 	out, err := tl.Execute(context.Background(), json.RawMessage(`{"name":"note","arguments":"with args"}`))
@@ -38,7 +38,7 @@ func TestRunSkillUnknown(t *testing.T) {
 
 func TestRunSkillSubagentNeedsRunner(t *testing.T) {
 	home := t.TempDir()
-	writeSkill(t, home, ".fairpeer/skills/dig.md", "---\ndescription: dig\nrunAs: subagent\n---\nbody")
+	writeSkill(t, home, ".hiq/skills/dig.md", "---\ndescription: dig\nrunAs: subagent\n---\nbody")
 	tl := NewRunSkillTool(New(Options{HomeDir: home, DisableBuiltins: true}), nil) // nil runner
 	if _, err := tl.Execute(context.Background(), json.RawMessage(`{"name":"dig","arguments":"go"}`)); err == nil {
 		t.Error("subagent skill with no runner should error, not silently inline")
@@ -47,7 +47,7 @@ func TestRunSkillSubagentNeedsRunner(t *testing.T) {
 
 func TestRunSkillSubagentRuns(t *testing.T) {
 	home := t.TempDir()
-	writeSkill(t, home, ".fairpeer/skills/dig.md", "---\ndescription: dig\nrunAs: subagent\n---\nbody")
+	writeSkill(t, home, ".hiq/skills/dig.md", "---\ndescription: dig\nrunAs: subagent\n---\nbody")
 	var gotTask string
 	runner := func(_ context.Context, sk Skill, task string, _ SubagentRunOptions) (string, error) {
 		gotTask = task
@@ -68,7 +68,7 @@ func TestRunSkillSubagentRuns(t *testing.T) {
 
 func TestRunSkillSubagentResolvesProfile(t *testing.T) {
 	home := t.TempDir()
-	writeSkill(t, home, ".fairpeer/skills/deep.md", "---\ndescription: deep\nrunAs: subagent\nmodel: test-provider\neffort: max\n---\nbody")
+	writeSkill(t, home, ".hiq/skills/deep.md", "---\ndescription: deep\nrunAs: subagent\nmodel: test-provider\neffort: max\n---\nbody")
 	tl := NewRunSkillTool(New(Options{HomeDir: home, DisableBuiltins: true}), nil)
 
 	pr, ok := tl.(interface {
@@ -85,7 +85,7 @@ func TestRunSkillSubagentResolvesProfile(t *testing.T) {
 
 func TestRunSkillSubagentRequiresArgs(t *testing.T) {
 	home := t.TempDir()
-	writeSkill(t, home, ".fairpeer/skills/dig.md", "---\ndescription: dig\nrunAs: subagent\n---\nbody")
+	writeSkill(t, home, ".hiq/skills/dig.md", "---\ndescription: dig\nrunAs: subagent\n---\nbody")
 	runner := func(_ context.Context, _ Skill, _ string, _ SubagentRunOptions) (string, error) {
 		return "x", nil
 	}
@@ -210,14 +210,14 @@ func TestInstallSkill(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &res); err != nil {
 		t.Fatalf("result JSON: %v", err)
 	}
-	wantPath := filepath.Join(home, ".fairpeer", "skills", "deploy", SkillFile)
+	wantPath := filepath.Join(home, ".hiq", "skills", "deploy", SkillFile)
 	if res.Path != wantPath {
 		t.Fatalf("install_skill should report canonical path %s, got %s", wantPath, res.Path)
 	}
 	if _, err := os.Stat(wantPath); err != nil {
 		t.Fatalf("install_skill should write canonical SKILL.md: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(home, ".fairpeer", "skills", "deploy.md")); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(home, ".hiq", "skills", "deploy.md")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("install_skill should not write legacy flat deploy.md, stat err=%v", err)
 	}
 	// Round-trips through the store with the frontmatter we wrote.
@@ -242,7 +242,7 @@ func TestInstallSkill(t *testing.T) {
 
 func TestReadSkillLoadsInlineAndIsReadOnly(t *testing.T) {
 	home := t.TempDir()
-	writeSkill(t, home, ".fairpeer/skills/note.md", "---\ndescription: take a note\n---\nDo the thing.")
+	writeSkill(t, home, ".hiq/skills/note.md", "---\ndescription: take a note\n---\nDo the thing.")
 	tl := NewReadSkillTool(New(Options{HomeDir: home, DisableBuiltins: true}))
 
 	if !tl.ReadOnly() {
@@ -259,7 +259,7 @@ func TestReadSkillLoadsInlineAndIsReadOnly(t *testing.T) {
 
 func TestReadSkillRejectsSubagent(t *testing.T) {
 	home := t.TempDir()
-	writeSkill(t, home, ".fairpeer/skills/dig.md", "---\ndescription: dig\nrunAs: subagent\n---\nbody")
+	writeSkill(t, home, ".hiq/skills/dig.md", "---\ndescription: dig\nrunAs: subagent\n---\nbody")
 	tl := NewReadSkillTool(New(Options{HomeDir: home, DisableBuiltins: true}))
 
 	if _, err := tl.Execute(context.Background(), json.RawMessage(`{"name":"dig"}`)); err == nil || !strings.Contains(err.Error(), "run_skill") {
@@ -273,7 +273,7 @@ func TestReadSkillRejectsSubagent(t *testing.T) {
 // "unknown skill", so the model tells the user rather than retrying.
 func TestRunSkillDisabledHint(t *testing.T) {
 	home := t.TempDir()
-	writeSkill(t, home, ".fairpeer/skills/ppt-auto.md", "---\ndescription: ppt\n---\nbody")
+	writeSkill(t, home, ".hiq/skills/ppt-auto.md", "---\ndescription: ppt\n---\nbody")
 
 	// live store filters ppt-auto out (user disabled it); all store keeps it.
 	live := New(Options{HomeDir: home, DisableBuiltins: true, DisabledNames: []string{"ppt-auto"}})
@@ -297,7 +297,7 @@ func TestRunSkillDisabledHint(t *testing.T) {
 // feature degrades gracefully when the host doesn't wire the index store).
 func TestRunSkillDisabledHintWithoutAllStore(t *testing.T) {
 	home := t.TempDir()
-	writeSkill(t, home, ".fairpeer/skills/ppt-auto.md", "---\ndescription: ppt\n---\nbody")
+	writeSkill(t, home, ".hiq/skills/ppt-auto.md", "---\ndescription: ppt\n---\nbody")
 	live := New(Options{HomeDir: home, DisableBuiltins: true, DisabledNames: []string{"ppt-auto"}})
 
 	tl := NewRunSkillTool(live, nil) // no allStore
@@ -309,7 +309,7 @@ func TestRunSkillDisabledHintWithoutAllStore(t *testing.T) {
 
 func TestRunSkillExecutorRouting(t *testing.T) {
 	home := t.TempDir()
-	writeSkill(t, home, ".fairpeer/skills/browser-site-a.md",
+	writeSkill(t, home, ".hiq/skills/browser-site-a.md",
 		"---\ndescription: site A flow\nrunAs: subagent\nexecutor: browser-flow\n---\n\n## 步骤\n\n| # | 操作 | 目标 | 值 |\n|---|---|---|---|\n| 1 | navigate | `https://a/` |  |\n")
 
 	// No runner wired → clear error (browser tools are profile-gated).

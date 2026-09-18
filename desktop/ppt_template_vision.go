@@ -10,7 +10,7 @@ package main
 //  2. Decodes + downscales it to a JPEG data URL.
 //  3. Calls the configured vision model (builtin.CallVLM) with a prompt asking
 //     for a JSON description of the template's colors/style.
-//  4. Writes the result to ~/.fairpeer/ppt-template-style.json.
+//  4. Writes the result to ~/.hiq/ppt-template-style.json.
 //
 // The ppt-auto skill reads this file (Step 0) and uses it as the highest-
 // priority color source — it's more accurate than the XML/PIL heuristics for
@@ -34,7 +34,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 
 	"golang.org/x/image/draw"
 )
@@ -86,9 +86,9 @@ func (a *App) analyzeTemplateStyleAsync(templatePath string) {
 		return
 	}
 
-	// Write to ~/.fairpeer/ppt-template-style.json
+	// Write to ~/.hiq/ppt-template-style.json
 	home, _ := os.UserHomeDir()
-	outPath := filepath.Join(home, ".fairpeer", "ppt-template-style.json")
+	outPath := filepath.Join(home, ".hiq", "ppt-template-style.json")
 	data, _ := jsonMarshal(result)
 	_ = os.WriteFile(outPath, data, 0o644)
 }

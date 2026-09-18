@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // --- fakes: a Factory wrapping a behavior-driven runner in a real Controller ---
@@ -142,7 +142,7 @@ func startServer(t *testing.T, factory Factory) (*rpcClient, func()) {
 	outR, outW := io.Pipe()
 	done := make(chan struct{})
 	go func() {
-		_ = Serve(context.Background(), inR, outW, factory, AgentInfo{Name: "fairpeer-test", Version: "0"})
+		_ = Serve(context.Background(), inR, outW, factory, AgentInfo{Name: "hiq-test", Version: "0"})
 		close(done)
 	}()
 	client := newRPCClient(inW, outR)

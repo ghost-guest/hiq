@@ -45,13 +45,13 @@ func TestDocPathDefaultsToAgents(t *testing.T) {
 
 func TestDocPathPrefersExisting(t *testing.T) {
 	proj := t.TempDir()
-	// An existing fairpeer.md should keep receiving notes (no split to AGENTS.md).
-	if err := os.WriteFile(filepath.Join(proj, "fairpeer.md"), []byte("x"), 0o644); err != nil {
+	// An existing hiq.md should keep receiving notes (no split to AGENTS.md).
+	if err := os.WriteFile(filepath.Join(proj, "hiq.md"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	set := Load(Options{CWD: proj})
-	if got := set.DocPath(ScopeProject); filepath.Base(got) != "fairpeer.md" {
-		t.Errorf("should append to the existing fairpeer.md, got %s", got)
+	if got := set.DocPath(ScopeProject); filepath.Base(got) != "hiq.md" {
+		t.Errorf("should append to the existing hiq.md, got %s", got)
 	}
 
 	// With only a CLAUDE.md present, that's the target.

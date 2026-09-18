@@ -3,7 +3,7 @@ package netdev
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // The IP-plan view's contract: tiers come from the user's words first, then

@@ -4,13 +4,13 @@
 # Build/CI binary artifacts and tool dirs (not project source)
 # CodeGraph per-project index (rebuilt locally; never committed)
 # Editor / OS
-# Environment / local config (fairpeer.example.toml is the shared template)
+# Environment / local config (hiq.example.toml is the shared template)
 # Generated tool output and CUA replay traces (rebuilt at runtime, not source)
 # Go test/build scratch
 # Local test / benchmark outputs
 # Local test / migration artifacts
 # Node / frontend dependencies and caches
-# Project-local fairpeer state (commands/ removed; skills/ is tracked).
+# Project-local hiq state (commands/ removed; skills/ is tracked).
 # Scratch / experiment code (one-off debug scripts, never part of the build)
 # Stray root-level test/debug artifacts (CUA notepad probes, demo outputs)
 # Wails desktop artifacts
@@ -34,8 +34,8 @@
 .zcode/
 /.claude/
 /.momapeer.zip
-# ~/.fairpeer-style project-local dir. The built-in ppt-auto skill now lives
-# under internal/assets/pptauto (embedded into the binary); .fairpeer/ here is
+# ~/.hiq-style project-local dir. The built-in ppt-auto skill now lives
+# under internal/assets/pptauto (embedded into the binary); .hiq/ here is
 # purely local runtime state (the released copy lands in the user's home), so
 # it is fully ignored.
 /.momapeer/
@@ -56,11 +56,11 @@ __pycache__/
 /desktop/frontend/package.json.md5
 /desktop/frontend/wailsjs/
 /desktop/keys/
-/desktop/fairpeer.toml
+/desktop/hiq.toml
 /dist/
-/fairpeer
-/fairpeer.exe
-/fairpeer.toml
+/hiq
+/hiq.exe
+/hiq.toml
 /npm/.stage/
 /output.pptx
 /output/

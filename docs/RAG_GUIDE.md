@@ -2,7 +2,7 @@
 
 ## 概述
 
-RAG（Retrieval-Augmented Generation）知识库是 fairpeer 的核心功能之一，允许您将文档导入知识库，通过语义搜索和知识图谱为 AI 提供上下文参考。
+RAG（Retrieval-Augmented Generation）知识库是 hiq 的核心功能之一，允许您将文档导入知识库，通过语义搜索和知识图谱为 AI 提供上下文参考。
 
 ## 功能特性
 

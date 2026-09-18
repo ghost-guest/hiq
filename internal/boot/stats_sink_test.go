@@ -3,8 +3,8 @@ package boot
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/stats"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/stats"
 )
 
 // Every entry point labels its usage records with a StatsSource tag, and that

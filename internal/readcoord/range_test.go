@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 func ranges(pairs ...int) []tool.ReadRange {

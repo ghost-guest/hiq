@@ -1,4 +1,4 @@
-// Package netclient builds HTTP clients and proxy resolvers that share fairpeer's
+// Package netclient builds HTTP clients and proxy resolvers that share hiq's
 // user-facing proxy settings. web_fetch reuses the resolver while keeping its own
 // dial-time SSRF guard.
 package netclient
@@ -14,7 +14,7 @@ import (
 
 	"golang.org/x/net/http/httpproxy"
 
-	"github.com/zzycxz/fairpeer/internal/sysproxy"
+	"github.com/zzycxz/hiq/internal/sysproxy"
 )
 
 const (
@@ -94,7 +94,7 @@ func ProxyURLFor(spec ProxySpec, req *http.Request) (string, error) {
 	return u.String(), nil
 }
 
-// NewHTTPClient returns an HTTP client with fairpeer proxy settings applied.
+// NewHTTPClient returns an HTTP client with hiq proxy settings applied.
 func NewHTTPClient(spec ProxySpec, opts TransportOptions) (*http.Client, error) {
 	tr, err := NewTransport(spec, opts)
 	if err != nil {

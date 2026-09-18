@@ -8,10 +8,10 @@ import (
 	"strings"
 )
 
-func LoadInstalled(fairpeerHome string) ([]InstalledPackage, []string) {
+func LoadInstalled(hiqHome string) ([]InstalledPackage, []string) {
 	stateMu.Lock()
 	defer stateMu.Unlock()
-	st, err := LoadState(fairpeerHome)
+	st, err := LoadState(hiqHome)
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -23,9 +23,9 @@ func LoadInstalled(fairpeerHome string) ([]InstalledPackage, []string) {
 		if !installed.Enabled {
 			continue
 		}
-		root := ResolveRoot(fairpeerHome, installed.Root)
+		root := ResolveRoot(hiqHome, installed.Root)
 		pkg, pkgWarnings, err := ParseDir(root)
-		if err != nil && strings.Contains(err.Error(), "missing apiVersion") && managedPluginRoot(fairpeerHome, installed, root) {
+		if err != nil && strings.Contains(err.Error(), "missing apiVersion") && managedPluginRoot(hiqHome, installed, root) {
 			legacy, _, migrateErr := ParseNativeForMigrate(root)
 			if migrateErr == nil {
 				var data []byte
@@ -52,7 +52,7 @@ func LoadInstalled(fairpeerHome string) ([]InstalledPackage, []string) {
 			}
 			remediation := "repair or reinstall the plugin"
 			if strings.Contains(reason, "missing apiVersion") {
-				remediation = fmt.Sprintf("fairpeer plugin migrate %s --to-v2", installed.Name)
+				remediation = fmt.Sprintf("hiq plugin migrate %s --to-v2", installed.Name)
 			}
 			warnings = append(warnings, fmt.Sprintf("%s: %s: %v; remediation: %s", installed.Name, PluginStatusDisabledIncompatible, err, remediation))
 			continue
@@ -65,7 +65,7 @@ func LoadInstalled(fairpeerHome string) ([]InstalledPackage, []string) {
 		out = append(out, InstalledPackage{Installed: installed, Package: pkg, Warnings: pkgWarnings})
 	}
 	if stateChanged {
-		if err := SaveState(fairpeerHome, st); err != nil {
+		if err := SaveState(hiqHome, st); err != nil {
 			warnings = append(warnings, "persist plugin compatibility status: "+err.Error())
 		}
 	}
@@ -73,11 +73,11 @@ func LoadInstalled(fairpeerHome string) ([]InstalledPackage, []string) {
 	return out, warnings
 }
 
-func managedPluginRoot(fairpeerHome string, installed InstalledPlugin, root string) bool {
+func managedPluginRoot(hiqHome string, installed InstalledPlugin, root string) bool {
 	if filepath.IsAbs(strings.TrimSpace(installed.Root)) {
 		return false
 	}
-	managed := filepath.Clean(PluginsDir(fairpeerHome))
+	managed := filepath.Clean(PluginsDir(hiqHome))
 	rel, err := filepath.Rel(managed, filepath.Clean(root))
 	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return false

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // TestReplayPendingPromptsReEmitsBlockedApproval proves a tool approval that is

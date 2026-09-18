@@ -389,7 +389,7 @@ export interface AppBindings {
   // 公网跳板（跨网配对/信令）：开关 + 云 K 地址（enabled=false 关闭并清空）。
   MobileBridgeSetCloudRelay(enabled: boolean, url: string): Promise<void>;
   // 信令模式切换（embedded 零配置内嵌 K / external 外部 K / cloud 仅云），
-  // 持久化后重启 fairpeer 生效，返回最终模式。
+  // 持久化后重启 hiq 生效，返回最终模式。
   MobileBridgeSetKMode(mode: string, externalURL: string): Promise<string>;
   // 粘贴 turn-cred.sh 输出一键解析回填 TURN 四项，返回 {host,port,user}。
   MobileBridgeParseTurnCred(paste: string): Promise<string>;
@@ -588,7 +588,7 @@ export interface AppBindings {
   NetDevCutoverBoard(id: string): Promise<import("./types").NetDevCutoverBoard | null>;
   NetDevDiscoveryBoard(): Promise<import("./types").NetDevDiscoveryBoard | null>;
   NetDevExposureBoard(): Promise<import("./types").NetDevExposureBoard | null>;
-  // fairpeer:// 深链冷路径：boot 时一次性取走启动 argv 里的路由（null=普通启动）。
+  // hiq:// 深链冷路径：boot 时一次性取走启动 argv 里的路由（null=普通启动）。
   NetDevConsumeDeepLink(): Promise<{ kind: string; id: string } | null>;
   // 页签充实：syslog 事件量（R3 journal）/ 拓扑对账（离线）
   NetDevSyslogCounts(limit: number): Promise<import("./types").NetDevSyslogCountRow[]>;
@@ -1243,10 +1243,10 @@ function mockTrialSignal(verdict: MockTrialVerdict) {
 
 // onNetdevHealth subscribes to health change events ("netdev:health": one
 // device's reachability/interface state changed since the previous poll).
-// fairpeer:// 深链热路径：第二实例唤起（IM/邮件里点链接）时 Go 侧 EventsEmit。
-export function onFairpeerDeepLink(cb: (r: { kind: string; id: string }) => void): () => void {
+// hiq:// 深链热路径：第二实例唤起（IM/邮件里点链接）时 Go 侧 EventsEmit。
+export function onHiqDeepLink(cb: (r: { kind: string; id: string }) => void): () => void {
   if (realApp() && typeof window !== "undefined" && window.runtime) {
-    return window.runtime.EventsOn("fairpeer:deep-link", (r) => cb(r as { kind: string; id: string }));
+    return window.runtime.EventsOn("hiq:deep-link", (r) => cb(r as { kind: string; id: string }));
   }
   return () => {};
 }
@@ -1676,18 +1676,18 @@ const mockKBSources: KBSourceView[] = [
 ];
 const mockKBNodes: KBSearchHitView[] = [
   { id: "code:internal/agent", kind: "code", label: "代码", title: "internal/agent", ref: "internal/agent", summary: "回合循环、工具调度与上下文维护", status: "active", score: 8 },
-  { id: "doc:README.md", kind: "doc", label: "文档", title: "README.md", ref: "README.md", summary: "fairpeer 项目说明", status: "active", score: 8 },
+  { id: "doc:README.md", kind: "doc", label: "文档", title: "README.md", ref: "README.md", summary: "hiq 项目说明", status: "active", score: 8 },
   { id: "doc:团队功能设计.md", kind: "doc", label: "文档", title: "团队功能设计.md", ref: "团队功能设计.md", summary: "多智能体协同与看板设计", status: "active", score: 8 },
   { id: "memory:project-conventions", kind: "memory", label: "记忆", title: "项目约定", ref: "project-conventions", summary: "缓存前缀铁律、双 module、测试隔离", status: "saved", score: 8 },
-  { id: "team:team_1", kind: "team", label: "团队", title: "fairpeer 内核融合", ref: "team_1", summary: "3 进行中 · 1 完成", status: "active", score: 8 },
+  { id: "team:team_1", kind: "team", label: "团队", title: "hiq 内核融合", ref: "team_1", summary: "3 进行中 · 1 完成", status: "active", score: 8 },
 ];
 function mockKBView(): KBView {
   const counts: Record<string, number> = {};
   for (const s of mockKBSources) counts[s.kind] = s.enabled ? s.count : 0;
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
   return {
-    dir: "D:/work/reasonix-self/fairpeer-data/projectkb/demo",
-    cwd: "D:/work/reasonix-self/fairpeer",
+    dir: "D:/work/reasonix-self/hiq-data/projectkb/demo",
+    cwd: "D:/work/reasonix-self/hiq",
     total,
     counts,
     sources: mockKBSources.map((s) => ({ ...s })),
@@ -1837,7 +1837,7 @@ function makeMockApp(): AppBindings {
   let pendingAskPreview = false;
   let pendingApprovalPreview = false;
   // Global scope retired (08-21): the mock home project 工作台 replaces it.
-  const mockHomeRoot = "~/Library/Application Support/fairpeer/home-dev";
+  const mockHomeRoot = "~/Library/Application Support/hiq/home-dev";
   let cwd = freshMock ? mockHomeRoot : "~/projects/web-app"; // mutable so PickWorkspace is visible in dev
   let workspaces = freshMock ? [] : ["~/projects/web-app", "~/projects/api-server", "~/projects/docs", "~/projects/mobile"];
   let mockEffort = "auto";
@@ -1919,10 +1919,10 @@ function makeMockApp(): AppBindings {
   const capSkills: SkillView[] = [
     { name: "explore", description: "Investigate the codebase in an isolated subagent", scope: "builtin", runAs: "subagent", enabled: true },
     { name: "review", description: "Review the staged diff", scope: "project", runAs: "inline", enabled: false },
-    { name: "init", description: "Scaffold a project memory doc (fairpeer.md) for this repo", scope: "builtin", runAs: "inline", enabled: true },
+    { name: "init", description: "Scaffold a project memory doc (hiq.md) for this repo", scope: "builtin", runAs: "inline", enabled: true },
   ];
   let capSkillRoots: SkillRootView[] = [
-    { dir: "~/projects/docs/.fairpeer/skills", scope: "project", priority: 1, status: "missing", configured: false, removable: true, skills: 0 },
+    { dir: "~/projects/docs/.hiq/skills", scope: "project", priority: 1, status: "missing", configured: false, removable: true, skills: 0 },
     {
       dir: "~/my-skills",
       scope: "custom",
@@ -1934,7 +1934,7 @@ function makeMockApp(): AppBindings {
       skillItems: [{ name: "review", description: "Review the staged diff", scope: "custom", runAs: "inline" }],
     },
     {
-      dir: "~/.fairpeer/skills",
+      dir: "~/.hiq/skills",
       scope: "global",
       priority: 6,
       status: "ok",
@@ -1943,7 +1943,7 @@ function makeMockApp(): AppBindings {
       skills: 2,
       skillItems: [
         { name: "explore", description: "Investigate the codebase in an isolated subagent", scope: "global", runAs: "subagent" },
-        { name: "init", description: "Scaffold a project memory doc (fairpeer.md) for this repo", scope: "global", runAs: "inline" },
+        { name: "init", description: "Scaffold a project memory doc (hiq.md) for this repo", scope: "global", runAs: "inline" },
       ],
     },
   ];
@@ -2034,12 +2034,12 @@ function makeMockApp(): AppBindings {
   // Mutable [memory] settings so the Memory panel's storage/maintenance section
   // is interactive in browser dev mode (no backend, no real config file).
   let mockMemorySettings: MemorySettings = {
-    root: "~/.config/fairpeer",
-    defaultRoot: "~/.config/fairpeer",
+    root: "~/.config/hiq",
+    defaultRoot: "~/.config/hiq",
     configuredRoot: "",
     rootFromEnv: false,
-    globalDir: "~/.config/fairpeer/memory/dev",
-    sessionDir: "~/.config/fairpeer/projects/-mock/dev/memory/session",
+    globalDir: "~/.config/hiq/memory/dev",
+    sessionDir: "~/.config/hiq/projects/-mock/dev/memory/session",
     provider: "",
     model: "",
     effort: "",
@@ -2054,7 +2054,7 @@ function makeMockApp(): AppBindings {
   const hookSettings: Record<string, HooksSettingsView> = {
     global: {
       scope: "global",
-      path: "~/.fairpeer/settings.json",
+      path: "~/.hiq/settings.json",
       projectRoot: "",
       trusted: true,
       events: hookEvents,
@@ -2062,7 +2062,7 @@ function makeMockApp(): AppBindings {
     },
     project: {
       scope: "project",
-      path: "./.fairpeer/settings.json",
+      path: "./.hiq/settings.json",
       projectRoot: "/mock/project",
       trusted: false,
       events: hookEvents,
@@ -2090,7 +2090,7 @@ function makeMockApp(): AppBindings {
       noProxy: "",
       proxy: { type: "socks5", server: "127.0.0.1", port: 7890, username: "", password: "" },
     },
-    agent: { temperature: 0.2, maxSteps: 0, plannerMaxSteps: 0, systemPrompt: "You are fairpeer, a coding agent.", rpm: 60 },
+    agent: { temperature: 0.2, maxSteps: 0, plannerMaxSteps: 0, systemPrompt: "You are hiq, a coding agent.", rpm: 60 },
     cowork: {
       browserPath: "",
       browserAttachURL: "",
@@ -2244,14 +2244,14 @@ function makeMockApp(): AppBindings {
     checkUpdates: true,
     telemetry: true,
     expandThinking: false,
-    configPath: "~/projects/docs/fairpeer.toml",
+    configPath: "~/projects/docs/hiq.toml",
     providerKinds: ["openai"],
     autoApproveTools: false,
     bypass: false,
   };
   // providers default to empty (provider-agnostic)
   if (freshMock) {
-    settings.configPath = "~/.config/fairpeer/config.toml";
+    settings.configPath = "~/.config/hiq/config.toml";
   }
   const mockNow = Date.now();
   const mockProjectTree: ProjectNode[] = freshMock ? [] : [
@@ -2322,12 +2322,12 @@ function makeMockApp(): AppBindings {
           {
             role: "user",
             content: [
-              "[[fairpeer-im]]",
+              "[[hiq-im]]",
               "provider=lark",
               "label=Feishu / Lark",
               "sender=ou_3a2bdd60640aaa95518186677b1f6d8c",
               "chat=p2p 会话",
-              "[[/fairpeer-im]]",
+              "[[/hiq-im]]",
               "你可以做什么",
             ].join("\n"),
           },
@@ -2341,12 +2341,12 @@ function makeMockApp(): AppBindings {
           {
             role: "user",
             content: [
-              "[[fairpeer-im]]",
+              "[[hiq-im]]",
               "provider=weixin",
               "label=微信",
               "sender=wxid_kun_auto",
               "chat=单聊",
-              "[[/fairpeer-im]]",
+              "[[/hiq-im]]",
               "帮我整理一下今天要做的事",
             ].join("\n"),
           },
@@ -2360,12 +2360,12 @@ function makeMockApp(): AppBindings {
           {
             role: "user",
             content: [
-              "[[fairpeer-im]]",
+              "[[hiq-im]]",
               "provider=lark",
               "label=Feishu / Lark",
               "sender=ou_3a2bdd60640aaa95518186677b1f6d8c",
               "chat=p2p 会话",
-              "[[/fairpeer-im]]",
+              "[[/hiq-im]]",
               "你可以做什么",
             ].join("\n"),
           },
@@ -2375,11 +2375,11 @@ function makeMockApp(): AppBindings {
           },
           {
             role: "user",
-            content: "看一下这版设计稿和需求说明 @[设计稿.png](.fairpeer/attachments/mock-clipboard.png) @[需求说明.md](.fairpeer/attachments/mock-spec.md)",
+            content: "看一下这版设计稿和需求说明 @[设计稿.png](.hiq/attachments/mock-clipboard.png) @[需求说明.md](.hiq/attachments/mock-spec.md)",
           },
           {
             role: "assistant",
-            content: "收到，设计稿如下图，我先对照需求说明核对一遍再给结论：\n\n![设计稿](.fairpeer/attachments/mock-clipboard.png)",
+            content: "收到，设计稿如下图，我先对照需求说明核对一遍再给结论：\n\n![设计稿](.hiq/attachments/mock-clipboard.png)",
           },
         ];
       case "topic_p3b_pd":
@@ -4115,8 +4115,8 @@ function makeMockApp(): AppBindings {
     },
     async ReadFile(rel: string) {
       const samples: Record<string, string> = {
-        "README.md": "# fairpeer\n\nBrowser-dev workspace preview.\n\n- Chat in the center\n- Browse files on the right\n- Keep sessions on the left\n",
-        "go.mod": "module fairpeer\n\ngo 1.23\n",
+        "README.md": "# hiq\n\nBrowser-dev workspace preview.\n\n- Chat in the center\n- Browse files on the right\n- Keep sessions on the left\n",
+        "go.mod": "module hiq\n\ngo 1.23\n",
         "desktop/file.go": "package desktop\n\nfunc main() {\n\tprintln(\"workspace preview\")\n}\n",
         "internal/event.go": "package internal\n\n// mock file used by the browser dev seam\n",
       };
@@ -4177,13 +4177,13 @@ function makeMockApp(): AppBindings {
       console.info("mock RevealPath", path);
     },
     async SavePastedImage(_dataUrl: string) {
-      return ".fairpeer/attachments/mock.png";
+      return ".hiq/attachments/mock.png";
     },
     async SaveClipboardImage() {
-      return ".fairpeer/attachments/mock-clipboard.png";
+      return ".hiq/attachments/mock-clipboard.png";
     },
     async SavePastedFile(name: string, _dataUrl: string) {
-      return `.fairpeer/attachments/mock-${name}`;
+      return `.hiq/attachments/mock-${name}`;
     },
     async PickExportFile(defaultFilename: string, _mimeType: string) {
       return defaultFilename;
@@ -4205,7 +4205,7 @@ function makeMockApp(): AppBindings {
     },
     async AttachDropped(path: string) {
       const name = path.split(/[/\\]/).filter(Boolean).pop() ?? path;
-      return { kind: "attachment" as const, path: `.fairpeer/attachments/mock-${name}` };
+      return { kind: "attachment" as const, path: `.hiq/attachments/mock-${name}` };
     },
     async AttachmentDataURL(_path: string) {
       // 96×64 two-tone PNG so the attachment lightbox has something visible to
@@ -4286,15 +4286,15 @@ function makeMockApp(): AppBindings {
     async Memory() {
       return {
         available: true,
-        storeDir: "~/.config/fairpeer/projects/-mock/memory",
+        storeDir: "~/.config/hiq/projects/-mock/memory",
         docs: [
           {
-            path: "fairpeer.md",
+            path: "hiq.md",
             scope: "project",
-            body: "# fairpeer project memory\n\nMock doc shown in the browser dev seam.\n\n## Notes\n\n- prefers concise replies",
+            body: "# hiq project memory\n\nMock doc shown in the browser dev seam.\n\n## Notes\n\n- prefers concise replies",
           },
           {
-            path: "~/.config/fairpeer/fairpeer.md",
+            path: "~/.config/hiq/hiq.md",
             scope: "user",
             body: t("mock.memoryBody"),
           },
@@ -4327,9 +4327,9 @@ function makeMockApp(): AppBindings {
           },
         ],
         scopes: [
-          { scope: "user", path: "~/.config/fairpeer/fairpeer.md" },
-          { scope: "project", path: "fairpeer.md" },
-          { scope: "local", path: "fairpeer.local.md" },
+          { scope: "user", path: "~/.config/hiq/hiq.md" },
+          { scope: "project", path: "hiq.md" },
+          { scope: "local", path: "hiq.local.md" },
         ],
       };
     },
@@ -4338,7 +4338,7 @@ function makeMockApp(): AppBindings {
       // record (the Beijing address that the Shanghai move replaced).
       return {
         available: true,
-        storeDir: "~/.config/fairpeer/projects/-mock/memory",
+        storeDir: "~/.config/hiq/projects/-mock/memory",
         docs: [],
         facts: [
           {
@@ -4380,7 +4380,7 @@ function makeMockApp(): AppBindings {
     },
     async Remember(scope: string, note: string) {
       emit({ kind: "notice", level: "info", text: `remembered → ${scope}` });
-      return `${scope} fairpeer.md (mock): ${note}`;
+      return `${scope} hiq.md (mock): ${note}`;
     },
     async Forget(name: string) {
       emit({ kind: "notice", level: "info", text: `forgot → ${name}` });
@@ -4607,7 +4607,7 @@ function makeMockApp(): AppBindings {
             provider: normalizedProvider,
             domain: normalizedDomain,
             installId: `mock-${normalizedProvider}-${normalizedDomain}`,
-            url: "https://example.com/fairpeer-bot-qr",
+            url: "https://example.com/hiq-bot-qr",
             deviceCode: "MOCKDEVICE",
             userCode: normalizedProvider === "weixin" ? "" : "MOCK-CODE",
             interval: 3,
@@ -4772,7 +4772,7 @@ function makeMockApp(): AppBindings {
     },
     async OpenDownloadPage() {
       if (typeof window !== "undefined") {
-        window.open("https://github.com/zzycxz/fairpeer/releases/latest", "_blank", "noopener");
+        window.open("https://github.com/zzycxz/hiq/releases/latest", "_blank", "noopener");
       }
     },
     // Dev seam: drives the overlay flow in the browser until ConnectKey sets the
@@ -5344,14 +5344,14 @@ function makeMockApp(): AppBindings {
     },
     async CheckCoworkBrowser() { return "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"; },
     async StartManagedBrowser() {
-      return { running: true, url: "http://127.0.0.1:9222", browser: "Chrome", profile: "~/Library/Application Support/fairpeer/browser-profile", alreadyRunning: false };
+      return { running: true, url: "http://127.0.0.1:9222", browser: "Chrome", profile: "~/Library/Application Support/hiq/browser-profile", alreadyRunning: false };
     },
     async CheckManagedBrowser() {
       return { running: false, url: "http://127.0.0.1:9222", browser: "", profile: "", alreadyRunning: false, detail: "browser dev mock" };
     },
     async OpenURLInManagedBrowser(_url: string) {
       await delay(300);
-      return { running: true, url: "http://127.0.0.1:9222", browser: "Chrome (mock)", profile: "~/fairpeer/browser-profile", alreadyRunning: false };
+      return { running: true, url: "http://127.0.0.1:9222", browser: "Chrome (mock)", profile: "~/hiq/browser-profile", alreadyRunning: false };
     },
     // 浏览器控制台 mock：browser dev 模式下的桩——交互原语返回模拟输出，
     // 录制/生成给出一条示例轨迹转朴素草稿，试运行模拟三步进度。
@@ -5438,7 +5438,7 @@ function makeMockApp(): AppBindings {
       ].join("\n");
       return { name: nameHint || "mock-skill", content, fallback: true, detail: "browser dev mock" };
     },
-    async BrowserConsoleSaveSkill(_content: string, _overwrite: boolean) { return "~/.fairpeer/skills/mock/SKILL.md (mock)"; },
+    async BrowserConsoleSaveSkill(_content: string, _overwrite: boolean) { return "~/.hiq/skills/mock/SKILL.md (mock)"; },
     async BrowserConsoleListSkills() { return [{ name: "mock-skill", description: "浏览器操作技能（mock）", browser: true }]; },
     async BrowserConsoleReadSkill(_name: string) { return "---\nname: mock-skill\ndescription: mock\n---\n\n# mock\n"; },
     async BrowserConsoleDeleteSkill(_name: string) { await delay(200); },

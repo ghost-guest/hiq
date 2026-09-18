@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
-	"github.com/zzycxz/fairpeer/internal/secrets"
+	"github.com/zzycxz/hiq/internal/proc"
+	"github.com/zzycxz/hiq/internal/secrets"
 )
 
 // psUTF8Prologue forces PowerShell to emit UTF-8 instead of the host's OEM code

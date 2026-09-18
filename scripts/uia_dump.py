@@ -1,5 +1,5 @@
 """
-UIA element dump via pywinauto. Called by fairpeer's dumpUIA() via subprocess.
+UIA element dump via pywinauto. Called by hiq's dumpUIA() via subprocess.
 Outputs JSON array of elements to stdout.
 
 Usage: python scripts/uia_dump.py [--screen-width W --screen-height H]

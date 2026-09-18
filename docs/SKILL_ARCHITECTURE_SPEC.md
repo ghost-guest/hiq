@@ -45,7 +45,7 @@ run_skill 看到的是两个来源的并集：
 
 ### 来源二：文件技能（磁盘上的 SKILL.md 目录树）
 
-- **ppt-auto**（唯一随包发布的）：嵌入二进制（`internal/assets/pptauto`，约 40MB：Python 管线 + 版式模板 + 17 套配色 + 20 余种视觉风格 + 上万图标），首启由 `EnsurePPTAutoSkill` 释放到 `~/.fairpeer/skills/ppt-auto/`，靠 `.embedded-version`（当前 "43"）判断刷新。
+- **ppt-auto**（唯一随包发布的）：嵌入二进制（`internal/assets/pptauto`，约 40MB：Python 管线 + 版式模板 + 17 套配色 + 20 余种视觉风格 + 上万图标），首启由 `EnsurePPTAutoSkill` 释放到 `~/.hiq/skills/ppt-auto/`，靠 `.embedded-version`（当前 "43"）判断刷新。
 - 用户经 install-capability 自装的（本机当前没有）。
 
 ### 呈现机制
@@ -107,7 +107,7 @@ run_skill 看到的是两个来源的并集：
 
 ### 同步的引用点
 
-boot.go 两处注释与 `builtinBuiltinSkillNames` 名单、`internal/tool/tool.go` 与 `internal/tool/builtin/image_understand.go` 注释、前端 `CapabilitiesPanel.tsx` 的 OFFICIAL/OFFICE 技能集合、6 个 docs 文件（含 FAIRPEER_FEATURES.md ASCII 表格对齐修补）。
+boot.go 两处注释与 `builtinBuiltinSkillNames` 名单、`internal/tool/tool.go` 与 `internal/tool/builtin/image_understand.go` 注释、前端 `CapabilitiesPanel.tsx` 的 OFFICIAL/OFFICE 技能集合、6 个 docs 文件（含 HIQ_FEATURES.md ASCII 表格对齐修补）。
 
 ### 迁移注意
 
@@ -154,7 +154,7 @@ boot.go 两处注释与 `builtinBuiltinSkillNames` 名单、`internal/tool/tool.
 
 ### 4.7 复检记录（2026-08 第二轮）
 
-全面复检通过项：改名无残留（仅存 219 行的改名理由注释）；netdev 提示词已正确引用 netdev-help（`profile_netdev_addon.go` 第 32 行"full quick-reference lives in the netdev-help skill"）；FAIRPEER_FEATURES / GUIDE 无"全量技能"类过时表述；cowork 路由表八行全部命中办公白名单，无路由到已禁技能。
+全面复检通过项：改名无残留（仅存 219 行的改名理由注释）；netdev 提示词已正确引用 netdev-help（`profile_netdev_addon.go` 第 32 行"full quick-reference lives in the netdev-help skill"）；HIQ_FEATURES / GUIDE 无"全量技能"类过时表述；cowork 路由表八行全部命中办公白名单，无路由到已禁技能。
 
 本轮顺手修复：4.4 注释半句；`PluginAllowedByProfile` 注释称"大小写不敏感"但实现是精确匹配——改为 `EqualFold`，与 `PluginHiddenByProfile` 行为一致。
 
@@ -168,7 +168,7 @@ boot.go 两处注释与 `builtinBuiltinSkillNames` 名单、`internal/tool/tool.
 
 代码内置技能的形态 = 名字 + 描述 + 提示词字符串 + 工具白名单，一个 Go 结构体。ppt-auto 是 **40MB、上万文件的资产树**，提示词里引用文件路径（`<skill_dir>/setup_python.sh`、`references/animations.md`），运行时磁盘上必须存在——Go 字符串装不下。
 
-其"外置"实为**混合形态**：资产 embed 进二进制，首启释放到 `~/.fairpeer/skills/ppt-auto/`。语义细节：
+其"外置"实为**混合形态**：资产 embed 进二进制，首启释放到 `~/.hiq/skills/ppt-auto/`。语义细节：
 
 - **自愈**：目录被删，下次启动 `EnsurePPTAutoSkill` 重新走释放（`readVersion` 失败即重写）。
 - **版本覆盖**：SkillVersion bump 时，与嵌入内容不同的文件会被覆盖——**用户对释放副本的修改会被新版本冲掉**（内容相同时跳过写入，避免每次 bump 重写上万个图标文件拖慢启动）。
@@ -182,7 +182,7 @@ boot.go 两处注释与 `builtinBuiltinSkillNames` 名单、`internal/tool/tool.
 
 ### 5.3 关键机制：遮蔽（已存在的 override 通道）
 
-`Store.List()`（`internal/skill/skill.go`）合并顺序：**project → custom → global → builtin 垫底，同名文件技能直接遮蔽内置**。用户今天往 `~/.fairpeer/skills/browser-auto/SKILL.md` 放一份同名技能即可覆盖内置的提示词 / 描述 / 工具表。内置 = 默认值，文件 = 用户覆盖，优先级设计现成。
+`Store.List()`（`internal/skill/skill.go`）合并顺序：**project → custom → global → builtin 垫底，同名文件技能直接遮蔽内置**。用户今天往 `~/.hiq/skills/browser-auto/SKILL.md` 放一份同名技能即可覆盖内置的提示词 / 描述 / 工具表。内置 = 默认值，文件 = 用户覆盖，优先级设计现成。
 
 ### 5.4 整体外置 -auto 家族的代价（不采纳）
 
@@ -194,7 +194,7 @@ boot.go 两处注释与 `builtinBuiltinSkillNames` 名单、`internal/tool/tool.
 ### 5.5 决策
 
 - **维持按资产判据 split**：提示词外壳留代码，资产包走 embed + release。
-- **补"派生可编辑副本"**（新功能，小改动）：能力面板上加动作——把某内置技能提示词落成 `~/.fairpeer/skills/<同名>/SKILL.md`，遮蔽即生效；内置默认不动，删副本即还原。这让"数字员工可定制"对用户可见，而不必外置任何内置技能。
+- **补"派生可编辑副本"**（新功能，小改动）：能力面板上加动作——把某内置技能提示词落成 `~/.hiq/skills/<同名>/SKILL.md`，遮蔽即生效；内置默认不动，删副本即还原。这让"数字员工可定制"对用户可见，而不必外置任何内置技能。
 - **释放机制泛化时机**：出现第二个资产型技能（如报表 / 海报生成）时，再把 `EnsurePPTAutoSkill` 单技能硬编码泛化为"嵌入技能清单（名字 → 版本 → 目录）"表驱动。为 1 个技能做泛化是提前抽象。
 
 ### 5.6 专项技能调用控制三原则

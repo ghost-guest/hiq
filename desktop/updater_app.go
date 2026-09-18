@@ -8,7 +8,7 @@ import (
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"github.com/zzycxz/fairpeer/desktop/internal/update"
+	"github.com/zzycxz/hiq/desktop/internal/update"
 )
 
 // updater_app.go is the auto-updater's bound command surface — the App methods the

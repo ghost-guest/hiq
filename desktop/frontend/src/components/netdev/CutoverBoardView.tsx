@@ -32,8 +32,8 @@ export default function CutoverBoardView({ onJump, onFocusDevice }: Props) {
       const screens = (e as CustomEvent<{ screens?: string[] }>).detail?.screens ?? [];
       if (screens.includes("cutover") || screens.includes("overview")) load();
     };
-    window.addEventListener("fairpeer:netdev-dash", on);
-    return () => window.removeEventListener("fairpeer:netdev-dash", on);
+    window.addEventListener("hiq:netdev-dash", on);
+    return () => window.removeEventListener("hiq:netdev-dash", on);
   }, [load]);
   // 窗口倒计时秒级走字（进行时例外：不失焦暂停，只做显示，无请求）。
   useEffect(() => { setTick(0); }, [b?.id]);

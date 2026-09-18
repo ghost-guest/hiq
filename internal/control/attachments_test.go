@@ -17,7 +17,7 @@ func TestSaveImageDataURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SaveImageDataURL: %v", err)
 	}
-	if !strings.HasPrefix(got, ".fairpeer/attachments/clipboard-") || !strings.HasSuffix(got, ".png") {
+	if !strings.HasPrefix(got, ".hiq/attachments/clipboard-") || !strings.HasSuffix(got, ".png") {
 		t.Fatalf("path = %q, want attachment png path", got)
 	}
 }
@@ -97,7 +97,7 @@ func TestSaveImageFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SaveImageFile: %v", err)
 	}
-	if !strings.HasPrefix(got, ".fairpeer/attachments/clipboard-") || !strings.HasSuffix(got, ".png") {
+	if !strings.HasPrefix(got, ".hiq/attachments/clipboard-") || !strings.HasSuffix(got, ".png") {
 		t.Fatalf("path = %q, want attachment png path", got)
 	}
 }
@@ -111,7 +111,7 @@ func TestSaveAttachmentFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SaveAttachmentFile: %v", err)
 	}
-	if !strings.HasPrefix(got, ".fairpeer/attachments/clipboard-") || !strings.HasSuffix(got, ".pdf") {
+	if !strings.HasPrefix(got, ".hiq/attachments/clipboard-") || !strings.HasSuffix(got, ".pdf") {
 		t.Fatalf("path = %q, want attachment pdf path", got)
 	}
 	if data, err := os.ReadFile(got); err != nil || string(data) != "%PDF-1.4 body" {
@@ -183,7 +183,7 @@ func TestImageDataURLRejectsOutsideAttachmentDir(t *testing.T) {
 	if _, err := ImageDataURL("x.png"); err == nil {
 		t.Fatal("outside attachment dir should fail")
 	}
-	if _, err := ImageDataURL("../.fairpeer/attachments/x.png"); err == nil {
+	if _, err := ImageDataURL("../.hiq/attachments/x.png"); err == nil {
 		t.Fatal("traversal path should fail")
 	}
 }
@@ -196,7 +196,7 @@ func TestImageDataURLRejectsSymlinkFile(t *testing.T) {
 	if err := os.WriteFile("secret.png", []byte("secret"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	link := filepath.Join(".fairpeer", "attachments", "link.png")
+	link := filepath.Join(".hiq", "attachments", "link.png")
 	if err := os.Symlink(filepath.Join("..", "..", "secret.png"), link); err != nil {
 		t.Skipf("symlink unsupported: %v", err)
 	}
@@ -207,16 +207,16 @@ func TestImageDataURLRejectsSymlinkFile(t *testing.T) {
 
 func TestImageDataURLRejectsSymlinkAttachmentDir(t *testing.T) {
 	t.Chdir(t.TempDir())
-	if err := os.Mkdir(".fairpeer", 0o755); err != nil {
+	if err := os.Mkdir(".hiq", 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Mkdir("elsewhere", 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink("../elsewhere", filepath.Join(".fairpeer", "attachments")); err != nil {
+	if err := os.Symlink("../elsewhere", filepath.Join(".hiq", "attachments")); err != nil {
 		t.Skipf("symlink unsupported: %v", err)
 	}
-	if _, err := ImageDataURL(".fairpeer/attachments/x.png"); err == nil {
+	if _, err := ImageDataURL(".hiq/attachments/x.png"); err == nil {
 		t.Fatal("symlink attachment directory should fail")
 	}
 }
@@ -232,7 +232,7 @@ func TestImageDataURLRejectsSymlinkSubdirectory(t *testing.T) {
 	if err := os.WriteFile(filepath.Join("outside", "x.png"), mustBase64(t, tinyPNG), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	link := filepath.Join(".fairpeer", "attachments", "link")
+	link := filepath.Join(".hiq", "attachments", "link")
 	if err := os.Symlink(filepath.Join("..", "..", "outside"), link); err != nil {
 		t.Skipf("symlink unsupported: %v", err)
 	}

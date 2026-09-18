@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // Email tools (Phase 3 of coWork). Phase 3 ships outbound email_send (SMTP,
@@ -314,7 +314,7 @@ func buildMessage(from string, to, cc, bcc []string, subject, body, format strin
 	}
 
 	// Multipart: text/html part + base64 attachment parts.
-	boundary := fmt.Sprintf("fairpeer-%d", time.Now().UnixNano())
+	boundary := fmt.Sprintf("hiq-%d", time.Now().UnixNano())
 	headers["Content-Type"] = "multipart/mixed; boundary=" + boundary
 	buf.Reset()
 	writeHeaders()

@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/bot"
+	"github.com/zzycxz/hiq/internal/bot"
 )
 
 // newTestAdapter 构造一个仅含 logger + msgCh 的 adapter（照抄 qq gateway_test.go 的范式），

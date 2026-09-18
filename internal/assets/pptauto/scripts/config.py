@@ -51,7 +51,7 @@ CHART_TEMPLATES_DIR = TEMPLATES_DIR / 'charts'
 # Environment Configuration
 # ============================================================
 
-USER_CONFIG_DIR = Path.home() / '.fairpeer'
+USER_CONFIG_DIR = Path.home() / '.hiq'
 USER_ENV_FILE = USER_CONFIG_DIR / '.env'
 
 

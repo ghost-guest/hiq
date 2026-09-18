@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/fileutil"
+	"github.com/zzycxz/hiq/internal/fileutil"
 )
 
 const (

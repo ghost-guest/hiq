@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 type sharedManager struct {
@@ -232,5 +232,5 @@ func (m *sharedManager) catalogForNotification(projectRoot string) *Catalog {
 // is shared with the disposable catalog.
 func ObservedStore() taskmonitor.WriteStore {
 	ensureShared()
-	return taskmonitor.NewObservedFileStore(filepath.Join(".fairpeer", "tasks"), sharedSink{})
+	return taskmonitor.NewObservedFileStore(filepath.Join(".hiq", "tasks"), sharedSink{})
 }

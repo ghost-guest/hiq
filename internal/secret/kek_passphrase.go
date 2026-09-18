@@ -9,18 +9,18 @@ import (
 
 // Passphrase-derived KEK: opt-in strong mode for machines without an OS
 // keystore (typically headless Linux running serve/acp/bot). Configure via
-//   FAIRPEER_SECRET_PASSPHRASE=some-long-secret        (direct)
-//   FAIRPEER_SECRET_PASSPHRASE_FILE=/path/to/secret    (file, e.g. a docker
+//   HIQ_SECRET_PASSPHRASE=some-long-secret        (direct)
+//   HIQ_SECRET_PASSPHRASE_FILE=/path/to/secret    (file, e.g. a docker
 //                                                      secret or 0600 file)
-// The KEK is argon2id(passphrase, salt="fairpeer-kek-v2:"+kekId) — nothing is
+// The KEK is argon2id(passphrase, salt=kekSalt+kekId) — nothing is
 // stored, derivation is deterministic, and the per-store kekId salt means two
 // stores on one machine never share a key. Reaching the same strength as
 // DPAPI/Keychain requires the passphrase to stay out of the encrypted file's
 // reach, hence the env/file indirection.
 
 const (
-	envSecretPassphrase     = "FAIRPEER_SECRET_PASSPHRASE"
-	envSecretPassphraseFile = "FAIRPEER_SECRET_PASSPHRASE_FILE"
+	envSecretPassphrase     = "HIQ_SECRET_PASSPHRASE"
+	envSecretPassphraseFile = "HIQ_SECRET_PASSPHRASE_FILE"
 )
 
 type passphraseKekProvider struct{}
@@ -65,5 +65,5 @@ func readSecretPassphrase() (string, bool) {
 // argon2id: 64 MiB, t=1, p=4 — ~50-100ms on a desktop CPU, comfortably above
 // the OWASP minimum configuration line for interactive-adjacent derivations.
 func derivePassphraseKek(passphrase, kekID string) []byte {
-	return argon2.IDKey([]byte(passphrase), []byte("fairpeer-kek-v2:"+kekID), 1, 64*1024, 4, kekSize)
+	return argon2.IDKey([]byte(passphrase), []byte(kekSalt+kekID), 1, 64*1024, 4, kekSize)
 }

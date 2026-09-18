@@ -12,7 +12,7 @@ import { LOOP_PRESETS, presetToConfig } from "../../lib/loopPresets";
 import { useT } from "../../lib/i18n";
 import type { LoopConfig, LoopRunStatus, TabMeta } from "../../lib/types";
 
-const QUEUE_KEY = "fairpeer.loopQueue";
+const QUEUE_KEY = "hiq.loopQueue";
 
 const PRESET_ICONS: Record<string, typeof Radar> = {
   flask: FlaskConical,

@@ -1,15 +1,15 @@
-; FairPeer Desktop Installer
+; Hiq Desktop Installer
 ; NSIS script for Windows installation
 
-!define APP_NAME "fairpeer"
+!define APP_NAME "hiq"
 !define APP_VERSION "0.1.0"
-!define APP_PUBLISHER "FairPeer Contributors"
-!define APP_URL "https://github.com/zzycxz/fairpeer"
-!define APP_EXE "fairpeer.exe"
+!define APP_PUBLISHER "Hiq Contributors"
+!define APP_URL "https://github.com/zzycxz/hiq"
+!define APP_EXE "hiq.exe"
 
 ; Installer attributes
 Name "${APP_NAME} ${APP_VERSION}"
-OutFile "..\build\bin\fairpeer-setup.exe"
+OutFile "..\build\bin\hiq-setup.exe"
 InstallDir "$LOCALAPPDATA\${APP_NAME}"
 InstallDirRegKey HKCU "Software\${APP_NAME}" ""
 RequestExecutionLevel user
@@ -43,7 +43,7 @@ Section "Install"
   File "..\build\bin\${APP_EXE}"
 
   ; NOTE: built-in skills (ppt-auto) are no longer copied here — they are
-  ; embedded in the binary and released to $PROFILE\.fairpeer\skills\ on first
+  ; embedded in the binary and released to $PROFILE\.hiq\skills\ on first
   ; run by the app itself. See internal/assets/.
 
   ; Create Desktop Shortcut

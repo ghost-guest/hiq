@@ -3,7 +3,7 @@ package cli
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/command"
+	"github.com/zzycxz/hiq/internal/command"
 )
 
 func TestChatCommandNames(t *testing.T) {

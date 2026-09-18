@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 func assessTestManager(t *testing.T, sim *simDevice) *Manager {

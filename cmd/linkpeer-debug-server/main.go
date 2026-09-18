@@ -1,4 +1,4 @@
-// linkpeer-debug-server 是联调用 S（扮演 fairpeer 桌面端角色）。
+// linkpeer-debug-server 是联调用 S（扮演 hiq 桌面端角色）。
 // 直接复用 internal/mobilebridge.Bridge，启动即配对 + 自动确认 + 打印二维码链接，
 // 并用一个打印式 CommandExecutor 证明 linkpeer 的加密命令能到达。
 //
@@ -6,7 +6,7 @@
 //
 //	linkpeer-debug-server -signal http://<本机局域网IP>:8080
 //
-// 它不接 fairpeer 的 Controller/前端 —— 那是 M4 桌面端 UI 的事。这里只验证
+// 它不接 hiq 的 Controller/前端 —— 那是 M4 桌面端 UI 的事。这里只验证
 // linkpeer(Dart, C) ↔ mobilebridge(Go, S) 的 配对/信令/WebRTC/握手/AEAD 链路。
 package main
 
@@ -22,11 +22,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/mobilebridge"
-	"github.com/zzycxz/fairpeer/internal/scheduler"
+	"github.com/zzycxz/hiq/internal/mobilebridge"
+	"github.com/zzycxz/hiq/internal/scheduler"
 )
 
-// replyExec 模拟 fairpeer 真实对话：submit 后回 reasoning + text + 工具卡 + turn_done，
+// replyExec 模拟 hiq 真实对话：submit 后回 reasoning + text + 工具卡 + turn_done，
 // 让 linkpeer 对话页有真实的双向交互（不只是 [CMD] 打印）。
 type replyExec struct {
 	conn atomic.Pointer[mobilebridge.Conn]
@@ -50,7 +50,7 @@ func (e *replyExec) Submit(tab, input, _ string) error {
 	return nil
 }
 
-// reply 模拟 fairpeer 的回复：office tab → 办公结果；其他 → 对话流。
+// reply 模拟 hiq 的回复：office tab → 办公结果；其他 → 对话流。
 func (e *replyExec) reply(tab, input string) {
 	c := e.conn.Load()
 	if c == nil {
@@ -63,14 +63,14 @@ func (e *replyExec) reply(tab, input string) {
 		send(`{"kind":"reasoning","reasoning":"办公任务：「`+input+`」。我来生成对应文档……"}`, 300*time.Millisecond)
 		tpl := strings.TrimSuffix(strings.TrimPrefix(input, "办公：生成「"), "」")
 		fname := tpl + "-" + time.Now().Format("0102") + ".docx"
-		send(`{"kind":"text","text":"📁 办公任务完成\n\n生成文件：**`+fname+`**\n\n（模拟）真实环境下 fairpeer 会调 office 工具读模板、填数据、生成文件，保存在桌面端下载目录。"}`, 600*time.Millisecond)
+		send(`{"kind":"text","text":"📁 办公任务完成\n\n生成文件：**`+fname+`**\n\n（模拟）真实环境下 hiq 会调 office 工具读模板、填数据、生成文件，保存在桌面端下载目录。"}`, 600*time.Millisecond)
 		send(`{"kind":"turn_done","err":""}`, 200*time.Millisecond)
 		fmt.Println("[EVT] ✓ 模拟办公结果已发：" + fname)
 		return
 	}
 	// 普通对话：reasoning → text → tool dispatch → tool result → turn_done
 	send(`{"kind":"reasoning","reasoning":"用户说：「`+input+`」。我来分析一下需求……"}`, 300*time.Millisecond)
-	send(`{"kind":"text","text":"收到：**`+input+`** —— 这是 fairpeer 经 P2P 加密通道的回复。我能读写代码、执行工具、生成文档。这条回复模拟了真实对话流（reasoning 思考 → text → 工具卡 → turn_done）。"}`, 500*time.Millisecond)
+	send(`{"kind":"text","text":"收到：**`+input+`** —— 这是 hiq 经 P2P 加密通道的回复。我能读写代码、执行工具、生成文档。这条回复模拟了真实对话流（reasoning 思考 → text → 工具卡 → turn_done）。"}`, 500*time.Millisecond)
 	send(`{"kind":"tool_dispatch","tool":{"id":"t1","name":"read","args":"main.go","readOnly":true}}`, 300*time.Millisecond)
 	send(`{"kind":"approval_request","approval":{"id":"a1","tool":"edit","subject":"将修改 main.go 的 main 函数（需要你批准）"}}`, 300*time.Millisecond)
 	send(`{"kind":"ask_request","ask":{"id":"q1","questions":[{"id":"q1","header":"风格","prompt":"修改后想用哪种风格继续？","options":[{"label":"详细","description":"逐步解释每个改动"},{"label":"简洁","description":"只给结论，不展开"}]}]}}`, 300*time.Millisecond)
@@ -138,7 +138,7 @@ func main() {
 		fmt.Println("[EVT] conn ready，0.5s 后发欢迎 wireEvent")
 		go func() {
 			time.Sleep(500 * time.Millisecond)
-			evt := `{"kind":"text","text":"👋 我是 fairpeer，P2P 加密通道已建立。发消息试试——我会回复 reasoning + text + 工具卡（模拟真实对话流）。"}`
+			evt := `{"kind":"text","text":"👋 我是 hiq，P2P 加密通道已建立。发消息试试——我会回复 reasoning + text + 工具卡（模拟真实对话流）。"}`
 			if err := c.SendEvent([]byte(evt)); err != nil {
 				fmt.Printf("[EVT] send err: %v\n", err)
 			} else {

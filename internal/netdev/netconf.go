@@ -15,8 +15,8 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev/driver"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev/driver"
 )
 
 // NETCONF (RFC 6241/6242) over the device's SSH connection: "netconf"

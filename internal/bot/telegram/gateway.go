@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/bot"
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/bot"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 const (
@@ -49,7 +49,7 @@ type tgUpdate struct {
 	CallbackQuery *tgCallbackQuery `json:"callback_query,omitempty"`
 }
 
-// tgMessage 是 Telegram 的 message 对象（仅取 fairpeer 需要的字段）。
+// tgMessage 是 Telegram 的 message 对象（仅取 hiq 需要的字段）。
 type tgMessage struct {
 	MessageID int64    `json:"message_id"`
 	Text      string   `json:"text"`
@@ -84,7 +84,7 @@ type tgPhotoSize struct {
 type tgCallbackQuery struct {
 	ID      string    `json:"id"`
 	From    tgUser    `json:"from"`
-	Data    string    `json:"data"` // = 按钮的 callback_data，fairpeer 复用为斜杠命令
+	Data    string    `json:"data"` // = 按钮的 callback_data，hiq 复用为斜杠命令
 	Message *tgMessage `json:"message,omitempty"` // 按钮所在的原消息
 }
 

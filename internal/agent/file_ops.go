@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // FileOperations tallies file paths touched by the path-taking built-in tools

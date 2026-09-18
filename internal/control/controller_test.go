@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/checkpoint"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/permission"
-	"github.com/zzycxz/fairpeer/internal/plugin"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/checkpoint"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/permission"
+	"github.com/zzycxz/hiq/internal/plugin"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 type typedNilControllerSink struct{}
@@ -254,7 +254,7 @@ func TestDisconnectMCPServerRemovesLazyPlaceholder(t *testing.T) {
 func TestRemoveMCPServerRemovesUnconnectedLazyPlaceholder(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
-	if err := os.WriteFile("fairpeer.toml", []byte(`
+	if err := os.WriteFile("hiq.toml", []byte(`
 [[plugins]]
 name = "mock"
 command = "mock-mcp"
@@ -373,7 +373,7 @@ func TestApprovalPersistentBashPrefixRememberRule(t *testing.T) {
 		}),
 		OnRemember: func(rule string) RememberResult {
 			remembered = rule
-			return RememberResult{Rule: rule, Path: "fairpeer.toml", Saved: true}
+			return RememberResult{Rule: rule, Path: "hiq.toml", Saved: true}
 		},
 	})
 	go func() {
@@ -387,7 +387,7 @@ func TestApprovalPersistentBashPrefixRememberRule(t *testing.T) {
 	if remembered != "Bash(go test:*)" {
 		t.Fatalf("remembered rule = %q, want Bash(go test:*)", remembered)
 	}
-	if len(notices) != 1 || !strings.Contains(notices[0], "Bash(go test:*)") || !strings.Contains(notices[0], "fairpeer.toml") {
+	if len(notices) != 1 || !strings.Contains(notices[0], "Bash(go test:*)") || !strings.Contains(notices[0], "hiq.toml") {
 		t.Fatalf("notices = %v, want saved rule notice", notices)
 	}
 }

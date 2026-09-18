@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/shellparse"
-	"github.com/zzycxz/fairpeer/internal/shellsafe"
+	"github.com/zzycxz/hiq/internal/shellparse"
+	"github.com/zzycxz/hiq/internal/shellsafe"
 )
 
 // IsFullVerificationCommand reports whether a recognized verifier clearly

@@ -3,7 +3,7 @@ package memory
 import (
 	"os"
 
-	"github.com/zzycxz/fairpeer/internal/pii"
+	"github.com/zzycxz/hiq/internal/pii"
 )
 
 // Shared-memory writes go through this one function so that the redaction rule

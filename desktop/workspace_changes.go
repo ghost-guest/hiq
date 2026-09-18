@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
+	"github.com/zzycxz/hiq/internal/proc"
 )
 
 type gitStatusEntry struct {

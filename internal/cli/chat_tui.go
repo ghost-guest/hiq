@@ -22,21 +22,21 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/command"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/hook"
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/memory"
-	"github.com/zzycxz/fairpeer/internal/outputstyle"
-	"github.com/zzycxz/fairpeer/internal/permission"
-	"github.com/zzycxz/fairpeer/internal/plugin"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
-	"github.com/zzycxz/fairpeer/internal/skill"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/command"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/hook"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/memory"
+	"github.com/zzycxz/hiq/internal/outputstyle"
+	"github.com/zzycxz/hiq/internal/permission"
+	"github.com/zzycxz/hiq/internal/plugin"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/skill"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // chatTUI is a bubbletea Model that normally owns the terminal with an
@@ -232,7 +232,7 @@ type chatTUI struct {
 	// (/mcp) from it.
 	host *plugin.Host
 
-	// commands are custom slash commands loaded from .fairpeer/commands; each renders
+	// commands are custom slash commands loaded from .hiq/commands; each renders
 	// its template with the typed args and sends the result as a turn.
 	commands []command.Command
 
@@ -3713,7 +3713,7 @@ func (m *chatTUI) runExportCommand(input string) {
 	}
 
 	var b strings.Builder
-	b.WriteString("# fairpeer session\n\n")
+	b.WriteString("# hiq session\n\n")
 	lastRole := provider.Role("")
 	for _, msg := range msgs {
 		switch msg.Role {
@@ -3978,7 +3978,7 @@ func replaySectionsFor(history []provider.Message, width int, renderer *mdRender
 // at the top of the session.
 func renderTUIBanner(label, missing string, width int) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s %s  %s\n", accent("◆"), bold("fairpeer chat"), dim("· "+label))
+	fmt.Fprintf(&b, "%s %s  %s\n", accent("◆"), bold("hiq chat"), dim("· "+label))
 	b.WriteString(dim("  " + i18n.M.ChatTip))
 	b.WriteString("\n")
 	if missing != "" {
@@ -4011,7 +4011,7 @@ func renderUserBubble(line string, _ int, planMode bool) string {
 	return "  " + accent(prefix+line)
 }
 
-var cliImageRefRe = regexp.MustCompile(`(?:^|\s)@\.fairpeer/attachments/clipboard-\d{8}-\d{6}\.\d+(?:-(?:\d{6}|[a-f0-9]{8}))?\.(?:png|jpg|jpeg|gif|webp)`)
+var cliImageRefRe = regexp.MustCompile(`(?:^|\s)@\.hiq/attachments/clipboard-\d{8}-\d{6}\.\d+(?:-(?:\d{6}|[a-f0-9]{8}))?\.(?:png|jpg|jpeg|gif|webp)`)
 
 func displayLineForImageRefs(line string) string {
 	idx := 0

@@ -1,6 +1,6 @@
 package runtime
 
-// runtime.go provides unified runtime environment resolution for FairPeer.
+// runtime.go provides unified runtime environment resolution for Hiq.
 // It replaces the 6 scattered findPython()/pythonExe() helpers with a single
 // source of truth that knows about uv (bundled or PATH), Python (direct or via
 // uv), and Node.js.
@@ -21,8 +21,8 @@ import (
 	"sync"
 )
 
-// BundleDirName is the subdirectory next to the fairpeer executable where
-// bundled runtimes live (e.g. fairpeer.exe/runtimes/uv.exe).
+// BundleDirName is the subdirectory next to the hiq executable where
+// bundled runtimes live (e.g. hiq.exe/runtimes/uv.exe).
 const BundleDirName = "runtimes"
 
 // uvNames returns the candidate filenames for uv on each platform.

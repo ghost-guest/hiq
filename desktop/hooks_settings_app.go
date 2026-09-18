@@ -2,12 +2,12 @@ package main
 
 // hooks_settings_app.go exposes the hook configuration (settings.json) to the
 // desktop frontend's Settings → Hooks tab. It supports BOTH scopes (global
-// ~/.fairpeer/settings.json and project <root>/.fairpeer/settings.json), the
+// ~/.hiq/settings.json and project <root>/.hiq/settings.json), the
 // project-trust gate (project hooks load only when trusted), and surfaces the
 // file path + valid event list so the GUI can render a JSON editor.
 //
 // Ported from DeepSeek-Reasonix (desktop/hooks_settings_app.go), adapted to the
-// fairpeer module path. The wire types (HookConfigView/HooksSettingsView) are
+// hiq module path. The wire types (HookConfigView/HooksSettingsView) are
 // flat (one entry per hook, carrying its event) so the frontend edits a single
 // JSON document and groups by event itself.
 
@@ -18,7 +18,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/hook"
+	"github.com/zzycxz/hiq/internal/hook"
 )
 
 type HookConfigView struct {

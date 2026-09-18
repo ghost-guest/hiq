@@ -17,7 +17,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 
-	"github.com/zzycxz/fairpeer/internal/browserlaunch"
+	"github.com/zzycxz/hiq/internal/browserlaunch"
 )
 
 var screens = []struct{ name, screen string }{

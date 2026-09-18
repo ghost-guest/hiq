@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 func init() { tool.RegisterBuiltin(webSearch{}) }
@@ -52,10 +52,10 @@ func initSearchCache() {
 	}
 
 	// Get cache directory from environment or use default
-	cacheDir := os.Getenv("FAIRPEER_CACHE_DIR")
+	cacheDir := os.Getenv("HIQ_CACHE_DIR")
 	if cacheDir == "" {
 		homeDir, _ := os.UserHomeDir()
-		cacheDir = filepath.Join(homeDir, ".fairpeer", "cache")
+		cacheDir = filepath.Join(homeDir, ".hiq", "cache")
 	}
 
 	dbPath := filepath.Join(cacheDir, "search-cache.db")

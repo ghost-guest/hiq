@@ -30,11 +30,11 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"github.com/zzycxz/fairpeer/internal/apihelper"
-	"github.com/zzycxz/fairpeer/internal/boot"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/rag"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/apihelper"
+	"github.com/zzycxz/hiq/internal/boot"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/rag"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // RagNodeView is one node in the RAG file/folder tree.
@@ -766,8 +766,8 @@ func (a *App) RagSummarize(collection string) (KnowledgeSummaryView, error) {
 
 // RagAsk is the knowledge-base Q&A endpoint: it searches the RAG store for
 // context relevant to the user's question, then calls the configured LLM to generate
-// a grounded answer. This is fairpeer's equivalent of Hyper-Extract's `he talk`
-// — but uses fairpeer's own FTS5 + entity retrieval and the configured chat API,
+// a grounded answer. This is hiq's equivalent of Hyper-Extract's `he talk`
+// — but uses hiq's own FTS5 + entity retrieval and the configured chat API,
 // without depending on the HE Python server.
 //
 // The model used is the same fast_task_model as RAG extraction (resolved via
@@ -833,13 +833,13 @@ func (a *App) RagAsk(collection, question string) (string, error) {
 		}
 	}
 	if modelName == "" {
-		return "", fmt.Errorf("no LLM model configured: set fast_task_model or default_model in fairpeer.toml")
+		return "", fmt.Errorf("no LLM model configured: set fast_task_model or default_model in hiq.toml")
 	}
 
 	// 4. Build the chat request.
 	apiKey := os.Getenv(apiKeyEnv)
 	if apiKey == "" {
-		apiKey = os.Getenv("FAIRPEER_API_KEY")
+		apiKey = os.Getenv("HIQ_API_KEY")
 	}
 	if apiKey == "" {
 		return "", fmt.Errorf("LLM api key not configured")
@@ -1422,7 +1422,7 @@ func (a *App) WriteKnowledgeRef(collection string, entityNames []string, relatio
 		return "", fmt.Errorf("RAG store offline")
 	}
 	content := rag.FormatKnowledgeRef(a.ragStore, collection, entityNames, relationKeys)
-	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("fairpeer_knowledge_ref_%d.md", time.Now().UnixMilli()))
+	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("hiq_knowledge_ref_%d.md", time.Now().UnixMilli()))
 	if err := os.WriteFile(tmpPath, []byte(content), 0o644); err != nil {
 		return "", err
 	}

@@ -2,7 +2,7 @@
 
 > 版本：v1.1　|　日期：2026-07-10　|　状态：实施中
 >
-> 本方案基于对 fairpeer 资料库子系统的六轮代码审计，覆盖：已实现功能面、已知工程问题、测试覆盖与数据迁移、rag 工具与 agent 集成、前端 i18n/性能/a11y。
+> 本方案基于对 hiq 资料库子系统的六轮代码审计，覆盖：已实现功能面、已知工程问题、测试覆盖与数据迁移、rag 工具与 agent 集成、前端 i18n/性能/a11y。
 > 审计方法为逐文件阅读 + 针对性验证，所有结论均带 `file:line` 证据。
 
 ## 实施进度
@@ -53,7 +53,7 @@
 | **P2-1** markitdown 公共包 | 新建 `internal/docconv/docconv.go`（统一 `FindScript`/`ConvertFile`/`ConvertText`，参数化脚本名使 OCR 也复用），三处调用点改为薄封装：`internal/rag/officedoc.go`、`internal/tool/builtin/officedoc.go`、`internal/control/refs.go`，清理各自未用的导入；新建 `docconv_test.go`（3 测试） | ✅ go test + build |
 | **P2-2** 删除死代码 | 删除 `internal/rag/extract_queue.go`（273 行，`NewExtractQueue` 零调用方，经 grep 全仓确认无引用） | ✅ go test + build |
 | **P2-5** HE 进程清理 | `desktop/app.go` shutdown 方法新增 `ragPipeline.Stop()` + `heService.Stop()`（此前 `Stop()` 定义了但从未调用，Python 进程在 Windows 上成孤儿） | ✅ go build |
-| **P2-6** HE 端口配置化 + 占用检测 | `internal/config/config.go`（CoworkConfig 加 `HEPort`）、`desktop/app.go`（启动读配置传端口）、`desktop/he_service.go`（Start 前 `net.Listen` 探测端口占用，冲突时报清晰错误并指引 `[cowork] he_port`）、`fairpeer.example.toml`（加 he_port 示例） | ✅ go build |
+| **P2-6** HE 端口配置化 + 占用检测 | `internal/config/config.go`（CoworkConfig 加 `HEPort`）、`desktop/app.go`（启动读配置传端口）、`desktop/he_service.go`（Start 前 `net.Listen` 探测端口占用，冲突时报清晰错误并指引 `[cowork] he_port`）、`hiq.example.toml`（加 he_port 示例） | ✅ go build |
 | **P2-7** pruneSourcesByPath LIKE 转义 | `internal/rag/store.go`（LIKE 通配符 `%`/`_`/`\` 转义 + `ESCAPE '\'`，消除路径含通配符时的候选集误扩大） | ✅ go test |
 
 ### P3 实施记录（部分完成）
@@ -78,7 +78,7 @@
 资料库采用 **三层融合架构**，串联 Swarm-OS 的三个组件：
 
 ```
-markitdown(Python 文档解析)  →  fairpeer RAG(Go 存储/编排/检索)  →  Hyper-Extract(Python 抽取/向量化/摘要)
+markitdown(Python 文档解析)  →  hiq RAG(Go 存储/编排/检索)  →  Hyper-Extract(Python 抽取/向量化/摘要)
         ①                           ②                                 ③
 ```
 
@@ -456,5 +456,5 @@ P2-1 抽公共包、P2-2 删死代码、P2-3 统一抽取路径、P2-4~P2-7 工�
 | rag 工具 | `internal/tool/builtin/rag.go`、`untrusted.go` |
 | 专家团 | `internal/experts/orchestrator.go`、`desktop/experts_app.go` |
 | 前端 | `frontend/src/components/cowork/`（21 文件）、`layouts/CoWorkLayout.tsx` |
-| 配置 | `internal/config/config.go(CoworkConfig)`、`fairpeer.example.toml` |
+| 配置 | `internal/config/config.go(CoworkConfig)`、`hiq.example.toml` |
 | 测试 | `internal/rag/*_test.go`、`desktop/bound_array_contract_test.go` |

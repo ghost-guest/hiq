@@ -13,7 +13,7 @@ package main
 // Pipeline:
 //   pdf_to_page_images.py (fitz) renders each page → page-N.png
 //   → each PNG sent to builtin.CallVLM with a 4-section prompt
-//   → ~/.fairpeer/pdf-pages/page-N.json (one per page)
+//   → ~/.hiq/pdf-pages/page-N.json (one per page)
 //   → ppt-auto reads these and redraws each page
 //
 // Design notes:
@@ -42,10 +42,10 @@ import (
 	"sync"
 	"time"
 
-	skillassets "github.com/zzycxz/fairpeer/internal/assets"
-	"github.com/zzycxz/fairpeer/internal/docconv"
-	"github.com/zzycxz/fairpeer/internal/proc"
-	runtimepkg "github.com/zzycxz/fairpeer/internal/runtime"
+	skillassets "github.com/zzycxz/hiq/internal/assets"
+	"github.com/zzycxz/hiq/internal/docconv"
+	"github.com/zzycxz/hiq/internal/proc"
+	runtimepkg "github.com/zzycxz/hiq/internal/runtime"
 	"log/slog"
 )
 
@@ -61,7 +61,7 @@ type pdfPageResult struct {
 
 // AnalyzePDFPages is the desktop entry point: render each page of pdfPath to a
 // PNG (via pdf_to_page_images.py) and ask the VLM to describe it, writing one
-// JSON per page to ~/.fairpeer/pdf-pages/page-{N}.json. Returns the number of
+// JSON per page to ~/.hiq/pdf-pages/page-{N}.json. Returns the number of
 // pages processed. Intended to run async (call in a goroutine, like
 // analyzeTemplateStyleAsync); per-page failures land in the JSON, not as errors.
 func (a *App) AnalyzePDFPages(pdfPath string) (int, error) {
@@ -92,7 +92,7 @@ func analyzePDFPages(ctx context.Context, pdfPath string, firstBody string) (int
 	}
 
 	home, _ := os.UserHomeDir()
-	outDir := filepath.Join(home, ".fairpeer", "pdf-pages")
+	outDir := filepath.Join(home, ".hiq", "pdf-pages")
 	// Wipe before re-analyzing: a previous LONGER PDF's leftover page-K.json
 	// (K > this PDF's total) would linger and later be consumed as if it
 	// belonged to the current reference — cross-task contamination.
@@ -211,7 +211,7 @@ func parseRenderOutput(stdout []byte) (pages []string, total int, err error) {
 // SubmitToTab stays responsive). It runs the ppt-auto skill's own idempotent
 // analyzer (analyze_pdf_pages.py) with --max 999 — there is no bash 2-minute
 // budget on this path — so by the time the model dispatches to ppt-auto,
-// ~/.fairpeer/pdf-pages/ usually holds EVERY page and the skill's in-task
+// ~/.hiq/pdf-pages/ usually holds EVERY page and the skill's in-task
 // batching finds nothing left to do. Best-effort: errors only log.
 func completePDFPagesInBackground(pdfPath string) {
 	dir, err := skillassets.PPTAutoSkillDir()

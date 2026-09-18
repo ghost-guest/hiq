@@ -29,7 +29,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 // DefaultPolicy is applied when a Team leaves a policy field at its zero value.

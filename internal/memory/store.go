@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/frontmatter"
+	"github.com/zzycxz/hiq/internal/frontmatter"
 )
 
 // indexMu serializes MEMORY.md read-modify-write per directory. The store is a
@@ -51,9 +51,9 @@ func indexLockFor(dir string) *sync.Mutex {
 // injection (status/importance/decay/compact) had no remaining job. Same-name
 // save overwrites; history is the user's VCS.
 type Store struct {
-	Dir        string // .../fairpeer/projects/<slug>/<profile>/memory (L2 project facts)
-	GlobalDir  string // .../fairpeer/memory/<profile> (L1 shared facts for this mode)
-	SessionDir string // .../fairpeer/projects/<slug>/<profile>/memory/session (L3 working memory)
+	Dir        string // .../hiq/projects/<slug>/<profile>/memory (L2 project facts)
+	GlobalDir  string // .../hiq/memory/<profile> (L1 shared facts for this mode)
+	SessionDir string // .../hiq/projects/<slug>/<profile>/memory/session (L3 working memory)
 }
 
 // Type classifies a memory, mirroring the auto-memory taxonomy. It is kept as a
@@ -149,7 +149,7 @@ func StoreFor(userDir, cwd, profile string) Store {
 // mistaken for a durable project fact.
 const sessionSubdir = "session"
 
-// DataRoot recovers the user data root the store lives under (…/fairpeer) from
+// DataRoot recovers the user data root the store lives under (…/hiq) from
 // its own layout: GlobalDir is <root>/memory/<profile>. Promoted artifacts
 // (skills/, plugins/) are written relative to it, so relocating the memory root
 // carries them along instead of leaving them on the old drive. Empty when the

@@ -25,7 +25,7 @@ func auditChainHash(prev string, e Audit) (string, error) {
 }
 
 // Audit records every device interaction in an append-only JSONL file under
-// <user config>/fairpeer/netdev/audit.jsonl — one of the never-off guardrails
+// <user config>/hiq/netdev/audit.jsonl — one of the never-off guardrails
 // (NETDEV_SPEC invariant 4). Command text and outcome are recorded; raw
 // output is deliberately NOT stored (device output can carry secrets — the
 // redactor and evidence integration land in P2; until then only the size and
@@ -105,7 +105,7 @@ func netdevStateDir() string {
 		home, _ := os.UserHomeDir()
 		dir = home
 	}
-	return filepath.Join(dir, "fairpeer", "netdev")
+	return filepath.Join(dir, "hiq", "netdev")
 }
 
 // AppendAudit writes one entry. Failures are returned (the caller logs); an

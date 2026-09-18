@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/scheduler"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/scheduler"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // Scheduled-task tools (Phase 3 of coWork). These wrap a process-global

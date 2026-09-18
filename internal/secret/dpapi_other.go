@@ -23,7 +23,7 @@ import (
 func machineKey() []byte {
 	host, _ := os.Hostname()
 	home, _ := os.UserHomeDir()
-	h := sha256.Sum256([]byte("fairpeer-secret-v1:" + host + ":" + home))
+	h := sha256.Sum256([]byte(legacySecretSalt + host + ":" + home))
 	return h[:]
 }
 

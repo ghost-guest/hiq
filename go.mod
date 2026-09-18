@@ -1,4 +1,4 @@
-module github.com/zzycxz/fairpeer
+module github.com/zzycxz/hiq
 
 go 1.26.0
 

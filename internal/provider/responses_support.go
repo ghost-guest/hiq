@@ -5,7 +5,7 @@ import "strings"
 // This file carries the additive provider v2 surface the Responses API
 // implementation needs: output-budget defaults and the reasoning-replay
 // capability contract. Everything here is append-only relative to the legacy
-// fairpeer provider surface — existing kinds never read these, so their wire
+// hiq provider surface — existing kinds never read these, so their wire
 // output is unchanged. Search policy and server-search types live in
 // server_search.go.
 

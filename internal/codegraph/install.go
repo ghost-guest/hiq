@@ -32,7 +32,7 @@ const (
 
 // customDownloadBase, when set via SetDownloadBase, replaces the default GitHub
 // download source. This lets air-gapped/intranet deployments host the CodeGraph
-// binary on an internal mirror and point fairpeer at it via
+// binary on an internal mirror and point hiq at it via
 // [codegraph].download_url in config.toml. Set by boot.go before Install.
 var customDownloadBase string
 
@@ -44,18 +44,18 @@ func SetDownloadBase(url string) { customDownloadBase = strings.TrimSpace(url) }
 // CacheDir is where the CodeGraph bundle is unpacked on first use. Versioned so a
 // bump installs cleanly beside the old one. Resolution order:
 //
-//  1. $FAIRPEER_CACHE_DIR — explicit override (relocate the cache, or isolate it
+//  1. $HIQ_CACHE_DIR — explicit override (relocate the cache, or isolate it
 //     in tests); the bundle lands at <override>/codegraph/<Version>.
 //  2. PORTABLE — in an embedded build (the shipped/portable exe carries the
 //     runtime), unpack beside the executable when that directory is writable, so
 //     a copied exe stays self-contained and writes nothing to the system drive.
 //     Falls through when the location is read-only (e.g. a managed install under
 //     Program Files) or for non-embedded builds.
-//  3. the OS user cache/config dir: <dir>/fairpeer/codegraph/<Version>.
+//  3. the OS user cache/config dir: <dir>/hiq/codegraph/<Version>.
 //
 // Empty when nothing resolves.
 func CacheDir() string {
-	if base := strings.TrimSpace(os.Getenv("FAIRPEER_CACHE_DIR")); base != "" {
+	if base := strings.TrimSpace(os.Getenv("HIQ_CACHE_DIR")); base != "" {
 		return filepath.Join(base, "codegraph", Version)
 	}
 	if _, ok := embeddedBundle(); ok {
@@ -69,7 +69,7 @@ func CacheDir() string {
 			return ""
 		}
 	}
-	return filepath.Join(base, "fairpeer", "codegraph", Version)
+	return filepath.Join(base, "hiq", "codegraph", Version)
 }
 
 // portableCacheBase returns the directory beside the executable under which an
@@ -129,7 +129,7 @@ func assetName() string {
 }
 
 // Install downloads and unpacks the CodeGraph bundle into CacheDir on first use,
-// verifying it against the checksum baked into the fairpeer binary, then returns
+// verifying it against the checksum baked into the hiq binary, then returns
 // the launcher path.
 // It is idempotent: a present cache is returned untouched. log, if non-nil,
 // receives a couple of progress lines. The extraction is staged in a temp dir and
@@ -139,7 +139,7 @@ func Install(ctx context.Context, log func(string)) (string, error) {
 	return InstallWithClient(ctx, http.DefaultClient, log)
 }
 
-// InstallWithClient is Install with an explicit HTTP client, used when fairpeer
+// InstallWithClient is Install with an explicit HTTP client, used when hiq
 // network proxy settings should apply.
 func InstallWithClient(ctx context.Context, client *http.Client, log func(string)) (string, error) {
 	if client == nil {
@@ -207,7 +207,7 @@ func InstallWithClient(ctx context.Context, client *http.Client, log func(string
 		if p, ok := cached(); ok {
 			return p, nil // a concurrent winner landed during our retries
 		}
-		return "", fmt.Errorf("codegraph: install to %s failed: %w — the cache directory may be read-only or locked by antivirus; set FAIRPEER_CACHE_DIR to a writable location to relocate it", dir, err)
+		return "", fmt.Errorf("codegraph: install to %s failed: %w — the cache directory may be read-only or locked by antivirus; set HIQ_CACHE_DIR to a writable location to relocate it", dir, err)
 	}
 	p, ok := cached()
 	if !ok {

@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/billing"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/evidence"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/billing"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/evidence"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // Recorder is a passthrough event.Sink that snapshots token usage (event.Usage)

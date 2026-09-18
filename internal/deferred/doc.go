@@ -13,7 +13,7 @@
 //     app closed is simply gone.
 //
 // The design mirrors a proven shape from a sibling agent product
-// (openhanako's DeferredResultCoordinator), adapted to fairpeer's primitives:
+// (openhanako's DeferredResultCoordinator), adapted to hiq's primitives:
 //
 //   - A task is a durable record (Store) with a lifecycle
 //     (pending → resolved/failed/aborted) and delivery bookkeeping

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // rstAfter writes a 200 SSE head plus the given prelude, then forces a TCP RST

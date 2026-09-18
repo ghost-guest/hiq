@@ -140,7 +140,7 @@ export async function loadWallpaper(): Promise<WallpaperView | null> {
 // (AppBackdrop), which are different subtrees. A window event keeps them in
 // sync without threading state through every intermediate component — the same
 // pattern the cowork "insert text" bridge already uses.
-const WALLPAPER_EVENT = "fairpeer:wallpaper-changed";
+const WALLPAPER_EVENT = "hiq:wallpaper-changed";
 
 /**
  * broadcastWallpaper applies a view and tells any mounted backdrop about it.

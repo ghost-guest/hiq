@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // missing_methods.go补齐 7/15 release exe 调用但当前 Go 后端缺失的 5 个 App 方法。

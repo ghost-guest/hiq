@@ -19,9 +19,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/browseruse"
-	"github.com/zzycxz/fairpeer/internal/proc"
-	runtimepkg "github.com/zzycxz/fairpeer/internal/runtime"
+	"github.com/zzycxz/hiq/internal/browseruse"
+	"github.com/zzycxz/hiq/internal/proc"
+	runtimepkg "github.com/zzycxz/hiq/internal/runtime"
 )
 
 const (
@@ -235,7 +235,7 @@ func FindBrowserUseScript() string {
 }
 
 // findRepoRootFrom walks up from start until it finds a directory containing
-// go.mod (fairpeer's module marker), returning that directory or "".
+// go.mod (hiq's module marker), returning that directory or "".
 func findRepoRootFrom(start string) string {
 	for d := start; d != ""; d = parentDir(d) {
 		if fileExists(filepath.Join(d, "go.mod")) {

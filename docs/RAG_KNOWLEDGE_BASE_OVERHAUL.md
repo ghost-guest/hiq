@@ -39,7 +39,7 @@ CoWork sidebar        Center（图谱全屏）              CoworkDock
 │ 专家  │  │                                      │  │              │
 │[知识库]│  │      (React Flow 交互式画布)         │  │  实体 (156)   │
 │      │  │                                      │  │  ──────       │
-│      │  │      节点: 实体（按类型着色）          │  │  fairpeer  8  │
+│      │  │      节点: 实体（按类型着色）          │  │  hiq  8  │
 │      │  │      边:   关系（带标签）              │  │  Wails      5 │
 │      │  │                                      │  │  Go          3 │
 │      │  │                                      │  │  ...          │
@@ -80,7 +80,7 @@ CoWork sidebar        Center（图谱全屏）              CoworkDock
 CoworkDock 切换到实体详情：
 
 ┌──────────────┐
-│ fairpeer     │
+│ hiq     │
 │ 产品          │
 │ ──────────── │
 │ 基于 Wails   │
@@ -111,7 +111,7 @@ CoworkDock 切换到实体详情：
 ```
 ┌─ 编辑实体 ──────────────────────────────────────────────┐
 │                                                          │
-│  名称     [fairpeer                        ]             │
+│  名称     [hiq                        ]             │
 │  类型     [产品 ▼]                                        │
 │  描述     [基于 Wails v2 的桌面 AI 助手        ]          │
 │                                                          │
@@ -126,15 +126,15 @@ CoworkDock 切换到实体详情：
 ```
 ┌─ 编辑实体 ──────────────────────────────────────────────┐
 │                                                          │
-│  名称     [fairpeer                        ]             │
+│  名称     [hiq                        ]             │
 │  类型     [产品 ▼]                                        │
 │  描述     [基于 Wails v2 的桌面 AI 助手        ]          │
 │                                                          │
 │  ── 合并重复实体 ──────────────────────────────────────  │
-│  勾选要合并到 "fairpeer" 的实体，关系自动迁移            │
+│  勾选要合并到 "hiq" 的实体，关系自动迁移            │
 │                                                          │
-│  [x] fairpeer Desktop         3 关系                     │
-│  [ ] fairpeer App             1 关系                     │
+│  [x] hiq Desktop         3 关系                     │
+│  [ ] hiq App             1 关系                     │
 │                                                          │
 │  合并后将迁移 3 条关系                                   │
 │                                                          │
@@ -151,7 +151,7 @@ CoworkDock 切换到实体详情：
 │ 搜索: [Wails___]              [清除]  │
 │                                       │
 │         ┌───────────┐                 │
-│         │ fairpeer  │                 │
+│         │ hiq  │                 │
 │         │  (半透明)  │                 │
 │         └─────┬─────┘                 │
 │            使用│                       │
@@ -213,7 +213,7 @@ CoworkDock 切换到实体详情：
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
 │ 已选 3 个实体 · 2 条关系                              [清除] [用于: ▼]              │
 │                                                                                     │
-│  fairpeer · Wails · ExpertPanel · fairpeer→使用→Wails · fairpeer→包含→ExpertPanel  │
+│  hiq · Wails · ExpertPanel · hiq→使用→Wails · hiq→包含→ExpertPanel  │
 └─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -230,13 +230,13 @@ CoworkDock 切换到实体详情：
 │                                                     │
 │  ┌─ 预览 ──────────────────────────────────────┐   │
 │  │ 实体:                                        │   │
-│  │ - fairpeer (产品): 基于 Wails v2 的桌面...   │   │
+│  │ - hiq (产品): 基于 Wails v2 的桌面...   │   │
 │  │ - Wails (技术): Go 桌面应用框架              │   │
 │  │ - ExpertPanel (功能): 专家团协作面板         │   │
 │  │                                              │   │
 │  │ 关系:                                        │   │
-│  │ - fairpeer → 使用 → Wails                    │   │
-│  │ - fairpeer → 包含 → ExpertPanel              │   │
+│  │ - hiq → 使用 → Wails                    │   │
+│  │ - hiq → 包含 → ExpertPanel              │   │
 │  └──────────────────────────────────────────────┘   │
 │                                                     │
 │                              [取消]  [确认运行]     │
@@ -281,7 +281,7 @@ ppt-auto 和 document-auto 的 skill body 各加一句：
 
 ```
 vault/
-├── fairpeer.md          ← 实体笔记，含 YAML 前置信息 + 关系 wikilinks
+├── hiq.md          ← 实体笔记，含 YAML 前置信息 + 关系 wikilinks
 ├── Wails.md
 ├── ExpertPanel.md
 ├── RAG.md
@@ -295,7 +295,7 @@ type: product
 sources: [需求文档.md#0, 技术方案.docx#2]
 ---
 
-# fairpeer
+# hiq
 
 基于 Wails v2 的桌面 AI 助手
 
@@ -308,7 +308,7 @@ sources: [需求文档.md#0, 技术方案.docx#2]
 
 ## 来源
 
-> "fairpeer 是一个基于 Wails v2 框架的桌面 AI 助手..."
+> "hiq 是一个基于 Wails v2 框架的桌面 AI 助手..."
 > — 需求文档.md
 ```
 
@@ -467,7 +467,7 @@ interface GraphEdge {
 func (a *RagApp) WriteKnowledgeRef(collection string, entityNames []string, relationKeys []string) (string, error) {
     // 1. 从 SQLite 查询实体/关系详情
     // 2. 格式化为 markdown（实体: 名称(类型): 描述；关系: 源→类型→目标）
-    // 3. 写入 {os.TempDir()}/fairpeer_knowledge_ref_{timestamp}.md
+    // 3. 写入 {os.TempDir()}/hiq_knowledge_ref_{timestamp}.md
     // 4. 返回文件路径
 }
 
@@ -629,7 +629,7 @@ RagPanel 放开文件类型限制，支持拖拽 Office/PDF。
 #### Hyper-Extract 集成
 
 ```
-fairpeer (Go)
+hiq (Go)
     │
     ├─ 首次深度提取时 spawn → hyper-extract-server.py (localhost)
     │                          ├─ /parse     — 提取

@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/command"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/memory"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/hiq/internal/command"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/memory"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/skill"
 )
 
 type fakeAutoPlanClassifier struct {
@@ -61,7 +61,7 @@ func TestSkillsReflectStoreChangesAfterControllerBuild(t *testing.T) {
 	if _, ok := c.RunSkill("/hot now"); ok {
 		t.Fatal("skill should not exist before it is written")
 	}
-	writeControlSkill(t, project, ".fairpeer/skills/hot/SKILL.md", "---\nname: hot\ndescription: Hot install\n---\nHot body")
+	writeControlSkill(t, project, ".hiq/skills/hot/SKILL.md", "---\nname: hot\ndescription: Hot install\n---\nHot body")
 
 	if skills := c.Skills(); len(skills) != 1 || skills[0].Name != "hot" {
 		t.Fatalf("Skills() = %+v, want newly installed hot skill", skills)

@@ -2,7 +2,7 @@
 
 > 状态：规范草案 v1
 > 日期：2026-08-11
-> 范围：定义 fairpeer 桌面端（S, server peer）与 linkpeer 移动端（C, client peer）之间**如何建立连接、服务器提供什么、如何保证安全**。读完应可直接实现。
+> 范围：定义 hiq 桌面端（S, server peer）与 linkpeer 移动端（C, client peer）之间**如何建立连接、服务器提供什么、如何保证安全**。读完应可直接实现。
 > 相关：架构概览见 [`MOBILE_CLIENT_PLAN.md`](./MOBILE_CLIENT_PLAN.md)；本文是其协议层细化。
 
 ---
@@ -35,7 +35,7 @@ F. 吊销解绑    单向/双向吊销，已吊销设备无法再握手
 ### 1.1 日常连接全链路时序（配对后常态——用户每次开 App 走的路径）
 
 ```
-C(linkpeer)              K(信令)                S(fairpeer 桌面)
+C(linkpeer)              K(信令)                S(hiq 桌面)
    │ App 启动              │                      │ (启动时即维持长连 WS 在 K)
    │                       │ ◄═══ WS 长连保活 ════│
    │ 1.WS 认证连 K         │                      │
@@ -62,7 +62,7 @@ C(linkpeer)              K(信令)                S(fairpeer 桌面)
    │ ◄══════════════════════════════════════════════════════════════► │
 ```
 
-**关键前提**：S 的长连 WS 必须在 C 发起前就已建立，否则 K 查不到 S 在线、C 收到 `unavailable`。所以 fairpeer 启动 + `[mobilebridge] enabled` + 已配对时，**S 立即建立到 K 的长连**（详见 §4.5）。
+**关键前提**：S 的长连 WS 必须在 C 发起前就已建立，否则 K 查不到 S 在线、C 收到 `unavailable`。所以 hiq 启动 + `[mobilebridge] enabled` + 已配对时，**S 立即建立到 K 的长连**（详见 §4.5）。
 
 ---
 
@@ -72,7 +72,7 @@ C(linkpeer)              K(信令)                S(fairpeer 桌面)
 
 | 符号 | 角色 | 平台 |
 |---|---|---|
-| **S** | fairpeer 桌面端（server peer，服务侧） | Windows/macOS/Linux |
+| **S** | hiq 桌面端（server peer，服务侧） | Windows/macOS/Linux |
 | **C** | linkpeer 移动端（client peer，发起侧） | Android/iOS |
 | **K** | 信令服务（knock server，仅敲门） | 公网 VPS |
 
@@ -211,7 +211,7 @@ K 验证（**零状态，不查任何表**）：
 
 **关键优势**：K 完全无状态——不存 pub、不存配对关系、不存 token。重启零影响，任何已配对设备重连即过。配对合法性由 S 端握手拒绝（§5.4）兜底；K 只验"你持有 devId 对应的私钥"，不验"你配对过谁"。
 
-S 侧：fairpeer 启动 + `[mobilebridge] enabled` + 已配对时，立即建这条 WSS 并常驻（§4.5）。
+S 侧：hiq 启动 + `[mobilebridge] enabled` + 已配对时，立即建这条 WSS 并常驻（§4.5）。
 C 侧：按需连（要连 S 时建，连完可断）。
 
 ### 4.2 SDP / ICE 交换（所有消息 Ed25519 签名）
@@ -276,7 +276,7 @@ K 重启后 `peers` 清空——无所谓，因为它无状态，两端重连即
 [mobilebridge]
 turn_enabled = false                # 默认关
 turn_servers = ["turn:signal.example.com:5349"]  # 同 VPS 自建
-turn_credentials = "fairpeer-user"  # coturn 静态凭据（自建可信）
+turn_credentials = "hiq-user"  # coturn 静态凭据（自建可信）
 ```
 
 开启后，ICE 在 host/srflx 都失败时回退 TURN。UI 明示"当前为加密中继模式"。因 TURN 跑在用户自建 VPS + 端到端加密，TURN 只见密文，不违反"业务不经过第三方云"原则。
@@ -287,10 +287,10 @@ coturn 配置在 §10.3 的基础上，开 TURN 时去掉 `no-udp-relay`/`no-tcp
 
 ### 4.5 S 侧信令长连通道（敲门机制的前提）
 
-S 在 NAT 后、无公网 IP。C 经 K 找到 S 的**前提是 S 主动维持一条到 K 的出站长连 WS**（出站连接能穿 NAT）。K 据此维护 `peers[devS]` 在线表，C 发来 offer 时才能沿这条长连推给 S。**这条长连是 fairpeer 桌面端 mobilebridge 的核心常驻组件——它不建立，整个敲门机制无法运作。**
+S 在 NAT 后、无公网 IP。C 经 K 找到 S 的**前提是 S 主动维持一条到 K 的出站长连 WS**（出站连接能穿 NAT）。K 据此维护 `peers[devS]` 在线表，C 发来 offer 时才能沿这条长连推给 S。**这条长连是 hiq 桌面端 mobilebridge 的核心常驻组件——它不建立，整个敲门机制无法运作。**
 
 **建立时机**：
-- fairpeer 启动、`[mobilebridge] enabled = true`、且已配对至少一台 C 时，立即建到 K 的 WSS。
+- hiq 启动、`[mobilebridge] enabled = true`、且已配对至少一台 C 时，立即建到 K 的 WSS。
 - 配对码生成期间也要连（需接收 C 的 exchange 通知 + 后续 offer）。
 - 未配对且不在配对中 → 不必连（无人会找它）。
 
@@ -757,12 +757,12 @@ allow_file_drop=false 的 C 发 file_start → 拒绝 forbidden
 
 **③ office_run / file_drop 参数校验（防注入）** —— 影响 FEATURES §3/§4
 
-- `office_run`：S 端对模板名走白名单（仅 `desktop/default_registry.json` 已注册的），参数做路径规范校验（`filepath.Clean` + 禁 `..` + 限定在工作区根下），复用 fairpeer 现有 office 工具的安全沙箱。
+- `office_run`：S 端对模板名走白名单（仅 `desktop/default_registry.json` 已注册的），参数做路径规范校验（`filepath.Clean` + 禁 `..` + 限定在工作区根下），复用 hiq 现有 office 工具的安全沙箱。
 - `file_drop`：落地路径强制 `incoming/` 子目录，文件类型白名单（`.jpg/.png/.pdf/.docx/.xlsx/.txt/.md/.zip`），扩展名校验真实 MIME（不只看后缀），不自动执行，需用户/agent 显式 read。
 
 **④ S 端审计日志（事后追查）** —— 影响 §8
 
-mobilebridge 记审计日志（脱敏，存本地 `~/.fairpeer/mobilebridge/audit.log`）：
+mobilebridge 记审计日志（脱敏，存本地 `~/.hiq/mobilebridge/audit.log`）：
 
 ```
 2026-08-11T14:23:01Z  devC=K7QM...9XC  cmd=submit      tab=tab_a1b2  ok
@@ -874,7 +874,7 @@ ENCRYPTED ──DC 断──► DISCONNECTED → backoff → SIGNALING
 任意 ──用户解绑──► IDLE (删 pubS)
 ```
 
-### 14.2 fairpeer（S）
+### 14.2 hiq（S）
 
 **S 自身常驻状态**（与具体 C 无关）：
 ```
@@ -908,7 +908,7 @@ K 是无状态内存表，重启即清。每个条目有自己的小生命周期
 
 ### 15.1 一 S 多 C（一个桌面被多台手机连）
 
-fairpeer 桌面可被多台 linkpeer 同时连接。
+hiq 桌面可被多台 linkpeer 同时连接。
 
 - S 维护 `conns map[connId]*Conn`，每个 Conn 独立握手 + 独立会话密钥。
 - **事件广播**：`tabEventSink.Emit(e)` 把事件发给**所有当前订阅了该 tab 的 C**。订阅关系 `connId → subscribedTab`，每 C 同一时刻只看一个 tab（`subscribe_tab` 命令切换）。
@@ -917,7 +917,7 @@ fairpeer 桌面可被多台 linkpeer 同时连接。
 
 ### 15.2 一 C 多 S（一个手机绑多台桌面）
 
-linkpeer 可绑定多台 fairpeer 桌面。
+linkpeer 可绑定多台 hiq 桌面。
 
 - C 维护 `desktops: map[devS] → {label, pubS, lastConnectedAt, lastState}`。
 - **MVP：单活动连接**——同时只与一台 S 建 P2P，切换桌面时断旧建新。简单、省电、省流量。

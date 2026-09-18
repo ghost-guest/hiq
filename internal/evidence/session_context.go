@@ -1,4 +1,4 @@
-// This file is a fairpeer-specific addition to the evidence package. Everything
+// This file is a hiq-specific addition to the evidence package. Everything
 // else in this directory is ported verbatim from upstream Reasonix; keeping the
 // extra API in its own file means a future re-port (a straight file copy) never
 // overwrites it.
@@ -7,7 +7,7 @@ package evidence
 import (
 	"context"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // sessionMessagesKey is the context key under which WithSessionMessages stores

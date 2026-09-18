@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // ParallelTasksTool dispatches multiple sub-agent tasks concurrently and
@@ -26,7 +26,7 @@ import (
 // model, search/routing to a small fast model. The TaskTool.resolveProvider
 // callback resolves each per-sub-task model just like a single task call would.
 //
-// Ported from DeepSeek-Reasonix (parallel_tasks tool), adapted to fairpeer's
+// Ported from DeepSeek-Reasonix (parallel_tasks tool), adapted to hiq's
 // TaskTool shape. Read-only classification matches the upstream tool so the
 // agent's parallel-batch optimizer runs these concurrently without write races;
 // a sub-agent that needs to write should use the sequential `task` tool.

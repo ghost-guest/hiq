@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/winsandbox"
+	"github.com/zzycxz/hiq/internal/winsandbox"
 )
 
 type windowsSandboxPayload struct {
@@ -112,7 +112,7 @@ func decodeWindowsSandboxPayload(s string) (windowsSandboxPayload, error) {
 // CommandArgs on native Windows.
 func RunWindowsSandboxHelper(args []string, stdin *os.File, stdout *os.File, stderr *os.File) int {
 	if len(args) < 3 || args[1] != "--" {
-		fmt.Fprintln(stderr, "usage: fairpeer "+WindowsHelperCommand+" <payload> -- <command> [args...]")
+		fmt.Fprintln(stderr, "usage: hiq "+WindowsHelperCommand+" <payload> -- <command> [args...]")
 		return 2
 	}
 	payload, err := decodeWindowsSandboxPayload(args[0])
@@ -152,7 +152,7 @@ func convertWindowsSandboxSpec(spec Spec, writable bool) winsandbox.Spec {
 		Writable:            writable,
 		ReadOnly:            spec.ReadOnly,
 		TempDir:             spec.SessionTemp,
-		TempPrefix:          "fairpeer-sandbox-",
+		TempPrefix:          "hiq-sandbox-",
 		LockWait:            spec.WindowsLockWait,
 	}
 }

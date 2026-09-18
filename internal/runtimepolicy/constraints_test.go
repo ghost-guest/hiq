@@ -3,7 +3,7 @@ package runtimepolicy
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/evidence"
+	"github.com/zzycxz/hiq/internal/evidence"
 )
 
 func TestParseConstraintsScopesMutationBans(t *testing.T) {

@@ -206,7 +206,7 @@ dev profile 的 HiddenTools 为空（所有编码工具可见）。办公工具�
 
 ### 用户自定义
 
-用户可以在 `fairpeer.toml` 里覆盖内置 profile：
+用户可以在 `hiq.toml` 里覆盖内置 profile：
 
 ```toml
 [[profiles]]

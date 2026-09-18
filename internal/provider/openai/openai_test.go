@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // TestStreamRetriesThenSucceeds drives the real retry path end-to-end: the
@@ -104,7 +104,7 @@ func TestStreamAuthError(t *testing.T) {
 		BaseURL: srv.URL,
 		Model:   "test-provider/test-model-thinking",
 		APIKey:  "bad",
-		Extra:   map[string]any{"api_key_env": "FAIRPEER_API_KEY"},
+		Extra:   map[string]any{"api_key_env": "HIQ_API_KEY"},
 	})
 	if err != nil {
 		t.Fatalf("New: %v", err)
@@ -117,10 +117,10 @@ func TestStreamAuthError(t *testing.T) {
 	if !errors.As(err, &authErr) {
 		t.Fatalf("want *provider.AuthError, got %T: %v", err, err)
 	}
-	if authErr.Provider != "test-provider" || authErr.KeyEnv != "FAIRPEER_API_KEY" || authErr.Status != 401 {
+	if authErr.Provider != "test-provider" || authErr.KeyEnv != "HIQ_API_KEY" || authErr.Status != 401 {
 		t.Errorf("AuthError fields wrong: %+v", authErr)
 	}
-	if msg := authErr.Error(); !strings.Contains(msg, "FAIRPEER_API_KEY") || strings.Contains(msg, "ae54") {
+	if msg := authErr.Error(); !strings.Contains(msg, "HIQ_API_KEY") || strings.Contains(msg, "ae54") {
 		t.Errorf("message should name the env var and not dump the raw body: %q", msg)
 	}
 }

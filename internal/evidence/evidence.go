@@ -16,9 +16,9 @@ import (
 
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/shellparse"
-	"github.com/zzycxz/fairpeer/internal/shellsafe"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/shellparse"
+	"github.com/zzycxz/hiq/internal/shellsafe"
 )
 
 // TodoItem mirrors the todo_write item shape the host needs for step matching.

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
 )
 
 // Discovery (tunnel mode): TCP reachability probing through the SSH chain —

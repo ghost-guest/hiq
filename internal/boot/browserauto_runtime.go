@@ -20,10 +20,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/browserlaunch"
-	"github.com/zzycxz/fairpeer/internal/browseruse"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/browserlaunch"
+	"github.com/zzycxz/hiq/internal/browseruse"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // --- desktop-registered process-global hooks --------------------------------
@@ -77,7 +77,7 @@ func runBrowserAuto(ctx context.Context, cfg *config.Config, req builtin.Browser
 	}
 
 	// Resolve the LLM provider entry so we can hand the sidecar the bare model
-	// name + base_url + api-key-env it needs. fairpeer uses "provider/model"
+	// name + base_url + api-key-env it needs. hiq uses "provider/model"
 	// refs (and may point at a custom gateway or proxy), but browser-use's
 	// ChatOpenAI/ChatAnthropic expect a bare model name and (for OpenAI-compatible
 	// gateways) an explicit base_url. Without this translation the sidecar would

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // The desktop is a GUI app: launched from Finder or `open`, it starts with the
@@ -18,9 +18,9 @@ import (
 // cwd isn't writable.
 
 // workspaceStatePath is where the last working folder is remembered (under the
-// user config dir, shared with the rest of fairpeer's state).
+// user config dir, shared with the rest of hiq's state).
 func workspaceStatePath() string {
-	dir := config.MemoryUserDir() // …/fairpeer
+	dir := config.MemoryUserDir() // …/hiq
 	if dir == "" {
 		return ""
 	}
@@ -151,7 +151,7 @@ func cwdWritable() bool {
 	if err != nil {
 		return false
 	}
-	f, err := os.CreateTemp(cwd, ".fairpeer-wtest-*")
+	f, err := os.CreateTemp(cwd, ".hiq-wtest-*")
 	if err != nil {
 		return false
 	}

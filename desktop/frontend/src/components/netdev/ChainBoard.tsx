@@ -66,8 +66,8 @@ export default function ChainBoard({ caseID, findingID, onJump, onFocusDevice }:
       const screens = (e as CustomEvent<{ screens?: string[] }>).detail?.screens ?? [];
       if (screens.includes("chain")) load();
     };
-    window.addEventListener("fairpeer:netdev-dash", on);
-    return () => window.removeEventListener("fairpeer:netdev-dash", on);
+    window.addEventListener("hiq:netdev-dash", on);
+    return () => window.removeEventListener("hiq:netdev-dash", on);
   }, [load]);
 
   const { pos, width, height } = useMemo(() => chain ? layout(chain) : { pos: {}, width: 0, height: 0 }, [chain]);

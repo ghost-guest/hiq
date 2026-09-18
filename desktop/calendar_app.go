@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"github.com/zzycxz/fairpeer/internal/calendar"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/calendar"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // CalendarEventView is the JSON-friendly projection for the UI.

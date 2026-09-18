@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 func testTaskContext() context.Context {
@@ -165,7 +165,7 @@ func TestTaskToolRequiresTranscriptStore(t *testing.T) {
 	}
 }
 
-// TestTaskToolRunsEphemerallyWithoutParentSession mirrors headless `fairpeer run`:
+// TestTaskToolRunsEphemerallyWithoutParentSession mirrors headless `hiq run`:
 // the store is wired but the context carries no parent session, so the sub-agent
 // must run without persistence and return its plain answer (no transcript ref).
 func TestTaskToolRunsEphemerallyWithoutParentSession(t *testing.T) {

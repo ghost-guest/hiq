@@ -8,7 +8,7 @@ import (
 
 // TestCommandDirsIncludeConventions verifies command discovery covers the
 // cross-tool convention dirs (so .claude/commands etc. migrate in) and that the
-// canonical .fairpeer project dir is highest priority (last, since command.Load
+// canonical .hiq project dir is highest priority (last, since command.Load
 // lets a later dir win on a name clash).
 func TestCommandDirsIncludeConventions(t *testing.T) {
 	dirs := CommandDirs()
@@ -17,14 +17,14 @@ func TestCommandDirsIncludeConventions(t *testing.T) {
 		filepath.Join(".claude", "commands"),
 		filepath.Join(".agents", "commands"),
 		filepath.Join(".agent", "commands"),
-		filepath.Join(".fairpeer", "commands"),
+		filepath.Join(".hiq", "commands"),
 	} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("CommandDirs missing %q\ngot:\n%s", want, joined)
 		}
 	}
-	// The project's .fairpeer/commands must be the highest-priority (last) entry.
-	if last := dirs[len(dirs)-1]; last != filepath.Join(".fairpeer", "commands") {
-		t.Errorf("project .fairpeer/commands should be highest priority (last), got %q", last)
+	// The project's .hiq/commands must be the highest-priority (last) entry.
+	if last := dirs[len(dirs)-1]; last != filepath.Join(".hiq", "commands") {
+		t.Errorf("project .hiq/commands should be highest priority (last), got %q", last)
 	}
 }

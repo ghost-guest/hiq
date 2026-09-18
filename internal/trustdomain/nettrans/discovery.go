@@ -10,7 +10,7 @@ import (
 
 	"crypto/ed25519"
 
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 // LAN discovery (spec §四 priority ①, UDP-broadcast flavor — uniform on

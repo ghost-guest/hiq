@@ -9,7 +9,7 @@ benchmarks/**/*.sh text eol=lf
 # LFS rules removed: Python runtime (.dll/.pyd) was removed from git tracking.
 # Skills SVG/PPTX files are small enough for regular git.
 
-# FairPeer clean start: normalize ALL text files to LF so Windows checkouts do
+# Hiq clean start: normalize ALL text files to LF so Windows checkouts do
 # not produce spurious whole-file diffs (the pre-cleanstart repo had 232 phantom
 # "modified" files purely from CRLF/LF flip). Cover the rest of the text tree.
 *.ts        text eol=lf

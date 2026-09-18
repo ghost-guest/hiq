@@ -77,7 +77,7 @@ def esc(s):
 def load_style(home):
     colors, fonts = {}, {}
     try:
-        with open(os.path.join(home, ".fairpeer", "skills", "ppt-auto",
+        with open(os.path.join(home, ".hiq", "skills", "ppt-auto",
                                "template_config.json"), "r", encoding="utf-8") as f:
             cfg = json.load(f)
         colors = cfg.get("colors") or {}

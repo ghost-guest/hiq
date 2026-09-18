@@ -1,7 +1,7 @@
 package main
 
 // remote_server.go — the Server transport: attaches to an already-running
-// `fairpeer host --listen <addr> --token <t>` over TCP. The same NDJSON
+// `hiq host --listen <addr> --token <t>` over TCP. The same NDJSON
 // JSON-RPC protocol rides the socket after a one-line token handshake. The
 // token lives in the desktop secret store keyed by address; RemoteRef persists
 // only the address.
@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/remotehost"
+	"github.com/zzycxz/hiq/internal/remotehost"
 )
 
 type serverTransport struct {
@@ -57,7 +57,7 @@ func (t *serverTransport) pinnedFingerprint(addr string) string {
 // serverTokenKey derives the secret-store key for a server address.
 func serverTokenKey(addr string) string {
 	var b strings.Builder
-	b.WriteString("FAIRPEER_REMOTE_SERVER_")
+	b.WriteString("HIQ_REMOTE_SERVER_")
 	for _, r := range strings.ToUpper(strings.TrimSpace(addr)) {
 		switch {
 		case r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
@@ -175,7 +175,7 @@ func (t *serverTransport) Dial(ctx context.Context, ref RemoteRef) (io.Reader, i
 	line, err := br.ReadString('\n')
 	if err != nil || !strings.Contains(line, `"version"`) {
 		conn.Close()
-		return nil, nil, nil, fmt.Errorf("server: rejected handshake (wrong token or not a fairpeer host)")
+		return nil, nil, nil, fmt.Errorf("server: rejected handshake (wrong token or not a hiq host)")
 	}
 	_ = conn.SetReadDeadline(time.Time{})
 	return br, conn, &serverProc{conn: conn}, nil

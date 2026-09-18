@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/stats"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/stats"
 )
 
 // UsageStatsRequest asks for the usage statistics panel aggregate.

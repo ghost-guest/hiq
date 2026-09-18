@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=hiq
+Comment=hiq desktop — a Wails shell around the Go kernel
+Exec=hiq-desktop
+Icon=hiq-desktop
+Categories=Development;Utility;
+Terminal=false
+StartupWMClass=hiq-desktop

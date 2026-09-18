@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/diff"
-	fileenc "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
-	"github.com/zzycxz/fairpeer/internal/tool"
-	"github.com/zzycxz/fairpeer/internal/validation"
+	"github.com/zzycxz/hiq/internal/diff"
+	fileenc "github.com/zzycxz/hiq/internal/fileutil/encoding"
+	"github.com/zzycxz/hiq/internal/tool"
+	"github.com/zzycxz/hiq/internal/validation"
 )
 
 func init() { tool.RegisterBuiltin(applyPatch{}) }

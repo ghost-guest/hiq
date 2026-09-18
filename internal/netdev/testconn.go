@@ -11,8 +11,8 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev/transport"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev/transport"
 )
 
 // TestConnection runs the first-device flow: connect → TOFU (captured, not

@@ -62,7 +62,7 @@ func countVerbs(s string) int {
 }
 
 // TestNormalize covers the locale-string shapes likely to land in $LANG /
-// $LC_ALL / $FAIRPEER_LANG. Unknown locales return "" so DetectLanguage falls
+// $LC_ALL / $HIQ_LANG. Unknown locales return "" so DetectLanguage falls
 // through to the next candidate instead of mis-routing.
 func TestNormalize(t *testing.T) {
 	cases := map[string]string{
@@ -84,10 +84,10 @@ func TestNormalize(t *testing.T) {
 	}
 }
 
-// TestDetectLanguagePriority verifies override beats env and that FAIRPEER_LANG
+// TestDetectLanguagePriority verifies override beats env and that HIQ_LANG
 // beats LANG. With a clean env we fall back to English.
 func TestDetectLanguagePriority(t *testing.T) {
-	t.Setenv("FAIRPEER_LANG", "")
+	t.Setenv("HIQ_LANG", "")
 	t.Setenv("LC_ALL", "")
 	t.Setenv("LC_MESSAGES", "")
 	t.Setenv("LANG", "")
@@ -102,9 +102,9 @@ func TestDetectLanguagePriority(t *testing.T) {
 		t.Errorf("LANG=zh_CN.UTF-8: got %q, want zh", got)
 	}
 
-	t.Setenv("FAIRPEER_LANG", "en")
+	t.Setenv("HIQ_LANG", "en")
 	if got := DetectLanguage(""); got != "en" {
-		t.Errorf("FAIRPEER_LANG=en overriding LANG=zh: got %q, want en", got)
+		t.Errorf("HIQ_LANG=en overriding LANG=zh: got %q, want en", got)
 	}
 
 	if got := DetectLanguage("zh"); got != "zh" {

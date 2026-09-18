@@ -1,5 +1,5 @@
 # linkpeer-signal: build a static pure-Go binary.
-# CGO_ENABLED=0 keeps it a single static binary matching fairpeer's
+# CGO_ENABLED=0 keeps it a single static binary matching hiq's
 # "zero runtime deps, cross-platform" ethos (ENGINEERING §1.4).
 FROM golang:1.26 AS build
 WORKDIR /src

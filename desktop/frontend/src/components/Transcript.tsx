@@ -1192,7 +1192,7 @@ function QuestionJumpBar({ questions, onJump }: { questions: QuestionAnchor[]; o
 // (upgrade spec 1-7). A DOM event keeps the NoticeCard decoupled from the
 // send pipeline; App owns what "the failed prompt" was and how to resend it.
 function retryFailedTurn(): void {
-  window.dispatchEvent(new CustomEvent("fairpeer:retry-turn"));
+  window.dispatchEvent(new CustomEvent("hiq:retry-turn"));
 }
 
 type CompactionItem = Extract<Item, { kind: "compaction" }>;

@@ -163,7 +163,7 @@ func TestReadDOCXPreservesTableStructure(t *testing.T) {
 	}
 }
 
-// TestReadXLSXReturnsFormula verifies that a formula cell written by fairpeer
+// TestReadXLSXReturnsFormula verifies that a formula cell written by hiq
 // (which has no cached value) reads back as "=<formula>" rather than empty.
 func TestReadXLSXReturnsFormula(t *testing.T) {
 	dir := t.TempDir()

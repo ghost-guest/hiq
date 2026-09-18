@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
-// writeTestUserConfig writes a minimal fairpeer.toml declaring a synthetic
+// writeTestUserConfig writes a minimal hiq.toml declaring a synthetic
 // "test-provider" into the isolated user config dir. Default() ships no built-in
 // presets (setup wizard owns first-run config), so tests that exercise the
 // /model picker must declare a provider explicitly.
@@ -28,7 +28,7 @@ kind = "openai"
 base_url = "http://localhost:0"
 model = "test-provider/test-model-a"
 default = "test-provider/test-model-a"
-api_key_env = "FAIRPEER_API_KEY"
+api_key_env = "HIQ_API_KEY"
 `
 	if err := os.WriteFile(config.UserConfigPath(), []byte(body), 0o644); err != nil {
 		t.Fatalf("write user config: %v", err)
@@ -39,13 +39,13 @@ api_key_env = "FAIRPEER_API_KEY"
 // provider/model refs, and only those whose provider API key is set.
 //
 // Uses isolateUserConfig (not just t.Chdir) because modelRefs() reads the USER
-// config dir (~/.config/fairpeer or %AppData%\fairpeer), not the CWD. Without
+// config dir (~/.config/hiq or %AppData%\hiq), not the CWD. Without
 // isolating it, a real user config on the machine would override the test
 // config and make this test flaky (machine-dependent refs).
 func TestModelRefsFromConfig(t *testing.T) {
 	isolateUserConfig(t)
 	writeTestUserConfig(t)
-	t.Setenv("FAIRPEER_API_KEY", "test-key")
+	t.Setenv("HIQ_API_KEY", "test-key")
 	refs := modelRefs()
 	if len(refs) == 0 {
 		t.Fatal("expected configured provider/model refs, got none")
@@ -62,7 +62,7 @@ func TestModelRefsFromConfig(t *testing.T) {
 func TestModelRefsSkipsUnconfigured(t *testing.T) {
 	isolateUserConfig(t)
 	writeTestUserConfig(t)
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 	if refs := modelRefs(); len(refs) != 0 {
 		t.Errorf("no keys set → no refs, got %v", refs)
 	}
@@ -73,7 +73,7 @@ func TestModelRefsSkipsUnconfigured(t *testing.T) {
 func TestModelArgCompletion(t *testing.T) {
 	isolateUserConfig(t)
 	writeTestUserConfig(t)
-	t.Setenv("FAIRPEER_API_KEY", "test-key")
+	t.Setenv("HIQ_API_KEY", "test-key")
 	m := newTestChatTUI()
 	items, _, ok := m.slashArgItems("/model ")
 	if !ok || len(items) == 0 {
@@ -89,7 +89,7 @@ func TestModelArgCompletion(t *testing.T) {
 func TestPersistModelWritesDefaultModel(t *testing.T) {
 	isolateUserConfig(t)
 	writeTestUserConfig(t)
-	t.Setenv("FAIRPEER_API_KEY", "test-key")
+	t.Setenv("HIQ_API_KEY", "test-key")
 
 	m := newTestChatTUI()
 	m.persistModel("test-provider/test-provider/test-model-a")
@@ -111,7 +111,7 @@ func TestPersistModelWritesDefaultModel(t *testing.T) {
 // memory switch still goes through.
 func TestPersistModelRejectsUnknownRef(t *testing.T) {
 	isolateUserConfig(t)
-	t.Setenv("FAIRPEER_API_KEY", "test-key")
+	t.Setenv("HIQ_API_KEY", "test-key")
 
 	m := newTestChatTUI()
 	m.persistModel("ghost/never-existed")

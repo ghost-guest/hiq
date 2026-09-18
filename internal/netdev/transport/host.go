@@ -12,7 +12,7 @@ import (
 // HostEntry is one configured netdev host target (device or hop). It is the
 // transport-level shape of a [[netdev.devices]] / [[netdev.hops]] entry; the
 // netdev config layer maps its TOML entries into this struct. Secrets follow
-// the fairpeer idiom: the entry names credential env vars (passphrase_env /
+// the hiq idiom: the entry names credential env vars (passphrase_env /
 // password_env); values live in the secret store, never in TOML.
 type HostEntry struct {
 	Name          string

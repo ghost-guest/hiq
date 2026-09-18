@@ -7,7 +7,7 @@ import (
 )
 
 // TestDefaultDirEndToEnd is the real-filesystem end-to-end check: DefaultDir
-// must create <config>/fairpeer/ppt-templates, seed example.json, and the
+// must create <config>/hiq/ppt-templates, seed example.json, and the
 // seeded example must round-trip through LoadDir + LoadActive. This catches
 // issues the t.TempDir-based tests can't (real path resolution, seed content
 // validity). It writes under an isolated fake HOME/AppData so it never touches
@@ -22,8 +22,8 @@ func TestDefaultDirEndToEnd(t *testing.T) {
 	if dir == "" {
 		t.Fatal("DefaultDir returned empty — UserConfigDir unavailable")
 	}
-	if dir != filepath.Join(fakeHome, "AppData", "fairpeer", "ppt-templates") &&
-		dir != filepath.Join(fakeHome, "config", "fairpeer", "ppt-templates") {
+	if dir != filepath.Join(fakeHome, "AppData", "hiq", "ppt-templates") &&
+		dir != filepath.Join(fakeHome, "config", "hiq", "ppt-templates") {
 		// On this OS the parent differs; just confirm it's under fakeHome.
 		if !filepath.IsAbs(dir) {
 			t.Errorf("DefaultDir not absolute: %q", dir)

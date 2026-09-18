@@ -5,7 +5,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 // NetPeer is a lazily-dialed remote member implementing trustdomain.Peer.

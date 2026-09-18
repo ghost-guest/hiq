@@ -1,4 +1,4 @@
-const attachmentRefRe = /@(\.fairpeer\/attachments\/[^\s]+)/g;
+const attachmentRefRe = /@(\.hiq\/attachments\/[^\s]+)/g;
 const namedAttachmentRefRe = /(^|\s)@\[([^\]\r\n]+)\]\(([^)\s]+)\)/g;
 const referenceRefRe = /(^|\s)@([^\s]+)/g;
 const trailingPunctuationRe = /[.,;!?)\]}，。；！？）】]+$/;
@@ -104,14 +104,14 @@ export function sortDisplayAttachments<T extends { kind: "image" | "file" | "fol
 }
 
 function isDisplayReference(path: string): boolean {
-  if (path.startsWith(".fairpeer/attachments/")) return true;
+  if (path.startsWith(".hiq/attachments/")) return true;
   if (path.endsWith("/")) return true;
   if (path.includes("/")) return true;
   return attachmentExt(path) !== "";
 }
 
 function displayAttachment(path: string, name: string): DisplayAttachment {
-  if (path.startsWith(".fairpeer/attachments/")) {
+  if (path.startsWith(".hiq/attachments/")) {
     const kind = isImageAttachmentRef(path) ? "image" : "file";
     return {
       path,

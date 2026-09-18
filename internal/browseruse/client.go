@@ -3,7 +3,7 @@
 // by browser-use: it connects to a browser over CDP, snapshots the page, asks
 // the LLM what to do next, and acts — repeating until the goal is met.
 //
-// The host (fairpeer) launches the browser itself (see internal/browserlaunch)
+// The host (hiq) launches the browser itself (see internal/browserlaunch)
 // and hands the sidecar a wsURL, so there is exactly one shared browser: the
 // agent drives it, the in-app panel mirrors it. This client speaks the
 // sidecar's localhost HTTP+SSE protocol:
@@ -83,7 +83,7 @@ type RunRequest struct {
 	// MaxSteps caps the agentic loop (default applied by the sidecar if 0).
 	MaxSteps int `json:"max_steps,omitempty"`
 	// Model is the LLM model NAME (no provider prefix) the sidecar should use
-	// (e.g. "gpt-4o", "claude-sonnet-4-5"). The host resolves the fairpeer
+	// (e.g. "gpt-4o", "claude-sonnet-4-5"). The host resolves the hiq
 	// "provider/model" ref down to this bare name before sending.
 	Model string `json:"model,omitempty"`
 	// ProviderKind selects the LLM client family: "openai" (OpenAI-compatible,
@@ -94,7 +94,7 @@ type RunRequest struct {
 	BaseURL string `json:"base_url,omitempty"`
 	// APIKeyEnv names the environment variable holding the API key. The sidecar
 	// reads os.environ[APIKeyEnv] — the key is never sent over the wire, matching
-	// fairpeer's credentials-via-env model. Empty = fall back to the standard
+	// hiq's credentials-via-env model. Empty = fall back to the standard
 	// OPENAI_API_KEY / ANTHROPIC_API_KEY based on ProviderKind.
 	APIKeyEnv string `json:"api_key_env,omitempty"`
 	// Proxy is an optional proxy URL for the LLM client (not the browser —

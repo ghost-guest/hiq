@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/bot"
+	"github.com/zzycxz/hiq/internal/bot"
 
 	"golang.org/x/net/websocket"
 )
@@ -192,8 +192,8 @@ func (a *adapter) connectGateway(ctx context.Context, token string) error {
 		Shard:   [2]int{0, 1},
 		Properties: properties{
 			OS:      "linux",
-			Browser: "fairpeer",
-			Device:  "fairpeer-bot",
+			Browser: "hiq",
+			Device:  "hiq-bot",
 		},
 	}
 	identifyJSON, _ := json.Marshal(identify)

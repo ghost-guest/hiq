@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	internaldiff "github.com/zzycxz/fairpeer/internal/diff"
+	internaldiff "github.com/zzycxz/hiq/internal/diff"
 )
 
 // backup.go — the configuration backup vault: sealed reads of each device's

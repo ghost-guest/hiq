@@ -10,17 +10,17 @@ import (
 )
 
 // deeplink_windows.go — HKCU 协议注册（用户级，无需管理员）。best-effort：
-// 失败只记日志，不影响启动。dev 构建跳过（FAIRPEER_DEV=1 与单实例旁路同
+// 失败只记日志，不影响启动。dev 构建跳过（HIQ_DEV=1 与单实例旁路同
 // 开关——防 dev exe 抢注安装版的协议）。
-func registerFairpeerProtocol() {
-	if os.Getenv("FAIRPEER_DEV") != "" {
+func registerHiqProtocol() {
+	if os.Getenv("HIQ_DEV") != "" {
 		return
 	}
 	exe, err := os.Executable()
 	if err != nil {
 		return
 	}
-	root, err := registry.OpenKey(registry.CURRENT_USER, `Software\Classes\fairpeer`, registry.SET_VALUE|registry.CREATE_SUB_KEY)
+	root, err := registry.OpenKey(registry.CURRENT_USER, `Software\Classes\hiq`, registry.SET_VALUE|registry.CREATE_SUB_KEY)
 	if err != nil {
 		slog.Warn("deeplink: protocol register failed", "err", err)
 		return
@@ -46,5 +46,5 @@ func registerFairpeerProtocol() {
 		defer iconKey.Close()
 		_ = iconKey.SetStringValue("", `"`+exe+`",0`)
 	}
-	slog.Info("deeplink: fairpeer:// protocol registered (HKCU)")
+	slog.Info("deeplink: hiq:// protocol registered (HKCU)")
 }

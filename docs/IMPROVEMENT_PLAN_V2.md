@@ -1,4 +1,4 @@
-# FairPeer 全面提升计划 v2（验证版）
+# Hiq 全面提升计划 v2（验证版）
 
 > **版本**: v2.0 | **日期**: 2026-08-04 | **状态**: 已验证
 >
@@ -130,7 +130,7 @@ for _, t := range builtin.OfficeCLITools() {
 }
 ```
 
-创建 Skill 文件 `.fairpeer/skills/office-auto/SKILL.md`：
+创建 Skill 文件 `.hiq/skills/office-auto/SKILL.md`：
 
 ```markdown
 ---
@@ -714,7 +714,7 @@ func HybridSearch(ctx context.Context, query string, collection string) ([]Searc
 3. **复用现有架构** — 利用 install_source、ContextFilter 等
 4. **渐进式实施** — 每个 Phase 独立可交付
 
-### FairPeer 提升后的定位
+### Hiq 提升后的定位
 
 | 能力 | 评级 | 说明 |
 |------|------|------|
@@ -727,4 +727,4 @@ func HybridSearch(ctx context.Context, query string, collection string) ([]Searc
 
 ---
 
-**FairPeer — 以最小 token 开销实现最大能力提升！**
+**Hiq — 以最小 token 开销实现最大能力提升！**

@@ -23,7 +23,7 @@ import (
 // implementation so the screenshot hotkey pipeline works identically.
 func CaptureFullScreen() (*image.RGBA, error) {
 	// Write to a temp file — screencapture doesn't support stdout on macOS.
-	tmpFile := "/tmp/fairpeer_screenshot.png"
+	tmpFile := "/tmp/hiq_screenshot.png"
 	defer os.Remove(tmpFile)
 
 	cmd := exec.Command("screencapture", "-x", "-C", tmpFile)

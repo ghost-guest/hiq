@@ -13,10 +13,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/provider/openai"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider/openai"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // echoTool is a trivial read-only tool used to drive a multi-step tool loop:
@@ -140,7 +140,7 @@ func hitRate(u *provider.Usage) int {
 	return u.CacheHitTokens * 100 / denom
 }
 
-const systemPrompt = "You are fairpeer, a coding agent. Be concise and follow project conventions. " +
+const systemPrompt = "You are hiq, a coding agent. Be concise and follow project conventions. " +
 	"This system prompt is the cacheable head of every request and must never change between turns."
 
 // longReasoning stands in for a test-provider-reasoner chain-of-thought that the agent
@@ -378,12 +378,12 @@ func TestSessionAggregateCacheRate(t *testing.T) {
 
 func TestReleaseCacheHitGuard(t *testing.T) {
 	t.Skip("test-provider does not report prompt cache tokens")
-	if os.Getenv("FAIRPEER_RELEASE_CACHE_GUARD") == "" {
-		t.Skip("set FAIRPEER_RELEASE_CACHE_GUARD=1 to run the release cache guard")
+	if os.Getenv("HIQ_RELEASE_CACHE_GUARD") == "" {
+		t.Skip("set HIQ_RELEASE_CACHE_GUARD=1 to run the release cache guard")
 	}
 
-	threshold := envInt("FAIRPEER_CACHE_GUARD_THRESHOLD", 90)
-	maxLowCases := envInt("FAIRPEER_CACHE_GUARD_MAX_LOW_CASES", 1)
+	threshold := envInt("HIQ_CACHE_GUARD_THRESHOLD", 90)
+	maxLowCases := envInt("HIQ_CACHE_GUARD_MAX_LOW_CASES", 1)
 
 	cases := []struct {
 		name string
@@ -472,7 +472,7 @@ func TestReleaseCacheHitGuard(t *testing.T) {
 		}
 		msg := fmt.Sprintf("%d cache guard cases are below %d%%: %s", len(lows), threshold, strings.Join(parts, ", "))
 		t.Logf("CACHE_GUARD_WARNING: %s", msg)
-		if os.Getenv("FAIRPEER_CACHE_GUARD_STRICT") != "" {
+		if os.Getenv("HIQ_CACHE_GUARD_STRICT") != "" {
 			t.Fatal(msg)
 		}
 	}
@@ -558,7 +558,7 @@ func newAgent(t *testing.T, url string, reg *tool.Registry, contextWindow, recen
 		BaseURL: url,
 		Model:   "test-provider-reasoner",
 		APIKey:  "test",
-		Extra:   map[string]any{"api_key_env": "FAIRPEER_API_KEY"},
+		Extra:   map[string]any{"api_key_env": "HIQ_API_KEY"},
 	})
 	if err != nil {
 		t.Fatalf("provider New: %v", err)

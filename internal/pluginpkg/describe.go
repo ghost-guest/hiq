@@ -9,8 +9,8 @@ import (
 
 // InstalledNames returns installed plugin package names sorted for completion
 // menus and lightweight management views.
-func InstalledNames(fairpeerHome string) ([]string, error) {
-	st, err := LoadState(fairpeerHome)
+func InstalledNames(hiqHome string) ([]string, error) {
+	st, err := LoadState(hiqHome)
 	if err != nil {
 		return nil, err
 	}
@@ -23,13 +23,13 @@ func InstalledNames(fairpeerHome string) ([]string, error) {
 }
 
 // InstalledListText returns a compact session-facing view of installed plugins.
-func InstalledListText(fairpeerHome string) (string, error) {
-	st, err := LoadState(fairpeerHome)
+func InstalledListText(hiqHome string) (string, error) {
+	st, err := LoadState(hiqHome)
 	if err != nil {
 		return "", err
 	}
 	if len(st.Plugins) == 0 {
-		return "plugins: none installed\ninstall: fairpeer plugin install <source> --yes, or use Settings -> Plugins", nil
+		return "plugins: none installed\ninstall: hiq plugin install <source> --yes, or use Settings -> Plugins", nil
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "plugins (%d):\n", len(st.Plugins))
@@ -39,7 +39,7 @@ func InstalledListText(fairpeerHome string) (string, error) {
 			state = "enabled"
 		}
 		summary := p.Description
-		counts := pluginCapabilityText(fairpeerHome, p)
+		counts := pluginCapabilityText(hiqHome, p)
 		if summary != "" && counts != "" {
 			summary = counts + " - " + oneLine(summary)
 		} else if counts != "" {
@@ -58,15 +58,15 @@ func InstalledListText(fairpeerHome string) (string, error) {
 }
 
 // InstalledShowText returns the usage-oriented details for one installed plugin.
-func InstalledShowText(fairpeerHome, name string) (string, error) {
-	p, ok, err := FindInstalled(fairpeerHome, name)
+func InstalledShowText(hiqHome, name string) (string, error) {
+	p, ok, err := FindInstalled(hiqHome, name)
 	if err != nil {
 		return "", err
 	}
 	if !ok {
 		return fmt.Sprintf("plugin %q is not installed", name), nil
 	}
-	root := ResolveRoot(fairpeerHome, p.Root)
+	root := ResolveRoot(hiqHome, p.Root)
 	pkg, warnings, err := ParseDir(root)
 	if err != nil {
 		return "", err
@@ -90,7 +90,7 @@ func InstalledShowText(fairpeerHome, name string) (string, error) {
 		fmt.Fprintf(&b, "trust: %s\n", gate.Tier)
 	}
 	if blocked := gate.Summary(); blocked != "" {
-		fmt.Fprintf(&b, "withheld (restricted): %s — grant full-access with `fairpeer plugin trust %s full-access`\n", blocked, p.Name)
+		fmt.Fprintf(&b, "withheld (restricted): %s — grant full-access with `hiq plugin trust %s full-access`\n", blocked, p.Name)
 	}
 	if summary.Runtime && !gate.Withholds(SurfaceRuntime) {
 		b.WriteString(RuntimeTrustText(pkg.Manifest.Runtime))
@@ -107,8 +107,8 @@ func InstalledShowText(fairpeerHome, name string) (string, error) {
 	return strings.TrimRight(b.String(), "\n"), nil
 }
 
-func FindInstalled(fairpeerHome, name string) (InstalledPlugin, bool, error) {
-	st, err := LoadState(fairpeerHome)
+func FindInstalled(hiqHome, name string) (InstalledPlugin, bool, error) {
+	st, err := LoadState(hiqHome)
 	if err != nil {
 		return InstalledPlugin{}, false, err
 	}
@@ -120,8 +120,8 @@ func FindInstalled(fairpeerHome, name string) (InstalledPlugin, bool, error) {
 	return InstalledPlugin{}, false, nil
 }
 
-func pluginCapabilityText(fairpeerHome string, p InstalledPlugin) string {
-	root := ResolveRoot(fairpeerHome, p.Root)
+func pluginCapabilityText(hiqHome string, p InstalledPlugin) string {
+	root := ResolveRoot(hiqHome, p.Root)
 	pkg, _, err := ParseDir(root)
 	if err != nil {
 		return "invalid: " + err.Error()
@@ -178,7 +178,7 @@ func RuntimeTrustText(rt *RuntimeSpec) string {
 	if len(rt.Capabilities) > 0 {
 		fmt.Fprintf(&b, "  capabilities: %s\n", strings.Join(rt.Capabilities, ", "))
 	}
-	b.WriteString("  risk: the runtime process runs inside Fairpeer — it can read the full session and environment, bypass permissions, and operate this machine directly.\n")
+	b.WriteString("  risk: the runtime process runs inside Hiq — it can read the full session and environment, bypass permissions, and operate this machine directly.\n")
 	return b.String()
 }
 

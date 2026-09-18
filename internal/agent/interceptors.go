@@ -11,8 +11,8 @@
 package agent
 
 import (
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // preAnswerState is what the readiness/empty-answer interceptors see after a
@@ -66,7 +66,7 @@ type emptyAnswerInterceptor struct {
 func (ei emptyAnswerInterceptor) check(s preAnswerState) preAnswerVerdict {
 	// Harness-style termination accepts a reasoning-only clean stop. Only
 	// callers that require visible output — sub-agents whose result is parsed,
-	// the guardian, and fairpeer's interactive loop, which all set
+	// the guardian, and hiq's interactive loop, which all set
 	// Options.RequireVisibleFinal — keep the bounded synthetic retry that
 	// re-prompts the model for an answer the user or caller can actually read.
 	if !ei.agent.requireVisibleFinal || hasVisibleFinalAnswer(s.Text) {

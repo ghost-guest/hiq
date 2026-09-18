@@ -8,9 +8,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/hook"
-	"github.com/zzycxz/fairpeer/internal/skill"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/hook"
+	"github.com/zzycxz/hiq/internal/skill"
 )
 
 func (m *chatTUI) runSkillSubcommand(input string) {
@@ -62,7 +62,7 @@ func (m *chatTUI) skillList() {
 		skills = m.ctrl.AllSkills()
 	}
 	if len(skills) == 0 {
-		m.notice("no skills found. Add SKILL.md / <name>.md under .fairpeer/skills (project) or ~/.fairpeer/skills (global); .agents/.agent/.claude skills dirs also work. Invoke with /<name> or run_skill.")
+		m.notice("no skills found. Add SKILL.md / <name>.md under .hiq/skills (project) or ~/.hiq/skills (global); .agents/.agent/.claude skills dirs also work. Invoke with /<name> or run_skill.")
 		return
 	}
 	m.commitLine(renderSkillList(m.width, sortedSkills(skills), m.disabledSkillNames()))

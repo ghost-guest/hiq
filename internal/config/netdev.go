@@ -13,7 +13,7 @@ import (
 // inventory (devices, hops/jump hosts, groups) and its policies. Like
 // Reasonix's [remote] it is a USER-GLOBAL security control: LoadForRoot pins
 // it back to the user config after the project merge, so a cloned repo's
-// fairpeer.toml can never inject devices, hop chains, or scan scopes that the
+// hiq.toml can never inject devices, hop chains, or scan scopes that the
 // agent would then connect to with the user's global credentials
 // (NETDEV_SPEC §7.3). Secrets never live here: entries name credential env
 // vars (*_env) whose values sit in the secret store under netdev/*.
@@ -206,7 +206,7 @@ type NetDevDevice struct {
 	UseSSHConfig  bool     `toml:"use_ssh_config"`
 	Encoding      string   `toml:"encoding"` // auto | utf-8 | gbk
 	// OOBURL is the 带外启动器 deep link (NETDEV_SPEC_V2 §6.3): ESXi/堡垒/BMC
-	// Web UI entry. FairPeer only launches the local browser/RDP client — no
+	// Web UI entry. Hiq only launches the local browser/RDP client — no
 	// RDP/VNC protocol in-product; the click is audited.
 	OOBURL string      `toml:"oob_url"`
 	SNMP   *NetDevSNMP `toml:"snmp"`

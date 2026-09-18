@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/diff"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/diff"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // Tool is a capability the model can invoke.

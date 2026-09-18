@@ -82,7 +82,7 @@ func TestStoreCiphertextOnDisk(t *testing.T) {
 }
 
 func TestStoreLoadIntoEnv(t *testing.T) {
-	const key = "FAIRPEER_TEST_SECRET_XYZ_001"
+	const key = "HIQ_TEST_SECRET_XYZ_001"
 	os.Unsetenv(key)
 	s := New(filepath.Join(t.TempDir(), "secrets.enc.json"))
 	if err := s.Set(key, "hello-env"); err != nil {
@@ -106,8 +106,8 @@ func TestStoreLoadIntoEnv(t *testing.T) {
 // controller after the new one is running, so a controller teardown must never
 // strip process-lifetime secrets (provider keys) from the env.
 func TestLoadIntoEnvUntrackedSurvivesUnload(t *testing.T) {
-	const trackedKey = "FAIRPEER_TEST_SECRET_TRACKED_1"
-	const untrackedKey = "FAIRPEER_TEST_SECRET_UNTRACKED_1"
+	const trackedKey = "HIQ_TEST_SECRET_TRACKED_1"
+	const untrackedKey = "HIQ_TEST_SECRET_UNTRACKED_1"
 	os.Unsetenv(trackedKey)
 	os.Unsetenv(untrackedKey)
 	t.Cleanup(func() {
@@ -166,7 +166,7 @@ func TestMigrateEnvFile(t *testing.T) {
 	envPath := filepath.Join(dir, "credentials")
 	// export prefix, quotes, comments, blanks, and an empty value — the same
 	// lenient surface config.loadDotEnvFile parses.
-	content := "# managed by fairpeer\n" +
+	content := "# managed by hiq\n" +
 		"OPENAI_API_KEY=sk-plain-1\n" +
 		"\n" +
 		"export DEEPSEEK_API_KEY=\"sk-quoted-2\"\n" +

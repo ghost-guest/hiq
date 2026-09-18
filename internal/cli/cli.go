@@ -1,4 +1,4 @@
-// Package cli implements fairpeer's command-line entry: subcommand routing, flag
+// Package cli implements hiq's command-line entry: subcommand routing, flag
 // parsing, assembly from config, and exit codes. The core is config-driven —
 // providers and tools are resolved from configuration, not hardcoded.
 package cli
@@ -20,18 +20,18 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/boot"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/notify"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/provider/openai"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
-	"github.com/zzycxz/fairpeer/internal/secret"
-	"github.com/zzycxz/fairpeer/internal/serve"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/boot"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/notify"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider/openai"
+	"github.com/zzycxz/hiq/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/secret"
+	"github.com/zzycxz/hiq/internal/serve"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -51,7 +51,7 @@ func Run(args []string, version string) int {
 	}
 	// Usage recording is asynchronous, so every return path must drain the
 	// accepted records and fence the projection worker (see
-	// usage_catalog_lifecycle.go): a one-shot `fairpeer run` would otherwise
+	// usage_catalog_lifecycle.go): a one-shot `hiq run` would otherwise
 	// lose its last usage rows and keep a lock on the user's cache directory.
 	defer closeCLIUsageCatalogs()
 	// Pick the UI language up front so even pre-config paths (the first-run
@@ -96,7 +96,7 @@ func Run(args []string, version string) int {
 	case "init":
 		// Project memory (AGENTS.md) is model-generated in-session — `/init` runs
 		// the codebase analysis. This CLI entry just points there (and to `setup`
-		// for config), so `fairpeer init` isn't a dead end.
+		// for config), so `hiq init` isn't a dead end.
 		configureCLIThemeFromConfigNoProbe()
 		return initHint()
 	case "acp":
@@ -123,7 +123,7 @@ func Run(args []string, version string) int {
 		configureCLIThemeFromConfigNoProbe()
 		return trustdomainCommand(rest, version)
 	case "version", "--version", "-v":
-		fmt.Println("fairpeer", version)
+		fmt.Println("hiq", version)
 		return 0
 	case "help", "--help", "-h":
 		usage()
@@ -367,7 +367,7 @@ func runServe(args []string) int {
 		ctrl.SetSessionPath(agent.NewSessionPath(ctrl.SessionDir(), ctrl.Label()))
 	}
 
-	fmt.Printf("fairpeer serve — %s on http://%s\n", ctrl.Label(), *addr)
+	fmt.Printf("hiq serve — %s on http://%s\n", ctrl.Label(), *addr)
 	// Use graceful shutdown so SIGINT/SIGTERM drain active connections.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -589,7 +589,7 @@ func reserveNativeScrollbackFrame(w io.Writer, rows int) {
 }
 
 // setupTargets is where the wizard writes: the TOML config and the secrets file.
-// Keys always go to the fairpeer-owned encrypted secret store so they never land
+// Keys always go to the hiq-owned encrypted secret store so they never land
 // in a project's own .env or any plaintext file; only the config location is
 // project-local under --local.
 type setupTargets struct {
@@ -597,23 +597,23 @@ type setupTargets struct {
 }
 
 // defaultConfigTarget is the user-global config file, falling back to a
-// project-local fairpeer.toml only when the user config dir can't be resolved.
+// project-local hiq.toml only when the user config dir can't be resolved.
 func defaultConfigTarget() string {
 	if p := config.UserConfigPath(); p != "" {
 		return p
 	}
-	return "fairpeer.toml"
+	return "hiq.toml"
 }
 
-// resolveSetupTargets picks where `fairpeer setup` writes. The config goes to the
-// user-global dir by default, to ./fairpeer.toml under --local, or to an explicit
+// resolveSetupTargets picks where `hiq setup` writes. The config goes to the
+// user-global dir by default, to ./hiq.toml under --local, or to an explicit
 // path argument when given. API keys always go to the encrypted secret store.
 func resolveSetupTargets(args []string) setupTargets {
 	t := setupTargets{config: defaultConfigTarget()}
 	for _, a := range args {
 		switch a {
 		case "--local", "-l":
-			t.config = "fairpeer.toml"
+			t.config = "hiq.toml"
 		default:
 			t.config = a
 		}
@@ -629,9 +629,9 @@ func displayPath(p string) string {
 	return p
 }
 
-// setupConfig runs the configuration wizard (the `fairpeer setup` command),
-// writing config.toml to the user-global dir (or ./fairpeer.toml under --local)
-// and API keys to the fairpeer-owned global .env — never a project's own .env.
+// setupConfig runs the configuration wizard (the `hiq setup` command),
+// writing config.toml to the user-global dir (or ./hiq.toml under --local)
+// and API keys to the hiq-owned global .env — never a project's own .env.
 // Project memory is a separate concern — the in-session `/init` skill generates
 // AGENTS.md (see initHint).
 func setupConfig(args []string) int {
@@ -654,7 +654,7 @@ func setupConfig(args []string) int {
 	if isInteractive() {
 		rc := interactiveSetup(t.config)
 		if rc == 0 {
-			fmt.Printf(i18n.M.TryHintFmt+"\n", bold("fairpeer chat"))
+			fmt.Printf(i18n.M.TryHintFmt+"\n", bold("hiq chat"))
 		}
 		return rc
 	}
@@ -680,10 +680,10 @@ func writeDefaultConfig(path string) int {
 	return 0
 }
 
-// initHint handles `fairpeer init`. Unlike a config scaffold, project memory is
+// initHint handles `hiq init`. Unlike a config scaffold, project memory is
 // model-generated by analyzing the codebase, so it lives as the in-session
 // `/init` skill rather than a CLI command. This entry just points the user there
-// (and to `fairpeer setup` for config) so the verb isn't a dead end.
+// (and to `hiq setup` for config) so the verb isn't a dead end.
 func initHint() int {
 	fmt.Println(i18n.M.InitHint)
 	return 0
@@ -723,7 +723,7 @@ func interactiveSetup(configPath string) int {
 	// in their language before any substantive prompt.
 	fmt.Println()
 	fmt.Print(boxed([]string{
-		accent("◆") + " " + fmt.Sprintf(i18n.M.WelcomeTitleFmt, bold("fairpeer")),
+		accent("◆") + " " + fmt.Sprintf(i18n.M.WelcomeTitleFmt, bold("hiq")),
 		"",
 		dim(i18n.M.NoConfigYet),
 	}))
@@ -1076,12 +1076,12 @@ func containsString(xs []string, v string) bool {
 
 // filterStaleCustomEntries drops the wizard's own magic-name entries
 // (Name="custom" with Kind="openai" or Name="anthropic" with Kind="anthropic")
-// that older versions of the wizard wrote into fairpeer.toml. They collide
+// that older versions of the wizard wrote into hiq.toml. They collide
 // with the wizard's "custom" / "anthropic" menu items on re-run, showing up
 // as duplicate broken entries. The new wizard writes host-derived slugs
 // (e.g. "custom-token-sensenova-cn") so a hit on the magic name is
 // unambiguously stale. The returned slice is the dropped set so the caller
-// can warn the user to clean up fairpeer.toml by hand.
+// can warn the user to clean up hiq.toml by hand.
 func filterStaleCustomEntries(providers []config.ProviderEntry) (kept, dropped []config.ProviderEntry) {
 	for _, p := range providers {
 		if p.Name == "custom" && p.Kind == "openai" {
@@ -1102,9 +1102,9 @@ func filterStaleCustomEntries(providers []config.ProviderEntry) (kept, dropped [
 // "custom-token-sensenova-cn" or "anthropic-api-anthropic-com". We can't
 // reuse the wizard's menu-item labels ("custom" / "anthropic") because
 // those would collide with the menu item itself and end up rendered as
-// duplicate provider entries on subsequent re-runs of `fairpeer setup`.
+// duplicate provider entries on subsequent re-runs of `hiq setup`.
 // The host-based slug also gives users a meaningful name to grep for in
-// fairpeer.toml. Falls back to a short sha1 of the raw URL when the URL
+// hiq.toml. Falls back to a short sha1 of the raw URL when the URL
 // doesn't parse, so even malformed input still produces a unique name.
 func providerSlug(kind, baseURL string) string {
 	var host string
@@ -1134,7 +1134,7 @@ func providerSlug(kind, baseURL string) string {
 }
 
 // providerFamily is a wizard-only grouping of provider SKUs by vendor; it does
-// not exist in config because users editing fairpeer.toml deal with SKU names
+// not exist in config because users editing hiq.toml deal with SKU names
 // directly. Keys mirror the SKU name prefix so adding a new
 // preset only requires a familyOf case.
 type providerFamily struct {
@@ -1143,7 +1143,7 @@ type providerFamily struct {
 	desc string
 }
 
-// familyOf groups provider SKUs by vendor for the setup wizard. FairPeer ships
+// familyOf groups provider SKUs by vendor for the setup wizard. Hiq ships
 // no built-in presets (Default().Providers is empty), so every family here is
 // derived from a user-configured provider name. Unknown names fall through to
 // a generic family keyed by the name itself.
@@ -1379,7 +1379,7 @@ func groupByFamily(providers []config.ProviderEntry) ([]string, map[string][]int
 }
 
 // withBuiltinFamilies merges any built-in default providers into the wizard's
-// offer list. Since FairPeer ships no built-in presets (Default().Providers is
+// offer list. Since Hiq ships no built-in presets (Default().Providers is
 // empty), this is currently a no-op pass-through — the wizard shows exactly the
 // providers the user already configured. Families already present are left
 // untouched (the user's customizations win); only the
@@ -1537,7 +1537,7 @@ func isTTY(f *os.File) bool {
 // storeSecretLines persists KEY=value lines into the encrypted secret store
 // (DPAPI on Windows, AES-GCM elsewhere) and pins them into the current process
 // env so a chat session started right after setup picks up the fresh keys
-// without a restart. Store.Set upserts, so re-running `fairpeer setup` with a
+// without a restart. Store.Set upserts, so re-running `hiq setup` with a
 // corrected key replaces the stale one — the duplicate-line concern of the old
 // plaintext appendEnv (loadDotEnv is first-wins) disappears with the file.
 func storeSecretLines(store *secret.Store, lines []string) error {
@@ -1594,7 +1594,7 @@ func welcome(version string) int {
 			if cfg.Language != "" {
 				i18n.DetectLanguage(cfg.Language)
 			}
-			fmt.Printf("\n"+i18n.M.StartingChatFmt+"\n\n", bold("fairpeer chat"))
+			fmt.Printf("\n"+i18n.M.StartingChatFmt+"\n\n", bold("hiq chat"))
 			return chatREPL(nil)
 		}
 		fmt.Println("\n" + i18n.M.SetKeyHint)
@@ -1617,7 +1617,7 @@ func welcome(version string) int {
 
 	var b strings.Builder
 	b.WriteString(boxed([]string{
-		accent("◆") + " " + bold("fairpeer") + "  " + dim(version),
+		accent("◆") + " " + bold("hiq") + "  " + dim(version),
 		dim(i18n.M.Subtitle),
 	}))
 
@@ -1651,13 +1651,13 @@ func welcome(version string) int {
 		n++
 	}
 	if src == "" {
-		step("fairpeer setup", i18n.M.StepScaffold)
+		step("hiq setup", i18n.M.StepScaffold)
 	}
 	if ready == 0 {
 		step(i18n.M.StepSetKey, i18n.M.StepSetKeyHint)
 	}
-	step("fairpeer chat", i18n.M.StepChatDesc)
-	step(`fairpeer run "task"`, i18n.M.StepRunDesc)
+	step("hiq chat", i18n.M.StepChatDesc)
+	step(`hiq run "task"`, i18n.M.StepRunDesc)
 
 	fmt.Fprintf(&b, "\n  %s\n", dim(i18n.M.HelpFooter))
 
@@ -1689,7 +1689,7 @@ func configCommand(args []string) int {
 
 func configAutoPlanCommand(args []string) int {
 	fs := flag.NewFlagSet("config auto-plan", flag.ContinueOnError)
-	local := fs.Bool("local", false, "write ./fairpeer.toml instead of the user config")
+	local := fs.Bool("local", false, "write ./hiq.toml instead of the user config")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -1711,7 +1711,7 @@ func configAutoPlanCommand(args []string) int {
 	}
 	path := config.UserConfigPath()
 	if *local {
-		path = "fairpeer.toml"
+		path = "hiq.toml"
 	}
 	if path == "" {
 		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, "cannot resolve config path")
@@ -1751,12 +1751,12 @@ func configAutoPlanCommand(args []string) int {
 
 func configUsage() {
 	fmt.Print(`Usage:
-  fairpeer config auto-plan [--local] [off|on]
+  hiq config auto-plan [--local] [off|on]
 `)
 }
 
 func configAutoPlanUsage() {
 	fmt.Print(`Usage:
-  fairpeer config auto-plan [--local] [off|on]
+  hiq config auto-plan [--local] [off|on]
 `)
 }

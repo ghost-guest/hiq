@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/evidence"
+	"github.com/zzycxz/hiq/internal/evidence"
 )
 
 // Verdict is the report's headline. Partial is terminal: the work is proven

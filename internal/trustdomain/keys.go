@@ -9,7 +9,7 @@ import (
 )
 
 // b32 mirrors mobilebridge's Crockford alphabet so fingerprints render the
-// same way across fairpeer surfaces (QR pairing, member cards, audit logs).
+// same way across hiq surfaces (QR pairing, member cards, audit logs).
 var b32 = base32.NewEncoding("0123456789ABCDEFGHJKMNPQRSTVWXYZ").WithPadding(base32.NoPadding)
 
 // idLen is 128 bits: enough to be collision-safe as a registry key for the

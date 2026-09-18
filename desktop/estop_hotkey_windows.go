@@ -2,18 +2,18 @@ package main
 
 // estop_hotkey_windows.go implements the global EMERGENCY-STOP hotkey for coWork
 // desktop automation. When the user presses the configured combo (default
-// Ctrl+Shift+Pause/Break) ANYWHERE on their desktop — even with fairpeer
+// Ctrl+Shift+Pause/Break) ANYWHERE on their desktop — even with hiq
 // minimized and another app focused — we cancel the in-flight turn on the
 // active tab. This is the safety baseline for screen_* tools, which perform
 // IRREVERSIBLE physical actions (clicks, typing): once a wrong button is
 // clicked or a destructive confirm pressed, you can't take it back, so the user
-// needs an always-available "kill switch" that doesn't depend on fairpeer
+// needs an always-available "kill switch" that doesn't depend on hiq
 // having focus.
 //
 // Why a SECOND Win32 hotkey (not a frontend useGlobalShortcut): the value of an
 // emergency stop is precisely that it works while the user is watching ANOTHER
 // window (the app the agent is driving). Frontend keydown listeners die when
-// fairpeer loses focus, so a JS handler would be useless at the exact moment it
+// hiq loses focus, so a JS handler would be useless at the exact moment it
 // matters. RegisterHotKey is system-global and fires regardless of focus. This
 // mirrors the screenshot hotkey's design (screenshot_hotkey_windows.go); both
 // are shown in the shortcuts cheatsheet as displayOnly entries.
@@ -34,7 +34,7 @@ import (
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 const (

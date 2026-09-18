@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // baseScreenTools returns the four cross-platform action tools. Both the
@@ -357,7 +357,7 @@ func absInt(n int) int {
 // attachments. Platform-agnostic (os.Getwd + filepath.Join).
 func screenAttachmentsDir() string {
 	if wd, err := os.Getwd(); err == nil {
-		return filepath.Join(wd, ".fairpeer", "attachments")
+		return filepath.Join(wd, ".hiq", "attachments")
 	}
-	return filepath.Join(os.TempDir(), "fairpeer-screen")
+	return filepath.Join(os.TempDir(), "hiq-screen")
 }

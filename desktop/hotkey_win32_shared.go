@@ -50,7 +50,7 @@ var (
 // WM_HOTKEY. It registers a WNDCLASSEX with a per-call unique class name, then
 // creates a message-only window (HWND_MESSAGE parent) via CreateWindowEx.
 func createMessageWindow() uintptr {
-	className, _ := syscall.UTF16PtrFromString("FairPeerHotkey_" + strconv.Itoa(int(time.Now().UnixNano())))
+	className, _ := syscall.UTF16PtrFromString("HiqHotkey_" + strconv.Itoa(int(time.Now().UnixNano())))
 
 	// WNDCLASSEX must match the Win32 layout EXACTLY: 12 fields, 80 bytes on
 	// 64-bit. Missing hIconSm (field 12) corrupted the struct and made

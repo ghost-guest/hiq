@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/usagecatalog"
+	"github.com/zzycxz/hiq/internal/usagecatalog"
 )
 
 func TestUsageManagerCloseFencesOpenAndAllowsRestart(t *testing.T) {

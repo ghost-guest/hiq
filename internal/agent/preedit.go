@@ -3,7 +3,7 @@ package agent
 import (
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/diff"
+	"github.com/zzycxz/hiq/internal/diff"
 )
 
 // SharedPreEditHook lets the controller attach its checkpoint snapshotter to

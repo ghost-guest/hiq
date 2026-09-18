@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 // Human-in-the-loop (HITL) gates — the P4 "人在回路" half of the team design.

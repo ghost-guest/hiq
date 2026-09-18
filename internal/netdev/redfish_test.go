@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // The allowlist is the seal's face for Redfish: pure function, pinned by tests

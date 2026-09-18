@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 var errTestFailure = errors.New("failed")

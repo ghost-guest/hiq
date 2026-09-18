@@ -1,6 +1,6 @@
 package responses
 
-import "github.com/zzycxz/fairpeer/internal/provider"
+import "github.com/zzycxz/hiq/internal/provider"
 
 func (c *client) canUseStatefulContinuation(messages []provider.Message, previousID, expectedDigest string) bool {
 	if c.mode != "stateful" || previousID == "" || len(messages) == 0 {

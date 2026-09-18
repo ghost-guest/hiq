@@ -7,7 +7,7 @@ import (
 )
 
 // DataDirOrDefault resolves the ledger home: explicit setting, else
-// <fairpeer user state root>/trustdomain, else "" (OS dir unavailable —
+// <hiq user state root>/trustdomain, else "" (OS dir unavailable —
 // callers must require an explicit data_dir then).
 func (c TrustDomainConfig) DataDirOrDefault() string {
 	if c.DataDir != "" {

@@ -12,15 +12,15 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/zzycxz/fairpeer/internal/diff"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/evidence"
-	"github.com/zzycxz/fairpeer/internal/instruction"
-	"github.com/zzycxz/fairpeer/internal/jobs"
-	"github.com/zzycxz/fairpeer/internal/memory"
-	"github.com/zzycxz/fairpeer/internal/nilutil"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/diff"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/evidence"
+	"github.com/zzycxz/hiq/internal/instruction"
+	"github.com/zzycxz/hiq/internal/jobs"
+	"github.com/zzycxz/hiq/internal/memory"
+	"github.com/zzycxz/hiq/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // maxToolOutputBytes caps a single tool result before it goes into the model's
@@ -35,7 +35,7 @@ const maxStreamRecoveries = 1
 
 // Runner executes one task turn. *Agent satisfies it; the controller and compose
 // hold a Runner so they're agnostic to the concrete executor. (The two-model
-// Coordinator that previously also satisfied Runner has been removed — fairpeer
+// Coordinator that previously also satisfied Runner has been removed — hiq
 // uses a single-model planner-executor path exclusively. The interface stays so
 // callers don't depend on the concrete *Agent type.)
 type Runner interface {
@@ -380,7 +380,7 @@ func planModeReadOK(t tool.Tool, args json.RawMessage) bool {
 	return false
 }
 
-// SetGate installs the per-call permission gate. Used by `fairpeer chat` to swap the
+// SetGate installs the per-call permission gate. Used by `hiq chat` to swap the
 // headless gate built in setup for an interactive one that prompts the user;
 // nil disables gating. Safe to call before the run loop starts.
 func (a *Agent) SetGate(g Gate) {
@@ -444,7 +444,7 @@ func (a *Agent) Session() *Session {
 }
 
 // SetSession replaces the agent's conversation wholesale. Used by
-// `fairpeer chat --resume` to load a saved JSONL transcript before the first turn,
+// `hiq chat --resume` to load a saved JSONL transcript before the first turn,
 // so the model picks up exactly where it left off. Callers serialise it against a
 // running turn (it only fires while idle); sessMu guards the pointer swap itself.
 func (a *Agent) SetSession(s *Session) {
@@ -501,7 +501,7 @@ func midTurnSteerMessage(text string) string {
 func (a *Agent) SetCacheKey(key string) { a.cacheKey = key }
 
 // ModelRef returns the canonical "provider/model" ref this agent's turns are
-// attributed to, or "" when the caller did not supply one. fairpeer's event
+// attributed to, or "" when the caller did not supply one. hiq's event
 // stream carries no model-ref field yet, so this is currently consumed by
 // callers that label their own diagnostics; upstream Reasonix threads the same
 // value into usage events and the prompt-cache key.
@@ -749,7 +749,7 @@ type Options struct {
 
 	// RequireVisibleFinal makes internal callers reject reasoning-only clean
 	// stops: a no-tool turn without visible text is retried (bounded) instead
-	// of being accepted as the final answer. Fairpeer's interactive loop,
+	// of being accepted as the final answer. Hiq's interactive loop,
 	// sub-agents, and the guardian all set it; leaving it off adopts upstream's
 	// harness-style termination, which accepts a reasoning-only clean stop.
 	RequireVisibleFinal bool
@@ -1981,13 +1981,13 @@ func (a *Agent) executeOne(ctx context.Context, call provider.ToolCall, preview 
 	return toolOutcome{output: body, truncated: truncMsg != "", truncMsg: truncMsg, attachments: extractImageAttachments(body)}
 }
 
-// attachmentImageRe matches image file paths under .fairpeer/attachments/ that a
+// attachmentImageRe matches image file paths under .hiq/attachments/ that a
 // tool may emit in its result text (e.g. image_generate's ![image](...) output).
 // We surface them as structured attachments so the frontend can render the
 // picture under the tool card without depending on the model echoing the path.
-var attachmentImageRe = regexp.MustCompile(`\.fairpeer/attachments/[^\s)'"]+\.(?:png|jpg|jpeg|gif|webp|bmp|svg|tif|tiff)`)
+var attachmentImageRe = regexp.MustCompile(`\.hiq/attachments/[^\s)'"]+\.(?:png|jpg|jpeg|gif|webp|bmp|svg|tif|tiff)`)
 
-// extractImageAttachments pulls deduped .fairpeer/attachments image paths from a
+// extractImageAttachments pulls deduped .hiq/attachments image paths from a
 // tool result string, preserving first-seen order.
 func extractImageAttachments(s string) []event.Attachment {
 	matches := attachmentImageRe.FindAllString(s, -1)

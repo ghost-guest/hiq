@@ -421,7 +421,7 @@ for _, m := range sh.Merges {
 
 ### P2.4 readXLSX 公式读回
 
-**问题**：`readXLSX`（officedoc.go:48）用 `f.GetRows(sheet)`，默认 `RawCellValue=false`，公式 cell 返回 `<v>` 缓存值。但 fairpeer 自己 `SetCellFormula` 写的公式**无缓存值**（excelize 不计算）→ 读回空字符串 → LLM 以为没写成功。`TestXLSXWriteStructuredFormulaAndStyle` 用 `GetCellFormula` 单独读公式绕过了这个问题，但真实 `doc_read` 路径走的是 `GetRows`。
+**问题**：`readXLSX`（officedoc.go:48）用 `f.GetRows(sheet)`，默认 `RawCellValue=false`，公式 cell 返回 `<v>` 缓存值。但 hiq 自己 `SetCellFormula` 写的公式**无缓存值**（excelize 不计算）→ 读回空字符串 → LLM 以为没写成功。`TestXLSXWriteStructuredFormulaAndStyle` 用 `GetCellFormula` 单独读公式绕过了这个问题，但真实 `doc_read` 路径走的是 `GetRows`。
 
 **修法**：改用遍历 cell 而非 `GetRows`，对每个 cell 先查 `f.GetCellFormula`：
 - 有公式 → 返回 `=<formula>` 字符串（参照 OfficeCLI 的 formulas mode）
@@ -599,7 +599,7 @@ Phase 3（修一致性，1 天）→ LLM 能发现能力
 
 **整体验收命令**：
 ```bash
-cd C:\Users\13852\Desktop\Swarm-OS\fairpeer
+cd C:\Users\13852\Desktop\Swarm-OS\hiq
 go test ./internal/tool/builtin/... -run "XLSX|DOCX|Read|Write|Atomic|Confine" -v
 go vet ./internal/tool/builtin/...
 ```
@@ -648,7 +648,7 @@ go vet ./internal/tool/builtin/...
 
 ### P4.1 解压炸弹检测（三件套，办公场景够用）
 
-**问题**：doc_template 的 `source` 读取用户提供的 .docx。恶意/损坏模板（小 zip 解出几 GB）会让 fairpeer OOM。OfficeCLI 用六件套，我们做三件套：
+**问题**：doc_template 的 `source` 读取用户提供的 .docx。恶意/损坏模板（小 zip 解出几 GB）会让 hiq OOM。OfficeCLI 用六件套，我们做三件套：
 
 ```go
 // guardDecompressionBomb 检查 zip 包是否是解压炸弹。

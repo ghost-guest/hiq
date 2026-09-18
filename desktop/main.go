@@ -1,7 +1,7 @@
-// Command fairpeer-desktop is the Wails shell around the fairpeer kernel: a native
+// Command hiq-desktop is the Wails shell around the hiq kernel: a native
 // window hosting a webview frontend, with the Go-side control.Controller bound
 // directly to the UI (no HTTP hop — bindings in, runtime events out). It lives in
-// a nested module (fairpeer/desktop) so the CGO/WebKit desktop build never touches
+// a nested module (hiq/desktop) so the CGO/WebKit desktop build never touches
 // the CLI's CGO_ENABLED=0 single-static-binary guarantee, while still importing
 // the same internal/* kernel.
 package main
@@ -19,12 +19,12 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
 	// Blank imports wire compile-time built-ins into their registries, exactly as
-	// cmd/fairpeer does — boot.Build resolves providers/tools from these registries.
-	_ "github.com/zzycxz/fairpeer/internal/provider/anthropic"
-	_ "github.com/zzycxz/fairpeer/internal/provider/openai"
-	_ "github.com/zzycxz/fairpeer/internal/provider/responses"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
-	_ "github.com/zzycxz/fairpeer/internal/tool/builtin"
+	// cmd/hiq does — boot.Build resolves providers/tools from these registries.
+	_ "github.com/zzycxz/hiq/internal/provider/anthropic"
+	_ "github.com/zzycxz/hiq/internal/provider/openai"
+	_ "github.com/zzycxz/hiq/internal/provider/responses"
+	"github.com/zzycxz/hiq/internal/sandbox"
+	_ "github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // assets embeds the built frontend. `all:` so dotfiles (e.g. the dist .gitkeep
@@ -35,7 +35,7 @@ import (
 var assets embed.FS
 
 // version is injected at build time via `wails build -ldflags "-X main.version=..."`,
-// mirroring cmd/fairpeer/main.go. The auto-updater reads it (App.Version) to compare
+// mirroring cmd/hiq/main.go. The auto-updater reads it (App.Version) to compare
 // against the published manifest; an un-injected dev build stays "dev" and never
 // prompts to update.
 var version = "dev"
@@ -45,7 +45,7 @@ var version = "dev"
 // tracks the opt-in pre-release line and never crosses over to stable.
 var channel = "stable"
 
-const disableWebview2GPUEnv = "FAIRPEER_DESKTOP_DISABLE_WEBVIEW2_GPU"
+const disableWebview2GPUEnv = "HIQ_DESKTOP_DISABLE_WEBVIEW2_GPU"
 
 func windowsWebview2GPUDisabled() bool {
 	if raw, ok := os.LookupEnv(disableWebview2GPUEnv); ok {
@@ -91,15 +91,15 @@ func main() {
 		}
 	}
 
-	// fairpeer:// 深链冷启动（应用未开、协议拉起本进程）：扫 argv 暂存路由，
+	// hiq:// 深链冷启动（应用未开、协议拉起本进程）：扫 argv 暂存路由，
 	// 前端 boot 后经 NetDevConsumeDeepLink 取走。协议注册随启动（幂等）。
-	registerFairpeerProtocol()
+	registerHiqProtocol()
 	if raw := deepLinkArg(os.Args); raw != "" {
 		stashPendingDeepLink(raw)
 	}
 
 	err := wails.Run(&options.App{
-		Title:     "fairpeer",
+		Title:     "hiq",
 		Width:     width,
 		Height:    height,
 		MinWidth:  760,
@@ -156,7 +156,7 @@ func main() {
 			WebviewGpuIsDisabled: windowsWebview2GPUDisabled(),
 		},
 		Linux: &linux.Options{
-			ProgramName: "fairpeer",
+			ProgramName: "hiq",
 			// WebKitGTK GPU compositing is inconsistent across distros/drivers and
 			// is the one real cross-platform rough edge for a Go+webview stack:
 			// "always" can yield blank or flickering webviews on some setups, so

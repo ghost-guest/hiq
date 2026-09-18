@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
 // SecretNamespace is the key prefix under the secret store where every netdev

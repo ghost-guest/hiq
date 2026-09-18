@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/rag"
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/rag"
+	"github.com/zzycxz/hiq/internal/tool"
 )
 
 // NetDev knowledge-namespace tools (NETDEV_SPEC §7.1/§7.2). The ops tool set
@@ -22,9 +22,9 @@ import (
 //     the store excludes the namespace from empty-scope searches, so
 //     dev/cowork sessions never read ops knowledge.
 //
-// Import writes only to fairpeer's local knowledge store (never to a device),
+// Import writes only to hiq's local knowledge store (never to a device),
 // which is inside the netdev seal's intent — the seal removes network/exec
-// write paths, not fairpeer's own local state (findings/proposals write
+// write paths, not hiq's own local state (findings/proposals write
 // locally the same way).
 func NetDevRAGTools() []tool.Tool {
 	return []tool.Tool{netdevRAGSearch{}, netdevRAGImport{}}
@@ -86,7 +86,7 @@ type netdevRAGImport struct{}
 func (netdevRAGImport) Name() string { return "netdev_rag_import" }
 
 func (netdevRAGImport) Description() string {
-	return "Import a local document (vendor command reference, config export, backup) into the ops knowledge base so netdev_rag_search can cite it. Text-like formats (txt, md, code, csv, json, html); binary Office/PDF formats must be converted to text first. Re-importing the same path replaces it. Writes ONLY to the netdev: namespace of fairpeer's local knowledge store — never to any device."
+	return "Import a local document (vendor command reference, config export, backup) into the ops knowledge base so netdev_rag_search can cite it. Text-like formats (txt, md, code, csv, json, html); binary Office/PDF formats must be converted to text first. Re-importing the same path replaces it. Writes ONLY to the netdev: namespace of hiq's local knowledge store — never to any device."
 }
 
 func (netdevRAGImport) Schema() json.RawMessage {

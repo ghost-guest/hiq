@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // Keyless local providers (built-in ollama/llamacpp presets) must be fully
@@ -27,7 +27,7 @@ func TestSelectableDesktopModelRefAllowsKeylessProvider(t *testing.T) {
 
 	cfg.Providers = append(cfg.Providers, config.ProviderEntry{
 		Name: "keyed", Kind: "openai", BaseURL: "https://x.example.com/v1",
-		Models: []string{"m"}, APIKeyEnv: "FAIRPEER_TEST_MISSING_KEY",
+		Models: []string{"m"}, APIKeyEnv: "HIQ_TEST_MISSING_KEY",
 	})
 	cfg.Desktop.ProviderAccess = append(cfg.Desktop.ProviderAccess, "keyed")
 	_, err = selectableDesktopModelRef(cfg, "keyed/m")
@@ -42,7 +42,7 @@ func TestProviderViewFlagsKeylessProviderReady(t *testing.T) {
 		t.Error("keyless provider must report KeySet (no key needed), or pickers filter it out")
 	}
 
-	keyed := config.ProviderEntry{Name: "x", APIKeyEnv: "FAIRPEER_TEST_MISSING_KEY", Models: []string{"m"}}
+	keyed := config.ProviderEntry{Name: "x", APIKeyEnv: "HIQ_TEST_MISSING_KEY", Models: []string{"m"}}
 	if providerViewFromEntry(keyed, false, true).KeySet {
 		t.Error("provider with unresolved key must not report KeySet")
 	}
@@ -76,7 +76,7 @@ func TestAmbientPresetTabModelIsDead(t *testing.T) {
 // local presets exist, and turn off once the user adds one of them.
 func TestNeedsOnboardingIgnoresBuiltinLocalPresets(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 
 	cfg := config.Default()
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {

@@ -9,12 +9,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
-// legacyConfig is the subset of the v0.x (~/.fairpeer/config.json) schema this
+// legacyConfig is the subset of the v0.x (~/.hiq/config.json) schema this
 // import carries forward. Fields absent here are dropped on purpose: desktop tab
-// state is frontend-owned, and skills already live in the shared ~/.fairpeer/skills
+// state is frontend-owned, and skills already live in the shared ~/.hiq/skills
 // root that v1+ also scans, so they need no migration.
 type legacyConfig struct {
 	APIKey      string                       `json:"apiKey"`
@@ -53,7 +53,7 @@ func (r *MigrationResult) Notice() string {
 		fmt.Fprintf(&b, " (%d MCP server(s))", r.Plugins)
 	}
 	if r.KeyToEnv {
-		b.WriteString("; API key saved to fairpeer's credentials store")
+		b.WriteString("; API key saved to hiq's credentials store")
 	}
 	b.WriteString(". The old files were left untouched.")
 	for _, w := range r.Warnings {
@@ -65,10 +65,15 @@ func (r *MigrationResult) Notice() string {
 
 // MigrateLegacyIfNeeded performs a one-time, non-destructive import of older
 // installs into the current user config when the latter does not exist yet. It
-// checks v1-era TOML first, then v0.5/v0.x ~/.fairpeer/config.json, and never
+// checks v1-era TOML first, then v0.5/v0.x ~/.hiq/config.json, and never
 // modifies or deletes the legacy files. Returns nil when there is nothing to
 // migrate, or when the current user config already exists.
 func MigrateLegacyIfNeeded() (*MigrationResult, error) {
+	// Rebrand hop: carry the pre-hiq user directory forward before anything else
+	// resolves it, so the encrypted key store and settings survive the rename.
+	if _, err := migrateLegacyUserDir(); err != nil {
+		return nil, err
+	}
 	dest := userConfigPath()
 	if dest == "" {
 		return nil, nil
@@ -83,7 +88,7 @@ func MigrateLegacyIfNeeded() (*MigrationResult, error) {
 	if res, err := migrateLegacyTOMLIfNeeded(dest, home); res != nil || err != nil {
 		return res, err
 	}
-	src := filepath.Join(home, ".fairpeer", "config.json")
+	src := filepath.Join(home, ".hiq", "config.json")
 	data, err := os.ReadFile(src)
 	if err != nil {
 		return nil, nil
@@ -106,7 +111,7 @@ func MigrateLegacyIfNeeded() (*MigrationResult, error) {
 
 	var envLines []string
 	if key := strings.TrimSpace(legacy.APIKey); key != "" {
-		envLines = append(envLines, "FAIRPEER_API_KEY="+key)
+		envLines = append(envLines, "HIQ_API_KEY="+key)
 		res.KeyToEnv = true
 		if base := strings.TrimSpace(legacy.BaseURL); base != "" {
 			res.Warnings = append(res.Warnings, "your previous base_url was "+base+
@@ -156,15 +161,15 @@ func migrateLegacyTOMLIfNeeded(dest, home string) (*MigrationResult, error) {
 }
 
 func legacyTOMLPaths(dest, home string) []string {
-	paths := []string{filepath.Join(filepath.Dir(dest), "fairpeer.toml")}
+	paths := []string{filepath.Join(filepath.Dir(dest), "hiq.toml")}
 	if home != "" {
-		paths = append(paths, filepath.Join(home, ".fairpeer", "fairpeer.toml"))
+		paths = append(paths, filepath.Join(home, ".hiq", "hiq.toml"))
 	}
 	return paths
 }
 
 // migrateLegacyBaseURL carries a legacy baseUrl forward as a user provider entry.
-// FairPeer is provider-agnostic and ships no presets, so we materialize an explicit
+// Hiq is provider-agnostic and ships no presets, so we materialize an explicit
 // user entry named "migrated" so an upgrading user does not lose their endpoint.
 func migrateLegacyBaseURL(cfg *Config, baseURL string) {
 	baseURL = strings.TrimSpace(baseURL)
@@ -180,7 +185,7 @@ func migrateLegacyBaseURL(cfg *Config, baseURL string) {
 		Name:      "migrated",
 		Kind:      "openai",
 		BaseURL:   baseURL,
-		APIKeyEnv: "FAIRPEER_API_KEY",
+		APIKeyEnv: "HIQ_API_KEY",
 	})
 }
 

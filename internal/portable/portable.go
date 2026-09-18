@@ -14,12 +14,12 @@ type Kind string
 
 const (
 	// KindSkill is a bundle holding exactly one skill directory.
-	KindSkill Kind = "fairpeer.skill"
+	KindSkill Kind = "hiq.skill"
 	// KindSkills is a bundle holding one or more skill directories.
-	KindSkills Kind = "fairpeer.skills"
-	// KindMemory is a bundle holding memory documents (fairpeer.md / AGENTS.md
+	KindSkills Kind = "hiq.skills"
+	// KindMemory is a bundle holding memory documents (hiq.md / AGENTS.md
 	// and friends), never sessions and never secrets.
-	KindMemory Kind = "fairpeer.memory"
+	KindMemory Kind = "hiq.memory"
 )
 
 // Known reports whether a kind is one this build can import.
@@ -36,15 +36,15 @@ func (k Kind) Known() bool {
 const (
 	// ManifestName is the bundle's table of contents. It sits at the zip root,
 	// so an import can read the manifest before extracting anything.
-	ManifestName = "fairpeer-bundle.json"
+	ManifestName = "hiq-bundle.json"
 	// AppName identifies the producer, so a bundle from a fork is recognisable.
-	AppName = "fairpeer"
+	AppName = "hiq"
 	// SchemaVersion is the manifest format this build writes and the newest it
 	// accepts. An older bundle imports (fields are additive); a newer one is
 	// refused, because it may rely on semantics this build does not implement.
 	SchemaVersion = 1
 	// Ext is the file extension a bundle is offered as.
-	Ext = ".fairpeer.zip"
+	Ext = ".hiq.zip"
 	// skillFileName is the canonical file inside a directory-layout skill. It is
 	// duplicated from internal/skill rather than imported so this package stays
 	// free of a domain dependency: a bundle is a file format, and reaching into

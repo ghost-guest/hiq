@@ -3,7 +3,7 @@ package responses
 import (
 	"context"
 	"encoding/json"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 type responseReasoningSnapshots struct{ items []json.RawMessage }

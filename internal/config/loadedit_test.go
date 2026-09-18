@@ -9,7 +9,7 @@ import (
 
 func TestLoadForEdit(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "fairpeer.toml")
+	path := filepath.Join(dir, "hiq.toml")
 	custom := `default_model = "custom"
 [[providers]]
 name = "custom"
@@ -40,7 +40,7 @@ api_key_env = "X_KEY"
 
 func TestLoadForEditMigratesLegacyMCPTiers(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "fairpeer.toml")
+	path := filepath.Join(dir, "hiq.toml")
 	body := `
 [codegraph]
 enabled = true
@@ -87,7 +87,7 @@ model = "m"
 // file we failed to read (which had wiped the user's providers once).
 func TestLoadForEditStrictFailsClosed(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "fairpeer.toml")
+	path := filepath.Join(dir, "hiq.toml")
 	broken := `default_model = "custom"
 [[providers]
 name = "custom"
@@ -98,7 +98,7 @@ name = "custom"
 
 	if _, err := LoadForEditStrict(path); err == nil {
 		t.Fatal("LoadForEditStrict on a broken file must return an error")
-	} else if !strings.Contains(err.Error(), "fairpeer.toml") {
+	} else if !strings.Contains(err.Error(), "hiq.toml") {
 		t.Errorf("error should name the file, got: %v", err)
 	}
 

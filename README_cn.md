@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/fairpeer_banner_wide.png" alt="fairpeer" />
+  <img src="docs/assets/hiq_banner_wide.png" alt="hiq" />
 </p>
 
 <p align="center">
@@ -13,10 +13,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/zzycxz/fairpeer/releases"><img src="https://img.shields.io/badge/version-v0.1.0-0153e5?style=flat-square" alt="Version 0.1.0"/></a>
-  <a href="https://github.com/zzycxz/fairpeer/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/zzycxz/fairpeer/ci.yml?style=flat-square&label=ci&labelColor=161b22&logo=githubactions&logoColor=white" alt="CI"/></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/zzycxz/fairpeer.svg?style=flat-square&color=8b949e&labelColor=161b22" alt="license"/></a>
-  <a href="https://github.com/zzycxz/fairpeer/stargazers"><img src="https://img.shields.io/github/stars/zzycxz/fairpeer.svg?style=flat-square&color=dbab09&labelColor=161b22&logo=github&logoColor=white" alt="GitHub stars"/></a>
+  <a href="https://github.com/zzycxz/hiq/releases"><img src="https://img.shields.io/badge/version-v0.1.0-0153e5?style=flat-square" alt="Version 0.1.0"/></a>
+  <a href="https://github.com/zzycxz/hiq/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/zzycxz/hiq/ci.yml?style=flat-square&label=ci&labelColor=161b22&logo=githubactions&logoColor=white" alt="CI"/></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/zzycxz/hiq.svg?style=flat-square&color=8b949e&labelColor=161b22" alt="license"/></a>
+  <a href="https://github.com/zzycxz/hiq/stargazers"><img src="https://img.shields.io/github/stars/zzycxz/hiq.svg?style=flat-square&color=dbab09&labelColor=161b22&logo=github&logoColor=white" alt="GitHub stars"/></a>
 </p>
 
 <br/>
@@ -30,9 +30,9 @@
 
 <br/>
 
-## fairpeer 是什么？
+## hiq 是什么？
 
-fairpeer 是一款通用 AI 智能编程助手，以高度可配置化和 MCP 插件体系为核心驱动力。
+hiq 是一款通用 AI 智能编程助手，以高度可配置化和 MCP 插件体系为核心驱动力。
 它不仅提供强大的本地代码理解能力，更能深度接入主流大模型（如 DeepSeek、Qwen、GLM、Kimi、GPT、Claude 等 300+ 模型）实现自然语言驱动的自主编程。
 
 Agent 可以在 **终端**（TUI）、**桌面客户端**（基于 Wails）、**HTTP/SSE 服务器** 或 **多通道 IM 机器人**（企业微信 / 飞书 / QQ）等全场景中运行——所有前端均由同一个高性能、传输无关的核心引擎驱动。
@@ -44,7 +44,7 @@ Agent 可以在 **终端**（TUI）、**桌面客户端**（基于 Wails）、**
 
 ### 工程化与生态
 
-- **通用 Provider 架构** — 统一对接任意 OpenAI / Anthropic 兼容端点，支持 thinking mode 协议、reasoning_content 回传、11 个直连厂商 + 7 个聚合平台（Coding Plan），通过 `fairpeer.toml` 完全配置驱动。
+- **通用 Provider 架构** — 统一对接任意 OpenAI / Anthropic 兼容端点，支持 thinking mode 协议、reasoning_content 回传、11 个直连厂商 + 7 个聚合平台（Coding Plan），通过 `hiq.toml` 完全配置驱动。
 - **MCP 插件生态** — 全面支持 Model Context Protocol (MCP)，外部工具以子进程形式通过 stdio / HTTP 运行，无限扩展 Agent 能力。
 - **内置 Web Search** — 集成 Brave → Exa → Linkup → AnySearch 四引擎链式降级搜索，无需外部 MCP 即可联网检索。
 - **极速轻量分发** — `CGO_ENABLED=0` 单二进制打包，极简部署，支持交叉编译 6 大操作系统架构。
@@ -101,29 +101,29 @@ Agent 可以在 **终端**（TUI）、**桌面客户端**（基于 Wails）、**
 
 | 前端形态 | 启动命令 | 场景说明 |
 |------|------|------|
-| **终端 TUI** | `fairpeer chat` | 极客首选：沉浸式终端界面（基于 Charm Bubble Tea） |
-| **API 服务** | `fairpeer serve` | 开放能力：提供标准 HTTP/SSE 编程接入接口 |
+| **终端 TUI** | `hiq chat` | 极客首选：沉浸式终端界面（基于 Charm Bubble Tea） |
+| **API 服务** | `hiq serve` | 开放能力：提供标准 HTTP/SSE 编程接入接口 |
 | **桌面客户端** | Wails 图标启动 | UI 交互：提供原生 macOS / Windows / Linux 多标签体验 |
-| **企业机器人** | `fairpeer bot start` | 团队协作：企业微信 / 飞书 / QQ 等 IM 网关接入 |
-| **ACP 服务** | `fairpeer acp` | 协议桥接：Agent Control Protocol 远程控制层 |
+| **企业机器人** | `hiq bot start` | 团队协作：企业微信 / 飞书 / QQ 等 IM 网关接入 |
+| **ACP 服务** | `hiq acp` | 协议桥接：Agent Control Protocol 远程控制层 |
 
 ## 安装指南
 
 当前版本：**v0.1.0**
 
 ```sh
-npm i -g fairpeer                        # 任意系统——自动拉取对应平台的原生二进制
-brew install zzycxz/fairpeer/fairpeer    # macOS 用户
+npm i -g hiq                        # 任意系统——自动拉取对应平台的原生二进制
+brew install zzycxz/hiq/hiq    # macOS 用户
 ```
 
-您也可以在 [GitHub Releases](https://github.com/zzycxz/fairpeer/releases) 获取预编译归档文件（支持 `darwin|linux|windows × amd64|arm64`）。
+您也可以在 [GitHub Releases](https://github.com/zzycxz/hiq/releases) 获取预编译归档文件（支持 `darwin|linux|windows × amd64|arm64`）。
 
 > **⚠️ macOS 桌面版安装必读：**
 > 如果您下载了 `.zip` 格式的 macOS 桌面端应用，由于这是开源项目未进行 Apple 开发者签名，解压后双击运行可能会提示 **"App is damaged and can't be opened"（文件已损坏，请移至废纸篓）**。
 >
 > **解决办法：** 打开终端，运行以下命令解除隔离保护（假设 App 在下载目录）：
 > ```sh
-> xattr -cr ~/Downloads/fairpeer.app
+> xattr -cr ~/Downloads/hiq.app
 > ```
 > 然后即可正常双击运行。
 
@@ -138,17 +138,17 @@ make cross    # 交叉编译至 dist/（生成 6 个目标平台二进制）
 ## 快速上手与配置
 
 ```sh
-fairpeer setup                       # 启动配置向导 → 生成 ./fairpeer.toml
+hiq setup                       # 启动配置向导 → 生成 ./hiq.toml
 export DEEPSEEK_API_KEY=your-key     # 设置模型 API Key (或写入 .env)
-fairpeer chat                        # 进入交互终端，输入 /init 生成项目上下文
-fairpeer run "实现 main.go 里的所有 TODO"
-fairpeer run --model deepseek/deepseek-v4-flash "补充单元测试"
-echo "解释这段代码" | fairpeer run
+hiq chat                        # 进入交互终端，输入 /init 生成项目上下文
+hiq run "实现 main.go 里的所有 TODO"
+hiq run --model deepseek/deepseek-v4-flash "补充单元测试"
+echo "解释这段代码" | hiq run
 ```
 
 ## 接入模型 Provider
 
-fairpeer 不绑定任何模型平台：通过统一的 Provider 抽象接入 18 家供应商（11 直连 + 7 Coding Plan）。完整模板见 [`fairpeer.example.toml`](./fairpeer.example.toml)。
+hiq 不绑定任何模型平台：通过统一的 Provider 抽象接入 18 家供应商（11 直连 + 7 Coding Plan）。完整模板见 [`hiq.example.toml`](./hiq.example.toml)。
 
 ### 直连供应商（11 家）
 
@@ -190,8 +190,8 @@ export DEEPSEEK_API_KEY="您的真实密钥"
 $env:DEEPSEEK_API_KEY = "您的真实密钥"
 ```
 
-### 第三步：配置 Provider (`fairpeer.toml`)
-在项目根目录创建或修改 `fairpeer.toml`：
+### 第三步：配置 Provider (`hiq.toml`)
+在项目根目录创建或修改 `hiq.toml`：
 
 ```toml
 default_model = "deepseek"
@@ -206,10 +206,10 @@ fast_model  = "deepseek-v4-flash"
 models      = ["deepseek-v4-pro", "deepseek-v4-flash"]
 ```
 
-完成配置后，只需执行 `fairpeer chat`，即可开始体验大模型的智能编程赋能。
+完成配置后，只需执行 `hiq chat`，即可开始体验大模型的智能编程赋能。
 
 > **💡 进阶技巧：定制 AI 身份与规范**
-> 如果你想让 AI 更懂你们团队的开发规范，可以在项目根目录创建或修改 `fairpeer.md`，写上你的专属规则和身份声明。AI 会在每次对话时自动读取并遵循这些设定。
+> 如果你想让 AI 更懂你们团队的开发规范，可以在项目根目录创建或修改 `hiq.md`，写上你的专属规则和身份声明。AI 会在每次对话时自动读取并遵循这些设定。
 
 ### 推荐模型
 
@@ -222,11 +222,11 @@ models      = ["deepseek-v4-pro", "deepseek-v4-flash"]
 | `zhipu/glm-5.2` | 开源 SOTA，1M 上下文 | 通用编码、跨模块重构 |
 | `deepseek/deepseek-v4-flash` | 极速响应，代码专精 | 代码片段补全、快速重构、单元测试生成 |
 
-> fairpeer 支持 18 家供应商、300+ 模型。详见 [`fairpeer.example.toml`](./fairpeer.example.toml) 的完整配置模板。只需修改 `default_model` 字段即可无缝切换，零代码侵入。
+> hiq 支持 18 家供应商、300+ 模型。详见 [`hiq.example.toml`](./hiq.example.toml) 的完整配置模板。只需修改 `default_model` 字段即可无缝切换，零代码侵入。
 
 ## 💰 赞助支持
 
-如果您觉得 FairPeer 对您有帮助，欢迎赞助我们。您的支持将用于：
+如果您觉得 Hiq 对您有帮助，欢迎赞助我们。您的支持将用于：
 - 🤖 购买 token 用于开发和测试
 - 🚀 功能开发和维护
 - 📚 文档改进
@@ -245,7 +245,7 @@ models      = ["deepseek-v4-pro", "deepseek-v4-flash"]
 |------|------|
 | **[使用指南](./docs/GUIDE.zh-CN.md)** | 权限控制、沙盒运行、MCP 插件、终端斜杠命令、`@` 语法、Plan 模式、后台模型 |
 | **[架构规格](./docs/SPEC.md)** | 工程契约：系统架构、Registry 机制、数据类型约束与长期路线图 |
-| **[功能特性](./docs/FAIRPEER_FEATURES.md)** | 完整功能全景图、架构图、能力矩阵 |
+| **[功能特性](./docs/HIQ_FEATURES.md)** | 完整功能全景图、架构图、能力矩阵 |
 | **[快照机制](./docs/CHECKPOINTS.md)** | 基于文件快照的代码修改安全网设计 |
 | **[Session 架构](./docs/SESSION_REFERENCE_ARCHITECTURE.md)** | 会话生命周期管理、状态持久化与无缝恢复机制 |
 | **[RAG 知识库指南](./docs/RAG_GUIDE.md)** | 文档导入、知识图谱、实体提取、语义搜索、@引用 |

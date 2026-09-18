@@ -58,7 +58,7 @@ def clamp(v, lo=0.0, hi=1.0):
 
 def main():
     ap = argparse.ArgumentParser(description="Crop an approximate region from a reference page PNG.")
-    ap.add_argument("source", help="reference page render, e.g. ~/.fairpeer/pdf-pages/page-25.png")
+    ap.add_argument("source", help="reference page render, e.g. ~/.hiq/pdf-pages/page-25.png")
     ap.add_argument("--pos", default="center",
                     help="qualitative position from the LAYOUT section (3x3 grid, e.g. top-left/center-right/full)")
     ap.add_argument("--share", type=float, default=0.2,

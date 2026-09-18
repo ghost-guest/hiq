@@ -23,9 +23,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/mobilebridge"
-	"github.com/zzycxz/fairpeer/internal/mobilebridge/proto"
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/mobilebridge"
+	"github.com/zzycxz/hiq/internal/mobilebridge/proto"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 // KeyLookup resolves an active member ID to its registered public key —

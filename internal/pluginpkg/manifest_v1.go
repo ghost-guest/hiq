@@ -21,7 +21,7 @@ import (
 const PluginRootEnvVar = "${REASONIX_PLUGIN_ROOT}"
 
 // RuntimeSpec declares a plugin-owned runtime process (Manifest v2). The
-// command is exec form only: Fairpeer never runs it through a shell, so
+// command is exec form only: Hiq never runs it through a shell, so
 // pipes, && and ; carry no special meaning. Command may start with
 // ${REASONIX_PLUGIN_ROOT} to address a binary inside the installed package;
 // the expansion happens at launch time (see ExpandRuntimeCommand for the

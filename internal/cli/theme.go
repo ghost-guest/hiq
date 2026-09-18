@@ -11,8 +11,8 @@ import (
 	"charm.land/bubbles/v2/textarea"
 	"charm.land/lipgloss/v2"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/i18n"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/i18n"
 )
 
 type cliColor struct {
@@ -102,7 +102,7 @@ func configureCLITheme(mode string) {
 }
 
 func configureCLIThemeWithStyle(mode, style string) {
-	if env := strings.TrimSpace(os.Getenv("FAIRPEER_THEME")); env != "" {
+	if env := strings.TrimSpace(os.Getenv("HIQ_THEME")); env != "" {
 		if st, ok := cliThemeStyleByName(env); ok {
 			mode = st.mode
 			style = st.name
@@ -110,7 +110,7 @@ func configureCLIThemeWithStyle(mode, style string) {
 			mode = env
 		}
 	}
-	if env := strings.TrimSpace(os.Getenv("FAIRPEER_THEME_STYLE")); env != "" {
+	if env := strings.TrimSpace(os.Getenv("HIQ_THEME_STYLE")); env != "" {
 		style = env
 	}
 	activeCLITheme = resolveCLIThemeWithStyle(mode, style)

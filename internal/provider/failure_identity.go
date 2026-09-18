@@ -9,7 +9,7 @@ import (
 // DeepSeek-Reasonix internal/provider/failure_diagnostic.go. The upstream file
 // also defines DiagnoseFailure/IsOpaqueBadRequest, which depend on the v2 error
 // taxonomy (QuotaError fields, AsRecoveryWaitExhausted, APIError.TraceID, ...)
-// that fairpeer has not adopted yet; those are intentionally omitted here and
+// that hiq has not adopted yet; those are intentionally omitted here and
 // will land with that subsystem. The types below are additive and unblock the
 // durable tool-recovery and Responses-adapter contracts.
 

@@ -14,7 +14,7 @@ import (
 // MemoryRootEnv overrides [memory] root for one process. It exists for
 // portable/headless runs ("keep everything on this USB stick / this drive")
 // and for tests, which must never write into a developer's real memory tree.
-const MemoryRootEnv = "FAIRPEER_MEMORY_ROOT"
+const MemoryRootEnv = "HIQ_MEMORY_ROOT"
 
 // MemoryConfig is the user-facing [memory] section. It answers the two
 // questions the memory panel and the background self-evolution agents both
@@ -22,14 +22,14 @@ const MemoryRootEnv = "FAIRPEER_MEMORY_ROOT"
 //
 // The section is USER-GLOBAL. LoadForRoot pins it back to the user config after
 // the project merge (pinMemory) for the same reason [netdev] is pinned: a cloned
-// repo's fairpeer.toml must never be able to redirect a user's memory — or their
+// repo's hiq.toml must never be able to redirect a user's memory — or their
 // API spend — to a path (or a provider) the repo author chose.
 type MemoryConfig struct {
-	// Root relocates fairpeer's user MEMORY data tree away from the OS user
+	// Root relocates hiq's user MEMORY data tree away from the OS user
 	// config dir: the portrait layer (profile/), the auto-memory store
 	// (memory/, projects/<slug>/memory), project state
 	// (projects/<slug>/{sessions,dream_state.json}) and the trust-domain ledger.
-	// Empty keeps the default (%AppData%\fairpeer on Windows, ~/.config/fairpeer
+	// Empty keeps the default (%AppData%\hiq on Windows, ~/.config/hiq
 	// elsewhere).
 	//
 	// config.toml, the credential store and the derived cache deliberately do
@@ -122,7 +122,7 @@ func (c *Config) MemoryIndexMaxChars() int {
 }
 
 // pinMemory restores [memory] from the USER config after the project merge, so
-// a project fairpeer.toml cannot relocate the memory tree or redirect the
+// a project hiq.toml cannot relocate the memory tree or redirect the
 // maintenance model. Mirrors pinNetDev.
 func pinMemory(cfg *Config) {
 	uc := userConfigPath()
@@ -152,7 +152,7 @@ var memoryRootProbe struct {
 }
 
 // memoryRootOverride returns the configured memory-data root, or "" for the
-// default. Precedence: $FAIRPEER_MEMORY_ROOT > user config [memory] root.
+// default. Precedence: $HIQ_MEMORY_ROOT > user config [memory] root.
 //
 // It reads the ONE key straight out of the user config instead of calling
 // Load(), because Load() itself resolves paths through this function — calling
@@ -220,7 +220,7 @@ func resolveMemoryRoot(raw string) string {
 	return filepath.Clean(raw)
 }
 
-// MemoryRoot returns the effective root of fairpeer's user DATA tree — the
+// MemoryRoot returns the effective root of hiq's user DATA tree — the
 // parent of profile/, memory/ and projects/. It is [memory] root when
 // configured, else the OS user config dir based default.
 func MemoryRoot() string {
@@ -231,11 +231,11 @@ func MemoryRoot() string {
 }
 
 // DefaultMemoryRoot is the data root used when nothing is configured: the OS
-// user config dir (…/fairpeer). The panel shows it as the "reset to default"
+// user config dir (…/hiq). The panel shows it as the "reset to default"
 // target.
 func DefaultMemoryRoot() string { return userDir() }
 
-// MemoryRootFromEnv reports whether $FAIRPEER_MEMORY_ROOT is overriding the
+// MemoryRootFromEnv reports whether $HIQ_MEMORY_ROOT is overriding the
 // configured root, so the UI can explain why editing the field has no effect.
 func MemoryRootFromEnv() bool { return strings.TrimSpace(os.Getenv(MemoryRootEnv)) != "" }
 
@@ -295,8 +295,8 @@ var memoryMigrateDirs = []string{"memory", "profile", "projects", "trustdomain"}
 // memoryMigrateFiles are the user-global memory/state FILES at the old root
 // (the user-scope doc layer and the legacy cross-session skill usage stats).
 var memoryMigrateFiles = []string{
-	"fairpeer.md", "AGENTS.md", "CLAUDE.md",
-	"fairpeer.local.md", "AGENTS.local.md", "CLAUDE.local.md",
+	"hiq.md", "AGENTS.md", "CLAUDE.md",
+	"hiq.local.md", "AGENTS.local.md", "CLAUDE.local.md",
 	"skill_usage.json",
 }
 
@@ -311,7 +311,7 @@ type MemoryMigrationReport struct {
 	Bytes   int64    `json:"bytes"`   // bytes copied
 }
 
-// MigrateMemoryTree copies fairpeer's memory data from one root to another.
+// MigrateMemoryTree copies hiq's memory data from one root to another.
 //
 // It COPIES, never moves: the source tree stays intact so an interrupted run,
 // a wrong target, or a change of mind loses nothing — the user deletes the old

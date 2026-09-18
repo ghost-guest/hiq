@@ -141,7 +141,7 @@ func CaseReport(c *IncidentCase) string {
 		}
 		b.WriteString(fmt.Sprintf("- **%s** %s%s：%s\n", e.Time.Format("01-02 15:04:05"), e.Kind, dev, e.Text))
 	}
-	b.WriteString("\n---\n由 fairpeer 运维案例中心导出。\n")
+	b.WriteString("\n---\n由 hiq 运维案例中心导出。\n")
 	return b.String()
 }
 

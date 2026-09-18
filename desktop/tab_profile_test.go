@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/control"
+	"github.com/zzycxz/hiq/internal/control"
 )
 
 func testTab(id, root string) *WorkspaceTab {
@@ -83,7 +83,7 @@ api_key_env = "PROJECT_API_KEY"
 effort = "max"
 reasoning_protocol = "test-provider"
 `
-	if err := os.WriteFile(filepath.Join(projectRoot, "fairpeer.toml"), []byte(configBody), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectRoot, "hiq.toml"), []byte(configBody), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -115,7 +115,7 @@ base_url = "https://proxy.example.com/v1"
 model = "test-provider/test-model-a"
 api_key_env = "PROJECT_API_KEY"
 `
-	if err := os.WriteFile(filepath.Join(projectRoot, "fairpeer.toml"), []byte(configBody), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectRoot, "hiq.toml"), []byte(configBody), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -413,7 +413,7 @@ func TestSetBypassPreservesPlanMode(t *testing.T) {
 
 func userConfigPathForTest() string {
 	if dir, err := os.UserConfigDir(); err == nil {
-		return dir + "/fairpeer/fairpeer.toml"
+		return dir + "/hiq/hiq.toml"
 	}
 	return ""
 }

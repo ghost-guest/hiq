@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render each page of a PDF to a PNG image (no OCR, no text extraction).
 
-This is the "split PDF into one image per page" step of fairpeer's
+This is the "split PDF into one image per page" step of hiq's
 PDF → ppt-auto pipeline. A scanned / image-style PDF becomes a stack of
 page images; the Go desktop layer (desktop/pdf_pages_vision.go) then sends
 each PNG to builtin.CallVLM to recognize the page's TEXT + LAYOUT + FORMAT +

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // explainError maps a provider HTTP failure to an actionable, localized message

@@ -1,7 +1,7 @@
 // Package command loads custom slash commands from Markdown files. A command is
 // a prompt template: invoking /name substitutes the arguments into the body and
 // sends the result as a chat turn. Loading is pure and dependency-free — a small
-// "key: value" frontmatter parser keeps fairpeer's single-(TOML)-dependency promise
+// "key: value" frontmatter parser keeps hiq's single-(TOML)-dependency promise
 // rather than pulling in a YAML library.
 package command
 
@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/frontmatter"
+	"github.com/zzycxz/hiq/internal/frontmatter"
 )
 
 // Command is a custom slash command loaded from a .md file.

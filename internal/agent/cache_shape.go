@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // PrefixShape hashes the portions of the request prefix that influence

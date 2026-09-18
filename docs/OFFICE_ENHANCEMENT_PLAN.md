@@ -1,4 +1,4 @@
-# FairPeer Office 能力增强计划（修订版）
+# Hiq Office 能力增强计划（修订版）
 
 > **版本**: v2.0 | **日期**: 2026-08-04 | **状态**: 待实施
 >
@@ -307,7 +307,7 @@ def add_chart(slide, chart_type, data, position):
 3. **零外部依赖** — 不引入 OfficeCLI 等外部工具
 4. **渐进式增强** — 每个 Phase 独立可交付
 
-### FairPeer Office 能力提升
+### Hiq Office 能力提升
 
 | 能力 | 优化前 | 优化后 |
 |------|--------|--------|

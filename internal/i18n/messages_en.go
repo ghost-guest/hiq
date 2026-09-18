@@ -7,7 +7,7 @@ var English = Messages{
 	WelcomeTitleFmt: "Welcome to %s",
 	NoConfigYet:     "No configuration found yet — let's set it up.",
 	StartingChatFmt: "Starting %s…",
-	SetKeyHint:      "Set your API key, then run `fairpeer chat`.",
+	SetKeyHint:      "Set your API key, then run `hiq chat`.",
 	ConfigLabel:     "config",
 	ModelsLabel:     "models",
 	ConfigNotFound:  "not found — using built-in defaults",
@@ -15,18 +15,18 @@ var English = Messages{
 	NoKey:           "no key",
 	Ready:           "ready",
 	GetStarted:      "Get started",
-	StepScaffold:    "scaffold fairpeer.toml",
+	StepScaffold:    "scaffold hiq.toml",
 	StepSetKey:      "set API key",
 
-	InitHint:       "Project memory (AGENTS.md) is generated in-session: run `fairpeer chat`, then `/init` — the model analyzes the codebase and writes it. For configuration, use `fairpeer setup`.",
-	StepSetKeyHint: "run `fairpeer setup`, or export OPENAI_API_KEY=…",
+	InitHint:       "Project memory (AGENTS.md) is generated in-session: run `hiq chat`, then `/init` — the model analyzes the codebase and writes it. For configuration, use `hiq setup`.",
+	StepSetKeyHint: "run `hiq setup`, or export OPENAI_API_KEY=…",
 	StepChatDesc:   "interactive session",
 	StepRunDesc:    "one-shot task",
-	HelpFooter:     "fairpeer help · all commands",
+	HelpFooter:     "hiq help · all commands",
 
 	ChatTip:           "Context is kept across turns. Type 'exit' or Ctrl-D to quit.",
 	TurnCancelled:     "cancelled — back to prompt",
-	NoSessionToResume: "no saved session to resume — start a new one with `fairpeer chat`",
+	NoSessionToResume: "no saved session to resume — start a new one with `hiq chat`",
 	ResumeRequiresTTY: "--resume needs an interactive terminal; pass --continue for the most recent session",
 	PickSessionLabel:  "Resume which session?",
 
@@ -72,7 +72,7 @@ var English = Messages{
 
 	OutputStyleNone:    "no output styles available",
 	OutputStyleHeader:  "output styles:",
-	OutputStyleHint:    "set agent.output_style in fairpeer.toml to apply one (takes effect next session)",
+	OutputStyleHint:    "set agent.output_style in hiq.toml to apply one (takes effect next session)",
 	ThemeHeader:        "themes:",
 	ThemeHint:          "switch with /theme <auto|light|dark|style>",
 	ThemeChangedFmt:    "theme switched to %s / %s",
@@ -144,7 +144,7 @@ var English = Messages{
 	SkillPickerStatusNotDir:      "not-directory",
 	SkillPickerStatusUnreadable:  "unreadable",
 	SlashPromptEmpty:             "the MCP prompt returned no content to send",
-	SlashMCPNone:                 "no MCP servers configured — add a [[plugins]] entry in fairpeer.toml",
+	SlashMCPNone:                 "no MCP servers configured — add a [[plugins]] entry in hiq.toml",
 	CtrlCQuitHint:                "press Ctrl+C again to quit",
 	CompHintSlash:                "↑/↓ move · Tab/Enter select · Esc close",
 	CompHintFile:                 "↑/↓ move · Tab/Enter open folder or pick file · Esc close",
@@ -206,7 +206,7 @@ var English = Messages{
 	ArgEffortXHigh:      "extra deep reasoning",
 	ArgEffortMax:        "maximum reasoning",
 	ArgThemeCurrent:     "current",
-	ArgLanguageAuto:     "auto-detect from FAIRPEER_LANG / locale",
+	ArgLanguageAuto:     "auto-detect from HIQ_LANG / locale",
 	ArgLanguageEn:       "English",
 	ArgLanguageZh:       "中文",
 
@@ -217,11 +217,11 @@ var English = Messages{
 	ListSkillsHeaderFmt: "skills (%d)",
 	ListSkillsNone:      "skills: none defined — invoke a built-in like /init, or author one with install_skill",
 	ListHooksHeaderFmt:  "hooks (%d active)",
-	ListHooksNone:       "hooks: none active — configure in .fairpeer/settings.json (project, after trust) or ~/.fairpeer/settings.json (global)",
+	ListHooksNone:       "hooks: none active — configure in .hiq/settings.json (project, after trust) or ~/.hiq/settings.json (global)",
 	ListMcpHeader:       "mcp servers",
-	ListMcpNone:         "mcp: no servers connected — add one in fairpeer.toml ([[plugins]]) or a project .mcp.json",
+	ListMcpNone:         "mcp: no servers connected — add one in hiq.toml ([[plugins]]) or a project .mcp.json",
 
-	MemoryNone:             "memory: none — add with \"/remember <note>\" or create fairpeer.md in the project root",
+	MemoryNone:             "memory: none — add with \"/remember <note>\" or create hiq.md in the project root",
 	MemoryLoaded:           "memory loaded:",
 	MemorySavedHeader:      "  saved memories (delete with “/forget <name>”):",
 	MemoryStoredUnderFmt:   "  stored under %s",
@@ -255,12 +255,12 @@ var English = Messages{
 
 	SelectProvidersLabel:  "Select providers to enable",
 	EnterAPIKeysHeader:    "Enter API keys (Enter to skip and set later):",
-	MissingKeyIntro:       "fairpeer.toml is ready — just an API key away.",
+	MissingKeyIntro:       "hiq.toml is ready — just an API key away.",
 	WroteFileFmt:          "Wrote %s",
 	SetupComplete:         "Setup complete.",
 	SetupCancelled:        "setup cancelled.",
 	TryHintFmt:            "Try: %s",
-	NextHint:              "Next: set your API key (run `fairpeer setup` or export OPENAI_API_KEY=...), then run `fairpeer run \"your task\"`.",
+	NextHint:              "Next: set your API key (run `hiq setup` or export OPENAI_API_KEY=...), then run `hiq run \"your task\"`.",
 	ConfirmReconfigureFmt: "%s already exists. Reconfigure and overwrite?",
 	KeepingExisting:       "Keeping existing config.",
 	NotOverwritingFmt:     "%s already exists; not overwriting",
@@ -275,7 +275,7 @@ var English = Messages{
 	NoModelsAvailableFmt:       "%s: no models available, skipping",
 	CustomFetchEmpty:           "/models returned an empty list — falling back to manual entry",
 	AnthropicFetchEmpty:        "/models returned an empty list — Anthropic-compatible providers usually don't expose one, falling back to manual entry",
-	SkipStaleCustomEntryFmt:    "skipping stale %q entry from fairpeer.toml (pointing at %s) — please remove it from [[providers]]",
+	SkipStaleCustomEntryFmt:    "skipping stale %q entry from hiq.toml (pointing at %s) — please remove it from [[providers]]",
 	APIKeyAlreadySetFmt:        "reusing existing value for %s",
 	APIKeyResetPromptFmt:       "Re-enter %s?",
 
@@ -308,14 +308,14 @@ var English = Messages{
 	AnthropicSelectModelsLabel:     "Select models to enable for %s",
 
 	UnknownCommandFmt:         "unknown command %q",
-	UsageRunHint:              "usage: fairpeer run [--model NAME] <task>",
+	UsageRunHint:              "usage: hiq run [--model NAME] <task>",
 	ErrorPrefix:               "error:",
 	ReconfigureOnUnknownModel: "Configured model is no longer available — re-running setup.",
 	WriteConfigErr:            "write config:",
 	WriteEnvErr:               "write .env:",
 
 	ProviderErrBadRequest:    "Malformed request (HTTP 400): the request body was rejected. This is likely a bug — please report it if it persists.",
-	ProviderErrAuth:          "Authentication failed (HTTP 401): your API key is missing, wrong, or expired. Check the key in .env or run `fairpeer setup`.",
+	ProviderErrAuth:          "Authentication failed (HTTP 401): your API key is missing, wrong, or expired. Check the key in .env or run `hiq setup`.",
 	ProviderErrUnprocessable: "Invalid parameters (HTTP 422): a request parameter was rejected. This is likely a bug — please report it if it persists.",
 	ProviderErrRateLimited:   "Rate limit reached (HTTP 429): too many requests (TPM/RPM). Retried with backoff — slow down or try again shortly.",
 	ProviderErrServer:        "Server error (HTTP 500): the provider hit an internal fault. Retried with backoff; if it keeps failing, try again later.",
@@ -335,32 +335,32 @@ var English = Messages{
 	ProviderPickLabel:    "Select a model from %s",
 	ProviderNoModelsFmt:  "provider %s has no configured models",
 
-	UsageBody: `fairpeer — a config- and plugin-driven coding agent (multi-model)
+	UsageBody: `hiq — a config- and plugin-driven coding agent (multi-model)
 
 Usage:
-  fairpeer chat [--model NAME] [-c|--continue] [--resume]   interactive session (multi-turn; -c resumes the latest, --resume picks one)
-  fairpeer run  [--model NAME] [--max-steps N] [-c|--continue] [--resume PATH] <task>   run one task and exit
-  fairpeer serve [--model NAME] [--addr HOST:PORT]      serve the session over HTTP+SSE (browser client at /)
-  fairpeer acp [--model NAME]                           serve Agent Client Protocol over stdio (also: fairpeer --acp)
-  fairpeer setup [path]                                 interactive config wizard; writes fairpeer.toml (+ .env)
-  fairpeer config auto-plan [off|on]                    configure automatic plan mode
-  fairpeer mcp <add|remove|list>                        manage MCP servers in fairpeer.toml
-  fairpeer doctor [--json]                              print redacted local diagnostics
-  fairpeer bot start|doctor|weixin-login                multi-channel IM bot gateway
-  fairpeer trustdomain <init|status|run|...>           private-network trust domain ledger (docs/TRUSTDOMAIN_SPEC.md)
-  fairpeer version
-  fairpeer help
+  hiq chat [--model NAME] [-c|--continue] [--resume]   interactive session (multi-turn; -c resumes the latest, --resume picks one)
+  hiq run  [--model NAME] [--max-steps N] [-c|--continue] [--resume PATH] <task>   run one task and exit
+  hiq serve [--model NAME] [--addr HOST:PORT]      serve the session over HTTP+SSE (browser client at /)
+  hiq acp [--model NAME]                           serve Agent Client Protocol over stdio (also: hiq --acp)
+  hiq setup [path]                                 interactive config wizard; writes hiq.toml (+ .env)
+  hiq config auto-plan [off|on]                    configure automatic plan mode
+  hiq mcp <add|remove|list>                        manage MCP servers in hiq.toml
+  hiq doctor [--json]                              print redacted local diagnostics
+  hiq bot start|doctor|weixin-login                multi-channel IM bot gateway
+  hiq trustdomain <init|status|run|...>           private-network trust domain ledger (docs/TRUSTDOMAIN_SPEC.md)
+  hiq version
+  hiq help
 
 Examples:
-  fairpeer chat
-  fairpeer chat --continue
-  fairpeer run "implement the TODOs in main.go"
-  fairpeer run --model provider/model "add unit tests for this function"
-  echo "explain this code" | fairpeer run
+  hiq chat
+  hiq chat --continue
+  hiq run "implement the TODOs in main.go"
+  hiq run --model provider/model "add unit tests for this function"
+  echo "explain this code" | hiq run
 
 Configuration:
-  Resolution: flag > ./fairpeer.toml > ~/.config/fairpeer/config.toml > built-in defaults
+  Resolution: flag > ./hiq.toml > ~/.config/hiq/config.toml > built-in defaults
   Secrets come from the environment via api_key_env (e.g. OPENAI_API_KEY).
-  Run 'fairpeer setup' to scaffold a config; see docs/SPEC.md.
+  Run 'hiq setup' to scaffold a config; see docs/SPEC.md.
 `,
 }

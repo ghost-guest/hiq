@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/sandbox"
 )
 
 // collectSink returns a Sink that collects events and a channel that receives

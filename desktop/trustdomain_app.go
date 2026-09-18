@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/netdev"
-	"github.com/zzycxz/fairpeer/internal/trustdomain"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/netdev"
+	"github.com/zzycxz/hiq/internal/trustdomain"
 )
 
 // TrustDomainMemberView is one member card.

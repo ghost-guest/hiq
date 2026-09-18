@@ -3,32 +3,32 @@
 #import <Cocoa/Cocoa.h>
 #import <objc/runtime.h>
 
-extern void fairpeerMarkSystemQuit(void);
+extern void hiqMarkSystemQuit(void);
 
 static NSApplicationTerminateReply (*originalApplicationShouldTerminate)(id, SEL, NSApplication *);
 static void (*originalWailsContextQuit)(id, SEL);
 
-static NSApplicationTerminateReply fairpeerApplicationShouldTerminate(id self, SEL _cmd, NSApplication *sender) {
-    fairpeerMarkSystemQuit();
+static NSApplicationTerminateReply hiqApplicationShouldTerminate(id self, SEL _cmd, NSApplication *sender) {
+    hiqMarkSystemQuit();
     if (originalApplicationShouldTerminate != NULL) {
         return originalApplicationShouldTerminate(self, _cmd, sender);
     }
     return NSTerminateNow;
 }
 
-static void fairpeerWailsContextQuit(id self, SEL _cmd) {
-    fairpeerMarkSystemQuit();
+static void hiqWailsContextQuit(id self, SEL _cmd) {
+    hiqMarkSystemQuit();
     if (originalWailsContextQuit != NULL) {
         originalWailsContextQuit(self, _cmd);
     }
 }
 
-void installfairpeerSystemQuitHook(void) {
+void installhiqSystemQuitHook(void) {
     Class appDelegate = NSClassFromString(@"AppDelegate");
     SEL selector = @selector(applicationShouldTerminate:);
     Method method = appDelegate == Nil ? NULL : class_getInstanceMethod(appDelegate, selector);
     if (method != NULL) {
-        IMP replacement = (IMP)fairpeerApplicationShouldTerminate;
+        IMP replacement = (IMP)hiqApplicationShouldTerminate;
         IMP previous = method_setImplementation(method, replacement);
         originalApplicationShouldTerminate = (NSApplicationTerminateReply (*)(id, SEL, NSApplication *))previous;
     }
@@ -37,7 +37,7 @@ void installfairpeerSystemQuitHook(void) {
     SEL quitSelector = @selector(Quit);
     Method quitMethod = wailsContext == Nil ? NULL : class_getInstanceMethod(wailsContext, quitSelector);
     if (quitMethod != NULL) {
-        IMP replacement = (IMP)fairpeerWailsContextQuit;
+        IMP replacement = (IMP)hiqWailsContextQuit;
         IMP previous = method_setImplementation(quitMethod, replacement);
         originalWailsContextQuit = (void (*)(id, SEL))previous;
     }

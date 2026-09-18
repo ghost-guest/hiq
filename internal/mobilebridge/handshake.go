@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/mobilebridge/proto"
+	"github.com/zzycxz/hiq/internal/mobilebridge/proto"
 )
 
 // Handshake (PROTOCOL §5): a TLS-1.3-flavored exchange run on the DataChannel

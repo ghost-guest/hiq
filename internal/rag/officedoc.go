@@ -26,10 +26,10 @@ import (
 
 	pdflib "github.com/ledongthuc/pdf"
 
-	rt "github.com/zzycxz/fairpeer/internal/runtime"
+	rt "github.com/zzycxz/hiq/internal/runtime"
 
-	"github.com/zzycxz/fairpeer/internal/docconv"
-	"github.com/zzycxz/fairpeer/internal/proc"
+	"github.com/zzycxz/hiq/internal/docconv"
+	"github.com/zzycxz/hiq/internal/proc"
 )
 
 // cjkSpaceRe matches a space between two CJK characters.

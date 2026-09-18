@@ -2,7 +2,7 @@
 
 package builtin
 
-import "github.com/zzycxz/fairpeer/internal/tool"
+import "github.com/zzycxz/hiq/internal/tool"
 
 // WindowTools returns the window-management tool set. On non-Windows platforms
 // there's no Win32 window API to drive, so it returns nil — cowork mode simply

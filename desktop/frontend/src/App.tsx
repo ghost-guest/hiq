@@ -34,7 +34,7 @@ import { app, onEvent, onProjectTreeChanged, onSchedulerNotice,
 } from "./lib/bridge";
 import { browserMirrorSnapshot, pushBrowserMirrorFrame, requestBrowserMirrorFocus } from "./lib/browserMirror";
 import { loadWallpaper, subscribeWallpaper } from "./lib/wallpaper";
-import { onFairpeerDeepLink, onProfileChanged } from "./lib/bridge";
+import { onHiqDeepLink, onProfileChanged } from "./lib/bridge";
 import { CoWorkLayout } from "./layouts/CoWorkLayout";
 import { NetDevLayout, NetdevTitleBar } from "./layouts/NetDevLayout";
 import { PreferencePanel } from "./components/cowork/PreferencePanel";
@@ -128,7 +128,7 @@ import { applyTextSize, DEFAULT_TEXT_SIZE, getTextSize, nextTextSize } from "./l
 import { useWindowStatePersistence } from "./lib/windowState";
 import { availableWorkspacePanelWidth, resolveWorkspacePanelWidth, workspacePanelAriaMinWidth } from "./lib/workspaceLayout";
 
-const SIDEBAR_COLLAPSED_KEY = "fairpeer.sidebar.collapsed";
+const SIDEBAR_COLLAPSED_KEY = "hiq.sidebar.collapsed";
 // netdev 模式的建议 chips（completion-spec §3.3）：覆盖高频 + 低发现度能力
 // （discover/netconf/locate/assess/netconf 厂商命令习惯）的用户语言问法。
 
@@ -162,9 +162,9 @@ const RIGHT_DOCK_MAX_WIDTH = 3840;
 
 type RightDockMode = "turns" | "files" | "changed" | "preview" | "session";
 
-const RIGHT_DOCK_MODE_KEY = "fairpeer.rightDockMode";
-const PREVIEW_URL_KEY = "fairpeer.previewUrl";
-const DOCK_TABS_KEY = "fairpeer.dockTabs";
+const RIGHT_DOCK_MODE_KEY = "hiq.rightDockMode";
+const PREVIEW_URL_KEY = "hiq.previewUrl";
+const DOCK_TABS_KEY = "hiq.dockTabs";
 
 // All tabs the dock's "+" menu can open, in canonical order. Persisted dock
 // tab lists are filtered against this, so entries saved before the 2026-08-27
@@ -702,7 +702,7 @@ function fence(label: string, value: string): string {
 }
 
 function sessionItemsToMarkdown(title: string, items: Item[], live?: LiveStream): string {
-  const lines: string[] = [`# ${title.trim() || "fairpeer session"}`, ""];
+  const lines: string[] = [`# ${title.trim() || "hiq session"}`, ""];
   for (const item of materializeLiveItems(items, live)) {
     switch (item.kind) {
       case "user":
@@ -761,7 +761,7 @@ function sessionItemsToJson(title: string, items: Item[], live?: LiveStream): st
 
 function safeFilename(name: string): string {
   const cleaned = name.trim().replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").slice(0, 80);
-  return cleaned || "fairpeer-session";
+  return cleaned || "hiq-session";
 }
 
 export default function App() {
@@ -830,8 +830,8 @@ export default function App() {
   // standard body is hidden (app--netdev) and the NetDevLayout shell renders.
   // Purely additive — dev/cowork behavior is byte-identical.
   const [netdevActive, setNetdevActive] = useState(false);
-  // fairpeer:// 深链统一入口（DASHBOARD spec §4.12）：冷路径（启动 argv →
-  // NetDevConsumeDeepLink）与热路径（第二实例 → fairpeer:deep-link 事件）都
+  // hiq:// 深链统一入口（DASHBOARD spec §4.12）：冷路径（启动 argv →
+  // NetDevConsumeDeepLink）与热路径（第二实例 → hiq:deep-link 事件）都
   // 汇到这里——不在 netdev profile 时先切过去，落地后按 kind 分发。
   const [pendingDeepLink, setPendingDeepLink] = useState<{ kind: string; id: string } | null>(null);
   const deepLinkDispatchRef = useRef(false);
@@ -1085,7 +1085,7 @@ export default function App() {
   // composer talks to; null → auto-pick the first non-active session tab.
   const [sideSessionTabId, setSideSessionTabId] = useState<string | null>(null);
   // 人工终端设备页签（NETDEV_SPEC_V2 §10.5）：设备卡「终端」经
-  // "fairpeer:netdev-terminal" 事件抵达——面板打开并新增该设备的页签。
+  // "hiq:netdev-terminal" 事件抵达——面板打开并新增该设备的页签。
   const [openDeviceTerm, setOpenDeviceTerm] = useState<{ device: string; seq: number }>({ device: "", seq: 0 });
   useEffect(() => {
     const onOpenDevice = (e: Event) => {
@@ -1097,8 +1097,8 @@ export default function App() {
       });
       setOpenDeviceTerm((prev) => ({ device: d.device, seq: prev.seq + 1 }));
     };
-    window.addEventListener("fairpeer:netdev-terminal", onOpenDevice);
-    return () => window.removeEventListener("fairpeer:netdev-terminal", onOpenDevice);
+    window.addEventListener("hiq:netdev-terminal", onOpenDevice);
+    return () => window.removeEventListener("hiq:netdev-terminal", onOpenDevice);
   }, []);
   const toggleTerminal = useCallback(() => {
     setTerminalOpen((v) => {
@@ -1292,7 +1292,7 @@ export default function App() {
   }, [closeTransientOverlays]);
 
   // Screenshot hotkey recognition results — surface as a toast so the user sees
-  // the VLM output even when FairPeer isn't focused.
+  // the VLM output even when Hiq isn't focused.
   useEffect(() => {
     if (typeof window === "undefined" || !window.runtime) return;
     return window.runtime.EventsOn("screenshot:notice", (...data: unknown[]) => {
@@ -1304,7 +1304,7 @@ export default function App() {
   // Emergency-stop hotkey confirmation — the global Ctrl+Shift+Pause fired and
   // cancelled the in-flight turn. Surface a prominent (error-level = red) toast
   // so the user gets immediate visible confirmation the stop landed, even when
-  // FairPeer is in the background (the event is emitted from the backend).
+  // Hiq is in the background (the event is emitted from the backend).
   useEffect(() => {
     if (typeof window === "undefined" || !window.runtime) return;
     return window.runtime.EventsOn("estop:fired", (...data: unknown[]) => {
@@ -1394,8 +1394,8 @@ export default function App() {
         return; // a tool/notice boundary without a trailing user message — nothing safe to resend
       }
     };
-    window.addEventListener("fairpeer:retry-turn", onRetry);
-    return () => window.removeEventListener("fairpeer:retry-turn", onRetry);
+    window.addEventListener("hiq:retry-turn", onRetry);
+    return () => window.removeEventListener("hiq:retry-turn", onRetry);
   }, []);
   const rightDockDetailActive = rightDockMode !== "turns" && workspacePreviewActive;
   const preferredWorkspacePanelWidth = rightDockDetailActive ? rightDockPreviewWidth : rightDockTreeWidth;
@@ -1804,25 +1804,25 @@ export default function App() {
     [activeTab, tabMetas, switchTab, ensureBlankTab, closeTransientOverlays, notice],
   );
 
-  // fairpeer:// 深链落地（DASHBOARD spec §4.12）：冷路径（启动 argv →
-  // NetDevConsumeDeepLink）与热路径（第二实例 → fairpeer:deep-link 事件）汇到
+  // hiq:// 深链落地（DASHBOARD spec §4.12）：冷路径（启动 argv →
+  // NetDevConsumeDeepLink）与热路径（第二实例 → hiq:deep-link 事件）汇到
   // 这里——不在 netdev profile 先切过去，到位后按 kind 分发（导航型 only，
   // Go 侧解析器已 fail-closed）。
   useEffect(() => {
     const dispatch = (r: { kind: string; id: string }) => {
       if (r.kind === "finding") {
-        window.dispatchEvent(new CustomEvent("fairpeer:netdev-open-screen", { detail: { screen: "chain", finding: r.id } }));
+        window.dispatchEvent(new CustomEvent("hiq:netdev-open-screen", { detail: { screen: "chain", finding: r.id } }));
       } else if (r.kind === "case") {
-        window.dispatchEvent(new CustomEvent("fairpeer:netdev-open-screen", { detail: { screen: "chain" } }));
+        window.dispatchEvent(new CustomEvent("hiq:netdev-open-screen", { detail: { screen: "chain" } }));
       } else if (r.kind === "cutover") {
-        window.dispatchEvent(new CustomEvent("fairpeer:netdev-open-screen", { detail: { screen: "cutover" } }));
+        window.dispatchEvent(new CustomEvent("hiq:netdev-open-screen", { detail: { screen: "cutover" } }));
       } else if (r.kind === "screen") {
-        window.dispatchEvent(new CustomEvent("fairpeer:netdev-open-screen", { detail: { screen: r.id } }));
+        window.dispatchEvent(new CustomEvent("hiq:netdev-open-screen", { detail: { screen: r.id } }));
       } else if (r.kind === "proposal") {
-        window.dispatchEvent(new CustomEvent("fairpeer:netdev-open-screen", { detail: { tab: "proposals", filter: `id:${r.id}` } }));
+        window.dispatchEvent(new CustomEvent("hiq:netdev-open-screen", { detail: { tab: "proposals", filter: `id:${r.id}` } }));
       }
     };
-    const offLive = onFairpeerDeepLink(r => setPendingDeepLink(r));
+    const offLive = onHiqDeepLink(r => setPendingDeepLink(r));
     if (!deepLinkDispatchRef.current) {
       deepLinkDispatchRef.current = true;
       app.NetDevConsumeDeepLink().then(r => { if (r) setPendingDeepLink(r); }).catch(() => {});
@@ -2856,14 +2856,14 @@ export default function App() {
     const cmds: PaletteItem[] = [
       { id: "cmd-new", group: t("palette.group.commands"), title: t("palette.cmd.newSession"), icon: <SquarePen size={15} />, compact: true, keywords: ["new", "新建"], run: () => void handleNewTab() },
       { id: "cmd-remote-connect", group: t("palette.group.commands"), title: t("remote.trigger"), icon: <Server size={15} />, compact: true, keywords: ["remote", "ssh", "wsl", "docker", "远程"], run: () => setRemoteWizardOpen(true) },
-      ...(netdevActive ? [{ id: "cmd-netdev-logs", group: t("palette.group.commands"), title: "日志工作台（多源合并时间线）", icon: <FileText size={15} />, compact: true, keywords: ["logs", "日志", "时间线", "ioc"], run: () => { window.dispatchEvent(new CustomEvent("fairpeer:netdev-bench", { detail: "logs" })); } }] : []),
+      ...(netdevActive ? [{ id: "cmd-netdev-logs", group: t("palette.group.commands"), title: "日志工作台（多源合并时间线）", icon: <FileText size={15} />, compact: true, keywords: ["logs", "日志", "时间线", "ioc"], run: () => { window.dispatchEvent(new CustomEvent("hiq:netdev-bench", { detail: "logs" })); } }] : []),
       ...(netdevActive ? ([
         { id: "cmd-ndv-dash-overview", title: "大屏·总览（值守态势）", keywords: ["dash", "overview", "大屏", "总览"] },
         { id: "cmd-ndv-dash-chain", title: "大屏·调查链（证据链路）", keywords: ["dash", "chain", "调查链", "证据"] },
         { id: "cmd-ndv-dash-cutover", title: "大屏·割接（变更窗口）", keywords: ["dash", "cutover", "割接", "变更"] },
         { id: "cmd-ndv-dash-discovery", title: "大屏·发现（资产纳管）", keywords: ["dash", "discovery", "发现", "纳管"] },
         { id: "cmd-ndv-dash-exposure", title: "大屏·暴露面（推演）", keywords: ["dash", "exposure", "暴露面", "推演"] },
-      ] as const).map(x => ({ id: x.id, group: t("palette.group.commands"), title: x.title, icon: <FileText size={15} />, compact: true, keywords: [...x.keywords], run: () => { window.dispatchEvent(new CustomEvent("fairpeer:netdev-open-screen", { detail: { screen: x.id.replace("cmd-ndv-dash-", "") } })); } })) : []),
+      ] as const).map(x => ({ id: x.id, group: t("palette.group.commands"), title: x.title, icon: <FileText size={15} />, compact: true, keywords: [...x.keywords], run: () => { window.dispatchEvent(new CustomEvent("hiq:netdev-open-screen", { detail: { screen: x.id.replace("cmd-ndv-dash-", "") } })); } })) : []),
       { id: "cmd-history", group: t("palette.group.commands"), title: t("palette.cmd.history"), icon: <History size={15} />, compact: true, keywords: ["history", "历史"], run: () => void openAllHistory() },
       { id: "cmd-trash", group: t("palette.group.commands"), title: t("palette.cmd.trash"), icon: <Trash2 size={15} />, compact: true, keywords: ["trash", "回收站"], run: () => void openTrash() },
       { id: "cmd-settings", group: t("palette.group.commands"), title: t("palette.cmd.settings"), icon: <SettingsIcon size={15} />, compact: true, keywords: ["settings", "设置"], run: () => setSettingsTarget("general") },

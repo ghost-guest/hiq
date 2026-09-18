@@ -40,7 +40,7 @@ allowed-tools: bash, read_file, write_file, edit_file, grep, todo_write, complet
   "step": "Step 0: 提取模板配色",
   "result": "已提取模板配色并更新 template_config.json",
   "evidence": [
-    {"kind": "verification", "summary": "extract_template_colors 成功，background=#EDF8FC", "command": "python \"C:\\Users\\13852\\.fairpeer\\skills\\ppt-auto\\scripts\\extract_template_colors.py\" \"C:\\Users\\13852\\.fairpeer\\ppt-template.pptx\" \"C:\\Users\\13852\\.fairpeer\\skills\\ppt-auto\\template_config.json\""}
+    {"kind": "verification", "summary": "extract_template_colors 成功，background=#EDF8FC", "command": "python \"C:\\Users\\13852\\.hiq\\skills\\ppt-auto\\scripts\\extract_template_colors.py\" \"C:\\Users\\13852\\.hiq\\ppt-template.pptx\" \"C:\\Users\\13852\\.hiq\\skills\\ppt-auto\\template_config.json\""}
   ]
 }
 ```
@@ -51,7 +51,7 @@ allowed-tools: bash, read_file, write_file, edit_file, grep, todo_write, complet
   "step": "Step 7: 转换 PPTX",
   "result": "PPTX 已生成",
   "evidence": [
-    {"kind": "verification", "summary": "svg_to_pptx 转换成功，57个元素", "command": "python \"C:\\Users\\13852\\.fairpeer\\skills\\ppt-auto\\scripts\\svg_to_pptx.py\" \"<project_dir>\""}
+    {"kind": "verification", "summary": "svg_to_pptx 转换成功，57个元素", "command": "python \"C:\\Users\\13852\\.hiq\\skills\\ppt-auto\\scripts\\svg_to_pptx.py\" \"<project_dir>\""}
   ]
 }
 ```
@@ -98,7 +98,7 @@ write_file 写的文件用 files：
 python3 <skill_dir>/scripts/preflight.py <project_name>
 ```
 
-一个脚本做完原来五步：检查 `~/.fairpeer/ppt-template.pptx` 是否存在 → 有则提取配色（extract_template_colors）→ 合并视觉配色（merge_vlm_style，把 `ppt-template-style.json` / `reference-style.json` 的颜色机械写进 config，reference 优先 > 模板视觉 > extract 基线）→ 初始化项目（project_manager init）→ 打印**合并 JSON 摘要**。
+一个脚本做完原来五步：检查 `~/.hiq/ppt-template.pptx` 是否存在 → 有则提取配色（extract_template_colors）→ 合并视觉配色（merge_vlm_style，把 `ppt-template-style.json` / `reference-style.json` 的颜色机械写进 config，reference 优先 > 模板视觉 > extract 基线）→ 初始化项目（project_manager init）→ 打印**合并 JSON 摘要**。
 
 输出的 JSON 就是你需要的全部配置（**不需要再 read_file template_config.json，也不需要单独跑 Step 3/Step 4**）：
 
@@ -128,10 +128,10 @@ web_search(query="<主题相关关键词>")
 
 配色/字号/布局的唯一事实源是 `template_config.json`，但**其关键内容（colors/fonts/mode）已由 Step 0 preflight 的 JSON 摘要给出**——正常流程直接用那份摘要，只有跳过了 preflight 或需要布局规则细节时才 `read_file <skill_dir>/template_config.json`。同样记住：**只能用已读到的颜色，禁止凭主题名推断品牌色**。
 
-**参考图（若有）**：若 `~/.fairpeer/reference-style.json` 存在（用户给参考图时由 desktop 的 `AnalyzeReferenceImage` 生成），读它的 `description`——VLM 对参考图的 4 段描述：
+**参考图（若有）**：若 `~/.hiq/reference-style.json` 存在（用户给参考图时由 desktop 的 `AnalyzeReferenceImage` 生成），读它的 `description`——VLM 对参考图的 4 段描述：
 
 ```bash
-read_file ~/.fairpeer/reference-style.json
+read_file ~/.hiq/reference-style.json
 ```
 
 - **CONTENT**：参考图文字内容（若用户要"照这个内容"，以此为准）
@@ -141,7 +141,7 @@ read_file ~/.fairpeer/reference-style.json
 
 写大纲（Step 5）和 SVG（Step 6）时参照它——目标是"画一页类似的"，不是像素复刻。
 
-**参考 PDF（若有，多页）**：若任务参数带 PDF 参考路径（或 `~/.fairpeer/pdf-pages/` 已有分析），这是**多页参考**——每个 `page-N.json` 对应一页，含 4 段 `description`（CONTENT 含**表格的完整行列内容**——照它画表，不要丢）：
+**参考 PDF（若有，多页）**：若任务参数带 PDF 参考路径（或 `~/.hiq/pdf-pages/` 已有分析），这是**多页参考**——每个 `page-N.json` 对应一页，含 4 段 `description`（CONTENT 含**表格的完整行列内容**——照它画表，不要丢）：
 
 **第一步：补齐分析**。桌面预分析只处理前 6 页（提交路径限速）；任务带 PDF 路径时必须先补齐全部页（幂等——已分析的页自动跳过）：
 
@@ -158,8 +158,8 @@ python3 <skill_dir>/scripts/analyze_pdf_pages.py "<PDF路径>"
 - **不要**自行用 python 提取 PDF 文字来编大纲——文字提取丢表格结构，以 page-N.json 为准
 
 ```bash
-ls ~/.fairpeer/pdf-pages/page-*.json 2>/dev/null   # 看有几页
-read_file ~/.fairpeer/pdf-pages/page-1.json         # 逐页读其 description
+ls ~/.hiq/pdf-pages/page-*.json 2>/dev/null   # 看有几页
+read_file ~/.hiq/pdf-pages/page-1.json         # 逐页读其 description
 ```
 
 单图参考（`reference-style.json`）和多页 PDF 参考（`page-N.json`）一般不同时存在——前者画一张，后者画多张。若两者都有，以 PDF 多页为准。
@@ -191,7 +191,7 @@ read_file <skill_dir>/references/visual-styles/<风格名>.md
 
 **⚠️ 严禁凭空捏造颜色。严禁凭主题名推断品牌色（如"中国移动"≠ 自己编蓝色）。配色只能从已读的 config 取。**
 
-**⚠️ 有参考图时的颜色权威链**：`~/.fairpeer/reference-style.json` 带颜色字段时，桌面预分析已把参考图真实配色（hex）机械合并进 `template_config.json`——config 的 colors 即参考图的真实颜色。**任务参数里转述的颜色描述**（如"主色调为深蓝色(#1a3c6e)"）是**上游模型看图后的转述，不是用户原话**，hex 常有偏差（实测把 #0078D4 亮蓝转述成 #1a3c6e 暗藏青），**不得作为用户输入覆盖 config**。仅当消息中明确出现"用户要求/用户指定"字样时才按用户输入处理。
+**⚠️ 有参考图时的颜色权威链**：`~/.hiq/reference-style.json` 带颜色字段时，桌面预分析已把参考图真实配色（hex）机械合并进 `template_config.json`——config 的 colors 即参考图的真实颜色。**任务参数里转述的颜色描述**（如"主色调为深蓝色(#1a3c6e)"）是**上游模型看图后的转述，不是用户原话**，hex 常有偏差（实测把 #0078D4 亮蓝转述成 #1a3c6e 暗藏青），**不得作为用户输入覆盖 config**。仅当消息中明确出现"用户要求/用户指定"字样时才按用户输入处理。
 
 ### Step 4: 初始化项目（已由 Step 0 preflight 完成）
 
@@ -261,7 +261,7 @@ python3 <skill_dir>/scripts/build_page_skeleton.py <project_dir>/pages_a.json --
    ```
 
 1. **背景**（取决于 Step 0 是否有模板）：
-   - **有模板**（`~/.fairpeer/ppt-template.pptx` 存在）：**不要画任何全屏背景**（不要 rect、不要 image）。模板的背景/渐变/装饰/logo 会通过 PPTX layout 继承自动透出。SVG 只画内容（卡片、文字、图标）。画全屏 rect 会盖住模板背景！check_svg.py 会报错。
+   - **有模板**（`~/.hiq/ppt-template.pptx` 存在）：**不要画任何全屏背景**（不要 rect、不要 image）。模板的背景/渐变/装饰/logo 会通过 PPTX layout 继承自动透出。SVG 只画内容（卡片、文字、图标）。画全屏 rect 会盖住模板背景！check_svg.py 会报错。
    - **无模板**：每页第一个元素是全屏 `<rect width="1280" height="720" fill="#背景色"/>`（`colors.background`）。
 2. viewBox 固定 `"0 0 1280 720"`
 3. 配色严格读 config，不得凭空捏造
@@ -275,12 +275,12 @@ python3 <skill_dir>/scripts/build_page_skeleton.py <project_dir>/pages_a.json --
 11. **照片/截图/logo 等画不出来的区域不得静默省略**：从参考页渲染图裁剪后以 `<image>` 嵌入——
     ```bash
     # 按 page-N.json LAYOUT 段的 position/share 裁剪，输出到项目 images/
-    python3 <skill_dir>/scripts/crop_ref_region.py ~/.fairpeer/pdf-pages/page-N.png --pos <位置> --share <占比> --out <project_dir>/images/pNN_desc.png
+    python3 <skill_dir>/scripts/crop_ref_region.py ~/.hiq/pdf-pages/page-N.png --pos <位置> --share <占比> --out <project_dir>/images/pNN_desc.png
     ```
     SVG 中 `<image href="../images/pNN_desc.png" x=".." y=".." width=".." height=".."/>`（坐标按 LAYOUT 估算、宽高比用脚本输出的 aspect）；该页生成后必须跑 `python3 <skill_dir>/scripts/svg_finalize/embed_images.py <该页svg>` 把图片内联成 data URI（否则 check/QA/转换看不到图）
 12. **表格页机械生成（禁止手写表格坐标）**：page-N.json 的 CONTENT 段含 markdown 表（`|` 分隔）时，用脚本生成整页（模型可再用 edit_file 补充周边元素，但表格本体不手画）：
     ```bash
-    python3 <skill_dir>/scripts/build_table_skeleton.py ~/.fairpeer/pdf-pages/page-N.json --title "<页标题>" --lead "<可选导语>" --out <project_dir>/svg_output/slide_NN.svg
+    python3 <skill_dir>/scripts/build_table_skeleton.py ~/.hiq/pdf-pages/page-N.json --title "<页标题>" --lead "<可选导语>" --out <project_dir>/svg_output/slide_NN.svg
     ```
     返回 `overflow: true` 时用 `--rows A-B` 拆成连续两页（后续页码顺延）；生成后照常跑 fix_svg + check_svg
 13. **流程图/时间线页机械生成（禁止手画连线坐标）**：参考页是流程图（节点+连线+判断分支）时，把 CONTENT 的流程步骤整理成 DSL（节点 `[流程]` `{判断?}` `(起止)`，`[A] -> [B] |标签|` 定义连线），然后：
@@ -327,9 +327,9 @@ python3 <skill_dir>/scripts/check_svg.py <project_dir>/svg_output/slide_05.svg -
 
 **本步骤必须出现在 Step 0 创建的 todo 列表中**——无参考也执行（走 rubric 模式），不许在创建 todo 时省略。
 
-模式自动选择：`~/.fairpeer/reference-style.json`（单图参考）或 `~/.fairpeer/pdf-pages/page-1.json`（PDF 参考）存在 → **对比模式**（与参考图并排判定保真度）；两者都没有（纯主题驱动）→ **rubric 模式**（无参考绝对标准审查：文字溢出/重叠压字/对比度/对齐/留白/字号层级，仅 MAJOR 触发返工）。
+模式自动选择：`~/.hiq/reference-style.json`（单图参考）或 `~/.hiq/pdf-pages/page-1.json`（PDF 参考）存在 → **对比模式**（与参考图并排判定保真度）；两者都没有（纯主题驱动）→ **rubric 模式**（无参考绝对标准审查：文字溢出/重叠压字/对比度/对齐/留白/字号层级，仅 MAJOR 触发返工）。
 
-把生成的 SVG 渲染成图，与参考图并排送 VLM 对比（用的是 fairpeer 配置的视觉模型，无需额外参数）：
+把生成的 SVG 渲染成图，与参考图并排送 VLM 对比（用的是 hiq 配置的视觉模型，无需额外参数）：
 
 ```bash
 python3 <skill_dir>/scripts/qa_compare.py <project_dir> --round 1
@@ -358,7 +358,7 @@ complete_step 证据：引用**最后一次** qa_compare 运行（`kind: verific
 python3 <skill_dir>/scripts/svg_to_pptx.py <project_dir>
 ```
 
-转换器会**自动检测** `~/.fairpeer/ppt-template.pptx`：有模板时打开模板、清空已有 slides、用模板的 layout 添加新 slide（模板的背景/master/装饰通过继承保留），把每页 SVG 转成原生 DrawingML 形状/文字（**可编辑**）叠加在模板背景上。无模板时用空白 Presentation。无需手动传参。
+转换器会**自动检测** `~/.hiq/ppt-template.pptx`：有模板时打开模板、清空已有 slides、用模板的 layout 添加新 slide（模板的背景/master/装饰通过继承保留），把每页 SVG 转成原生 DrawingML 形状/文字（**可编辑**）叠加在模板背景上。无模板时用空白 Presentation。无需手动传参。
 
 若 `notes/` 目录有备注文件（用户要求时才生成），转换器会自动读取嵌入。
 
@@ -390,7 +390,7 @@ read_file <project_dir>/qa-report.json
 
 对每个 MAJOR 页：
 
-1. 读该页参考描述：PDF 参考 → `~/.fairpeer/pdf-pages/page-N.json` 的 description；单图参考 → `~/.fairpeer/reference-style.json`
+1. 读该页参考描述：PDF 参考 → `~/.hiq/pdf-pages/page-N.json` 的 description；单图参考 → `~/.hiq/reference-style.json`
 2. `edit_file` 修改 `<project_dir>/svg_output/slide_NN.svg`——**只改 issues 指出的问题项**（补缺失的内容块/表格行列、修正结构、恢复被截断的文字），不要重画整页。缺失的截图/logo/照片按 Step 6 规则 11 裁剪参考页嵌入；表格类内容缺失/截断按 Step 6 规则 12 用 build_table_skeleton.py 整页重建
 3. 改完跑 `fix_svg.py` + `check_svg.py`（同 Step 6 规则，ERROR 必须修）
 
@@ -492,9 +492,9 @@ exit 2 或 `ok: false` → 按 `missing` 清单补回丢失文字后重查，**�
 | batch_check.py | 纯 Python（单解释器批量 fix + check 全部页） |
 | build_page_skeleton.py | 纯 Python（pages.json → 骨架页 SVG，7 种类型） |
 | extract_content.py | 纯 Python |
-| qa_compare.py | 纯 Python（需 cairosvg；VLM 访问读 fairpeer 配置） |
+| qa_compare.py | 纯 Python（需 cairosvg；VLM 访问读 hiq 配置） |
 | svg_quality_checker.py | 纯 Python（**可选**手动深度审计：spec_lock 漂移/字号层级/逐元素检查；不在生成流水线内，需要逐项审计报告时手动跑） |
-| analyze_pdf_pages.py | 纯 Python（需 PyMuPDF；VLM 访问读 fairpeer 配置） |
+| analyze_pdf_pages.py | 纯 Python（需 PyMuPDF；VLM 访问读 hiq 配置） |
 | crop_ref_region.py | 纯 Python（需 Pillow） |
 | build_table_skeleton.py | 纯 Python |
 | build_flow_skeleton.py | 纯 Python（流程 DSL / 时间线表） |

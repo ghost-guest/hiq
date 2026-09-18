@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 func TestTodoStateIsCommittedWithToolResultAndClearedByCommittedStart(t *testing.T) {

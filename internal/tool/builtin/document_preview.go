@@ -19,8 +19,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/diff"
-	fileenc "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
+	"github.com/zzycxz/hiq/internal/diff"
+	fileenc "github.com/zzycxz/hiq/internal/fileutil/encoding"
 )
 
 // previewRestorePoint describes the file a writer is about to touch — old

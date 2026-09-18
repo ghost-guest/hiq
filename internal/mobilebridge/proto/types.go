@@ -1,4 +1,4 @@
-// Package proto holds the wire-format message types shared between fairpeer
+// Package proto holds the wire-format message types shared between hiq
 // desktop (S), linkpeer-signal cloud (K), and linkpeer mobile (C). It is the
 // single source of truth for the JSON shapes on the wire; the Dart client
 // mirrors these in lib/data/models/, and CI (protocol-compat) checks both

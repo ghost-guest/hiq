@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 func emitSearchReplay(ctx context.Context, out chan<- provider.Chunk, raw json.RawMessage) bool {

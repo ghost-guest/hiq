@@ -18,8 +18,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // defaultStreamIdleTimeout caps how long a started SSE stream may go without any
@@ -711,7 +711,7 @@ type chatInputAudioPart struct {
 // audio into the OpenAI multimodal wire format, applying the vision detail
 // level to every image. Text-only turns never reach here: buildRequest keeps
 // them as a plain string so the serialized bytes stay stable for prompt
-// caching. Audio parts are fairpeer-specific (upstream Reasonix has no STT
+// caching. Audio parts are hiq-specific (upstream Reasonix has no STT
 // path) and route through the same converter as input_audio blocks.
 func imageContentParts(text string, images []string, audio []provider.InputAudio, detail string) []chatContentPart {
 	out := make([]chatContentPart, 0, 1+len(images)+len(audio))

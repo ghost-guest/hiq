@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
 // legacyHome points HOME / config-dir / .env resolution at a fresh temp tree and
@@ -18,7 +18,7 @@ func legacyHome(t *testing.T) (src, dest, home string) {
 	t.Setenv("USERPROFILE", home)                               // os.UserHomeDir on Windows
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config")) // os.UserConfigDir on Linux
 	t.Setenv("AppData", filepath.Join(home, "AppData"))         // os.UserConfigDir on Windows
-	return filepath.Join(home, ".fairpeer", "config.json"), userConfigPath(), home
+	return filepath.Join(home, ".hiq", "config.json"), userConfigPath(), home
 }
 
 func writeLegacy(t *testing.T, src, body string) {
@@ -33,7 +33,7 @@ func writeLegacy(t *testing.T, src, body string) {
 
 func TestMigrateImportsKeyPluginsAndLang(t *testing.T) {
 	src, dest, home := legacyHome(t)
-	t.Setenv("FAIRPEER_API_KEY", "") // isolate from ambient env; migration pins the real value
+	t.Setenv("HIQ_API_KEY", "") // isolate from ambient env; migration pins the real value
 	writeLegacy(t, src, `{
 		"apiKey": "sk-legacy-123",
 		"lang": "zh",
@@ -56,10 +56,10 @@ func TestMigrateImportsKeyPluginsAndLang(t *testing.T) {
 
 	// The key must land in the encrypted store (and the live env), never in a
 	// plaintext credentials file.
-	if got := os.Getenv("FAIRPEER_API_KEY"); got != "sk-legacy-123" {
-		t.Errorf("env FAIRPEER_API_KEY = %q, want migrated key pinned in-process", got)
+	if got := os.Getenv("HIQ_API_KEY"); got != "sk-legacy-123" {
+		t.Errorf("env HIQ_API_KEY = %q, want migrated key pinned in-process", got)
 	}
-	if v, ok, err := secret.New(secret.DefaultPath()).Get("FAIRPEER_API_KEY"); err != nil || !ok || v != "sk-legacy-123" {
+	if v, ok, err := secret.New(secret.DefaultPath()).Get("HIQ_API_KEY"); err != nil || !ok || v != "sk-legacy-123" {
 		t.Errorf("encrypted store missing key: ok=%v err=%v val=%q", ok, err, v)
 	}
 	if _, err := os.Stat(UserCredentialsPath()); !os.IsNotExist(err) {
@@ -178,7 +178,7 @@ func TestMigrateSkipsWhenDestExists(t *testing.T) {
 
 func TestMigrateImportsLegacyV1TOMLBeforeJSON(t *testing.T) {
 	srcJSON, dest, _ := legacyHome(t)
-	legacyTOML := filepath.Join(filepath.Dir(dest), "fairpeer.toml")
+	legacyTOML := filepath.Join(filepath.Dir(dest), "hiq.toml")
 	if err := os.MkdirAll(filepath.Dir(legacyTOML), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +224,7 @@ command = "legacy-bin"
 
 func TestMigrateImportsLegacyV1HomeTOMLBeforeJSON(t *testing.T) {
 	srcJSON, dest, home := legacyHome(t)
-	legacyTOML := filepath.Join(home, ".fairpeer", "fairpeer.toml")
+	legacyTOML := filepath.Join(home, ".hiq", "hiq.toml")
 	if err := os.MkdirAll(filepath.Dir(legacyTOML), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -271,7 +271,7 @@ func TestMigrateNoLegacyIsNoop(t *testing.T) {
 func TestMigrateToleratesUTF8BOM(t *testing.T) {
 	src, _, _ := legacyHome(t)
 	writeLegacy(t, src, "\ufeff"+`{"apiKey":"sk-bom"}`)
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 	res, err := MigrateLegacyIfNeeded()
 	if err != nil {
 		t.Fatalf("a BOM-prefixed legacy config must still parse: %v", err)
@@ -279,7 +279,7 @@ func TestMigrateToleratesUTF8BOM(t *testing.T) {
 	if res == nil || !res.KeyToEnv {
 		t.Fatalf("BOM-prefixed config did not migrate: %+v", res)
 	}
-	if v, ok, err := secret.New(secret.DefaultPath()).Get("FAIRPEER_API_KEY"); err != nil || !ok || v != "sk-bom" {
+	if v, ok, err := secret.New(secret.DefaultPath()).Get("HIQ_API_KEY"); err != nil || !ok || v != "sk-bom" {
 		t.Errorf("key not migrated from BOM-prefixed config into encrypted store: ok=%v err=%v val=%q", ok, err, v)
 	}
 }
@@ -298,7 +298,7 @@ func TestMigrateCustomBaseURLWarns(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load migrated config: %v", err)
 	}
-	// FairPeer no longer ships a preset test-provider provider; a v0.x base_url is now
+	// Hiq no longer ships a preset test-provider provider; a v0.x base_url is now
 	// carried over as an explicit user provider named "migrated".
 	p, ok := cfg.Provider("migrated")
 	if !ok || p.BaseURL != "https://my-proxy.example/v1" {

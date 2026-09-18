@@ -60,8 +60,8 @@ P2 起若页卡 ≥4(副会话/浏览器)再抽 `{id, icon, title, component, ca
 
 ### 3.4 状态记忆
 
-- `fairpeer.rightDockMode`:最后激活页卡(files/changed/preview,context 不记忆);
-- `fairpeer.previewUrl`:手动输入过的地址。
+- `hiq.rightDockMode`:最后激活页卡(files/changed/preview,context 不记忆);
+- `hiq.previewUrl`:手动输入过的地址。
 
 ### 3.5 副会话页卡(P2, 底部工具轴)
 
@@ -113,4 +113,4 @@ P3 涉及 Go(browserlaunch 能力探测/窗口同步/进程管理),另行评审,
 产物轴家族的两个后续成员(2026-08-29),沿用 §1 三原则与 §3 的右栏骨架:
 
 - **办公 dock「浏览器」镜像页**:agent/控制台驱动的浏览器画面实时镜像。数据通道为内核 `browser:mirror` 事件(browser.go 每次动作后截图 + 会话起止状态;browser_auto 边车截图帧同通道),面板读共享 store,挂载即订阅、卸载不丢流;活动开始自动开 dock(anti-nag 同 §3.3)。
-- **运维 dock「浏览器」页卡(ZCode 胶囊风子页卡 交互/录制)**:产物轴与技能系统的合流——手动驱动浏览器(11 原语直调既有 agent 工具),录制手动操作经三道去噪 + AI 理解生成四段式 SKILL.md(步骤表=工作流,skill ⊃ 工作流),结构化⇄源码编辑器(防丢失护栏)人审后落 `~/.fairpeer/skills/`。详见 CHANGELOG [Unreleased]「运维浏览器控制台」条。
+- **运维 dock「浏览器」页卡(ZCode 胶囊风子页卡 交互/录制)**:产物轴与技能系统的合流——手动驱动浏览器(11 原语直调既有 agent 工具),录制手动操作经三道去噪 + AI 理解生成四段式 SKILL.md(步骤表=工作流,skill ⊃ 工作流),结构化⇄源码编辑器(防丢失护栏)人审后落 `~/.hiq/skills/`。详见 CHANGELOG [Unreleased]「运维浏览器控制台」条。

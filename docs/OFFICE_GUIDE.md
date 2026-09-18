@@ -2,13 +2,13 @@
 
 ## 概述
 
-fairpeer 提供完整的办公自动化功能，包括 Word/Excel/PPT 文档处理、邮件管理、日历任务和定时任务，帮助您高效处理日常办公事务。
+hiq 提供完整的办公自动化功能，包括 Word/Excel/PPT 文档处理、邮件管理、日历任务和定时任务，帮助您高效处理日常办公事务。
 
 ## 文档处理
 
 ### Word 文档
 
-fairpeer 支持完整的 Word 文档操作：
+hiq 支持完整的 Word 文档操作：
 
 - **创建文档**：使用 `doc_write` 工具
 - **读取文档**：使用 `doc_read` 工具
@@ -29,7 +29,7 @@ fairpeer 支持完整的 Word 文档操作：
 
 ### Excel 表格
 
-fairpeer 支持完整的 Excel 操作：
+hiq 支持完整的 Excel 操作：
 
 - **创建表格**：使用 `xlsx_write` 工具
 - **读取数据**：使用 `xlsx_read` 工具
@@ -65,7 +65,7 @@ fairpeer 支持完整的 Excel 操作：
 
 ### PPT 演示
 
-fairpeer 通过 PPT-auto Skill 提供专业的 PPT 生成能力：
+hiq 通过 PPT-auto Skill 提供专业的 PPT 生成能力：
 
 - **SVG 自由设计**：完全自由的布局设计
 - **模板填充**：基于现有模板填充内容
@@ -74,10 +74,10 @@ fairpeer 通过 PPT-auto Skill 提供专业的 PPT 生成能力：
 
 ```bash
 # 使用 PPT-auto Skill
-fairpeer run "创建一个关于AI的PPT演示文稿"
+hiq run "创建一个关于AI的PPT演示文稿"
 
 # 带动画效果
-fairpeer run "创建PPT，使用淡入动画"
+hiq run "创建PPT，使用淡入动画"
 ```
 
 ## 邮件集成
@@ -139,7 +139,7 @@ calendar_enabled = true
 ### PPT 模板
 
 - **通用模板**：适用于大多数场景
-- **自定义模板**：放置在 `.fairpeer/skills/ppt-auto/templates/`
+- **自定义模板**：放置在 `.hiq/skills/ppt-auto/templates/`
 
 ### 配置
 

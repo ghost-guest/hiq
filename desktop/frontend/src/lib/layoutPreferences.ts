@@ -16,7 +16,7 @@ type LayoutPreferences = {
   sizes?: Partial<Record<LayoutSizeKey, number>>;
 };
 
-const STORAGE_KEY = "fairpeer.layoutPreferences.v1";
+const STORAGE_KEY = "hiq.layoutPreferences.v1";
 
 // Keys that belong to a PROFILE-SPECIFIC surface (the right dock / composer of
 // dev vs cowork vs netdev): each profile gets its own bucket, seeded from the
@@ -36,16 +36,16 @@ function scopedPrefsKey(): string {
 }
 
 const LEGACY_SIZE_KEYS: Record<LayoutSizeKey, string[]> = {
-  sidebarWidth: ["fairpeer.sidebar.width"],
+  sidebarWidth: ["hiq.sidebar.width"],
   sidebarWidthGraphite: [],
   rightDockWidth: [],
   rightDockTreeWidth: [],
   rightDockPreviewWidth: [],
   workspaceFileTreePanelWidth: [],
-  workspaceTreeWidth: ["fairpeer.workspaceTree.width"],
-  composerHeight: ["fairpeer.composerHeight"],
-  drawerWidth: ["fairpeer.drawer.width"],
-  settingsDrawerWidth: ["fairpeer.settingsDrawer.width"],
+  workspaceTreeWidth: ["hiq.workspaceTree.width"],
+  composerHeight: ["hiq.composerHeight"],
+  drawerWidth: ["hiq.drawer.width"],
+  settingsDrawerWidth: ["hiq.settingsDrawer.width"],
 };
 
 type ClampSize = (value: number) => number;

@@ -22,38 +22,38 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/apihelper"
-	"github.com/zzycxz/fairpeer/internal/assets"
-	"github.com/zzycxz/fairpeer/internal/codegraph"
-	"github.com/zzycxz/fairpeer/internal/command"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/deferred"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/hook"
-	"github.com/zzycxz/fairpeer/internal/installsource"
-	"github.com/zzycxz/fairpeer/internal/instruction"
-	"github.com/zzycxz/fairpeer/internal/jobs"
-	"github.com/zzycxz/fairpeer/internal/lsp"
-	"github.com/zzycxz/fairpeer/internal/memory"
-	"github.com/zzycxz/fairpeer/internal/netclient"
-	"github.com/zzycxz/fairpeer/internal/netdev"
-	"github.com/zzycxz/fairpeer/internal/nilutil"
-	"github.com/zzycxz/fairpeer/internal/outputstyle"
-	"github.com/zzycxz/fairpeer/internal/patrol"
-	"github.com/zzycxz/fairpeer/internal/permission"
-	"github.com/zzycxz/fairpeer/internal/plugin"
-	"github.com/zzycxz/fairpeer/internal/projectkb"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/rag"
-	runtimepkg "github.com/zzycxz/fairpeer/internal/runtime"
-	"github.com/zzycxz/fairpeer/internal/sandbox"
-	"github.com/zzycxz/fairpeer/internal/secret"
-	"github.com/zzycxz/fairpeer/internal/skill"
-	"github.com/zzycxz/fairpeer/internal/stats"
-	"github.com/zzycxz/fairpeer/internal/tool"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/apihelper"
+	"github.com/zzycxz/hiq/internal/assets"
+	"github.com/zzycxz/hiq/internal/codegraph"
+	"github.com/zzycxz/hiq/internal/command"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/deferred"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/hook"
+	"github.com/zzycxz/hiq/internal/installsource"
+	"github.com/zzycxz/hiq/internal/instruction"
+	"github.com/zzycxz/hiq/internal/jobs"
+	"github.com/zzycxz/hiq/internal/lsp"
+	"github.com/zzycxz/hiq/internal/memory"
+	"github.com/zzycxz/hiq/internal/netclient"
+	"github.com/zzycxz/hiq/internal/netdev"
+	"github.com/zzycxz/hiq/internal/nilutil"
+	"github.com/zzycxz/hiq/internal/outputstyle"
+	"github.com/zzycxz/hiq/internal/patrol"
+	"github.com/zzycxz/hiq/internal/permission"
+	"github.com/zzycxz/hiq/internal/plugin"
+	"github.com/zzycxz/hiq/internal/projectkb"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/rag"
+	runtimepkg "github.com/zzycxz/hiq/internal/runtime"
+	"github.com/zzycxz/hiq/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/secret"
+	"github.com/zzycxz/hiq/internal/skill"
+	"github.com/zzycxz/hiq/internal/stats"
+	"github.com/zzycxz/hiq/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 var (
@@ -66,7 +66,7 @@ var (
 // back to machine-bound encryption (no OS keystore and no passphrase
 // configured — typically headless Linux without a session keyring). The
 // ciphertext is then recomputable by any local process, so the user should
-// know and optionally set FAIRPEER_SECRET_PASSPHRASE(_FILE).
+// know and optionally set HIQ_SECRET_PASSPHRASE(_FILE).
 func warnDegradedSecretStore(stderr io.Writer, store *secret.Store) {
 	backend, degraded := store.SecurityMode()
 	if !degraded {
@@ -74,7 +74,7 @@ func warnDegradedSecretStore(stderr io.Writer, store *secret.Store) {
 	}
 	secretDegradedOnce.Do(func() {
 		fmt.Fprintf(stderr, "warning: secret store is using degraded machine-bound encryption (backend %q); "+
-			"set FAIRPEER_SECRET_PASSPHRASE or run on a system with a keychain/secret service for user-bound encryption\n", backend)
+			"set HIQ_SECRET_PASSPHRASE or run on a system with a keychain/secret service for user-bound encryption\n", backend)
 	})
 }
 
@@ -107,7 +107,7 @@ func GlobalBudget() *provider.RequestBudget { return globalBudget }
 // matching how the platform meters a single API key. The placeholder name is
 // passed only to satisfy the call-site signature.
 func platformBudgetKey() string {
-	return provider.BudgetKeyForConfig("platform-direct", apihelper.BaseURL, os.Getenv("FAIRPEER_API_KEY"))
+	return provider.BudgetKeyForConfig("platform-direct", apihelper.BaseURL, os.Getenv("HIQ_API_KEY"))
 }
 
 // ragBudgetKey returns the budget bucket key for RAG extraction (the
@@ -203,7 +203,7 @@ type Options struct {
 	WorkspaceRoot string
 	// ExtraPlugins are session-scoped MCP servers supplied by a host transport
 	// (for example ACP session/new). They are connected eagerly for this
-	// controller but are not persisted to fairpeer.toml.
+	// controller but are not persisted to hiq.toml.
 	ExtraPlugins []plugin.Spec
 	// SessionDir overrides where persisted chat transcripts are written. When
 	// empty, the shared CLI/global session directory is used.
@@ -279,7 +279,7 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		}
 	}
 	if !ok {
-		return nil, fmt.Errorf("%w %q (configured: %s); note: defining [[providers]] replaces the built-in presets, so add a [[providers]] entry for it or use a configured name, or run `fairpeer setup` to reconfigure", ErrUnknownModel, modelName, providerNames(cfg))
+		return nil, fmt.Errorf("%w %q (configured: %s); note: defining [[providers]] replaces the built-in presets, so add a [[providers]] entry for it or use a configured name, or run `hiq setup` to reconfigure", ErrUnknownModel, modelName, providerNames(cfg))
 	}
 	if opts.EffortOverride != nil {
 		entry.Effort = *opts.EffortOverride
@@ -313,7 +313,7 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	sink := event.Sync(quoted)
 
 	if migErr != nil {
-		sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: "config migration from ~/.fairpeer failed: " + migErr.Error()})
+		sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: "config migration from ~/.hiq failed: " + migErr.Error()})
 	} else if migrated != nil {
 		sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: migrated.Notice()})
 	}
@@ -538,7 +538,7 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	}
 	sysPrompt += "\n\n" + config.LanguagePolicy
 
-	// Persistent memory (fairpeer.md / AGENTS.md hierarchy + portrait layer +
+	// Persistent memory (hiq.md / AGENTS.md hierarchy + portrait layer +
 	// auto-memory index) folds into the system prompt exactly here, once: it
 	// becomes part of the durable, cache-stable prefix every turn reuses, so
 	// memory costs nothing per turn. Mid-session changes never touch this prefix
@@ -602,7 +602,7 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	if udir := config.MemoryUserDir(); udir != "" {
 		skillLegacyPath = filepath.Join(udir, "skill_usage.json")
 	}
-	// Release the embedded ppt-auto skill to ~/.fairpeer/skills/ppt-auto/ before
+	// Release the embedded ppt-auto skill to ~/.hiq/skills/ppt-auto/ before
 	// the skill store scans, so the just-released skill is discovered this run.
 	// Best-effort: a failure is logged but never aborts startup, since the user
 	// may already have a working skill from a prior release or a manual install.
@@ -610,7 +610,7 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		slog.Warn("assets: failed to release embedded ppt-auto skill", "err", err)
 	}
 	// Release the embedded helper scripts (pdf_to_page_images.py etc.) to
-	// ~/.fairpeer/scripts/. Without this, a packaged binary running outside the
+	// ~/.hiq/scripts/. Without this, a packaged binary running outside the
 	// repo tree cannot find the renderer and the whole PDF→PPT visual path dies
 	// with "pdf_to_page_images.py not found" (the exact failure seen on a real
 	// 32-page PDF test: no page-N.json, no per-page redraw, tables lost).
@@ -708,12 +708,12 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	sysPrompt = skill.ApplyIndex(sysPrompt, indexedSkills)
 
 	reg := tool.NewRegistry()
-	// Compute write roots: workspace + user allow_write + ~/.fairpeer (for
+	// Compute write roots: workspace + user allow_write + ~/.hiq (for
 	// built-in skill configs like ppt-auto/template_config.json, which skills
 	// must update at runtime but live outside the workspace).
 	writeRoots := cfg.WriteRootsForRoot(root)
 	if home, err := os.UserHomeDir(); err == nil && home != "" {
-		writeRoots = append(writeRoots, filepath.Join(home, ".fairpeer"))
+		writeRoots = append(writeRoots, filepath.Join(home, ".hiq"))
 	}
 	// Spec shape follows the upstream Reasonix sandbox contract: the fail-closed
 	// decision now lives in the sandbox itself (a restricted preset refuses to
@@ -1125,7 +1125,7 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 			}
 		default:
 			sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo,
-				Text: "codegraph: not installed — run `fairpeer codegraph install` to enable symbol-graph tools"})
+				Text: "codegraph: not installed — run `hiq codegraph install` to enable symbol-graph tools"})
 		}
 	}
 
@@ -1331,7 +1331,7 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	subagentStore := newSubagentStore(subagentSessionDir)
 
 	// Permission policy gates every tool call. The headless gate (no Approver)
-	// resolves "ask" to allow — preserving `fairpeer run` autonomy — while deny
+	// resolves "ask" to allow — preserving `hiq run` autonomy — while deny
 	// rules hard-block in every mode. Interactive frontends (chat, desktop) swap
 	// in an interactive gate later via Controller.EnableInteractiveApproval.
 	// Sub-agents always run headless: they have no UI to answer a prompt, so they
@@ -1493,7 +1493,7 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		parentSession := agent.ParentSession(sctx)
 		var run *agent.SubagentRun
 		if subagentStore == nil || parentSession == "" {
-			// Headless runs (e.g. `fairpeer run`) have no persistent session to
+			// Headless runs (e.g. `hiq run`) have no persistent session to
 			// own a transcript. Run the skill sub-agent ephemerally, as before
 			// persisted transcripts existed, instead of failing. Continuation and
 			// fork need a persisted owner, so they error here.
@@ -1685,11 +1685,11 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		// here) keeps the visible-final guarantee: a turn that ends with no
 		// readable answer is re-prompted instead of silently landing as an
 		// empty bubble. Upstream Reasonix relaxes this for its interactive
-		// harness; fairpeer deliberately stays stricter.
+		// harness; hiq deliberately stays stricter.
 		RequireVisibleFinal: true,
 	}, sink)
 
-	// Custom slash commands (.fairpeer/commands + user dir). Best-effort: a malformed
+	// Custom slash commands (.hiq/commands + user dir). Best-effort: a malformed
 	// file is skipped, and a load error never blocks the session.
 	cmds, _ := command.Load(config.CommandDirsForRoot(root)...)
 
@@ -1963,8 +1963,8 @@ func migrateLegacySessionSources(sink event.Sink) {
 	var sources []legacySource
 	if home, herr := os.UserHomeDir(); herr == nil {
 		sources = append(sources, legacySource{
-			dir:     filepath.Join(home, ".fairpeer", "sessions"),
-			label:   "~/.fairpeer/sessions",
+			dir:     filepath.Join(home, ".hiq", "sessions"),
+			label:   "~/.hiq/sessions",
 			migrate: agent.MigrateLegacySessions,
 		})
 	}
@@ -2019,11 +2019,11 @@ func rememberPermissionRule(workspaceRoot, rule string) control.RememberResult {
 func rememberPermissionConfigPath(workspaceRoot string) string {
 	workspaceRoot = strings.TrimSpace(workspaceRoot)
 	if workspaceRoot != "" {
-		return filepath.Join(workspaceRoot, "fairpeer.toml")
+		return filepath.Join(workspaceRoot, "hiq.toml")
 	}
 	path := config.SourcePath()
 	if path == "" {
-		path = "fairpeer.toml" // match Config.Save() fallback
+		path = "hiq.toml" // match Config.Save() fallback
 	}
 	return path
 }
@@ -2516,7 +2516,7 @@ func applyProfileToSkillDisabled(p *config.Profile, configDisabled []string) []s
 
 // builtinBuiltinSkillNames is the fixed list of shipped skill names: the 15
 // code builtins (internal/skill/builtins.go) plus ppt-auto (embedded file
-// skill, released to ~/.fairpeer/skills — listed so profile whitelists govern
+// skill, released to ~/.hiq/skills — listed so profile whitelists govern
 // it too). Used by applyProfileToSkillDisabled to enumerate which shipped
 // skills a whitelist hides — the skill store hasn't been built yet at the
 // point that function runs, so we can't ask it for the list. Keep in sync

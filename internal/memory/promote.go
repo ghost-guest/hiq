@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/extensioncontract"
+	"github.com/zzycxz/hiq/internal/extensioncontract"
 )
 
 // Promotion turns accumulated memory into something the agent can USE — the
@@ -61,7 +61,7 @@ type PromoteRequest struct {
 	// do it this way" a human adds on top of what the memories say.
 	Notes string `json:"notes,omitempty"`
 	// Root is where the package directory is created. Empty uses the store's own
-	// data root (…/fairpeer/plugins/<name>), so a relocated memory root carries
+	// data root (…/hiq/plugins/<name>), so a relocated memory root carries
 	// promoted artifacts with it.
 	Root string
 	// Overwrite re-promotes an existing artifact in place — the normal path when
@@ -212,7 +212,7 @@ func PromoteMemory(store Store, req PromoteRequest) (Promotion, error) {
 		Name:          name,
 		Version:       version,
 		Description:   desc,
-		GeneratedBy:   "fairpeer/memory",
+		GeneratedBy:   "hiq/memory",
 		GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
 		Sources:       out.Sources,
 		Entrypoints:   map[string]string{"skill": "SKILL.md", "readme": "README.md"},
@@ -364,7 +364,7 @@ func renderPromotedSkill(name, desc, version string, sources []PromotedSource, n
 	b.WriteString("---\n\n")
 	fmt.Fprintf(&b, "# %s\n\n", strings.ReplaceAll(name, "-", " "))
 	fmt.Fprintf(&b, "%s\n\n", desc)
-	b.WriteString("This playbook was distilled from saved memory by fairpeer's promotion step, so the ")
+	b.WriteString("This playbook was distilled from saved memory by hiq's promotion step, so the ")
 	b.WriteString("lesson survives without every session having to re-read the source facts.\n")
 	if notes != "" {
 		fmt.Fprintf(&b, "\n## 使用要点\n\n%s\n", notes)
@@ -387,7 +387,7 @@ func renderPromotedSkill(name, desc, version string, sources []PromotedSource, n
 	b.WriteString("\n## 说明\n\n")
 	b.WriteString("本技能 `references/` 下的文件是来源记忆的快照正文（运行时自动附加）。")
 	b.WriteString("记忆更新后重新执行一次「提升」即可刷新本技能，来源记忆本身不会被改动。\n")
-	fmt.Fprintf(&b, "\n<!-- promoted by fairpeer memory v%s -->\n", version)
+	fmt.Fprintf(&b, "\n<!-- promoted by hiq memory v%s -->\n", version)
 	return b.String()
 }
 
@@ -403,7 +403,7 @@ func renderPromotedReadme(name, desc, version string, sources []PromotedSource) 
 	b.WriteString("- `plugin.json` — 插件清单（能力、版本、来源，使用内核 extensioncontract 键格式）\n")
 	b.WriteString("- `references/` — 来源记忆正文快照\n\n")
 	b.WriteString("## 如何集成\n\n")
-	b.WriteString("1. 最简单：把 `SKILL.md` 所在目录复制/软链到技能根目录（如 `~/.fairpeer/skills/<name>/`），")
+	b.WriteString("1. 最简单：把 `SKILL.md` 所在目录复制/软链到技能根目录（如 `~/.hiq/skills/<name>/`），")
 	b.WriteString("技能索引会自动收录，agent 通过 `run_skill` 调用——无需改内核。\n")
 	b.WriteString("2. 插件方式：把本目录加入 `[skills] paths`，或在能力解析器接入后按 manifest 注册。\n\n")
 	b.WriteString("## 卸载\n\n直接删除本目录即可；来源记忆不受影响。\n")

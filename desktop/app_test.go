@@ -13,13 +13,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/plugin"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	"github.com/zzycxz/fairpeer/internal/stats"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/plugin"
+	"github.com/zzycxz/hiq/internal/provider"
+	"github.com/zzycxz/hiq/internal/stats"
 )
 
 // setTestCtrl creates a minimal workspace tab (if needed) and sets its
@@ -51,7 +51,7 @@ func (a *App) setTestCtrl(ctrl *control.Controller, model string) {
 func seedTestProviderConfig(t *testing.T) {
 	t.Helper()
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_API_KEY", "sk-test")
+	t.Setenv("HIQ_API_KEY", "sk-test")
 	if err := os.MkdirAll(filepath.Dir(config.UserConfigPath()), 0o755); err != nil {
 		t.Fatalf("mkdir config dir: %v", err)
 	}
@@ -64,7 +64,7 @@ kind = "openai"
 base_url = "https://api.example.com"
 models = ["test-model-a", "test-model-b"]
 default = "test-model-a"
-api_key_env = "FAIRPEER_API_KEY"
+api_key_env = "HIQ_API_KEY"
 `), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
@@ -282,7 +282,7 @@ func TestSettingsUsesUserDesktopPreferencesNotProjectConfig(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	project := robustTempDir(t)
-	if err := os.WriteFile(filepath.Join(project, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(project, "hiq.toml"), []byte(`
 [desktop]
 language = "zh"
 theme = "light"
@@ -322,7 +322,7 @@ func TestSettingsSeedsMissingUserConfigFromLegacyProjectConfig(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	project := robustTempDir(t)
-	if err := os.WriteFile(filepath.Join(project, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(project, "hiq.toml"), []byte(`
 default_model = "legacy-provider/legacy-model"
 
 [desktop]
@@ -362,7 +362,7 @@ close_behavior = "quit"
 
 func TestSettingsSubagentDefaultsRoundTrip(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_API_KEY", "sk-test")
+	t.Setenv("HIQ_API_KEY", "sk-test")
 	if err := os.MkdirAll(filepath.Dir(config.UserConfigPath()), 0o755); err != nil {
 		t.Fatalf("mkdir config dir: %v", err)
 	}
@@ -375,7 +375,7 @@ kind = "openai"
 base_url = "https://api.example.com"
 models = ["test-model-a", "test-model-b"]
 default = "test-model-a"
-api_key_env = "FAIRPEER_API_KEY"
+api_key_env = "HIQ_API_KEY"
 `), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
@@ -409,7 +409,7 @@ func TestSettingsRepairsLegacyOfficialProviderWithoutModel(t *testing.T) {
 
 func TestSettingsTreatsReservedProviderNameWithExternalEndpointAsCustom(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_API_KEY", "sk-test")
+	t.Setenv("HIQ_API_KEY", "sk-test")
 	if err := os.MkdirAll(filepath.Dir(config.UserConfigPath()), 0o755); err != nil {
 		t.Fatalf("mkdir config dir: %v", err)
 	}
@@ -425,7 +425,7 @@ kind = "openai"
 base_url = "https://opencode.ai/zen/go/v1"
 models = ["test-model-a", "test-model-b", "glm-5"]
 default = "test-model-a"
-api_key_env = "FAIRPEER_API_KEY"
+api_key_env = "HIQ_API_KEY"
 `), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
@@ -460,7 +460,7 @@ func TestSettingsInfersLegacyProviderAccessWhenMissing(t *testing.T) {
 
 func TestSettingsDoesNotInferProviderAccessWhenExplicitlyEmpty(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_API_KEY", "sk-test")
+	t.Setenv("HIQ_API_KEY", "sk-test")
 	if err := os.MkdirAll(filepath.Dir(config.UserConfigPath()), 0o755); err != nil {
 		t.Fatalf("mkdir config dir: %v", err)
 	}
@@ -476,7 +476,7 @@ kind = "openai"
 base_url = "https://api.example.com"
 models = ["test-model-a"]
 default = "test-model-a"
-api_key_env = "FAIRPEER_API_KEY"
+api_key_env = "HIQ_API_KEY"
 `), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
@@ -495,8 +495,8 @@ func TestSettingsInfersConfiguredBuiltInsWithoutConfigFile(t *testing.T) {
 
 func TestSettingsDoesNotInferBuiltInsWithoutKeys(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_API_KEY", "")
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 
 	got := NewApp().Settings()
 	for _, p := range got.Providers {
@@ -520,7 +520,7 @@ func TestModelsForTabOnlyListsProviderAccessWhenConfigured(t *testing.T) {
 
 func TestModelsForTabListsTestProviderAPIPaidAccess(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_API_KEY", "sk-test")
+	t.Setenv("HIQ_API_KEY", "sk-test")
 
 	// Default() ships no providers — seed the test-provider entry explicitly
 	// (test-provider-only convention) so Models() has something to list.
@@ -533,7 +533,7 @@ func TestModelsForTabListsTestProviderAPIPaidAccess(t *testing.T) {
 		BaseURL:   "https://api.example.com",
 		Models:    []string{"test-model-a", "test-model-b"},
 		Default:   "test-model-a",
-		APIKeyEnv: "FAIRPEER_API_KEY",
+		APIKeyEnv: "HIQ_API_KEY",
 	})
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -551,8 +551,8 @@ func TestModelsForTabListsTestProviderAPIPaidAccess(t *testing.T) {
 
 func TestSetModelForTabRejectsProviderOutsideAccess(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_API_KEY", "sk-test")
-	t.Setenv("FAIRPEER_API_KEY", "sk-test")
+	t.Setenv("HIQ_API_KEY", "sk-test")
+	t.Setenv("HIQ_API_KEY", "sk-test")
 
 	cfg := config.Default()
 	cfg.DefaultModel = "test-provider/test-model-a"
@@ -582,7 +582,7 @@ func TestSetModelForTabRejectsProviderOutsideAccess(t *testing.T) {
 
 func TestSetDefaultModelRejectsProviderWithoutKey(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_API_KEY", "")
+	t.Setenv("HIQ_API_KEY", "")
 
 	cfg := config.Default()
 	cfg.Desktop.ProviderAccess = []string{"test-provider"}
@@ -594,7 +594,7 @@ func TestSetDefaultModelRejectsProviderWithoutKey(t *testing.T) {
 		BaseURL:   "https://api.example.com",
 		Models:    []string{"test-model-a", "test-model-b"},
 		Default:   "test-model-a",
-		APIKeyEnv: "FAIRPEER_API_KEY",
+		APIKeyEnv: "HIQ_API_KEY",
 	})
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -656,13 +656,13 @@ func TestSaveProviderPersistsReasoningProtocol(t *testing.T) {
 
 func TestDeleteProviderMigratesConfigAndOpenTabs(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_TEST_KEY", "sk-test")
+	t.Setenv("HIQ_TEST_KEY", "sk-test")
 
 	cfg := config.Default()
 	cfg.DefaultModel = "prov-a/model-a2"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", Models: []string{"model-a1", "model-a2"}, APIKeyEnv: "FAIRPEER_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "FAIRPEER_TEST_KEY"},
+		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", Models: []string{"model-a1", "model-a2"}, APIKeyEnv: "HIQ_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "HIQ_TEST_KEY"},
 	}
 	cfg.Agent.PlannerModel = "prov-a"
 	cfg.Desktop.ProviderAccess = []string{"prov-a", "prov-b"}
@@ -702,13 +702,13 @@ func TestDeleteProviderMigratesConfigAndOpenTabs(t *testing.T) {
 
 func TestDeleteProviderRejectsRunningAffectedTab(t *testing.T) {
 	isolateDesktopUserDirs(t)
-	t.Setenv("FAIRPEER_TEST_KEY", "sk-test")
+	t.Setenv("HIQ_TEST_KEY", "sk-test")
 
 	cfg := config.Default()
 	cfg.DefaultModel = "prov-a/model-a1"
 	cfg.Providers = []config.ProviderEntry{
-		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "FAIRPEER_TEST_KEY"},
-		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "FAIRPEER_TEST_KEY"},
+		{Name: "prov-a", Kind: "openai", BaseURL: "https://a.example.com", Model: "model-a1", APIKeyEnv: "HIQ_TEST_KEY"},
+		{Name: "prov-b", Kind: "openai", BaseURL: "https://b.example.com", Model: "model-b1", APIKeyEnv: "HIQ_TEST_KEY"},
 	}
 	if err := cfg.SaveTo(config.UserConfigPath()); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -1169,7 +1169,7 @@ func TestSubmitToTabHistoryDisplaysRawInputAfterMemoryCompose(t *testing.T) {
 
 	app := NewApp()
 	app.setTestCtrl(ctrl, "test-provider/test")
-	ctrl.QueueMemory(`Saved memory "fairpeer-contributions": contribution count updated`)
+	ctrl.QueueMemory(`Saved memory "hiq-contributions": contribution count updated`)
 
 	const prompt = "不要，删了"
 	app.SubmitToTab("test", prompt)
@@ -1198,7 +1198,7 @@ func TestForkCreatesActiveTabWithoutSwitchingSourceController(t *testing.T) {
 	isolateDesktopUserDirs(t)
 
 	workspace := robustTempDir(t)
-	if err := os.WriteFile(filepath.Join(workspace, "fairpeer.toml"), []byte("[codegraph]\nenabled = false\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(workspace, "hiq.toml"), []byte("[codegraph]\nenabled = false\n"), 0o644); err != nil {
 		t.Fatalf("write workspace config: %v", err)
 	}
 	dir := config.SessionDir()
@@ -1289,7 +1289,7 @@ func TestCapabilitiesShowsDefaultMCPAsInitializingNotDisabled(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 
@@ -1355,7 +1355,7 @@ func TestCapabilitiesMarksBackgroundRemoteMCPAuthPossible(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 
@@ -1388,7 +1388,7 @@ func TestCapabilitiesDoesNotMarkRemoteMCPWithAuthHeaderPossible(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 
@@ -1422,7 +1422,7 @@ func TestCapabilitiesMarksAuthFailureRequired(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 
@@ -1457,7 +1457,7 @@ func TestClearMCPServerAuthenticationClearsConfigAndFailure(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 
@@ -1520,7 +1520,7 @@ func TestUpdateMCPServerMigratesLegacyTierToBackground(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 
@@ -1571,7 +1571,7 @@ tier = "lazy"
 	if userPlugin.Tier != "" {
 		t.Fatalf("user plugin tier = %q, want migrated empty", userPlugin.Tier)
 	}
-	projectCfg := config.LoadForEdit(filepath.Join(dir, "fairpeer.toml"))
+	projectCfg := config.LoadForEdit(filepath.Join(dir, "hiq.toml"))
 	if _, ok := findPluginEntry(projectCfg.Plugins, "playwright"); ok {
 		t.Fatalf("project plugin should be removed after desktop migration: %+v", projectCfg.Plugins)
 	}
@@ -1597,7 +1597,7 @@ func TestUpdateMCPServerSplitsPastedCommandLine(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := t.TempDir()
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 
@@ -1637,7 +1637,7 @@ func TestUpdateMCPServerRecordsReconnectFailure(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 
@@ -1656,7 +1656,7 @@ tier = "background"
 	if err := app.UpdateMCPServer("broken", MCPServerInput{
 		Name:      "broken",
 		Transport: "stdio",
-		Command:   "fairpeer-missing-mcp-binary",
+		Command:   "hiq-missing-mcp-binary",
 	}); err != nil {
 		t.Fatalf("UpdateMCPServer should persist config even when reconnect fails: %v", err)
 	}
@@ -1664,7 +1664,7 @@ tier = "background"
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := cfg.Plugins[0].Command; got != "fairpeer-missing-mcp-binary" {
+	if got := cfg.Plugins[0].Command; got != "hiq-missing-mcp-binary" {
 		t.Fatalf("updated command = %q, want missing binary", got)
 	}
 	if got := cfg.Plugins[0].Tier; got != "" {
@@ -1679,7 +1679,7 @@ tier = "background"
 			if s.Status != "failed" {
 				t.Fatalf("server status = %q, want failed; server = %+v", s.Status, s)
 			}
-			if s.Command != "fairpeer-missing-mcp-binary" || s.Tier != "background" {
+			if s.Command != "hiq-missing-mcp-binary" || s.Tier != "background" {
 				t.Fatalf("server config not refreshed after failed reconnect: %+v", s)
 			}
 			return
@@ -1692,13 +1692,13 @@ func TestSetMCPServerTierRecordsConnectFailure(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 
 [[plugins]]
 name = "broken"
-command = "fairpeer-missing-mcp-binary"
+command = "hiq-missing-mcp-binary"
 tier = "lazy"
 `), 0o644); err != nil {
 		t.Fatal(err)
@@ -1730,7 +1730,7 @@ tier = "lazy"
 	if userPlugin.Tier != "" {
 		t.Fatalf("user plugin tier = %q, want migrated empty", userPlugin.Tier)
 	}
-	projectCfg := config.LoadForEdit(filepath.Join(dir, "fairpeer.toml"))
+	projectCfg := config.LoadForEdit(filepath.Join(dir, "hiq.toml"))
 	if _, ok := findPluginEntry(projectCfg.Plugins, "broken"); ok {
 		t.Fatalf("project plugin should be removed after desktop migration: %+v", projectCfg.Plugins)
 	}
@@ -1758,10 +1758,10 @@ func TestSetMCPServerTierEnablesCodegraphAndIgnoresLegacyTier(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", robustTempDir(t))
 	t.Setenv("AppData", robustTempDir(t))
 	t.Setenv("PATH", robustTempDir(t))
-	t.Setenv("FAIRPEER_CACHE_DIR", robustTempDir(t)) // isolate the codegraph bundle cache so Resolve fails deterministically
+	t.Setenv("HIQ_CACHE_DIR", robustTempDir(t)) // isolate the codegraph bundle cache so Resolve fails deterministically
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 auto_install = true
@@ -1815,7 +1815,7 @@ func TestSetMCPServerEnabledPersistsCodegraphOff(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = true
 tier = "lazy"
@@ -1857,13 +1857,13 @@ func TestCapabilitiesMigratesFailedMCPConfiguredTierAfterRestart(t *testing.T) {
 	isolateDesktopUserDirs(t)
 	dir := robustTempDir(t)
 	t.Chdir(dir)
-	if err := os.WriteFile(filepath.Join(dir, "fairpeer.toml"), []byte(`
+	if err := os.WriteFile(filepath.Join(dir, "hiq.toml"), []byte(`
 [codegraph]
 enabled = false
 
 [[plugins]]
 name = "broken"
-command = "fairpeer-missing-mcp-binary"
+command = "hiq-missing-mcp-binary"
 tier = "eager"
 `), 0o644); err != nil {
 		t.Fatal(err)
@@ -1874,7 +1874,7 @@ tier = "eager"
 	defer app.activeCtrl().Close()
 	recordMCPFailure(app.activeCtrl(), config.PluginEntry{
 		Name:    "broken",
-		Command: "fairpeer-missing-mcp-binary",
+		Command: "hiq-missing-mcp-binary",
 		Tier:    "eager",
 	}, errors.New("connect: missing binary"))
 

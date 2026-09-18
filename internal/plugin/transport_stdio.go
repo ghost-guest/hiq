@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/proc"
+	"github.com/zzycxz/hiq/internal/proc"
 )
 
 const closeWaitBudget = 5 * time.Second
@@ -288,7 +288,7 @@ func defaultStdioShellPATH(ctx context.Context) string {
 	if shell == "" {
 		return ""
 	}
-	const marker = "__FAIRPEER_PATH__="
+	const marker = "__HIQ_PATH__="
 	script := "printf '\\n" + marker + "%s\\n' \"$PATH\""
 	for _, args := range [][]string{
 		{"-l", "-i", "-c", script},

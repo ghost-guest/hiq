@@ -11,7 +11,7 @@ import (
 
 // addTestProvider seeds a named provider with a single model onto c so tests
 // can exercise SetDefaultModel / SetPlannerModel / SetProviderEffort without
-// relying on a preset official provider (FairPeer ships none by default).
+// relying on a preset official provider (Hiq ships none by default).
 func addTestProvider(c *Config, name, model string) {
 	c.Providers = append(c.Providers, ProviderEntry{Name: name, Kind: "openai", Model: model})
 }
@@ -397,7 +397,7 @@ func TestResolveModelPreservesProviderEffort(t *testing.T) {
 		Model:     "test-model-a",
 		Models:    []string{"test-model-a", "test-model-b"},
 		Default:   "test-model-a",
-		APIKeyEnv: "FAIRPEER_API_KEY",
+		APIKeyEnv: "HIQ_API_KEY",
 		Effort:    "max",
 	})
 	e, ok := c.ResolveModel("test-provider/test-model-b")
@@ -556,7 +556,7 @@ func TestSkillEnabledMutator(t *testing.T) {
 func TestPluginMutators(t *testing.T) {
 	c := Default()
 
-	if err := c.UpsertPlugin(PluginEntry{Name: "ex", Command: "fairpeer-plugin-example"}); err != nil {
+	if err := c.UpsertPlugin(PluginEntry{Name: "ex", Command: "hiq-plugin-example"}); err != nil {
 		t.Fatalf("add stdio: %v", err)
 	}
 	if err := c.UpsertPlugin(PluginEntry{Name: "stripe", Type: "http", URL: "https://mcp.stripe.com"}); err != nil {
@@ -623,7 +623,7 @@ func TestCodegraphDefaultDisabledOptIn(t *testing.T) {
 
 func TestLoadForEditCodegraphOptIn(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "fairpeer.toml")
+	path := filepath.Join(dir, "hiq.toml")
 	// A config omitting [codegraph] gets the opt-in default: disabled.
 	if err := os.WriteFile(path, []byte("default_model = \"x\"\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -752,7 +752,7 @@ func TestSaveToRoundTrips(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	path := filepath.Join(t.TempDir(), "nested", "fairpeer.toml")
+	path := filepath.Join(t.TempDir(), "nested", "hiq.toml")
 	if err := c.SaveTo(path); err != nil {
 		t.Fatalf("SaveTo: %v", err)
 	}
@@ -814,7 +814,7 @@ func TestSaveToScopesUserAndProjectFiles(t *testing.T) {
 		t.Fatalf("user config should include desktop preferences:\n%s", userBody)
 	}
 
-	projectPath := filepath.Join(t.TempDir(), "fairpeer.toml")
+	projectPath := filepath.Join(t.TempDir(), "hiq.toml")
 	if err := c.SaveTo(projectPath); err != nil {
 		t.Fatalf("SaveTo project config: %v", err)
 	}

@@ -11,7 +11,7 @@ package event
 import (
 	"encoding/json"
 
-	"github.com/zzycxz/fairpeer/internal/evidence"
+	"github.com/zzycxz/hiq/internal/evidence"
 	"fmt"
 )
 

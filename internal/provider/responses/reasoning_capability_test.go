@@ -3,7 +3,7 @@ package responses
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // A DeepSeek SKU served through a relay host unknown to DetectVendor must

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // profilePartitionMarker is written into <userDir>/sessions/dev once the
@@ -78,7 +78,7 @@ func migrateToProfilePartition() {
 
 	// 4. Merge topic sidecars: un-suffixed desktop-topic-titles.json
 	// (-title-sources, -created-at) are MERGED into their -dev variants, in the
-	// global sidecar dir and in each known workspace's .fairpeer/ dir. Merge
+	// global sidecar dir and in each known workspace's .hiq/ dir. Merge
 	// (not skip) so a pre-existing -dev.json never orphans the legacy keys.
 	migrateTopicSidecarsByMerge()
 
@@ -295,7 +295,7 @@ func migrateProjectSessionsByProfile(userDir string) {
 // migrateTopicSidecarsByMerge merges the legacy un-suffixed topic sidecars
 // (desktop-topic-titles, -title-sources, -created-at) into their -dev variants.
 // Global sidecars live under <configDir>/global/; project sidecars live under
-// <workspaceRoot>/.fairpeer/. When the -dev variant already exists, the legacy
+// <workspaceRoot>/.hiq/. When the -dev variant already exists, the legacy
 // keys are MERGED into it (legacy keys win on conflict, since they are the
 // source of truth for unmigrated data) rather than skipping — this is the fix
 // for BUG M1 where ~87 titles were orphaned by a 1-key -dev.json.
@@ -309,10 +309,10 @@ func migrateTopicSidecarsByMerge() {
 	// Global sidecars live under <configDir>/global/.
 	mergeTopicSidecarsInDir(filepath.Join(desktopConfigDir(), "global"), sidecarBases)
 
-	// Project sidecars live under <workspaceRoot>/.fairpeer/. Gather the known
+	// Project sidecars live under <workspaceRoot>/.hiq/. Gather the known
 	// workspace roots from every index so we cover both code paths.
 	for _, root := range knownWorkspaceRoots() {
-		mergeTopicSidecarsInDir(filepath.Join(root, ".fairpeer"), sidecarBases)
+		mergeTopicSidecarsInDir(filepath.Join(root, ".hiq"), sidecarBases)
 	}
 }
 

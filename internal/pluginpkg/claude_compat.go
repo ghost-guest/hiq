@@ -12,8 +12,8 @@ import (
 	"sort"
 	"strings"
 
-	fileencoding "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
-	"github.com/zzycxz/fairpeer/internal/frontmatter"
+	fileencoding "github.com/zzycxz/hiq/internal/fileutil/encoding"
+	"github.com/zzycxz/hiq/internal/frontmatter"
 )
 
 const (
@@ -50,7 +50,7 @@ type claudeHookDocument struct {
 // claudeStopBlockingEvents are the Claude hook events whose hook can block
 // the action (force the turn/subagent to keep going on exit 2 or a top-level
 // decision:"block") the way Claude's own contract does
-// (https://code.claude.com/docs/en/hooks). Fairpeer's Stop/SubagentStop hooks
+// (https://code.claude.com/docs/en/hooks). Hiq's Stop/SubagentStop hooks
 // are observation-only and cannot force the loop to continue, so an imported
 // hook here is a partial mapping, not a full one.
 var claudeStopBlockingEvents = map[string]bool{"Stop": true, "SubagentStop": true}
@@ -65,19 +65,19 @@ var claudeToolScopedHookEvents = map[string]bool{
 }
 
 // claudeUnsupportedToolMatchers are real Claude Code built-in tool names
-// (https://code.claude.com/docs/en/tools-reference) that Fairpeer never
+// (https://code.claude.com/docs/en/tools-reference) that Hiq never
 // passes as a tool_name to a hook (see internal/hook's claudeToolNames /
 // claudeToolMatchAliases, the actual dispatch-time mapping — keep the two in
 // sync). A tool-scoped hook whose matcher names only entries from this set
-// can never fire against a real Fairpeer tool call. This is a conservative,
+// can never fire against a real Hiq tool call. This is a conservative,
 // individually-verified subset of Claude's full tool catalog, not an
 // exhaustive enumeration — an unrecognized matcher is left unflagged rather
 // than guessed at.
 var claudeUnsupportedToolMatchers = map[string]bool{
-	"WebSearch":     true, // Fairpeer has no web-search tool
+	"WebSearch":     true, // Hiq has no web-search tool
 	"ExitPlanMode":  true, // plan approval is a controller decision, never a dispatched tool call
 	"EnterPlanMode": true, // same as ExitPlanMode
-	"Artifact":      true, // Fairpeer has no artifact-publishing tool
+	"Artifact":      true, // Hiq has no artifact-publishing tool
 }
 
 var bareClaudeToolNamePattern = regexp.MustCompile(`^[A-Za-z_]+$`)
@@ -86,7 +86,7 @@ var bareClaudeToolNamePattern = regexp.MustCompile(`^[A-Za-z_]+$`)
 // "|"-alternation of plain tool names, the two forms Claude's own docs use —
 // names only tools from claudeUnsupportedToolMatchers. A matcher using any
 // other regex syntax is left unevaluated: proving a general regex can never
-// match Fairpeer's tool universe isn't attempted here, so this only catches
+// match Hiq's tool universe isn't attempted here, so this only catches
 // the common, unambiguous case.
 func claudeMatcherNeverFires(matcher string) bool {
 	matcher = strings.TrimSpace(matcher)
@@ -124,7 +124,7 @@ type claudeMCPIdentity struct {
 	Headers map[string]string `json:"headers,omitempty"`
 }
 
-// appendClaudeCompatibility maps Claude package conventions onto Fairpeer's
+// appendClaudeCompatibility maps Claude package conventions onto Hiq's
 // normalized manifest. It returns structured issues as well as compatibility
 // warnings so frontends do not have to infer severity from English text.
 func appendClaudeCompatibility(root string, manifest *Manifest) ([]string, []CompatibilityIssue) {
@@ -202,7 +202,7 @@ func appendClaudeHooksFile(root, rel string, manifest *Manifest) ([]string, []Co
 					}
 				}
 				if ifExpr := strings.TrimSpace(item.If); ifExpr != "" {
-					reason := fmt.Sprintf("%s hook %q has a conditional \"if\": %q that Fairpeer does not evaluate — it runs unconditionally instead of only for the matching case", event, command, ifExpr)
+					reason := fmt.Sprintf("%s hook %q has a conditional \"if\": %q that Hiq does not evaluate — it runs unconditionally instead of only for the matching case", event, command, ifExpr)
 					warnings = append(warnings, rel+": "+reason)
 					issues = append(issues, CompatibilityIssue{Capability: "hooks", Path: rel, Reason: reason})
 				}
@@ -211,17 +211,17 @@ func appendClaudeHooksFile(root, rel string, manifest *Manifest) ([]string, []Co
 					if item.Async {
 						mode = "async, but without a wake-on-exit-2 callback"
 					}
-					reason := fmt.Sprintf("%s hook %q uses \"asyncRewake\", which Fairpeer does not support — it runs %s instead", event, command, mode)
+					reason := fmt.Sprintf("%s hook %q uses \"asyncRewake\", which Hiq does not support — it runs %s instead", event, command, mode)
 					warnings = append(warnings, rel+": "+reason)
 					issues = append(issues, CompatibilityIssue{Capability: "hooks", Path: rel, Reason: reason})
 				}
 				if claudeStopBlockingEvents[event] {
-					reason := fmt.Sprintf("%s hook %q cannot block the turn the way Claude's contract does — Fairpeer's %s hook is observation-only and never forces the loop to continue", event, command, event)
+					reason := fmt.Sprintf("%s hook %q cannot block the turn the way Claude's contract does — Hiq's %s hook is observation-only and never forces the loop to continue", event, command, event)
 					warnings = append(warnings, rel+": "+reason)
 					issues = append(issues, CompatibilityIssue{Capability: "hooks", Path: rel, Reason: reason})
 				}
 				if claudeToolScopedHookEvents[event] && claudeMatcherNeverFires(match) {
-					reason := fmt.Sprintf("%s hook %q matcher %q names a Claude tool Fairpeer has no equivalent for, so it will never fire", event, command, match)
+					reason := fmt.Sprintf("%s hook %q matcher %q names a Claude tool Hiq has no equivalent for, so it will never fire", event, command, match)
 					warnings = append(warnings, rel+": "+reason)
 					issues = append(issues, CompatibilityIssue{Capability: "hooks", Path: rel, Reason: reason})
 				}
@@ -247,7 +247,7 @@ func appendClaudeHooksFile(root, rel string, manifest *Manifest) ([]string, []Co
 			}
 		}
 	}
-	// Structural input gaps (fields Fairpeer cannot losslessly express) are
+	// Structural input gaps (fields Hiq cannot losslessly express) are
 	// reported once per hooks file: every additional matching hook repeats
 	// the same information, and a wildcard-matcher plugin would otherwise
 	// collect one copy per hook. File-level wording also keeps the emitted
@@ -256,9 +256,9 @@ func appendClaudeHooksFile(root, rel string, manifest *Manifest) ([]string, []Co
 		hit    bool
 		reason string
 	}{
-		{gapWebFetch, `a tool-scoped hook matcher includes Claude WebFetch, but Fairpeer web_fetch cannot supply Claude's required "prompt" input; such hooks receive only "url" for that tool`},
-		{gapNotebook, "a tool-scoped hook matcher includes Claude NotebookEdit, but Fairpeer notebook_edit may target a cell by cell_number, which cannot be converted to Claude's opaque cell_id; such hooks receive cell_number as an extra field for those calls"},
-		{gapTaskOutput, "a tool-scoped hook matcher includes Claude TaskOutput, but Fairpeer wait may cover multiple or all background jobs in one call, which cannot be represented by Claude's single task_id; such hooks receive job_ids as an extra field for those calls"},
+		{gapWebFetch, `a tool-scoped hook matcher includes Claude WebFetch, but Hiq web_fetch cannot supply Claude's required "prompt" input; such hooks receive only "url" for that tool`},
+		{gapNotebook, "a tool-scoped hook matcher includes Claude NotebookEdit, but Hiq notebook_edit may target a cell by cell_number, which cannot be converted to Claude's opaque cell_id; such hooks receive cell_number as an extra field for those calls"},
+		{gapTaskOutput, "a tool-scoped hook matcher includes Claude TaskOutput, but Hiq wait may cover multiple or all background jobs in one call, which cannot be represented by Claude's single task_id; such hooks receive job_ids as an extra field for those calls"},
 	} {
 		if !gap.hit {
 			continue
@@ -431,14 +431,14 @@ func compatibilityFailure(capability, path string, err error) ([]string, []Compa
 
 // compatibilityFor reports what appendClaudeCompatibility could determine
 // statically at install time: whether every declared capability in the
-// manifest parsed and mapped to a Fairpeer construct ("full"), some did not
+// manifest parsed and mapped to a Hiq construct ("full"), some did not
 // ("partial", see issues), or none did ("none"). It is not a guarantee that
 // every runtime decision path an imported hook can take is honored — in
 // particular, PreToolUse's "ask"/"defer" permissionDecision values and any
 // hookSpecificOutput.updatedInput are decided by the hook script's stdout at
 // call time, not by anything in the manifest, so they can't be flagged here.
 // PreToolUse/PermissionRequest's "deny" and PermissionRequest's "allow" are
-// the two runtime decisions Fairpeer does implement (see claudeJSONDeny/
+// the two runtime decisions Hiq does implement (see claudeJSONDeny/
 // claudeJSONAllow in internal/hook). Statically detectable gaps
 // (if/asyncRewake, Stop/
 // SubagentStop's inability to block the turn, WebFetch's unavailable required
@@ -464,7 +464,7 @@ func compatibilityFor(pkg Package, issues []CompatibilityIssue) Compatibility {
 		mapped = append(mapped, "mcp")
 	}
 	status := "full"
-	if len(mapped) == 0 && pkg.ManifestKind != "fairpeer" {
+	if len(mapped) == 0 && pkg.ManifestKind != "hiq" {
 		status = "none"
 	} else if len(issues) > 0 {
 		status = "partial"

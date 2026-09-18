@@ -31,12 +31,12 @@ const skillDirName = "ppt-auto"
 const embedRoot = "pptauto"
 
 // EnsurePPTAutoSkill releases the embedded ppt-auto skill to the user's global
-// skills directory (~/.fairpeer/skills/ppt-auto) if it is missing or stale.
+// skills directory (~/.hiq/skills/ppt-auto) if it is missing or stale.
 // It is idempotent: when the on-disk .embedded-version matches SkillVersion,
 // it does nothing. On a version bump it overwrites the existing copy.
 //
 // The release target is the global-scope skill root that the skill store scans
-// (internal/skill: Store.roots → home/.fairpeer/skills), so both the CLI and the
+// (internal/skill: Store.roots → home/.hiq/skills), so both the CLI and the
 // desktop app discover the released skill without any discovery-code changes.
 //
 // A nil error is returned (best-effort): a failure to release is logged but does
@@ -48,7 +48,7 @@ func EnsurePPTAutoSkill() error {
 	if err != nil || home == "" {
 		return errors.New("assets: cannot determine user home dir")
 	}
-	dst := filepath.Join(home, ".fairpeer", "skills", skillDirName)
+	dst := filepath.Join(home, ".hiq", "skills", skillDirName)
 
 	// Skip if the on-disk copy is already at the embedded version.
 	if current, ok := readVersion(dst); ok && current == SkillVersion {
@@ -105,14 +105,14 @@ func EnsurePPTAutoSkill() error {
 }
 
 // PPTAutoSkillDir returns the absolute path where EnsurePPTAutoSkill releases
-// the embedded skill (~/.fairpeer/skills/ppt-auto), regardless of whether it
+// the embedded skill (~/.hiq/skills/ppt-auto), regardless of whether it
 // has been released yet. Useful for callers that want the canonical location.
 func PPTAutoSkillDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" {
 		return "", errors.New("assets: cannot determine user home dir")
 	}
-	return filepath.Join(home, ".fairpeer", "skills", skillDirName), nil
+	return filepath.Join(home, ".hiq", "skills", skillDirName), nil
 }
 
 // PPTAutoTemplatesDir returns the released skill's templates/ directory, or ""
@@ -189,18 +189,18 @@ func shouldExec(rel string) bool {
 }
 
 // helperScriptsDir is where EnsureHelperScripts releases the embedded helper
-// scripts (~/.fairpeer/scripts) — a stable location probed by
+// scripts (~/.hiq/scripts) — a stable location probed by
 // docconv.ScriptCandidates regardless of where the binary runs from.
 func helperScriptsDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" {
 		return "", errors.New("assets: cannot determine user home dir")
 	}
-	return filepath.Join(home, ".fairpeer", "scripts"), nil
+	return filepath.Join(home, ".hiq", "scripts"), nil
 }
 
 // EnsureHelperScripts releases the embedded helper scripts (scripts/ tree) to
-// ~/.fairpeer/scripts/, writing each file only when missing or content differs
+// ~/.hiq/scripts/, writing each file only when missing or content differs
 // (so edits to the embedded copy propagate on upgrade). Best-effort: errors
 // surface to the caller but a missing script just means the Go-side fallback
 // probes (CWD / exe-relative) still apply.

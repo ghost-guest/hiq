@@ -1,8 +1,8 @@
-# FairPeer v2.0 技术规格说明书
+# Hiq v2.0 技术规格说明书
 
 > **版本**: v2.0（修订版）| **日期**: 2026-08-04 | **状态**: 待评审
 >
-> **修订说明**: 本版基于对 FairPeer 当前代码的逐行核查（非凭印象），以及对 swarm-os 内
+> **修订说明**: 本版基于对 Hiq 当前代码的逐行核查（非凭印象），以及对 swarm-os 内
 > MiMo-Code、DeepSeek-Reasonix、openwork、openworker、rooster、PromptHub、pi 六个项目的源码
 > 研究，重新界定了"真实差距"与"可借鉴机制"。上一版多处把已实现的能力列为待做项，本版已修正。
 
@@ -24,8 +24,8 @@
 | **插件/Skill** | Markdown skill（项目/全局作用域）+ MCP 插件 + install_source（GitHub/URL 远程安装 + sha256 + uninstall） | `internal/skill/`、`internal/installsource/` | ⭐⭐⭐ |
 | **向量检索（部分）** | 实体级向量搜索**已运行**（SearchEntitiesByVector + 并行余弦）；文档级混合重排**代码已就绪但默认关闭** | `internal/rag/entities.go:1142`、`embedding.go:30`、`boot.go:650`（SetRAGEmbedder(nil)） | ⭐⭐⭐ |
 
-> **核查结论**：FairPeer 已实现 MiMo-Code 的全部招牌功能（max_mode/goal_judge/dream/distill/compose），
-> 甚至更简洁。MiMo-Code 对 FairPeer 的增量价值有限（见 1.3）。
+> **核查结论**：Hiq 已实现 MiMo-Code 的全部招牌功能（max_mode/goal_judge/dream/distill/compose），
+> 甚至更简洁。MiMo-Code 对 Hiq 的增量价值有限（见 1.3）。
 
 ### 1.2 真实差距（代码证实的缺口）
 
@@ -33,14 +33,14 @@
 |------|------|----------|--------|
 | **无操作级故障恢复门** | 代理陷入死循环（反复跑同一失败命令/改同一文件），烧 token 烧用户耐心，用户被迫手动 Ctrl+C | 自主任务失败的首要原因，用户干预最多的场景 | **P0** |
 | **权限只有 readOnly 布尔，无风险分级** | "改本地文件"和"发邮件/删知识库/调外部 API"风险完全不同，但当前一刀切；每加一个外向工具都要改 `isIrreversibleOutwardTool` 的 if | 误放行外向操作不可逆；MCP 工具风险无声明 | **P0** |
-| **审批是同步阻塞，无 inbox 队列** | IM bot / scheduler 无人值守时，外向操作只能硬拒（用户无感知）；多子任务并行审批会乱序 | 不敢让 FairPeer 自动跑批/自动发 PR；bot 场景审批体验差 | **P0** |
+| **审批是同步阻塞，无 inbox 队列** | IM bot / scheduler 无人值守时，外向操作只能硬拒（用户无感知）；多子任务并行审批会乱序 | 不敢让 Hiq 自动跑批/自动发 PR；bot 场景审批体验差 | **P0** |
 | **无编辑前验证** | 所有写入工具在 `writeFileEncoded` 前零语法/AST/类型校验；LSP 诊断只在写入**之后**跑 | 错误写入后才发现，要回滚重来 | **P1** |
 | **skill 无内容安全扫描** | install_source 能从任意 GitHub 装 skill，但对 SKILL.md 内容本身无投毒检测（SSRF 只防网络层） | 用户不敢装外部 skill；供应链攻击面 | **P1** |
 | **skill 无版本追踪/更新检测** | 装的 skill 过时了不知道；同名 skill 重复安装无法去重 | skill 维护成本高 | **P1** |
 | **memory 写回无去重/无红线保护** | dream 的 merge 是软约束（靠 prompt），portrait 可能攒语义重复条目；用户标记的"红线"无硬保护 | portrait 臃肿挤占 context；用户不敢开 auto-dream | **P2** |
 | **文档级向量检索被关闭** | 混合重排代码已写完，但 `boot.go:650` 设 nil，文档检索退化为纯 FTS5 | RAG 语义检索精度受限（实体检索不受影响） | **P2** |
 | **无 per-model context 预算** | 用户无法控制"何时压缩"，只能吃模型默认窗口；长上下文质量下降+成本分级（如超 272K 翻倍） | 成本和质量不可控 | **P2** |
-| **skill 资产无法导出到其他工具** | FairPeer 里调好的 skill 锁在内部，导出到 Cursor/Claude Code 要手动拷文件 | "资产带不出去"，降低粘性 | **P2** |
+| **skill 资产无法导出到其他工具** | Hiq 里调好的 skill 锁在内部，导出到 Cursor/Claude Code 要手动拷文件 | "资产带不出去"，降低粘性 | **P2** |
 
 ### 1.3 已排除的改进项（上版误列为待做，实际已完成）
 
@@ -62,15 +62,15 @@
 
 ### 2.0 两条硬约束（贯穿所有设计）
 
-> FairPeer 当前的 base system prompt 仅 ~900 字符（极克制，只有原则/工具用法/plan mode）。
+> Hiq 当前的 base system prompt 仅 ~900 字符（极克制，只有原则/工具用法/plan mode）。
 > 任何新功能必须满足以下两条，否则不做：
 
 1. **不增加用户学习成本** — 功能应在后台静默工作，用户"零配置"即可受益。
    凡是要用户理解新概念（RiskClass 四级？操作指纹？Inbox 状态机？）才能用的设计，都判为失败。
-   用户的心智模型应保持极简：**"FairPeer 自己会处理，我只在被问时点一下"**。
+   用户的心智模型应保持极简：**"Hiq 自己会处理，我只在被问时点一下"**。
 
 2. **不膨胀提示词** — 功能实现不得向 base system prompt 注入新指令。
-   FairPeer 的 base prompt 之所以只有 900 字符，是因为"能力靠工具 + 机制，不靠 prompt 说教"。
+   Hiq 的 base prompt 之所以只有 900 字符，是因为"能力靠工具 + 机制，不靠 prompt 说教"。
    凡是"要在 system prompt 里告诉模型如何循环检测/如何分级风险/如何去重"的设计，
    都应改为 **host 侧硬机制**（纯函数/代码逻辑），让模型完全无感。
 
@@ -85,16 +85,16 @@
 
 ### 2.2 借鉴来源对照
 
-| 目标 | 主要借鉴 | FairPeer 现状 | 用户价值 |
+| 目标 | 主要借鉴 | Hiq 现状 | 用户价值 |
 |------|----------|--------------|----------|
 | 故障恢复门 | **DeepSeek-Reasonix** `internal/recovery/`（三层预算 + 纯函数决策 + reviewer） | 只有文本 n-gram 重复检测，无操作级失败预算 | ⭐⭐⭐⭐⭐ |
 | 风险分级 + inbox | **openworker** `risk.py`（4 级 RiskClass）+ `inbox.py`（pending→resolved 状态机） | readOnly 布尔 + 同步阻塞 Approver | ⭐⭐⭐⭐⭐ |
-| 编辑前验证 | 通用实践 + FairPeer 已有的 `go/parser`（codeindex.go 在用） | 0 覆盖，写入后才发现 | ⭐⭐⭐⭐ |
+| 编辑前验证 | 通用实践 + Hiq 已有的 `go/parser`（codeindex.go 在用） | 0 覆盖，写入后才发现 | ⭐⭐⭐⭐ |
 | skill 安全扫描 | **rooster** `_loader.py`（静态投毒检测）+ **PromptHub** `SkillSafetyReport`（AI 分级报告） | 只防网络层 SSRF，无内容扫描 | ⭐⭐⭐⭐ |
 | skill 版本/分发 | **PromptHub**（fingerprint + installed_content_hash + 多平台目录分发） | 无版本追踪、无更新检测、无导出 | ⭐⭐⭐⭐ |
 | memory 去重/红线 | **rooster** `user_writer.py`（写回去重）+ 红线保护思路 | portrait merge 是软约束，无硬去重/无红线硬保护 | ⭐⭐ |
 | context 预算 | **MiMo-Code** `/context-limit`（per-model 工作预算，clamp 到实际窗口） | 固定阈值，用户不可配 | ⭐⭐⭐ |
-| 向量检索接通 | 复用 FairPeer 已有代码（`embedding.go` Rerank + HE embedder） | 代码就绪，`boot.go:650` 关闭 | ⭐⭐⭐ |
+| 向量检索接通 | 复用 Hiq 已有代码（`embedding.go` Rerank + HE embedder） | 代码就绪，`boot.go:650` 关闭 | ⭐⭐⭐ |
 
 ---
 
@@ -130,7 +130,7 @@
 - `execution`（执行失败，可重试）/ `mutation`（变更失败）/ `transient`（网络等瞬时）/ `verification`（验证失败）
 - `permission/sandbox/user-block` **永远不进** FailureEvent（这些是安全边界，非可靠性问题）
 
-**独立 reviewer**（可选，Phase 2）：对"改了策略/扩了范围"的恢复提案，调独立模型判定 continue/confirm，附 `ChangeKind`（same_strategy/strategy/scope/risk）。复用 FairPeer 多厂商 provider 调便宜模型。
+**独立 reviewer**（可选，Phase 2）：对"改了策略/扩了范围"的恢复提案，调独立模型判定 continue/confirm，附 `ChangeKind`（same_strategy/strategy/scope/risk）。复用 Hiq 多厂商 provider 调便宜模型。
 
 #### 实现方案
 ```
@@ -172,7 +172,7 @@ internal/recovery/
 
 **4 级 RiskClass**（借鉴 openworker `risk.py:18-23`）：
 
-| 级 | 含义 | 处理 | FairPeer 对应 |
+| 级 | 含义 | 处理 | Hiq 对应 |
 |----|------|------|--------------|
 | `READ` | 只读 | 所有模式直接放行 | 现有 readOnly=true |
 | `WRITE_LOCAL` | 本地写（可 rewind） | path-scoped 校验（必须在 writable root 内） | 现有 readOnly=false 的文件写 |
@@ -208,7 +208,7 @@ internal/inbox/     # 新增
 ├── item.go         # InboxItem 状态机（借鉴 openworker inbox.py）
 └── approver.go     # 把 permission.Approver 从同步接口改成"返回 item id + 等 channel"
 ```
-- FairPeer 已有 `internal/event` 事件总线 + bot 通道（feishu/weixin/qq），inbox 事件接到 bot 即跨会话审批
+- Hiq 已有 `internal/event` 事件总线 + bot 通道（feishu/weixin/qq），inbox 事件接到 bot 即跨会话审批
 - UI 侧渲染"审批卡片"（plan_before/plan_after 对比，借鉴 Reasonix `types.go:181` ToEventApproval）
 
 #### 验收标准
@@ -238,7 +238,7 @@ internal/inbox/     # 新增
 | L3 | LSP 诊断（**前移**到写盘前） | 跟随现有 LSP 集成 | <2s |
 
 - 写盘**前**跑 L1（必选）+ L2/L3（按配置），失败则不写盘并返回错误
-- 复用 FairPeer 已有的 `PreEditHook`（当前只做快照），加一个"校验"步骤
+- 复用 Hiq 已有的 `PreEditHook`（当前只做快照），加一个"校验"步骤
 - 注意：`apply_patch.go:312` 的 Phase 1 Validate 只校验补丁可应用性，**不是**语法校验，需区分
 
 #### 实现方案
@@ -266,7 +266,7 @@ internal/validation/
 #### 用户痛点
 1. install_source 能从任意 GitHub 装 skill，但对 SKILL.md 内容无投毒检测
 2. 装的 skill 过时了不知道，同名 skill 重复安装无法去重
-3. FairPeer 里调好的 skill 无法导出到 Cursor/Claude Code（此项视用户画像，可降级）
+3. Hiq 里调好的 skill 无法导出到 Cursor/Claude Code（此项视用户画像，可降级）
 
 #### 设计
 
@@ -280,7 +280,7 @@ internal/validation/
 - 每个 skill 存 `source_url` + `installed_content_hash` + `installed_version`
 - `directory_fingerprint`（目录级指纹）解决"同名 skill 重复安装"去重
 - 启动时或手动触发对比远端 hash 提示更新
-- FairPeer 的 install_source 已有 plan/apply，加一个"检查更新"的 op
+- Hiq 的 install_source 已有 plan/apply，加一个"检查更新"的 op
 
 **C. 多平台 skill 分发**（借鉴 PromptHub `platforms.ts`）：
 - 一份 skill 编辑一次，一键 copy/symlink 到 Claude Code / Cursor / Windsurf 的 skills 目录
@@ -321,14 +321,14 @@ dream agent 可整体改写 portrait（含用户核心约束如"永远不要自�
 **A. 写回去重**（借鉴 rooster `user_writer.py:60-78`）：
 - dream 的 prompt 已要求"merge not append"（`dream.go:146`），但无硬性去重，portrait 可能攒出语义重复条目
 - 同一字段 5 轮内不重复更新 + 前 40 字符前缀去重（廉价启发式）
-- 更好：用 FairPeer 已有的 embedding 做语义去重（比 rooster 更容易做好）
+- 更好：用 Hiq 已有的 embedding 做语义去重（比 rooster 更容易做好）
 
 **B. 用户红线（red lines）保护**（轻量版，借鉴 rooster 章节白名单思路）：
 - dream prompt 已把 user.md 里的"red lines"定义为"changes slowly (months/years)"（`dream.go:135`），但仍是软约束
 - 仅对用户**显式标记**的 `<!-- protected -->` 区段做硬保护（dream 写回时跳过），不做全套章节分类
-- 注：FairPeer 的 portrait 是**事实画像**（user.md/memory.md），不是 rooster 的**行为契约 SOUL.md**，风险面更小，无需照搬全套白名单
+- 注：Hiq 的 portrait 是**事实画像**（user.md/memory.md），不是 rooster 的**行为契约 SOUL.md**，风险面更小，无需照搬全套白名单
 
-> **不做**：rooster 的"三类信号分类（CORRECTION/PREFERENCE/MILESTONE）"——FairPeer 的 memory 已有等价的 `Type` 系统
+> **不做**：rooster 的"三类信号分类（CORRECTION/PREFERENCE/MILESTONE）"——Hiq 的 memory 已有等价的 `Type` 系统
 > （`store.go:64`：TypeUser/TypeFeedback/TypeProject/TypeReference），再加一套分类是重复造轮子。
 
 #### 实现方案
@@ -391,8 +391,8 @@ dream agent 可整体改写 portrait（含用户核心约束如"永远不要自�
 
 **总计：约 5 周**（Phase 1 是核心，2-3 周；Phase 2/3 可并行或延后）
 
-> **关于多平台 skill 分发的取舍**：借鉴 PromptHub 把 skill 导出到 Cursor/Claude Code，前提是 FairPeer
-> 用户群确实**同时使用**这些工具。若 FairPeer 定位为"一站式桌面 AI 助手"（用户不再用 Cursor），此项价值
+> **关于多平台 skill 分发的取舍**：借鉴 PromptHub 把 skill 导出到 Cursor/Claude Code，前提是 Hiq
+> 用户群确实**同时使用**这些工具。若 Hiq 定位为"一站式桌面 AI 助手"（用户不再用 Cursor），此项价值
 > 有限，应降级或推迟。建议落地前先确认用户画像。
 
 ---
@@ -490,4 +490,4 @@ dream agent 可整体改写 portrait（含用户核心约束如"永远不要自�
 
 ---
 
-**FairPeer v2.0 — 聚焦真实差距，借鉴六项目最佳实践，成为最可靠的多厂商 AI 编程助手。**
+**Hiq v2.0 — 聚焦真实差距，借鉴六项目最佳实践，成为最可靠的多厂商 AI 编程助手。**

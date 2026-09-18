@@ -34,7 +34,7 @@ func (m *Manager) ExportState() (string, error) {
 	}
 	snap := map[string]any{
 		"exported_at": time.Now().Format(time.RFC3339),
-		"product":     "fairpeer-netdev",
+		"product":     "hiq-netdev",
 	}
 	var devs []devLite
 	for _, d := range m.cfg.NetDev.Devices {

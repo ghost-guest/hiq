@@ -1,8 +1,8 @@
-# FairPeer 全面提升计划
+# Hiq 全面提升计划
 
 > **版本**: v1.0 | **日期**: 2026-08-04 | **状态**: 待实施
 >
-> **目标**: 将 FairPeer 打造为最强的通用多厂商 AI 编程助手 + 办公自动化平台
+> **目标**: 将 Hiq 打造为最强的通用多厂商 AI 编程助手 + 办公自动化平台
 
 ---
 
@@ -36,7 +36,7 @@
 **实施方案：**
 
 ```toml
-# fairpeer.toml
+# hiq.toml
 [tools.officecli]
 enabled = true
 # 自动检测路径，或手动指定
@@ -45,7 +45,7 @@ enabled = true
 
 **工具映射：**
 
-| FairPeer 工具 | OfficeCLI 命令 | 说明 |
+| Hiq 工具 | OfficeCLI 命令 | 说明 |
 |---------------|----------------|------|
 | `word_create` | `officecli create report.docx` | 创建 Word 文档 |
 | `word_read` | `officecli view report.docx text` | 读取 Word 内容 |
@@ -140,7 +140,7 @@ def add_animation(slide, shape, animation_type, duration=0.5):
 ┌─────────────────────────────────────────────────────────┐
 │                    Skill 市场                            │
 ├─────────────────────────────────────────────────────────┤
-│  注册表 API (https://skills.fairpeer.dev/api)           │
+│  注册表 API (https://skills.hiq.dev/api)           │
 │  ├─ GET /skills — 列出所有 Skill                        │
 │  ├─ GET /skills/{id} — 获取 Skill 详情                  │
 │  ├─ POST /skills — 发布新 Skill                         │
@@ -164,7 +164,7 @@ def add_animation(slide, shape, animation_type, duration=0.5):
   "name": "code-review",
   "version": "1.0.0",
   "description": "Automated code review",
-  "author": "fairpeer-team",
+  "author": "hiq-team",
   "license": "MIT",
   "permissions": {
     "tools": ["read_file", "grep", "bash"],
@@ -175,11 +175,11 @@ def add_animation(slide, shape, animation_type, duration=0.5):
 
 **CLI 命令：**
 ```bash
-fairpeer skill search "code review"
-fairpeer skill install code-review
-fairpeer skill publish ./my-skill
-fairpeer skill list
-fairpeer skill update code-review
+hiq skill search "code review"
+hiq skill install code-review
+hiq skill publish ./my-skill
+hiq skill list
+hiq skill update code-review
 ```
 
 **验收标准：**
@@ -423,7 +423,7 @@ L3: 类型检查（<2s）
 
 ## 八、总结
 
-### FairPeer 提升后的定位
+### Hiq 提升后的定位
 
 | 能力 | 评级 | 说明 |
 |------|------|------|
@@ -444,4 +444,4 @@ L3: 类型检查（<2s）
 
 ---
 
-**FairPeer — 最强的通用多厂商 AI 编程助手 + 办公自动化平台！**
+**Hiq — 最强的通用多厂商 AI 编程助手 + 办公自动化平台！**

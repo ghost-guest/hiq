@@ -1,10 +1,10 @@
 package main
 
-// TestServerTransportE2E attaches to a live `fairpeer host --listen` over TCP
+// TestServerTransportE2E attaches to a live `hiq host --listen` over TCP
 // through the real serverTransport (token handshake + protocol). Opt-in via
 // FP_SERVER_ADDR / FP_SERVER_TOKEN:
 //
-//	../scratch/fairpeer-host-e2e.exe host --listen 127.0.0.1:18787 --token tk123 &
+//	../scratch/hiq-host-e2e.exe host --listen 127.0.0.1:18787 --token tk123 &
 //	FP_SERVER_ADDR=127.0.0.1:18787 FP_SERVER_TOKEN=tk123 \
 //	  go test -run TestServerTransportE2E -count=1
 //
@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/remotehost"
+	"github.com/zzycxz/hiq/internal/remotehost"
 )
 
 func TestServerTransportE2E(t *testing.T) {
@@ -77,7 +77,7 @@ func TestServerTransportE2E(t *testing.T) {
 // TestServerTransportTLSE2E attaches to a TLS-enabled host with certificate
 // pinning. FP_SERVER_TLS_ADDR / FP_SERVER_TLS_TOKEN gate it:
 //
-//	../scratch/fairpeer-host-e2e.exe host --listen 127.0.0.1:18788 --token tk --tls &
+//	../scratch/hiq-host-e2e.exe host --listen 127.0.0.1:18788 --token tk --tls &
 //	FP_SERVER_TLS_ADDR=127.0.0.1:18788 FP_SERVER_TLS_TOKEN=tk \
 //	  go test -run TestServerTransportTLSE2E -count=1
 func TestServerTransportTLSE2E(t *testing.T) {

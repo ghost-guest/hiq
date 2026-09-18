@@ -51,7 +51,7 @@ type Bridge struct {
 
 	onReady func(*Conn) // 全局 onReady hook（debug-server 注册，发测试 wireEvent）
 
-	// resolveTab maps linkpeer's tab alias ("default"/"") to a real fairpeer tab
+	// resolveTab maps linkpeer's tab alias ("default"/"") to a real hiq tab
 	// ID (UUID). Injected by the desktop layer; nil = use the alias as-is.
 	resolveTab func(string) string
 }
@@ -205,11 +205,11 @@ func (b *Bridge) linkIsCloud(sc *SignalClient) bool {
 }
 
 // SetOnReady 注册全局 onReady hook：每个 Conn 握手完成时回调（debug-server 用它
-// 在握手后发测试 wireEvent，模拟 fairpeer 下行）。
+// 在握手后发测试 wireEvent，模拟 hiq 下行）。
 func (b *Bridge) SetOnReady(fn func(*Conn)) { b.onReady = fn }
 
 // SetResolveTab injects the tab-alias resolver: linkpeer sends "default"/"" but
-// fairpeer tabs are UUIDs. The desktop layer maps the alias to the active tab.
+// hiq tabs are UUIDs. The desktop layer maps the alias to the active tab.
 func (b *Bridge) SetResolveTab(fn func(string) string) { b.resolveTab = fn }
 
 // SignalConnected reports whether the long-link to K is up. Surfaces K
@@ -697,7 +697,7 @@ func (b *Bridge) resyncTab(tabID string, sinceSeq uint64, connID string) {
 }
 
 // NotifySessionListChanged 广播 session_list_changed 给所有在线加密 Conn（方案B）。
-// fairpeer 端 tab 增删改时调，让 linkpeer 自动刷新会话列表，无需用户手动下拉。
+// hiq 端 tab 增删改时调，让 linkpeer 自动刷新会话列表，无需用户手动下拉。
 func (b *Bridge) NotifySessionListChanged() {
 	b.mu.Lock()
 	conns := make([]*Conn, 0, len(b.conns))

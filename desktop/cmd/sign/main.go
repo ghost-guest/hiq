@@ -29,11 +29,11 @@ import (
 
 	"aead.dev/minisign"
 
-	"github.com/zzycxz/fairpeer/desktop/internal/update"
+	"github.com/zzycxz/hiq/desktop/internal/update"
 )
 
 // platforms are the manifest keys we publish. A built artifact is matched to a key
-// by substring (file names embed the key, e.g. fairpeer-darwin-arm64.zip), so the
+// by substring (file names embed the key, e.g. hiq-darwin-arm64.zip), so the
 // generator and the updater agree on update.PlatformKey output.
 var platforms = []string{"darwin-arm64", "darwin-amd64", "windows-amd64", "windows-arm64", "linux-amd64", "linux-arm64"}
 
@@ -94,7 +94,7 @@ func verifyFile(path string) error {
 }
 
 // genKey generates a fresh minisign key pair, writing the encrypted private key
-// (fairpeer.key) and the public key (fairpeer.pub) into dir. The password comes
+// (hiq.key) and the public key (hiq.pub) into dir. The password comes
 // from $MINISIGN_PASSWORD. The public key is printed — it's safe to publish; embed
 // it in internal/update/verify.go. The private key never leaves dir.
 func genKey(dir string) error {
@@ -113,8 +113,8 @@ func genKey(dir string) error {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
-	keyPath := filepath.Join(dir, "fairpeer.key")
-	pubPath := filepath.Join(dir, "fairpeer.pub")
+	keyPath := filepath.Join(dir, "hiq.key")
+	pubPath := filepath.Join(dir, "hiq.pub")
 	if err := os.WriteFile(keyPath, enc, 0o600); err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func signFiles(files []string) error {
 			return err
 		}
 		sig := minisign.SignWithComments(priv, data,
-			"file:"+filepath.Base(f), "fairpeer desktop release")
+			"file:"+filepath.Base(f), "hiq desktop release")
 		out := f + ".minisig"
 		if err := os.WriteFile(out, sig, 0o644); err != nil {
 			return err
@@ -169,7 +169,7 @@ func signFiles(files []string) error {
 func genManifest(dir, version, tag string) error {
 	repo := os.Getenv("GITHUB_REPOSITORY")
 	if repo == "" {
-		repo = "zzycxz/fairpeer"
+		repo = "zzycxz/hiq"
 	}
 	m := update.Manifest{
 		Version:      version,

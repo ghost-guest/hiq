@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/sandbox"
+	"github.com/zzycxz/hiq/internal/sandbox"
 )
 
 func testManager(t *testing.T) *Manager {

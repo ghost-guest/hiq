@@ -6,7 +6,7 @@ import (
 
 	"mvdan.cc/sh/v3/syntax"
 
-	"github.com/zzycxz/fairpeer/internal/shellparse"
+	"github.com/zzycxz/hiq/internal/shellparse"
 )
 
 // NormalizeBashSafeRedirectsForMatch returns a copy of subject with redirect

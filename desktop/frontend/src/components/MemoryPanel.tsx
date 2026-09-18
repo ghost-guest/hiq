@@ -269,7 +269,7 @@ function validAtPoint(f: MemoryFact, dayISO: string): boolean {
 }
 
 // MemoryPanel is the desktop memory manager: a right-side drawer over the loaded
-// fairpeer.md hierarchy and saved auto-memories. Unlike Claude Code's /memory
+// hiq.md hierarchy and saved auto-memories. Unlike Claude Code's /memory
 // (which shells out to $EDITOR) it edits docs in place, and unlike Codex (no UI
 // at all) it shows the saved facts. Docs are editable; facts are read-only
 // (the model owns them via the `remember` tool). Quick-add mirrors the "#"
@@ -1822,7 +1822,7 @@ function MemoryStorageSection({ storeDir }: { storeDir?: string }) {
           {t("memory.rootEffective", { dir: settings.root })}
         </div>
         {settings.rootFromEnv && (
-          <div className="mem-warn">{t("memory.rootFromEnv", { env: "FAIRPEER_MEMORY_ROOT" })}</div>
+          <div className="mem-warn">{t("memory.rootFromEnv", { env: "HIQ_MEMORY_ROOT" })}</div>
         )}
         {!settings.configuredRoot && !settings.rootFromEnv && (
           <div className="mem-hint">{t("memory.rootDefault", { dir: settings.defaultRoot })}</div>

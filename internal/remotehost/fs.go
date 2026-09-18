@@ -12,9 +12,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/zzycxz/fairpeer/internal/acp"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/fileref"
+	"github.com/zzycxz/hiq/internal/acp"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/fileref"
 )
 
 // projectSessionDir resolves a workspace root to its host-side session dir.
@@ -69,8 +69,8 @@ func (h *host) fsList(_ context.Context, raw json.RawMessage) (any, error) {
 	out := FsListResult{Entries: []FsEntry{}}
 	for _, e := range entries {
 		name := e.Name()
-		if strings.HasPrefix(name, ".") && name != ".fairpeer" {
-			// Keep hidden dirs out of the picker except fairpeer's own.
+		if strings.HasPrefix(name, ".") && name != ".hiq" {
+			// Keep hidden dirs out of the picker except hiq's own.
 			continue
 		}
 		isDir := e.IsDir()

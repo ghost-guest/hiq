@@ -9,9 +9,9 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/permission"
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/permission"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // notifier is the slice of Conn the dispatch sink depends on: it pushes

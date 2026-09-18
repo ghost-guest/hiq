@@ -28,34 +28,34 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"github.com/zzycxz/fairpeer/internal/agent"
-	"github.com/zzycxz/fairpeer/internal/boot"
-	"github.com/zzycxz/fairpeer/internal/bot"
-	"github.com/zzycxz/fairpeer/internal/browserlaunch"
-	"github.com/zzycxz/fairpeer/internal/browseruse"
-	calendarpkg "github.com/zzycxz/fairpeer/internal/calendar"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	expertspkg "github.com/zzycxz/fairpeer/internal/experts"
-	"github.com/zzycxz/fairpeer/internal/fileref"
-	fileenc "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/mcpdiag"
-	"github.com/zzycxz/fairpeer/internal/mcpregistry"
-	"github.com/zzycxz/fairpeer/internal/memory"
-	"github.com/zzycxz/fairpeer/internal/mobilebridge"
-	"github.com/zzycxz/fairpeer/internal/permission"
-	"github.com/zzycxz/fairpeer/internal/plugin"
-	"github.com/zzycxz/fairpeer/internal/present"
-	projectkbpkg "github.com/zzycxz/fairpeer/internal/projectkb"
-	"github.com/zzycxz/fairpeer/internal/provider"
-	ragpkg "github.com/zzycxz/fairpeer/internal/rag"
-	schedulerpkg "github.com/zzycxz/fairpeer/internal/scheduler"
-	"github.com/zzycxz/fairpeer/internal/skill"
-	"github.com/zzycxz/fairpeer/internal/stats"
-	teampkg "github.com/zzycxz/fairpeer/internal/team"
-	"github.com/zzycxz/fairpeer/internal/tool/builtin"
+	"github.com/zzycxz/hiq/internal/agent"
+	"github.com/zzycxz/hiq/internal/boot"
+	"github.com/zzycxz/hiq/internal/bot"
+	"github.com/zzycxz/hiq/internal/browserlaunch"
+	"github.com/zzycxz/hiq/internal/browseruse"
+	calendarpkg "github.com/zzycxz/hiq/internal/calendar"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	expertspkg "github.com/zzycxz/hiq/internal/experts"
+	"github.com/zzycxz/hiq/internal/fileref"
+	fileenc "github.com/zzycxz/hiq/internal/fileutil/encoding"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/mcpdiag"
+	"github.com/zzycxz/hiq/internal/mcpregistry"
+	"github.com/zzycxz/hiq/internal/memory"
+	"github.com/zzycxz/hiq/internal/mobilebridge"
+	"github.com/zzycxz/hiq/internal/permission"
+	"github.com/zzycxz/hiq/internal/plugin"
+	"github.com/zzycxz/hiq/internal/present"
+	projectkbpkg "github.com/zzycxz/hiq/internal/projectkb"
+	"github.com/zzycxz/hiq/internal/provider"
+	ragpkg "github.com/zzycxz/hiq/internal/rag"
+	schedulerpkg "github.com/zzycxz/hiq/internal/scheduler"
+	"github.com/zzycxz/hiq/internal/skill"
+	"github.com/zzycxz/hiq/internal/stats"
+	teampkg "github.com/zzycxz/hiq/internal/team"
+	"github.com/zzycxz/hiq/internal/tool/builtin"
 )
 
 // eventChannel is the Wails runtime event name the frontend subscribes to for the
@@ -67,7 +67,7 @@ const eventChannel = "agent:event"
 // singleInstanceID is used by Wails to route a second desktop launch back to the
 // running instance. Keep it stable across releases so launcher/Dock/taskbar
 // reopen behavior remains predictable on every platform.
-const singleInstanceID = "com.fairpeer.desktop"
+const singleInstanceID = "com.hiq.desktop"
 
 // App is the Wails-bound application object: the desktop frontend's command
 // surface. Its exported methods (Submit/Cancel/Approve/…) are generated into JS
@@ -133,10 +133,10 @@ type App struct {
 	// scheduler is the app-level scheduled-task engine (coWork). Created once at
 	// startup; bound to the active cowork controller via schedulerRunner so
 	// scheduled prompts fire into whichever tab is active. Persists tasks to
-	// ~/.config/fairpeer/scheduled_tasks.json across restarts.
+	// ~/.config/hiq/scheduled_tasks.json across restarts.
 	scheduler *schedulerpkg.Scheduler
 	// calendarStore is the cowork calendar store (SQLite). Created once at
-	// startup; persists to ~/.config/fairpeer/calendar.db.
+	// startup; persists to ~/.config/hiq/calendar.db.
 	calendarStore  *calendarpkg.Store
 	calendarRemind *calendarpkg.ReminderEngine
 
@@ -328,13 +328,13 @@ func (a *App) ensureMediaTokenStore() *mediaTokenStore {
 }
 
 // workspaceMediaMiddleware returns an HTTP middleware that intercepts
-// /__fairpeer_workspace_media/{token}/{filename} requests and serves the
+// /__hiq_workspace_media/{token}/{filename} requests and serves the
 // corresponding workspace file. All other paths pass through to the Wails
 // default asset handler unchanged.
 func (a *App) workspaceMediaMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			prefix := "/__fairpeer_workspace_media/"
+			prefix := "/__hiq_workspace_media/"
 			if !strings.HasPrefix(r.URL.Path, prefix) {
 				next.ServeHTTP(w, r)
 				return
@@ -470,7 +470,7 @@ func (a *App) startup(ctx context.Context) {
 
 	go a.restoreOrBuildTabs()
 	go a.sendStartupPing()
-	// Load coWork secrets (SMTP/IMAP passwords) from the fairpeer-managed .env
+	// Load coWork secrets (SMTP/IMAP passwords) from the hiq-managed .env
 	// into the process environment BEFORE initScheduler/initRAG, so coWork tools
 	// find them via os.Getenv without the user setting system env vars manually.
 	loadCoworkEnvAtStartup()
@@ -693,7 +693,7 @@ func (a *App) initScheduler() {
 	// Surface any one-shot reminders that were due while the app was down. Load
 	// captured them; we drain now (after the notifier + OS-toast init are bound)
 	// and fire a catch-up notification for each, so a reminder the user set isn't
-	// silently lost just because fairpeer wasn't running at the fire instant.
+	// silently lost just because hiq wasn't running at the fire instant.
 	// Delayed briefly so the OS notification registration (InitializeNotifications
 	// in startup) has settled before we send.
 	if missed := a.scheduler.DrainMissedReminders(); len(missed) > 0 {
@@ -1357,7 +1357,7 @@ func (a *App) mayPreparePPTReference(input string) string {
 		// relay it to ppt-auto rather than re-deriving an outline from text
 		// extraction (which flattens tables — the 32-page PDF failure mode).
 		if pages > 0 {
-			input += "\n\n[system] 此 PDF 已完成逐页视觉分析，结果在 ~/.fairpeer/pdf-pages/page-N.json（每页含内容/布局/表格行列/风格描述）。该 PDF 的规范绝对路径记录在 ~/.fairpeer/reference-style.json 的 source_path 字段——生成 PPT 时请把该路径附在任务参数中，并指示 ppt-auto 读取 pdf-pages 逐页重绘、用其 scripts/analyze_pdf_pages.py 分批补齐未分析的页（每次至多 8 页、被超时打断后重跑即可续传，直到 remaining=0）、总页数以 PDF 总页数为准。不要自行提取 PDF 文字编写大纲——纯文字提取会丢失表格结构。"
+			input += "\n\n[system] 此 PDF 已完成逐页视觉分析，结果在 ~/.hiq/pdf-pages/page-N.json（每页含内容/布局/表格行列/风格描述）。该 PDF 的规范绝对路径记录在 ~/.hiq/reference-style.json 的 source_path 字段——生成 PPT 时请把该路径附在任务参数中，并指示 ppt-auto 读取 pdf-pages 逐页重绘、用其 scripts/analyze_pdf_pages.py 分批补齐未分析的页（每次至多 8 页、被超时打断后重跑即可续传，直到 remaining=0）、总页数以 PDF 总页数为准。不要自行提取 PDF 文字编写大纲——纯文字提取会丢失表格结构。"
 		}
 		return nil
 	}); err != nil {
@@ -3555,7 +3555,7 @@ type CommandInfo struct {
 }
 
 // Commands lists the slash commands available this session — built-in actions,
-// custom commands (.fairpeer/commands), and MCP prompts — for the composer's "/"
+// custom commands (.hiq/commands), and MCP prompts — for the composer's "/"
 // autocomplete menu.
 func (a *App) Commands() []CommandInfo {
 	out := []CommandInfo{
@@ -4259,7 +4259,7 @@ func (a *App) SetSkillEnabled(name string, enabled bool) error {
 }
 
 // DeriveEditableSkill writes an editable file copy of a BUILT-IN skill to
-// ~/.fairpeer/skills/<name>/SKILL.md. File skills shadow built-ins by name
+// ~/.hiq/skills/<name>/SKILL.md. File skills shadow built-ins by name
 // (store precedence: project → custom → global → builtin), so the copy takes
 // effect on the rebuild below and the user can edit the prompt in place;
 // deleting the file restores the built-in. Returns the written path.
@@ -4281,7 +4281,7 @@ func (a *App) DeriveEditableSkill(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(home, ".fairpeer", "skills", name)
+	dir := filepath.Join(home, ".hiq", "skills", name)
 	target := filepath.Join(dir, skill.SkillFile)
 	if _, err := os.Stat(target); err == nil {
 		return "", fmt.Errorf("an editable copy already exists: %s — edit it directly", target)
@@ -6025,7 +6025,7 @@ func (a *App) ReadFile(rel string) FilePreview {
 		token := a.ensureMediaTokenStore().create(path, info.Name(), mime, kind, info.Size(), info.ModTime())
 		out.Kind = kind
 		out.Mime = mime
-		out.URL = "/__fairpeer_workspace_media/" + token + "/" + url.PathEscape(info.Name())
+		out.URL = "/__hiq_workspace_media/" + token + "/" + url.PathEscape(info.Name())
 		return out
 	}
 	// Rich documents (docx/doc/xlsx/xls/pptx/ppt/epub/msg): extract text via
@@ -6253,7 +6253,7 @@ func (a *App) withActiveWorkspaceDo(fn func() error) error {
 }
 
 // SavePastedImage stores a browser clipboard image data URL under the active
-// tab's workspace .fairpeer/attachments and returns the relative @-reference path.
+// tab's workspace .hiq/attachments and returns the relative @-reference path.
 func (a *App) SavePastedImage(dataURL string) (string, error) {
 	return a.withActiveWorkspace(func() (string, error) {
 		return control.SaveImageDataURL(dataURL)
@@ -6261,14 +6261,14 @@ func (a *App) SavePastedImage(dataURL string) (string, error) {
 }
 
 // SaveClipboardImage reads the native OS clipboard image under the active tab's
-// workspace .fairpeer/attachments and returns the relative @-reference path.
+// workspace .hiq/attachments and returns the relative @-reference path.
 func (a *App) SaveClipboardImage() (string, error) {
 	return a.withActiveWorkspace(control.SaveClipboardImage)
 }
 
 // SavePastedFile stores a dropped non-image file (the browser exposes its bytes
 // as a data URL but not a real path) under the active tab's workspace
-// .fairpeer/attachments and returns the relative @-reference path.
+// .hiq/attachments and returns the relative @-reference path.
 func (a *App) SavePastedFile(name, dataURL string) (string, error) {
 	return a.withActiveWorkspace(func() (string, error) {
 		return control.SaveAttachmentDataURL(name, dataURL)
@@ -6324,7 +6324,7 @@ func (a *App) SaveExportFile(path, payload string, base64Encoded bool) error {
 func safeExportFilename(name string) string {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return "fairpeer-session.md"
+		return "hiq-session.md"
 	}
 	return filepath.Base(name)
 }
@@ -6355,7 +6355,7 @@ func (a *App) AttachmentDataURL(path string) (string, error) {
 
 // DroppedItem is one OS-dropped file resolved into a composer context entry: an
 // in-tree file becomes a workspace @reference (read in place, no copy), while an
-// image or out-of-tree file is copied into .fairpeer/attachments.
+// image or out-of-tree file is copied into .hiq/attachments.
 type DroppedItem struct {
 	Kind       string `json:"kind"` // "workspace" | "attachment"
 	Path       string `json:"path"`
@@ -6366,7 +6366,7 @@ type DroppedItem struct {
 // AttachDropped turns an absolute path from the native file-drop bridge into a
 // composer context entry. Images are stored as attachments so the chip shows a
 // thumbnail; other in-workspace files are referenced relatively (no copy); files
-// outside the workspace are copied into .fairpeer/attachments.
+// outside the workspace are copied into .hiq/attachments.
 func (a *App) AttachDropped(path string) (DroppedItem, error) {
 	var item DroppedItem
 	err := a.withActiveWorkspaceDo(func() error {
@@ -6490,7 +6490,7 @@ type MemorySettings struct {
 	DefaultRoot string `json:"defaultRoot"`
 	// ConfiguredRoot is the raw [memory] root value ("" = default in use).
 	ConfiguredRoot string `json:"configuredRoot"`
-	// RootFromEnv is true when $FAIRPEER_MEMORY_ROOT overrode the config, in
+	// RootFromEnv is true when $HIQ_MEMORY_ROOT overrode the config, in
 	// which case the panel must say so instead of pretending the field is empty.
 	RootFromEnv bool `json:"rootFromEnv"`
 	// StoreDir / GlobalDir / SessionDir are the resolved fact buckets, shown as
@@ -6532,7 +6532,7 @@ type MemorySettingsInput struct {
 // writableScopes are the quick-add targets the panel offers, broad → specific.
 var writableScopes = []memory.Scope{memory.ScopeUser, memory.ScopeProject, memory.ScopeLocal}
 
-// Memory returns the loaded memory for the panel: the fairpeer.md hierarchy, the
+// Memory returns the loaded memory for the panel: the hiq.md hierarchy, the
 // saved auto-memories, and the writable scopes. Read-only; mutations go through
 // Remember / SaveDoc.
 func (a *App) Memory() MemoryView {
@@ -6742,7 +6742,7 @@ type MemoryPromotionInput struct {
 	// Install also copies the generated playbook into a skill root the agent
 	// already scans, so the promoted capability is live in the next session with
 	// no kernel change. Scope picks which root: "project" (the workspace's
-	// .fairpeer/skills) or anything else for the global one.
+	// .hiq/skills) or anything else for the global one.
 	Install bool   `json:"install,omitempty"`
 	Scope   string `json:"scope,omitempty"`
 }
@@ -6872,19 +6872,19 @@ func installPromotedSkill(got memory.Promotion, scopeName string) (string, error
 }
 
 // skillRootFor is the directory a scope's promoted skills land in — the same
-// convention the skill loader discovers (.fairpeer/skills under the workspace or
+// convention the skill loader discovers (.hiq/skills under the workspace or
 // the home dir).
 func skillRootFor(scope skill.Scope, cwd, home string) string {
 	if scope == skill.ScopeProject {
 		if cwd == "" {
 			return ""
 		}
-		return filepath.Join(cwd, ".fairpeer", skill.SkillsDirname)
+		return filepath.Join(cwd, ".hiq", skill.SkillsDirname)
 	}
 	if home == "" {
 		return ""
 	}
-	return filepath.Join(home, ".fairpeer", skill.SkillsDirname)
+	return filepath.Join(home, ".hiq", skill.SkillsDirname)
 }
 
 // Remember quick-adds a one-line note to the doc-memory file for scope — the
@@ -7013,7 +7013,7 @@ func parseScope(s string) memory.Scope {
 
 // onboardingKeyEnv is a legacy fallback env name; NeedsOnboarding now checks
 // whether ANY configured provider has a resolvable key.
-const onboardingKeyEnv = "FAIRPEER_API_KEY"
+const onboardingKeyEnv = "HIQ_API_KEY"
 
 // probeVendorKey validates an API key by hitting the vendor's /models endpoint.
 // A lightweight connectivity + auth check used during onboarding. The baseURL
@@ -7122,7 +7122,7 @@ func (a *App) ConfirmAction(req NativeConfirmRequest) (bool, error) {
 }
 
 // NeedsOnboarding reports whether the user has at least one provider with a
-// resolvable API key. FairPeer ships no built-in provider, so the first run
+// resolvable API key. Hiq ships no built-in provider, so the first run
 // shows the onboarding wizard until the user configures one.
 func (a *App) NeedsOnboarding() bool {
 	cfg, err := config.Load()
@@ -7145,7 +7145,7 @@ func (a *App) NeedsOnboarding() bool {
 			return false // at least one provider has a key
 		}
 	}
-	// Legacy fallback: a bare FAIRPEER_API_KEY without a provider entry.
+	// Legacy fallback: a bare HIQ_API_KEY without a provider entry.
 	return strings.TrimSpace(os.Getenv(onboardingKeyEnv)) == ""
 }
 
@@ -7285,7 +7285,7 @@ func (a *App) ConnectKey(apiKey string) error {
 		return fmt.Errorf("key is required")
 	}
 	// Legacy single-provider path: validate against the first configured
-	// provider's endpoint, then store under FAIRPEER_API_KEY.
+	// provider's endpoint, then store under HIQ_API_KEY.
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -7359,7 +7359,7 @@ func (a *App) ImportMCPServersJSON(jsonText string) (int, error) {
 				transport = "stdio"
 			}
 		}
-		// Map "streamable-http"/"streamable_http" → "http" (fairpeer's canonical).
+		// Map "streamable-http"/"streamable_http" → "http" (hiq's canonical).
 		if transport == "streamable-http" || transport == "streamable_http" {
 			transport = "http"
 		}

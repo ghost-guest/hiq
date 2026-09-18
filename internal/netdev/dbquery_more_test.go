@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // The four new engines' seals: allowlist shapes + the HTTP legs over fake

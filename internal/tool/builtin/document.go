@@ -16,10 +16,10 @@ import (
 	"strconv"
 	"strings"
 
-	fileenc "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
-	"github.com/zzycxz/fairpeer/internal/rag"
-	"github.com/zzycxz/fairpeer/internal/tool"
-	"github.com/zzycxz/fairpeer/internal/validation"
+	fileenc "github.com/zzycxz/hiq/internal/fileutil/encoding"
+	"github.com/zzycxz/hiq/internal/rag"
+	"github.com/zzycxz/hiq/internal/tool"
+	"github.com/zzycxz/hiq/internal/validation"
 	"golang.org/x/text/transform"
 )
 
@@ -184,7 +184,7 @@ func (r docRead) Execute(ctx context.Context, args json.RawMessage) (string, err
 		// a raw binary rejection or a wall of XML tags. For the XML-based ones
 		// (.mm/.opml) the raw source is still LLM-readable, so append it so the
 		// model is not empty-handed; zip/proprietary ones get only the hint.
-		hint := fmt.Sprintf("fairpeer deeply supports .md/.html mind maps. .%s is a professional mind-map format that doc_read does not parse natively (.xmind is a zip package, .mm/.opml are XML, .mmap is proprietary). For best results, export your map as .md / .html / .opml from the original app (XMind/FreeMind/MindManager all support OPML export), then read that.", ext)
+		hint := fmt.Sprintf("hiq deeply supports .md/.html mind maps. .%s is a professional mind-map format that doc_read does not parse natively (.xmind is a zip package, .mm/.opml are XML, .mmap is proprietary). For best results, export your map as .md / .html / .opml from the original app (XMind/FreeMind/MindManager all support OPML export), then read that.", ext)
 		if ext == "mm" || ext == "opml" {
 			if info, statErr := os.Stat(abs); statErr == nil && info.Size() <= maxDocReadBytes {
 				if raw, _, rerr := readFileEncoded(abs); rerr == nil {

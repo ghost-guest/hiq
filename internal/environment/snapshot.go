@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/fileutil"
-	fileencoding "github.com/zzycxz/fairpeer/internal/fileutil/encoding"
+	"github.com/zzycxz/hiq/internal/fileutil"
+	fileencoding "github.com/zzycxz/hiq/internal/fileutil/encoding"
 )
 
 // Probe snapshots persist across process restarts so the environment section —

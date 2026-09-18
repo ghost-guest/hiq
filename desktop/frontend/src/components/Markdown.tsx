@@ -30,7 +30,7 @@ const STREAMING_CURSOR_CLASS = "cursor";
 // message, so a run of rendered images browses as a single gallery. The set is
 // derived from the rendered text and published through context so each MdImage
 // can hand the same list to openAttachmentViewer without prop-drilling.
-const attachmentRefPattern = /\.fairpeer\/attachments\/[^\s)"'<>]+/g;
+const attachmentRefPattern = /\.hiq\/attachments\/[^\s)"'<>]+/g;
 const MdImagePeers = createContext<ViewerTarget[]>([]);
 
 // Inject a blinking cursor span at the end of the last inline content node
@@ -86,7 +86,7 @@ function removeStreamingCursor(container: HTMLElement): void {
     .forEach((el) => el.remove());
 }
 
-// MdImage renders markdown images. Relative `.fairpeer/attachments/...` paths
+// MdImage renders markdown images. Relative `.hiq/attachments/...` paths
 // can't be loaded by a bare <img> (the webview has no disk base URL), so fetch
 // the data URL via the kernel — same mechanism UserMessage uses for previews.
 // http(s)/data: URLs render natively. Clicking opens the attachment lightbox
@@ -96,17 +96,17 @@ function MdImage({ src, alt }: { src?: string; alt?: string }) {
   const peers = useContext(MdImagePeers);
   const [dataUrl, setDataUrl] = useState<string>("");
   useEffect(() => {
-    if (!s.startsWith(".fairpeer/attachments/")) return;
+    if (!s.startsWith(".hiq/attachments/")) return;
     let cancelled = false;
     app.AttachmentDataURL(s)
       .then((url) => { if (!cancelled) setDataUrl(url); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [s]);
-  const resolved = dataUrl || (s.startsWith(".fairpeer/attachments/") ? "" : s);
+  const resolved = dataUrl || (s.startsWith(".hiq/attachments/") ? "" : s);
   if (!resolved) return null;
   const name = alt?.trim() || s.split("/").filter(Boolean).pop() || s;
-  if (s.startsWith(".fairpeer/attachments/")) {
+  if (s.startsWith(".hiq/attachments/")) {
     return (
       <button
         type="button"
@@ -178,7 +178,7 @@ export const Markdown = memo(function Markdown({
   // Peer set for the lightbox gallery — only worth computing when the block
   // actually carries local attachment paths.
   const peers = useMemo<ViewerTarget[]>(() => {
-    if (!deferred.includes(".fairpeer/attachments/")) return [];
+    if (!deferred.includes(".hiq/attachments/")) return [];
     const seen = new Set<string>();
     const out: ViewerTarget[] = [];
     for (const match of deferred.matchAll(attachmentRefPattern)) {

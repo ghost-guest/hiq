@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/fairpeer_banner_wide.png" alt="fairpeer" />
+  <img src="docs/assets/hiq_banner_wide.png" alt="hiq" />
 </p>
 
 <p align="center">
@@ -13,10 +13,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/zzycxz/fairpeer/releases"><img src="https://img.shields.io/badge/version-v0.1.5-0153e5?style=flat-square" alt="Version 0.1.5"/></a>
-  <a href="https://github.com/zzycxz/fairpeer/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/zzycxz/fairpeer/ci.yml?style=flat-square&label=ci&labelColor=161b22&logo=githubactions&logoColor=white" alt="CI"/></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/zzycxz/fairpeer.svg?style=flat-square&color=8b949e&labelColor=161b22" alt="license"/></a>
-  <a href="https://github.com/zzycxz/fairpeer/stargazers"><img src="https://img.shields.io/github/stars/zzycxz/fairpeer.svg?style=flat-square&color=dbab09&labelColor=161b22&logo=github&logoColor=white" alt="GitHub stars"/></a>
+  <a href="https://github.com/zzycxz/hiq/releases"><img src="https://img.shields.io/badge/version-v0.1.5-0153e5?style=flat-square" alt="Version 0.1.5"/></a>
+  <a href="https://github.com/zzycxz/hiq/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/zzycxz/hiq/ci.yml?style=flat-square&label=ci&labelColor=161b22&logo=githubactions&logoColor=white" alt="CI"/></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/zzycxz/hiq.svg?style=flat-square&color=8b949e&labelColor=161b22" alt="license"/></a>
+  <a href="https://github.com/zzycxz/hiq/stargazers"><img src="https://img.shields.io/github/stars/zzycxz/hiq.svg?style=flat-square&color=dbab09&labelColor=161b22&logo=github&logoColor=white" alt="GitHub stars"/></a>
 </p>
 
 <br/>
@@ -30,9 +30,9 @@
 
 <br/>
 
-## What is fairpeer?
+## What is hiq?
 
-fairpeer is a **universal AI coding assistant** that supports 11 direct vendors and 7 Coding Plan aggregator platforms, providing complete office automation capabilities.
+hiq is a **universal AI coding assistant** that supports 11 direct vendors and 7 Coding Plan aggregator platforms, providing complete office automation capabilities.
 
 ### Core Features
 
@@ -52,36 +52,36 @@ fairpeer is a **universal AI coding assistant** that supports 11 direct vendors 
 
 ```bash
 # macOS / Linux
-curl -fsSL https://fairpeer.dev/install.sh | bash
+curl -fsSL https://hiq.dev/install.sh | bash
 
 # Windows (PowerShell)
-irm https://fairpeer.dev/install.ps1 | iex
+irm https://hiq.dev/install.ps1 | iex
 
 # Or download from GitHub Releases
-# https://github.com/zzycxz/fairpeer/releases
+# https://github.com/zzycxz/hiq/releases
 ```
 
 ### Configuration
 
 ```bash
 # Initialize configuration
-fairpeer setup
+hiq setup
 
 # Or manually edit config file
-vim ~/.config/fairpeer/fairpeer.toml
+vim ~/.config/hiq/hiq.toml
 ```
 
 ### Run
 
 ```bash
 # Start interactive chat
-fairpeer
+hiq
 
 # Execute a single task
-fairpeer run "Help me write a Hello World"
+hiq run "Help me write a Hello World"
 
 # Start desktop app
-fairpeer-desktop
+hiq-desktop
 ```
 
 ---
@@ -124,39 +124,39 @@ fairpeer-desktop
 
 ```bash
 # Create Word document
-fairpeer run "Create a project report.docx with title, paragraphs and tables"
+hiq run "Create a project report.docx with title, paragraphs and tables"
 
 # Insert images
-fairpeer run "Insert logo.png into report.docx"
+hiq run "Insert logo.png into report.docx"
 
 # Generate table of contents
-fairpeer run "Generate table of contents for report.docx"
+hiq run "Generate table of contents for report.docx"
 ```
 
 ### Excel Spreadsheets
 
 ```bash
 # Create Excel spreadsheet
-fairpeer run "Create sales_data.xlsx with months and sales"
+hiq run "Create sales_data.xlsx with months and sales"
 
 # Add charts
-fairpeer run "Add bar chart to sales_data.xlsx"
+hiq run "Add bar chart to sales_data.xlsx"
 
 # Add conditional formatting
-fairpeer run "Add conditional formatting to sales column in sales_data.xlsx"
+hiq run "Add conditional formatting to sales column in sales_data.xlsx"
 ```
 
 ### PowerPoint Presentations
 
 ```bash
 # Create PPT
-fairpeer run "Create a presentation about AI"
+hiq run "Create a presentation about AI"
 
 # Use template
-fairpeer run "Create PPT using template, topic is digital transformation"
+hiq run "Create PPT using template, topic is digital transformation"
 
 # Add animation
-fairpeer run "Add fade-in animation to PPT"
+hiq run "Add fade-in animation to PPT"
 ```
 
 ---
@@ -165,22 +165,22 @@ fairpeer run "Add fade-in animation to PPT"
 
 ### Long-term Memory
 
-FairPeer supports two-layer long-term memory:
+Hiq supports two-layer long-term memory:
 
-1. **Document Layer** — `fairpeer.md` file, automatically loaded into context
+1. **Document Layer** — `hiq.md` file, automatically loaded into context
 2. **Auto Memory** — Dream agent automatically consolidates knowledge
 
 ### RAG Knowledge Base
 
 ```bash
 # Import documents
-fairpeer run "Import this PDF into knowledge base"
+hiq run "Import this PDF into knowledge base"
 
 # Search knowledge base
-fairpeer run "Search for authentication system knowledge"
+hiq run "Search for authentication system knowledge"
 
 # Answer questions using knowledge base
-fairpeer run "Answer this technical question using knowledge base"
+hiq run "Answer this technical question using knowledge base"
 ```
 
 ---
@@ -191,7 +191,7 @@ fairpeer run "Answer this technical question using knowledge base"
 
 ```bash
 # Complex tasks automatically trigger planning
-fairpeer run "Refactor authentication module, add JWT support, write unit tests"
+hiq run "Refactor authentication module, add JWT support, write unit tests"
 # → Auto plan → User approval → Execute
 ```
 
@@ -199,7 +199,7 @@ fairpeer run "Refactor authentication module, add JWT support, write unit tests"
 
 ```bash
 # Autonomous execution until completion
-fairpeer goal "Fix all TypeScript errors"
+hiq goal "Fix all TypeScript errors"
 # → Autonomous work → Detect blockers → Complete/Report
 ```
 
@@ -207,7 +207,7 @@ fairpeer goal "Fix all TypeScript errors"
 
 ```bash
 # Multi-expert collaboration
-fairpeer team review "Review this PR"
+hiq team review "Review this PR"
 # → Security expert + Performance expert + Architecture expert → Comprehensive report
 ```
 
@@ -219,19 +219,19 @@ fairpeer team review "Review this PR"
 
 ```bash
 # List available skills
-fairpeer skill list
+hiq skill list
 
 # Install skill
-fairpeer skill install code-review
+hiq skill install code-review
 
 # Create custom skill
-fairpeer skill new my-skill
+hiq skill new my-skill
 ```
 
 ### MCP Plugins
 
 ```toml
-# fairpeer.toml
+# hiq.toml
 [[plugins]]
 name = "my-mcp-server"
 type = "stdio"
@@ -246,8 +246,8 @@ args = ["server.js"]
 ### Config File Locations
 
 ```
-~/.config/fairpeer/fairpeer.toml    # Global config
-./fairpeer.toml                     # Project config
+~/.config/hiq/hiq.toml    # Global config
+./hiq.toml                     # Project config
 ./.env                              # Environment variables
 ```
 
@@ -287,14 +287,14 @@ screenshot_vlm_model = "openai/gpt-4o"
 
 ```bash
 # Clone repository
-git clone https://github.com/zzycxz/fairpeer.git
-cd fairpeer
+git clone https://github.com/zzycxz/hiq.git
+cd hiq
 
 # Install dependencies
 go mod download
 
 # Build CLI
-go build -o fairpeer ./cmd/fairpeer
+go build -o hiq ./cmd/hiq
 
 # Build desktop app
 cd desktop
@@ -319,7 +319,7 @@ go test ./internal/config/...
 |-----------|---------|
 | **[User Guide](docs/GUIDE.md)** | Permissions, sandbox, MCP plugins, slash commands, `@` syntax, Plan mode |
 | **[Architecture Spec](docs/SPEC.md)** | Engineering contract: system architecture, registry mechanism, data types |
-| **[Features](docs/FAIRPEER_FEATURES.md)** | Complete feature panorama, architecture diagram, capability matrix |
+| **[Features](docs/HIQ_FEATURES.md)** | Complete feature panorama, architecture diagram, capability matrix |
 | **[Office Automation](docs/OFFICE_GUIDE.md)** | Word/Excel/PPT automation, email integration, calendar tasks |
 | **[RAG Knowledge Base](docs/RAG_GUIDE.md)** | Document import, knowledge graph, entity extraction, semantic search |
 | **[Expert Teams](docs/EXPERT_GUIDE.md)** | Multi-model collaboration, team configuration, collaboration modes |
@@ -330,7 +330,7 @@ go test ./internal/config/...
 
 ## 💰 Sponsorship
 
-If you find FairPeer useful, please consider sponsoring us. Your support will be used for:
+If you find Hiq useful, please consider sponsoring us. Your support will be used for:
 - 🤖 Token purchases for development and testing
 - 🚀 Feature development and maintenance
 - 📚 Documentation improvements
@@ -359,10 +359,10 @@ MIT License - see [LICENSE](LICENSE)
 
 ## 🔗 Links
 
-- [GitHub](https://github.com/zzycxz/fairpeer)
-- [Documentation](https://fairpeer.dev)
-- [Issues](https://github.com/zzycxz/fairpeer/issues)
+- [GitHub](https://github.com/zzycxz/hiq)
+- [Documentation](https://hiq.dev)
+- [Issues](https://github.com/zzycxz/hiq/issues)
 
 ---
 
-**FairPeer — The most powerful universal multi-vendor AI coding assistant!**
+**Hiq — The most powerful universal multi-vendor AI coding assistant!**

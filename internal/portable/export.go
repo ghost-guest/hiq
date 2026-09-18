@@ -29,7 +29,7 @@ type SkillSource struct {
 
 // DocSource is one memory document to bundle.
 type DocSource struct {
-	// Name is the file's base name inside the bundle (e.g. fairpeer.md).
+	// Name is the file's base name inside the bundle (e.g. hiq.md).
 	Name string
 	// Path is the absolute source file.
 	Path string
@@ -391,11 +391,11 @@ func firstHeading(data []byte) string {
 func describeKind(k Kind, n int) string {
 	switch k {
 	case KindSkill, KindSkills:
-		return fmt.Sprintf("fairpeer 技能包（%d 个技能）", n)
+		return fmt.Sprintf("hiq 技能包（%d 个技能）", n)
 	case KindMemory:
-		return fmt.Sprintf("fairpeer 记忆包（%d 份文档）", n)
+		return fmt.Sprintf("hiq 记忆包（%d 份文档）", n)
 	default:
-		return "fairpeer 便携包"
+		return "hiq 便携包"
 	}
 }
 

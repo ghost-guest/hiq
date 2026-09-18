@@ -10,7 +10,7 @@ import (
 )
 
 // ProbeUPnP discovers the local gateway via SSDP and attempts AddPortMapping
-// to get a server-reflexive candidate without STUN (FAIRPEER_SPEC §11.6).
+// to get a server-reflexive candidate without STUN (HIQ_SPEC §11.6).
 // 3s timeout, silent on failure (graceful degradation to STUN).
 func ProbeUPnP(localPort int) (externalIP string, externalPort int) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

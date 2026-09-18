@@ -10,16 +10,16 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/boot"
-	"github.com/zzycxz/fairpeer/internal/config"
-	"github.com/zzycxz/fairpeer/internal/control"
-	"github.com/zzycxz/fairpeer/internal/event"
-	"github.com/zzycxz/fairpeer/internal/i18n"
-	"github.com/zzycxz/fairpeer/internal/remotehost"
-	"github.com/zzycxz/fairpeer/internal/secret"
+	"github.com/zzycxz/hiq/internal/boot"
+	"github.com/zzycxz/hiq/internal/config"
+	"github.com/zzycxz/hiq/internal/control"
+	"github.com/zzycxz/hiq/internal/event"
+	"github.com/zzycxz/hiq/internal/i18n"
+	"github.com/zzycxz/hiq/internal/remotehost"
+	"github.com/zzycxz/hiq/internal/secret"
 )
 
-// hostCommand runs fairpeer as a remote-workspace host: a stdio JSON-RPC server
+// hostCommand runs hiq as a remote-workspace host: a stdio JSON-RPC server
 // the desktop drives when a tab's workspace lives on this machine (spawned via
 // wsl.exe / docker exec / ssh). One process serves many sessions; the desktop
 // detects stale builds via host/hello and re-provisions the binary.
@@ -213,10 +213,10 @@ func tomlString(s string) string {
 }
 
 // providerKeyEnvName derives the secret-store key for a mirrored provider:
-// FAIRPEER_<UPPER_SNAKE_NAME>_API_KEY.
+// HIQ_<UPPER_SNAKE_NAME>_API_KEY.
 func providerKeyEnvName(name string) string {
 	var b strings.Builder
-	b.WriteString("FAIRPEER_")
+	b.WriteString("HIQ_")
 	for _, r := range strings.ToUpper(name) {
 		switch {
 		case r >= 'A' && r <= 'Z', r >= '0' && r <= '9':

@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/control"
+	"github.com/zzycxz/hiq/internal/control"
 )
 
 // The profiles are independent surfaces: a scheduled task must only run in a

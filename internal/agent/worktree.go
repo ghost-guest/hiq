@@ -7,7 +7,7 @@
 // Design:
 // - Only create a worktree when the sub-agent has writer tools (read-only
 //   sub-agents share the parent's workspace freely).
-// - The worktree lives under `.fairpeer/worktrees/<call-id>/` and is removed
+// - The worktree lives under `.hiq/worktrees/<call-id>/` and is removed
 //   after the diff is extracted.
 // - The diff is returned to the model as a unified diff it can choose to
 //   apply via apply_patch, keeping the approval flow intact.
@@ -16,7 +16,7 @@ package agent
 import (
 	"fmt"
 
-	"github.com/zzycxz/fairpeer/internal/tool"
+	"github.com/zzycxz/hiq/internal/tool"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -55,9 +55,9 @@ func CreateWorktree(root, callID string, isGit bool) *WorktreeIsolation {
 		return wt
 	}
 
-	// Worktree path: .fairpeer/worktrees/<call-id>
-	wtPath := filepath.Join(root, ".fairpeer", "worktrees", sanitizeID(callID))
-	wt.Branch = fmt.Sprintf("fairpeer/subagent-%s", sanitizeID(callID))
+	// Worktree path: .hiq/worktrees/<call-id>
+	wtPath := filepath.Join(root, ".hiq", "worktrees", sanitizeID(callID))
+	wt.Branch = fmt.Sprintf("hiq/subagent-%s", sanitizeID(callID))
 
 	// Create the worktree.
 	if err := gitRun(root, "worktree", "add", "-b", wt.Branch, wtPath, baseBranch); err != nil {

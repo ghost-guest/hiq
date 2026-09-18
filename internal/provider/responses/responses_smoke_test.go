@@ -3,7 +3,7 @@ package responses
 import (
 	"testing"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 // TestKindsRegistered pins the custom-provider contract: the responses kinds

@@ -5,16 +5,16 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/zzycxz/fairpeer/internal/mobilebridge/proto"
+	"github.com/zzycxz/hiq/internal/mobilebridge/proto"
 )
 
 // ErrForbidden means this C lacks permission for the requested command.
 // The Conn translates this into a `{"type":"error","code":"forbidden"}` frame.
 var ErrForbidden = errors.New("forbidden")
 
-// CommandExecutor runs commands against fairpeer's Controller. The desktop
+// CommandExecutor runs commands against hiq's Controller. The desktop
 // integration layer (desktop/app.go) implements it; tests mock it. This is
-// the seam that keeps mobilebridge free of fairpeer-internal dependencies.
+// the seam that keeps mobilebridge free of hiq-internal dependencies.
 type CommandExecutor interface {
 	Submit(tab, input, cmdID string) error
 	Cancel(tab string) error
@@ -93,7 +93,7 @@ func NewCommandRouter(devC string, exec CommandExecutor, perm PerConnPermissions
 func (r *CommandRouter) Perms() PerConnPermissions { return r.perm }
 
 // SetSubscribeHook lets the Bridge learn tab-subscription changes so it can
-// route wireEvents to the right Conn (FAIRPEER_SPEC §11.1).
+// route wireEvents to the right Conn (HIQ_SPEC §11.1).
 func (r *CommandRouter) SetSubscribeHook(fn func(tab string)) {
 	r.onSubscribeTab = fn
 }

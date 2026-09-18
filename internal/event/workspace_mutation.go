@@ -1,6 +1,6 @@
 package event
 
-import "github.com/zzycxz/fairpeer/internal/nilutil"
+import "github.com/zzycxz/hiq/internal/nilutil"
 
 // WorkspaceMutation is a host-only resource invalidation produced immediately
 // after one concrete writer finishes. It is separate from ToolResult ordering

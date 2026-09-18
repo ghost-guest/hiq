@@ -1,20 +1,20 @@
-; fairpeer NSIS Installer Script
+; hiq NSIS Installer Script
 ; Build: makensis scripts\installer.nsi
-; Output: dist\fairpeer-setup.exe
+; Output: dist\hiq-setup.exe
 
 !cd ".."
 
-!define APP_NAME "fairpeer"
+!define APP_NAME "hiq"
 !define APP_VERSION "0.1.5"
-!define APP_PUBLISHER "fairpeer Contributors"
-!define APP_EXE "fairpeer.exe"
+!define APP_PUBLISHER "hiq Contributors"
+!define APP_EXE "hiq.exe"
 !define INSTALL_DIR "$LOCALAPPDATA\${APP_NAME}"
 
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
 
 Name "${APP_NAME} ${APP_VERSION}"
-OutFile "dist\fairpeer-setup.exe"
+OutFile "dist\hiq-setup.exe"
 InstallDir "${INSTALL_DIR}"
 InstallDirRegKey HKCU "Software\${APP_NAME}" "InstallDir"
 RequestExecutionLevel user
@@ -40,17 +40,17 @@ Section "Install"
     File "desktop\build\bin\${APP_EXE}"
 
     ; NOTE: built-in skills (ppt-auto) are no longer copied here — they are
-    ; embedded in the binary and released to $PROFILE\.fairpeer\skills\ on first
+    ; embedded in the binary and released to $PROFILE\.hiq\skills\ on first
     ; run by the app itself. See internal/assets/.
 
     ; codegraph (code intelligence engine: node.exe + lib)
     ; bundled() expects: exe_dir/codegraph/bin/codegraph.cmd
     ; So unpack directly into codegraph/ (NOT codegraph/v1.0.0/)
     SetOutPath "$INSTDIR\codegraph\bin"
-    File "C:\Users\13852\AppData\Local\fairpeer\codegraph\v1.0.0\bin\codegraph.cmd"
+    File "C:\Users\13852\AppData\Local\hiq\codegraph\v1.0.0\bin\codegraph.cmd"
     SetOutPath "$INSTDIR\codegraph\lib"
-    File /r "C:\Users\13852\AppData\Local\fairpeer\codegraph\v1.0.0\lib\*"
-    File "C:\Users\13852\AppData\Local\fairpeer\codegraph\v1.0.0\node.exe"
+    File /r "C:\Users\13852\AppData\Local\hiq\codegraph\v1.0.0\lib\*"
+    File "C:\Users\13852\AppData\Local\hiq\codegraph\v1.0.0\node.exe"
 
     ; Registry (uninstall info)
     WriteRegStr HKCU "Software\${APP_NAME}" "InstallDir" "$INSTDIR"
@@ -90,8 +90,8 @@ SectionEnd
 
 Section "Uninstall"
     ; Delete files
-    ; NOTE: $INSTDIR\.fairpeer is no longer created (skills are released to the
-    ; user profile by the app). $PROFILE\.fairpeer is left intact — it may hold
+    ; NOTE: $INSTDIR\.hiq is no longer created (skills are released to the
+    ; user profile by the app). $PROFILE\.hiq is left intact — it may hold
     ; the user's own skills/data and is not owned by the installer.
     RMDir /r "$INSTDIR\codegraph"
     Delete "$INSTDIR\${APP_EXE}"

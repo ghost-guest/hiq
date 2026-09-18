@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/taskmonitor"
+	"github.com/zzycxz/hiq/internal/taskmonitor"
 )
 
 func TestRebuildReplacesStaleTaskProjection(t *testing.T) {
@@ -15,7 +15,7 @@ func TestRebuildReplacesStaleTaskProjection(t *testing.T) {
 	databasePath := filepath.Join(t.TempDir(), "tasks.sqlite")
 	staleRoot := t.TempDir()
 	currentRoot := t.TempDir()
-	store := taskmonitor.NewFileStore(filepath.Join(".fairpeer", "tasks"))
+	store := taskmonitor.NewFileStore(filepath.Join(".hiq", "tasks"))
 	now := time.Now()
 	if err := store.SaveTask(ctx, staleRoot, snapshot("stale-task", "stale-session", 1, now)); err != nil {
 		t.Fatal(err)

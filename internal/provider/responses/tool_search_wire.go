@@ -3,7 +3,7 @@ package responses
 import (
 	"encoding/json"
 
-	"github.com/zzycxz/fairpeer/internal/provider"
+	"github.com/zzycxz/hiq/internal/provider"
 )
 
 func encodeResponsesTools(c *client, req provider.Request) []map[string]any {

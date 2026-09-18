@@ -11,7 +11,7 @@ package main
 // --remote-debugging-port at start (no attaching to an arbitrarily running
 // browser), and Chrome 136+ refuses the debug port on the DEFAULT user-data
 // dir — hence a dedicated profile rather than the user's daily one. The
-// profile lives under <user-config>/fairpeer/browser-profile (or the
+// profile lives under <user-config>/hiq/browser-profile (or the
 // configured browser_user_data_dir), so a one-time login in this window
 // sticks for every later task.
 
@@ -23,8 +23,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/zzycxz/fairpeer/internal/browserlaunch"
-	"github.com/zzycxz/fairpeer/internal/config"
+	"github.com/zzycxz/hiq/internal/browserlaunch"
+	"github.com/zzycxz/hiq/internal/config"
 )
 
 // managedBrowserPort is the fixed CDP port of the managed browser. Stable
@@ -55,16 +55,16 @@ func managedBrowserURL() string {
 }
 
 // managedProfileDir resolves the persistent profile dir: the configured
-// browser_user_data_dir when set, else <user-config>/fairpeer/browser-profile.
+// browser_user_data_dir when set, else <user-config>/hiq/browser-profile.
 func managedProfileDir(c config.CoworkConfig) string {
 	if d := filepath.Clean(c.BrowserUserDataDir); d != "" && d != "." {
 		return d
 	}
 	base, err := os.UserConfigDir()
 	if err != nil || base == "" {
-		return "fairpeer-browser-profile"
+		return "hiq-browser-profile"
 	}
-	return filepath.Join(base, "fairpeer", "browser-profile")
+	return filepath.Join(base, "hiq", "browser-profile")
 }
 
 // CheckManagedBrowser probes the managed endpoint without launching anything.

@@ -16,8 +16,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v4"
-	"github.com/zzycxz/fairpeer/internal/linkpeersignal"
-	"github.com/zzycxz/fairpeer/internal/mobilebridge/proto"
+	"github.com/zzycxz/hiq/internal/linkpeersignal"
+	"github.com/zzycxz/hiq/internal/mobilebridge/proto"
 )
 
 // mockExecutor records Submit inputs for assertion.

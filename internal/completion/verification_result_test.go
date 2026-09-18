@@ -1,7 +1,7 @@
 package completion
 
 import (
-	"github.com/zzycxz/fairpeer/internal/evidence"
+	"github.com/zzycxz/hiq/internal/evidence"
 	"testing"
 )
 

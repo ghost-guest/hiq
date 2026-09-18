@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zzycxz/fairpeer/internal/event"
+	"github.com/zzycxz/hiq/internal/event"
 )
 
 // DesktopSessionInfo 是一个桌面 live 会话(tab)的快照，用于 /desktop status。

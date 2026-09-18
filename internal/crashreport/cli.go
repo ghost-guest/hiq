@@ -23,8 +23,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/zzycxz/fairpeer/internal/fileutil"
-	"github.com/zzycxz/fairpeer/internal/netclient"
+	"github.com/zzycxz/hiq/internal/fileutil"
+	"github.com/zzycxz/hiq/internal/netclient"
 )
 
 const (
@@ -36,7 +36,7 @@ const (
 	maxFieldBytes        = 4 << 10
 )
 
-var reportEndpoint = "https://crash.fairpeer.io/v1/report"
+var reportEndpoint = "https://crash.hiq.io/v1/report"
 
 var queueMu sync.Mutex
 
@@ -88,7 +88,7 @@ var ErrNoReports = errors.New("no pending CLI crash reports")
 // paths, or provider response content.
 func CapturePanic(home, version string, recovered any, stack []byte) error {
 	if strings.TrimSpace(home) == "" {
-		return errors.New("crash report: empty Fairpeer home")
+		return errors.New("crash report: empty Hiq home")
 	}
 	cleanStack := sanitizeStack(string(stack))
 	report := Report{
@@ -257,7 +257,7 @@ func write(home string, report Report) error {
 
 func ensureReportIdentity(report *Report, stableID string) {
 	if report.EventID == "" {
-		sum := sha256.Sum256([]byte("fairpeer-cli-event\n" + stableID))
+		sum := sha256.Sum256([]byte("hiq-cli-event\n" + stableID))
 		report.EventID = hex.EncodeToString(sum[:16])
 	}
 	if report.DedupKey == "" {

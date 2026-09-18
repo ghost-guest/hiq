@@ -1,6 +1,6 @@
 package taskcontract
 
-import "github.com/zzycxz/fairpeer/internal/evidence"
+import "github.com/zzycxz/hiq/internal/evidence"
 
 // PolicyFloor preserves the retired public type. Historical receipt fields
 // remain readable, but never rebuild execution or acceptance obligations.
