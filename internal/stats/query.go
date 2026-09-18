@@ -53,6 +53,13 @@ type RangeStats struct {
 	ActiveDays  int    `json:"active_days"`
 	TopModel    string `json:"top_model"`
 	TopProvider string `json:"top_provider"`
+	// Output-ceiling observability. Truncated counts calls whose stop reason was
+	// "length"; CeilingHit / GatewayCut split them by whether the output reached
+	// the ceiling the request carried. A truncated call with no known ceiling
+	// counts in Truncated only.
+	Truncated  int `json:"truncated"`
+	CeilingHit int `json:"ceiling_hit"`
+	GatewayCut int `json:"gateway_cut"`
 	// Series
 	Daily     []DailyTokens   `json:"daily"`
 	Models    []ModelUsage    `json:"models"`
@@ -160,6 +167,15 @@ func (w *Writer) queryJSONL(f SourceFilter) (RangeStats, error) {
 				providerTotals[providerOf(model)] += t
 				dayTotals[model] += t
 			}
+			if rec.Truncated {
+				out.Truncated++
+				if rec.CeilingHit {
+					out.CeilingHit++
+				}
+				if rec.GatewayCut {
+					out.GatewayCut++
+				}
+			}
 			dayActive = dayActive || rec.Total > 0 || requests > 0
 		}
 		if dayActive {
@@ -229,6 +245,9 @@ func rangeStatsFromRollups(f SourceFilter, days []string, rows []usagecatalog.Ro
 			out.Turns += int(row.Turns)
 			out.CacheHit += row.CacheHit
 			out.CacheMiss += row.CacheMiss
+			out.Truncated += int(row.Truncated)
+			out.CeilingHit += int(row.CeilingHit)
+			out.GatewayCut += int(row.GatewayCut)
 			dayRequests += row.Requests
 			dayTurns += row.Turns
 			dayCacheHit += row.CacheHit

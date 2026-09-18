@@ -530,7 +530,7 @@ func (a *App) runTeamMember(ctx context.Context, cancel context.CancelFunc, key,
 		return
 	}
 
-	reg := a.teamRegistry(member)
+	reg := a.teamRegistry(store, tm, member)
 	opts := agent.Options{
 		MaxSteps:            teampkg.DefaultMemberMaxSteps,
 		ContextWindow:       entry.ContextWindow,
@@ -567,7 +567,15 @@ func (a *App) runTeamMember(ctx context.Context, cancel context.CancelFunc, key,
 
 	// The member's system prompt carries its persona + the L0 blackboard digest;
 	// the user message carries the card. Neither ever reaches the main session.
-	sess := agent.NewSession(teampkg.MemberRunPrompt(tm, member, tk))
+	//
+	// The archived-note count lets the digest tell the member that older notes
+	// exist and how to page them (P1-4); a read failure just omits the hint
+	// rather than blocking the run.
+	archived, err := store.CountNotes(teamID)
+	if err != nil {
+		archived = 0
+	}
+	sess := agent.NewSession(teampkg.MemberRunPromptWithArchive(tm, member, tk, archived))
 	sub := agent.New(prov, reg, sess, opts, sink)
 	runErr := sub.Run(ctx, teampkg.TaskBrief(tm, tk))
 	answer := strings.TrimSpace(lastAssistantText(sess))
@@ -592,17 +600,29 @@ func (a *App) runTeamMember(ctx context.Context, cancel context.CancelFunc, key,
 // tools. This is why the runner does not try to rebuild the sandbox config.
 // A member's declared Tools narrow it; subagent/skill meta-tools stay excluded so
 // delegation stays one layer deep.
-func (a *App) teamRegistry(member teampkg.Member) *tool.Registry {
+//
+// The live registry is CLONED before anything is added: run-scoped tools (the
+// shared-history reader) must never leak into the main session's tool list,
+// which is part of its cached prompt prefix.
+func (a *App) teamRegistry(store *teampkg.Store, tm teampkg.Team, member teampkg.Member) *tool.Registry {
+	reg := a.teamBaseRegistry(member)
+	reg.Add(&teamSharedHistoryTool{store: store, team: tm})
+	return reg
+}
+
+// teamBaseRegistry resolves the member's base tool set without any run-scoped
+// additions. It always returns a registry the caller may mutate.
+func (a *App) teamBaseRegistry(member teampkg.Member) *tool.Registry {
 	if ctrl, ok := a.activeCtrl().(*control.Controller); ok && ctrl != nil {
-		if reg := ctrl.ToolRegistry(); reg != nil && len(reg.Names()) > 0 {
+		if live := ctrl.ToolRegistry(); live != nil && len(live.Names()) > 0 {
 			if len(member.Tools) == 0 {
-				return reg
+				return live.Clone()
 			}
-			narrowed := agent.FilterRegistry(reg, member.Tools, agent.SubagentMetaTools()...)
+			narrowed := agent.FilterRegistry(live, member.Tools, agent.SubagentMetaTools()...)
 			if len(narrowed.Names()) > 0 {
 				return narrowed
 			}
-			return reg
+			return live.Clone()
 		}
 	}
 	// Fallback: workspace-bound built-ins, so a member can still read/write/run
@@ -688,6 +708,10 @@ func (a *App) finishTeamTask(teamID, taskID, answer string, runErr error) {
 	// blackboard, so the NEXT member — a different context window entirely —
 	// reads them in its run prompt. The stored deliverable keeps the clean body.
 	notes, body := teampkg.ExtractSharedNotes(answer)
+	// addedNotes collects the notes the hot window actually accepted, so the
+	// durable archive receives exactly those (a deduped duplicate belongs in
+	// neither place). It is filled inside the Update transaction below.
+	var addedNotes []teampkg.Note
 	tm, err := store.Update(teamID, func(t *teampkg.Team) {
 		for i := range t.Tasks {
 			if t.Tasks[i].ID != taskID {
@@ -709,16 +733,17 @@ func (a *App) finishTeamTask(teamID, taskID, answer string, runErr error) {
 				card.Evidence = append(card.Evidence,
 					"团员「"+t.MemberName(card.AssigneeID)+"」以独立上下文执行完成")
 			}
-			before := len(t.Context.Notes)
-			for _, txt := range notes {
-				t.Context.Notes = teampkg.AddNoteTo(t.Context.Notes, teampkg.Note{
-					Author: card.AssigneeID,
-					TaskID: card.ID,
-					Text:   txt,
-				})
-			}
-			if len(t.Context.Notes) != before {
-				t.Context.Version++
+			if len(notes) > 0 {
+				batch := make([]teampkg.Note, 0, len(notes))
+				for _, txt := range notes {
+					batch = append(batch, teampkg.NewNote(card.AssigneeID, card.ID, txt))
+				}
+				var added []teampkg.Note
+				t.Context.Notes, added = teampkg.AddNotes(t.Context.Notes, batch...)
+				addedNotes = added
+				if len(added) > 0 {
+					t.Context.Version++
+				}
 			}
 			// P4 HITL: an after-gate card does not complete on the member's word
 			// alone — the deliverable is held until a human accepts it.
@@ -735,7 +760,104 @@ func (a *App) finishTeamTask(teamID, taskID, answer string, runErr error) {
 	if err != nil {
 		return
 	}
+	// The archive is what keeps a note retrievable after it leaves the hot
+	// window, so it is written once the store has accepted the notes — and only
+	// then. A failed append costs the paging history, never the board update.
+	if len(addedNotes) > 0 {
+		_ = store.AppendNotes(teamID, addedNotes)
+	}
 	a.emitTeamChanged(tm)
+	// A finished card is the natural checkpoint trigger: the window just grew.
+	// Summarisation runs off this path so the member's card never waits on it.
+	if len(addedNotes) > 0 {
+		a.checkpointTeamAsync(teamID)
+	}
+}
+
+// checkpointTeamAsync folds the oldest shared notes into a checkpoint when the
+// hot window has outgrown the digest (P1-4 step B).
+//
+// One pass per team at a time: a burst of members finishing at once would
+// otherwise launch several summarisation calls over the same notes, and the
+// later ones would fold an already-folded range.
+func (a *App) checkpointTeamAsync(teamID string) {
+	if !a.beginTeamCheckpoint(teamID) {
+		return
+	}
+	go func() {
+		defer a.endTeamCheckpoint(teamID)
+		a.runTeamCheckpoint(teamID)
+	}()
+}
+
+// beginTeamCheckpoint claims the single checkpoint slot for a team. It reports
+// false when a pass is already running, so the caller can simply drop the
+// request — the running pass will observe the same (or a larger) fold range.
+func (a *App) beginTeamCheckpoint(teamID string) bool {
+	a.teamCheckpointMu.Lock()
+	defer a.teamCheckpointMu.Unlock()
+	if a.teamCheckpointing[teamID] {
+		return false
+	}
+	if a.teamCheckpointing == nil {
+		a.teamCheckpointing = map[string]bool{}
+	}
+	a.teamCheckpointing[teamID] = true
+	return true
+}
+
+// endTeamCheckpoint releases the slot. It must run on every exit path, or a
+// team would never checkpoint again.
+func (a *App) endTeamCheckpoint(teamID string) {
+	a.teamCheckpointMu.Lock()
+	delete(a.teamCheckpointing, teamID)
+	a.teamCheckpointMu.Unlock()
+}
+
+// runTeamCheckpoint performs one checkpoint pass. It is the goroutine half of
+// checkpointTeamAsync and never returns an error: a checkpoint is an
+// optimisation over the archive, so failing to produce one must leave the team
+// exactly as it was.
+func (a *App) runTeamCheckpoint(teamID string) {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return
+	}
+	tm, ok := store.Get(teamID)
+	if !ok {
+		return
+	}
+	fold := teampkg.PendingCheckpointNotes(tm)
+	if len(fold) == 0 {
+		return
+	}
+	summary, degraded := a.summarizeTeamNotes(tm, fold)
+	updated, err := store.Update(teamID, func(t *teampkg.Team) {
+		// ApplyCheckpoint removes exactly the folded notes by ID, so a note some
+		// other member published while the summary was being written survives.
+		teampkg.ApplyCheckpoint(t, fold, summary, degraded)
+	})
+	if err != nil {
+		return
+	}
+	a.emitTeamChanged(updated)
+}
+
+// summarizeTeamNotes compresses folded notes with the leader's model. A failure
+// at any layer — no usable model, timeout, empty reply — degrades to the
+// index-style summary rather than skipping the checkpoint, because the notes it
+// covers are about to leave the window either way.
+func (a *App) summarizeTeamNotes(tm teampkg.Team, notes []teampkg.Note) (string, bool) {
+	model := ""
+	if leader, ok := tm.Leader(); ok {
+		model = strings.TrimSpace(leader.Model)
+	}
+	system, user := teampkg.CheckpointPrompt(tm, notes)
+	out, err := a.runTeamDraftLLM(model, system, user)
+	if err != nil || strings.TrimSpace(out) == "" {
+		return "", true
+	}
+	return strings.TrimSpace(out), false
 }
 
 // finishTeamTaskCanceled returns a cancelled card to 待开始 so it can be re-run.

@@ -30,35 +30,93 @@ const (
 
 // AddNote appends a shared-context note and trims the list to MaxSharedNotes.
 // The blackboard version is bumped so cache/consumers can tell it moved.
+//
+// The note is ALSO appended to the team's durable archive: the hot window is a
+// rendering bound, not a retention bound, so a note stays retrievable (via
+// team_read_shared_history) long after it scrolls out of the digest.
 func (s *Store) AddNote(teamID string, n Note) (Team, error) {
 	if strings.TrimSpace(n.Text) == "" {
 		return Team{}, fmt.Errorf("%w: note text is required", ErrInvalid)
 	}
-	return s.Update(teamID, func(t *Team) {
+	added := false
+	team, err := s.Update(teamID, func(t *Team) {
 		if n.ID == "" {
 			n.ID = newID("note")
 		}
 		if n.At.IsZero() {
 			n.At = time.Now().UTC()
 		}
-		t.Context.Notes = AddNoteTo(t.Context.Notes, n)
-		t.Context.Version++
+		var appended bool
+		t.Context.Notes, appended = addNoteTo(t.Context.Notes, n)
+		if appended {
+			t.Context.Version++
+			added = true
+		}
 	})
+	if err != nil {
+		return Team{}, err
+	}
+	if added {
+		// Best-effort: the in-store note is already accepted, so an archive
+		// failure must not fail the user's write. It is logged by the caller
+		// only in the sense that the note simply stays window-only.
+		_ = s.AppendNotes(teamID, []Note{n})
+	}
+	return team, nil
 }
 
 // AddNoteTo appends a note to a list applying the same dedupe + bound policy as
 // AddNote, for callers that already hold a Store.Update transaction (and so
 // cannot re-enter the store).
 func AddNoteTo(notes []Note, n Note) []Note {
+	out, _ := addNoteTo(notes, n)
+	return out
+}
+
+// NewNote builds a note with a fresh identity and its final (trimmed, clipped)
+// text, so a caller that must keep the hot window and the durable archive in
+// step can hand the SAME note to both and get identical ids on each side.
+func NewNote(author, taskID, text string) Note {
+	return Note{
+		ID:     newID("note"),
+		Author: author,
+		TaskID: taskID,
+		Text:   clipNote(text, maxNoteChars),
+		At:     time.Now().UTC(),
+	}
+}
+
+// AddNotes appends notes under the shared-note policy and reports which ones
+// the hot window actually accepted — a blank note or a duplicate the dedupe
+// dropped is absent from added, so a caller can archive exactly what was kept.
+func AddNotes(notes []Note, add ...Note) (next []Note, added []Note) {
+	next = notes
+	for _, n := range add {
+		var ok bool
+		next, ok = addNoteTo(next, n)
+		if ok {
+			added = append(added, next[len(next)-1])
+		}
+	}
+	return next, added
+}
+
+// addNoteTo is AddNoteTo plus whether the note was actually kept, so a caller
+// can archive exactly the notes the hot window accepted (a duplicate the dedupe
+// dropped must not appear in the archive either).
+func addNoteTo(notes []Note, n Note) ([]Note, bool) {
 	if strings.TrimSpace(n.Text) == "" {
-		return notes
+		return notes, false
 	}
 	n.Text = clipNote(n.Text, maxNoteChars)
-	notes = appendNoteUnique(notes, n)
-	if len(notes) > MaxSharedNotes {
-		notes = notes[len(notes)-MaxSharedNotes:]
+	kept := appendNoteUnique(notes, n)
+	if len(kept) == len(notes) {
+		return notes, false
 	}
-	return notes
+	if len(kept) > MaxSharedNotes {
+		kept = kept[len(kept)-MaxSharedNotes:]
+	}
+	return kept, true
 }
 
 // appendNoteUnique appends a note unless an identical text is already present

@@ -4120,6 +4120,9 @@ export const zh: Record<DictKey, string> = {
   "team.notes": "共享笔记",
   "team.notes.hint": "团员在产出里用「【共享笔记】」段落留下的横向情报，其他团员执行前会在黑板摘要里看到。",
   "team.notes.empty": "还没有共享笔记。",
+  "team.checkpoints": "早期笔记摘要",
+  "team.checkpoints.hint": "共享笔记超出窗口后，最旧的一批会被团长模型压缩成摘要保留在这里；原文仍完整归档，团员可用 team_read_shared_history 分页查阅。",
+  "team.checkpoints.degraded": "索引式摘要",
   // 项目知识中枢 (project knowledge hub)
   "cowork.knowledgeHub": "项目知识中枢",
   "kb.title": "项目知识中枢",

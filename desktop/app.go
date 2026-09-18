@@ -179,6 +179,11 @@ type App struct {
 	// teamPoolsMu guards the lazy creation of teamPools (requireTeamStore can
 	// rebuild the store outside startup, from concurrent RPC handlers).
 	teamPoolsMu sync.Mutex
+	// teamCheckpointing marks teams with a shared-note checkpoint pass in flight,
+	// so a burst of members finishing at once folds the window once instead of
+	// N times over the same notes. Guarded by teamCheckpointMu.
+	teamCheckpointing map[string]bool
+	teamCheckpointMu  sync.Mutex
 	// kbHubs caches the project knowledge hub per workspace root — each
 	// workspace has its own project map — and backs the resolver the agent's
 	// kb_* tools call through. Guarded by kbMu.

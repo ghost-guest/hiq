@@ -22,7 +22,12 @@ import (
 	"github.com/zzycxz/fairpeer/internal/projectiondb"
 )
 
-const SchemaVersion = 1
+// SchemaVersion is the projection's on-disk shape. Bump it whenever a migration
+// is added; the file is disposable, so an older database simply gets migrated in
+// place (the v1 → v2 step only adds truncation counters, leaving historical rows
+// at zero — "unknown" is the honest value for a call recorded before we started
+// capturing the output ceiling).
+const SchemaVersion = 2
 
 type AppendReceipt struct {
 	Path     string
@@ -45,6 +50,13 @@ type Entry struct {
 	Total      int
 	Requests   int
 	Turns      int
+	// Output-ceiling observability. Truncated counts calls whose stop reason was
+	// "length"; CeilingHit / GatewayCut split those by whether the output
+	// reached the ceiling the request carried. A call with no known ceiling can
+	// only contribute to Truncated.
+	Truncated  int
+	CeilingHit int
+	GatewayCut int
 }
 
 type Rollup struct {
@@ -60,6 +72,10 @@ type Rollup struct {
 	Total      int64
 	Requests   int64
 	Turns      int64
+	// Truncation counters (see Entry).
+	Truncated  int64
+	CeilingHit int64
+	GatewayCut int64
 }
 
 type Status struct {
@@ -132,11 +148,30 @@ CREATE TABLE usage_rollups(
 CREATE INDEX idx_usage_rollups_range ON usage_rollups(day,source,model_ref);
 `
 
+// truncationSchema adds the output-ceiling counters. It is a separate migration
+// rather than a change to the initial schema so an existing catalog is upgraded
+// in place instead of being dropped (the file is disposable, but re-indexing
+// every stats file on upgrade is pointless work when only new rows carry data).
+const truncationSchema = `
+ALTER TABLE usage_records ADD COLUMN truncated INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE usage_records ADD COLUMN ceiling_hit INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE usage_records ADD COLUMN gateway_cut INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE usage_rollups ADD COLUMN truncated INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE usage_rollups ADD COLUMN ceiling_hit INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE usage_rollups ADD COLUMN gateway_cut INTEGER NOT NULL DEFAULT 0;
+`
+
 func migrations() []projectiondb.Migration {
-	return []projectiondb.Migration{{Version: 1, Apply: func(ctx context.Context, tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, schema)
-		return err
-	}}}
+	return []projectiondb.Migration{
+		{Version: 1, Apply: func(ctx context.Context, tx *sql.Tx) error {
+			_, err := tx.ExecContext(ctx, schema)
+			return err
+		}},
+		{Version: 2, Apply: func(ctx context.Context, tx *sql.Tx) error {
+			_, err := tx.ExecContext(ctx, truncationSchema)
+			return err
+		}},
+	}
 }
 
 func Open(ctx context.Context, path string) (*Catalog, error) {
@@ -313,9 +348,11 @@ func insertRecord(ctx context.Context, tx *sql.Tx, receipt AppendReceipt, entry 
 		entry.Requests = 1
 	}
 	result, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO usage_records(file_path,byte_offset,byte_length,line_hash,day,source,
-        model_ref,provider,prompt,completion,reasoning,cache_hit,cache_miss,total,requests,turns) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        model_ref,provider,prompt,completion,reasoning,cache_hit,cache_miss,total,requests,turns,truncated,ceiling_hit,gateway_cut)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		receipt.Path, receipt.Offset, receipt.Length, receipt.LineHash, entry.Day, entry.Source, entry.ModelRef, entry.Provider,
-		entry.Prompt, entry.Completion, entry.Reasoning, entry.CacheHit, entry.CacheMiss, entry.Total, entry.Requests, entry.Turns)
+		entry.Prompt, entry.Completion, entry.Reasoning, entry.CacheHit, entry.CacheMiss, entry.Total, entry.Requests, entry.Turns,
+		entry.Truncated, entry.CeilingHit, entry.GatewayCut)
 	if err != nil {
 		return err
 	}
@@ -324,11 +361,15 @@ func insertRecord(ctx context.Context, tx *sql.Tx, receipt AppendReceipt, entry 
 		return nil
 	}
 	_, err = tx.ExecContext(ctx, `INSERT INTO usage_rollups(day,source,model_ref,provider,prompt,completion,reasoning,cache_hit,
-        cache_miss,total,requests,turns) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(day,source,model_ref) DO UPDATE SET
+        cache_miss,total,requests,turns,truncated,ceiling_hit,gateway_cut) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(day,source,model_ref) DO UPDATE SET
         prompt=prompt+excluded.prompt,completion=completion+excluded.completion,reasoning=reasoning+excluded.reasoning,
         cache_hit=cache_hit+excluded.cache_hit,cache_miss=cache_miss+excluded.cache_miss,total=total+excluded.total,
-        requests=requests+excluded.requests,turns=turns+excluded.turns`, entry.Day, entry.Source, entry.ModelRef, entry.Provider,
-		entry.Prompt, entry.Completion, entry.Reasoning, entry.CacheHit, entry.CacheMiss, entry.Total, entry.Requests, entry.Turns)
+        requests=requests+excluded.requests,turns=turns+excluded.turns,truncated=truncated+excluded.truncated,
+        ceiling_hit=ceiling_hit+excluded.ceiling_hit,gateway_cut=gateway_cut+excluded.gateway_cut`,
+		entry.Day, entry.Source, entry.ModelRef, entry.Provider,
+		entry.Prompt, entry.Completion, entry.Reasoning, entry.CacheHit, entry.CacheMiss, entry.Total, entry.Requests, entry.Turns,
+		entry.Truncated, entry.CeilingHit, entry.GatewayCut)
 	return err
 }
 
@@ -344,6 +385,12 @@ type rawRecord struct {
 	Total      int       `json:"total"`
 	Requests   int       `json:"requests"`
 	Turn       bool      `json:"turn"`
+	// Output-ceiling observability (absent on records written before it shipped).
+	MaxOutput  int    `json:"max_output"`
+	StopReason string `json:"stop_reason"`
+	Truncated  bool   `json:"truncated"`
+	CeilingHit bool   `json:"ceiling_hit"`
+	GatewayCut bool   `json:"gateway_cut"`
 }
 
 func providerOf(model string) string {
@@ -358,9 +405,20 @@ func entryFromRaw(day string, raw rawRecord) Entry {
 	if raw.Turn {
 		turns = 1
 	}
+	truncated, ceilingHit, gatewayCut := 0, 0, 0
+	if raw.Truncated {
+		truncated = 1
+		if raw.CeilingHit {
+			ceilingHit = 1
+		}
+		if raw.GatewayCut {
+			gatewayCut = 1
+		}
+	}
 	return Entry{Day: day, Source: raw.Source, ModelRef: raw.ModelRef, Provider: providerOf(raw.ModelRef), Prompt: raw.Prompt,
 		Completion: raw.Completion, Reasoning: raw.Reasoning, CacheHit: raw.CacheHit, CacheMiss: raw.CacheMiss,
-		Total: raw.Total, Requests: raw.Requests, Turns: turns}
+		Total: raw.Total, Requests: raw.Requests, Turns: turns,
+		Truncated: truncated, CeilingHit: ceilingHit, GatewayCut: gatewayCut}
 }
 
 func (c *Catalog) ReconcileFile(ctx context.Context, path, day string) error {
@@ -491,7 +549,8 @@ func (c *Catalog) Query(ctx context.Context, fromDay, toDay, source string) ([]R
 		where += ` AND source=?`
 		args = append(args, source)
 	}
-	rows, err := c.db.QueryContext(ctx, `SELECT day,source,model_ref,provider,prompt,completion,reasoning,cache_hit,cache_miss,total,requests,turns
+	rows, err := c.db.QueryContext(ctx, `SELECT day,source,model_ref,provider,prompt,completion,reasoning,cache_hit,cache_miss,total,requests,turns,
+        truncated,ceiling_hit,gateway_cut
         FROM usage_rollups WHERE `+where+` ORDER BY day,source,model_ref`, args...)
 	if err != nil {
 		return nil, err
@@ -501,7 +560,8 @@ func (c *Catalog) Query(ctx context.Context, fromDay, toDay, source string) ([]R
 	for rows.Next() {
 		var row Rollup
 		if err := rows.Scan(&row.Day, &row.Source, &row.ModelRef, &row.Provider, &row.Prompt, &row.Completion, &row.Reasoning,
-			&row.CacheHit, &row.CacheMiss, &row.Total, &row.Requests, &row.Turns); err != nil {
+			&row.CacheHit, &row.CacheMiss, &row.Total, &row.Requests, &row.Turns,
+			&row.Truncated, &row.CeilingHit, &row.GatewayCut); err != nil {
 			return nil, err
 		}
 		out = append(out, row)

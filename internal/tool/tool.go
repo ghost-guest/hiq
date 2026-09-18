@@ -7,6 +7,7 @@ package tool
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -169,7 +170,7 @@ func NewRegistry() *Registry {
 // resolves it, so subagents and explicit calls work) but is omitted from
 // Schemas() so the main-loop model never sees it in its tool list. Used when a
 // tool is meant to be driven only through a subagent skill (e.g. browser tools
-	// via run_skill("desktop-auto")) rather than advertised to the top-level model.
+// via run_skill("desktop-auto")) rather than advertised to the top-level model.
 // Hiding a name that isn't registered is a no-op.
 func (r *Registry) Hide(name string) {
 	r.mu.Lock()
@@ -184,6 +185,26 @@ func (r *Registry) IsHidden(name string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.hidden[name]
+}
+
+// Clone returns an independent copy: same tools, same insertion order, same
+// hidden set. A caller that needs to add a run-scoped tool must clone first —
+// mutating the live registry would leak that tool into every other session,
+// including the main one, whose tool list is part of the cached prompt prefix.
+func (r *Registry) Clone() *Registry {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	out := &Registry{
+		tools:  make(map[string]Tool, len(r.tools)),
+		order:  make([]string, len(r.order)),
+		canon:  make(map[string]json.RawMessage, len(r.canon)),
+		hidden: make(map[string]bool, len(r.hidden)),
+	}
+	copy(out.order, r.order)
+	maps.Copy(out.tools, r.tools)
+	maps.Copy(out.canon, r.canon)
+	maps.Copy(out.hidden, r.hidden)
+	return out
 }
 
 // VisibleCount returns the number of tools that will be sent to the model

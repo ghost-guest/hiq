@@ -2959,7 +2959,22 @@ export interface TeamContextView {
   artifacts: TeamArtifactView[];
   openQuestions: string[];
   notes: TeamNoteView[];
+  // checkpoints are rolling summaries of notes that have aged out of the hot
+  // window (older members' knowledge, compressed). Optional so an older backend
+  // payload still satisfies this type.
+  checkpoints?: TeamCheckpointView[];
   version: number;
+}
+
+export interface TeamCheckpointView {
+  id: string;
+  summary: string;
+  count: number;
+  // degraded marks an index-style fallback: the summariser (leader model) failed
+  // or was unavailable, so this is a list of first lines rather than a synthesis.
+  degraded: boolean;
+  upTo?: string;
+  at?: string;
 }
 
 export interface TeamPolicyView {
@@ -3117,6 +3132,14 @@ export interface UsageStatsRange {
   activeDays: number;
   topModel: string;
   topProvider: string;
+  // Output-ceiling observability. truncated counts replies the model stopped for
+  // hitting the output limit (stop reason "length"); ceilingHit / gatewayCut
+  // split them into "the limit we sent was too low" and "something in between
+  // cut the reply". A truncated call with no recorded limit counts only in
+  // truncated, so ceilingHit + gatewayCut may be less than truncated.
+  truncated: number;
+  ceilingHit: number;
+  gatewayCut: number;
   daily: DailyTokenUsage[];
   models: ModelTokenUsage[];
   providers: ProviderTokenUsage[];

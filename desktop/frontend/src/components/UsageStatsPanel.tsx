@@ -13,7 +13,7 @@ import { SettingsOptions } from "./SettingsOptions";
 // The component's styles live in UsageStatsPanel.css (loaded on demand with
 // this chunk), so the ~7 KB rule block never inflates the settings bundle.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Activity, CalendarDays, ChevronDown, ChevronRight, Coins, Cpu, MessageSquare, MessagesSquare } from "lucide-react";
+import { Activity, AlertTriangle, CalendarDays, ChevronDown, ChevronRight, Coins, Cpu, MessageSquare, MessagesSquare } from "lucide-react";
 import { useI18n } from "../lib/i18n";
 import { app } from "../lib/bridge";
 import type { DailyTokenUsage, ModelTokenUsage, UsageStatsRange, UsageStatsRequest } from "../lib/types";
@@ -65,6 +65,11 @@ const USAGE_STATS_TRANSLATIONS = {
     "settings.stats.hitRateLegend": "Cache hit rate",
     "settings.stats.topModel": "Most used model",
     "settings.stats.topModelHint": "Ranked by token volume, not call count",
+    "settings.stats.truncated": "Cut-off replies",
+    "settings.stats.truncatedHint": "Replies the model stopped because it reached the output limit (stop reason: length)",
+    "settings.stats.truncatedCeiling": "{n} hit the limit we sent — raise max_tokens",
+    "settings.stats.truncatedGateway": "{n} stopped short of it — most likely cut by a relay or gateway",
+    "settings.stats.truncatedUnknown": "{n} had no recorded limit",
     "settings.stats.heatmap": "Activity heatmap",
     "settings.stats.heatLess": "Less",
     "settings.stats.heatMore": "More",
@@ -107,6 +112,11 @@ const USAGE_STATS_TRANSLATIONS = {
     "settings.stats.hitRateLegend": "缓存命中率",
     "settings.stats.topModel": "最常用模型",
     "settings.stats.topModelHint": "按 token 用量排序，非调用次数",
+    "settings.stats.truncated": "截断回复",
+    "settings.stats.truncatedHint": "模型因输出达到上限而停下的请求数（结束原因是 length）",
+    "settings.stats.truncatedCeiling": "{n} 次撞到了我们发出的上限——建议调高 max_tokens",
+    "settings.stats.truncatedGateway": "{n} 次没到上限就停了——多半是中转站/网关截断",
+    "settings.stats.truncatedUnknown": "{n} 次未记录输出上限",
     "settings.stats.heatmap": "活跃热力图",
     "settings.stats.heatLess": "较少",
     "settings.stats.heatMore": "较多",
@@ -149,6 +159,11 @@ const USAGE_STATS_TRANSLATIONS = {
     "settings.stats.hitRateLegend": "快取命中率",
     "settings.stats.topModel": "最常用模型",
     "settings.stats.topModelHint": "依 token 用量排序，非呼叫次數",
+    "settings.stats.truncated": "截斷回覆",
+    "settings.stats.truncatedHint": "模型因輸出達到上限而停下的請求數（結束原因是 length）",
+    "settings.stats.truncatedCeiling": "{n} 次撞到我們送出的上限——建議調高 max_tokens",
+    "settings.stats.truncatedGateway": "{n} 次沒到上限就停了——多半是中轉站／閘道截斷",
+    "settings.stats.truncatedUnknown": "{n} 次未記錄輸出上限",
     "settings.stats.heatmap": "活躍熱力圖",
     "settings.stats.heatLess": "較少",
     "settings.stats.heatMore": "較多",
@@ -424,7 +439,19 @@ function StatCards({ stats, t }: { stats: UsageStatsRange; t: UsageStatsTranslat
     // "top model" ranks by token volume (not call count) — the hint keeps the
     // metric's meaning visible next to the value.
     { icon: Cpu, label: t("settings.stats.topModel"), value: topModel, sm: true, wrap: true, hint: t("settings.stats.topModelHint") },
+    // Cut-off replies: the count alone says how often the model ran out of
+    // output budget; the verdict below splits that into "our ceiling" and
+    // "a relay cut it", which is the question this metric exists to answer.
+    { icon: AlertTriangle, label: t("settings.stats.truncated"), value: String(stats.truncated), hint: t("settings.stats.truncatedHint") },
   ];
+  // The split only counts replies that were actually cut off; a call with no
+  // recorded ceiling can be truncated but cannot be attributed either way.
+  const unattributed = Math.max(0, stats.truncated - stats.ceilingHit - stats.gatewayCut);
+  const verdictLines = [
+    stats.ceilingHit > 0 ? t("settings.stats.truncatedCeiling").replace("{n}", String(stats.ceilingHit)) : "",
+    stats.gatewayCut > 0 ? t("settings.stats.truncatedGateway").replace("{n}", String(stats.gatewayCut)) : "",
+    unattributed > 0 ? t("settings.stats.truncatedUnknown").replace("{n}", String(unattributed)) : "",
+  ].filter(Boolean);
   return (
     <div className="usage-stats__cards">
       {cards.map((c) => (
@@ -444,6 +471,16 @@ function StatCards({ stats, t }: { stats: UsageStatsRange; t: UsageStatsTranslat
           )}
         </div>
       ))}
+      {verdictLines.length > 0 && (
+        <div className="usage-stats__verdict">
+          <AlertTriangle className="usage-stats__verdict-icon" size={14} strokeWidth={2} aria-hidden="true" />
+          <ul className="usage-stats__verdict-list">
+            {verdictLines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

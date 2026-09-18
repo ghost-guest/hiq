@@ -112,6 +112,31 @@ const (
 	ApprovalStateRejected ApprovalState = "rejected"
 )
 
+// Checkpoint is a rolling summary of shared notes that have aged out of the
+// digest window (open-vetta 移植 P1-4 步骤 B).
+//
+// The hot window + the paging tool already make old notes reachable, but
+// reachable is not the same as known: a member only learns that something
+// relevant exists if it knows to page. A checkpoint is the middle layer —
+// a compact summary of everything older, rendered identically into every
+// member's digest, so the team's accumulated knowledge stays visible in
+// bounded space.
+//
+// Degraded marks a checkpoint produced without an LLM (the leader call failed
+// or timed out): it is an index of first lines rather than a real synthesis.
+// It is recorded honestly rather than silently, so a later pass can replace it.
+type Checkpoint struct {
+	ID   string    `json:"id"`
+	UpTo time.Time `json:"up_to"`
+	// Count is how many notes this checkpoint folds in.
+	Count int `json:"count"`
+	// Summary is the synthesized (or degraded) text.
+	Summary string `json:"summary"`
+	// Degraded is true when Summary is an index-style fallback.
+	Degraded bool      `json:"degraded,omitempty"`
+	At       time.Time `json:"at"`
+}
+
 // Note is one member-contributed entry on the shared context (P4 共享上下文):
 // a finding, a caveat or a hand-off hint posted while a member works. Unlike a
 // Decision (a settled call made by the leader) a note is raw working state any
@@ -204,13 +229,14 @@ type Artifact struct {
 // Version is monotonic so downstream consumers (and prompt caches) can tell
 // when the blackboard changed.
 type TeamContext struct {
-	Goal          string     `json:"goal,omitempty"`
-	Constraints   string     `json:"constraints,omitempty"`
-	Decisions     []Decision `json:"decisions,omitempty"`
-	Artifacts     []Artifact `json:"artifacts,omitempty"`
-	OpenQuestions []string   `json:"open_questions,omitempty"`
-	Notes         []Note     `json:"notes,omitempty"`
-	Version       int        `json:"version"`
+	Goal          string       `json:"goal,omitempty"`
+	Constraints   string       `json:"constraints,omitempty"`
+	Decisions     []Decision   `json:"decisions,omitempty"`
+	Artifacts     []Artifact   `json:"artifacts,omitempty"`
+	OpenQuestions []string     `json:"open_questions,omitempty"`
+	Notes         []Note       `json:"notes,omitempty"`
+	Checkpoints   []Checkpoint `json:"checkpoints,omitempty"`
+	Version       int          `json:"version"`
 }
 
 // Policy bounds a team's autonomy (guards against runaway cost/loops).
@@ -305,6 +331,11 @@ func (t *Team) normalize() {
 	ensureSingleLeader(t.Members)
 	if t.Context.Version == 0 {
 		t.Context.Version = 1
+	}
+	// Bound the checkpoint list the same way the note window is bounded: a
+	// hand-edited or repeatedly-checkpointed store must not grow without limit.
+	if len(t.Context.Checkpoints) > MaxCheckpoints {
+		t.Context.Checkpoints = t.Context.Checkpoints[len(t.Context.Checkpoints)-MaxCheckpoints:]
 	}
 	// A card without a gate can never be sitting in 待确认: repair any stale gate
 	// state so the board's approval column is always honest (e.g. after a

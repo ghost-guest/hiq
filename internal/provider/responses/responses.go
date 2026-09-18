@@ -274,8 +274,19 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 	}
 	c.authed.Store(true)
 	out := make(chan provider.Chunk, 64)
-	go c.readStream(requestCtx, resp, out, wireMessages)
+	go c.readStream(requestCtx, resp, out, wireMessages, wireMaxOutputTokens(body))
 	return out, nil
+}
+
+// wireMaxOutputTokens reads the output ceiling back out of the request body we
+// are about to send. Reading it (rather than recomputing it) keeps the number
+// attached to usage identical to what the provider was actually told, including
+// the vendor-specific defaults applied in buildRequestBody.
+func wireMaxOutputTokens(body map[string]any) int {
+	if v, ok := body["max_output_tokens"].(int); ok {
+		return v
+	}
+	return 0
 }
 
 func (c *client) send(ctx context.Context, body map[string]any) (*http.Response, error) {
@@ -428,7 +439,7 @@ type streamedCall struct {
 	completed           bool
 }
 
-func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<- provider.Chunk, requestMessages []provider.Message) {
+func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<- provider.Chunk, requestMessages []provider.Message, maxOutputTokens int) {
 	defer resp.Body.Close()
 	defer close(out)
 
@@ -630,7 +641,7 @@ func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<-
 			// terminal usage/done chunks below already close the turn. Leave the
 			// marker out rather than adding an unused field.
 			completedResponseID = terminalResponseID(event)
-			if !emitTerminalResponseUsage(ctx, out, event) {
+			if !emitTerminalResponseUsage(ctx, out, event, maxOutputTokens) {
 				return
 			}
 			if event.Type == "response.failed" {

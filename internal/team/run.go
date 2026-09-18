@@ -36,12 +36,19 @@ const LeaderPrompt = `你是这个团队的团长（负责人）。
 // folded into the main conversation: the main session's system prompt is under a
 // strict byte-stability invariant (the prompt-cache prefix guard).
 func MemberRunPrompt(t Team, m Member, tk Task) string {
+	return MemberRunPromptWithArchive(t, m, tk, 0)
+}
+
+// MemberRunPromptWithArchive is MemberRunPrompt plus the team's archived-note
+// count, so the digest can point the member at team_read_shared_history when
+// older notes exist (P1-4). archivedNotes <= 0 renders exactly as before.
+func MemberRunPromptWithArchive(t Team, m Member, tk Task, archivedNotes int) string {
 	var b strings.Builder
 
 	b.WriteString(memberIdentity(m))
 	b.WriteString("\n\n")
 
-	if digest := strings.TrimSpace(BlackboardDigest(t, 0)); digest != "" {
+	if digest := strings.TrimSpace(BlackboardDigestWithArchive(t, 0, archivedNotes)); digest != "" {
 		b.WriteString("## 团队上下文（共享黑板，只读）\n")
 		b.WriteString("以下是你所在团队的目标 / 约束 / 已定决策 / 已产出 / 未决问题。执行时必须遵守，不要偏离团队方向：\n")
 		b.WriteString(digest)

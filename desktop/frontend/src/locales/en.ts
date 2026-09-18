@@ -4138,6 +4138,9 @@ export const en = {
   "team.notes": "Shared notes",
   "team.notes.hint": "Sideways intel members leave via a 【Shared notes】 section; other members see it in the blackboard digest before they run.",
   "team.notes.empty": "No shared notes yet.",
+  "team.checkpoints": "Earlier notes summary",
+  "team.checkpoints.hint": "Once shared notes exceed the window, the oldest batch is compressed by the leader model and kept here. The full text stays archived — members page it back with team_read_shared_history.",
+  "team.checkpoints.degraded": "index-style summary",
   // 项目知识中枢 (project knowledge hub)
   "cowork.knowledgeHub": "Knowledge Hub",
   "kb.title": "Project Knowledge Hub",

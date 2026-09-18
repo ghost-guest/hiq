@@ -21,6 +21,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -102,8 +103,23 @@ type TeamContextView struct {
 	Artifacts     []TeamArtifactView `json:"artifacts"`
 	OpenQuestions []string           `json:"openQuestions"`
 	// Notes is the member-writable shared scratchpad (P4 共享上下文).
-	Notes   []TeamNoteView `json:"notes"`
-	Version int            `json:"version"`
+	Notes []TeamNoteView `json:"notes"`
+	// Checkpoints are rolling summaries of notes that have aged out of the hot
+	// window (P1-4 step B), so the panel can show what the team remembers from
+	// before. Degraded marks an index-style fallback (the summariser failed).
+	Checkpoints []TeamCheckpointView `json:"checkpoints"`
+	Version     int                  `json:"version"`
+}
+
+// TeamCheckpointView is one shared-note checkpoint (a compressed span of older
+// notes that all members render).
+type TeamCheckpointView struct {
+	ID       string `json:"id"`
+	Summary  string `json:"summary"`
+	Count    int    `json:"count"`
+	Degraded bool   `json:"degraded"`
+	UpTo     string `json:"upTo,omitempty"`
+	At       string `json:"at,omitempty"`
 }
 
 // TeamNoteView is one shared-context note posted by a member (or the user).
@@ -268,6 +284,12 @@ func (a *App) DeleteTeamProject(id string) error {
 	}
 	if !store.Delete(id) {
 		return fmt.Errorf("团队不存在: %s", id)
+	}
+	// The shared-note archive lives beside the store file rather than inside it,
+	// so deleting the team must delete its history too — otherwise a deleted
+	// team's notes stay on disk forever with nothing that can reach them.
+	if path, err := store.NotesArchivePath(id); err == nil {
+		_ = os.Remove(path)
 	}
 	// A deleted team's runs must not keep holding slots or streaming into a
 	// board that no longer exists.
@@ -844,6 +866,13 @@ func toTeamContextView(t teampkg.Team) TeamContextView {
 			TaskID: n.TaskID, Text: n.Text, At: formatTeamTime(n.At),
 		})
 	}
+	checkpoints := make([]TeamCheckpointView, 0, len(c.Checkpoints))
+	for _, ck := range c.Checkpoints {
+		checkpoints = append(checkpoints, TeamCheckpointView{
+			ID: ck.ID, Summary: ck.Summary, Count: ck.Count,
+			Degraded: ck.Degraded, UpTo: formatTeamTime(ck.UpTo), At: formatTeamTime(ck.At),
+		})
+	}
 	return TeamContextView{
 		Goal:          c.Goal,
 		Constraints:   c.Constraints,
@@ -851,6 +880,7 @@ func toTeamContextView(t teampkg.Team) TeamContextView {
 		Artifacts:     artifacts,
 		OpenQuestions: nonNilStrings(c.OpenQuestions),
 		Notes:         notes,
+		Checkpoints:   checkpoints,
 		Version:       c.Version,
 	}
 }

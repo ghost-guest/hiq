@@ -4559,7 +4559,11 @@ function makeMockApp(): AppBindings {
         async UsageStats() {
           // Browser dev mock has no stats files; the panel does not consume
           // provider aggregates, so keep this initial-bundle fallback lean.
-          return { from: "", to: "", tokens: 0, requests: 0, turns: 0, cacheHit: 0, cacheMiss: 0, activeDays: 0, topModel: "", daily: [], models: [] } as unknown as UsageStatsRange;
+          return {
+            from: "", to: "", tokens: 0, requests: 0, turns: 0, cacheHit: 0, cacheMiss: 0,
+            activeDays: 0, topModel: "", truncated: 0, ceilingHit: 0, gatewayCut: 0,
+            daily: [], models: [],
+          } as unknown as UsageStatsRange;
         },
         async SetNetwork(n: NetworkView) {
           settings.network = n;

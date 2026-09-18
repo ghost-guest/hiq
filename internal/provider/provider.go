@@ -565,6 +565,15 @@ type Usage struct {
 	CacheWriteBilledTokens float64
 	ReasoningTokens        int    // subset of CompletionTokens spent on chain-of-thought
 	FinishReason           string // "stop", "tool_calls", "length", "content_filter", "repetition_truncation", …
+	// MaxOutputTokens is the effective output ceiling this call put on the wire:
+	// the caller's Request.MaxTokens when set, otherwise whatever default the
+	// provider itself applied. Recording it is what makes "why was my answer cut
+	// off?" answerable after the fact — with only FinishReason and
+	// CompletionTokens in hand, a "length" stop is indistinguishable between
+	// "our ceiling was too small" and "the gateway cut us off mid-answer".
+	// Zero means the limit is unknown (an older record, or a provider that sent
+	// none and let the server choose).
+	MaxOutputTokens int
 	// Estimated marks usage the host derived rather than read from the provider.
 	Estimated bool
 	// RequestCount is the number of provider requests represented by this

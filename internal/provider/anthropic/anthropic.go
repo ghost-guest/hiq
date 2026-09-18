@@ -151,7 +151,8 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 	}
 	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	if err := json.NewEncoder(buf).Encode(c.buildRequest(req)); err != nil {
+	wire := c.buildRequest(req)
+	if err := json.NewEncoder(buf).Encode(wire); err != nil {
 		bufPool.Put(buf)
 		return nil, fmt.Errorf("%s: marshal request: %w", c.name, err)
 	}
@@ -180,7 +181,7 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 	}
 
 	out := make(chan provider.Chunk)
-	go c.readStream(resp, out)
+	go c.readStream(resp, out, wire.MaxTokens)
 	return out, nil
 }
 
@@ -313,7 +314,10 @@ func (c *client) buildRequest(req provider.Request) anthRequest {
 // and a complete ChunkToolCall when the block closes; usage is assembled from
 // message_start (input/cache) + message_delta (output + stop_reason) and emitted
 // once before ChunkDone.
-func (c *client) readStream(resp *http.Response, out chan<- provider.Chunk) {
+//
+// maxOutputTokens is the ceiling the request carried (buildRequest's resolved
+// max_tokens); it is attached to the usage chunk for later attribution.
+func (c *client) readStream(resp *http.Response, out chan<- provider.Chunk, maxOutputTokens int) {
 	defer resp.Body.Close()
 	defer close(out)
 
@@ -461,6 +465,9 @@ func (c *client) readStream(resp *http.Response, out chan<- provider.Chunk) {
 			CacheMissTokens:  inTok,       // pure uncached input
 			CacheWriteTokens: cacheCreate, // cache-creation writes (Cost bills these above the input rate)
 			FinishReason:     mapStopReason(stopReason),
+			// The ceiling actually sent (req.MaxTokens, else defaultMaxTokens),
+			// so a "length" stop can later be attributed to us or to the gateway.
+			MaxOutputTokens: maxOutputTokens,
 		}}
 	}
 	out <- provider.Chunk{Type: provider.ChunkDone}

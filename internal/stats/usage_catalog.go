@@ -157,7 +157,18 @@ func usageEntry(day string, r record) usagecatalog.Entry {
 	if r.Turn {
 		turns = 1
 	}
+	truncated, ceilingHit, gatewayCut := 0, 0, 0
+	if r.Truncated {
+		truncated = 1
+		if r.CeilingHit {
+			ceilingHit = 1
+		}
+		if r.GatewayCut {
+			gatewayCut = 1
+		}
+	}
 	return usagecatalog.Entry{Day: day, Source: r.Source, ModelRef: r.ModelRef, Provider: providerOf(r.ModelRef),
 		Prompt: r.Prompt, Completion: r.Completion, Reasoning: r.Reasoning, CacheHit: r.CacheHit,
-		CacheMiss: r.CacheMiss, Total: r.Total, Requests: r.Requests, Turns: turns}
+		CacheMiss: r.CacheMiss, Total: r.Total, Requests: r.Requests, Turns: turns,
+		Truncated: truncated, CeilingHit: ceilingHit, GatewayCut: gatewayCut}
 }

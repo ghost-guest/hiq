@@ -939,6 +939,10 @@ function BlackboardModal({
   const [decisions, setDecisions] = useState(team.context?.decisions ?? []);
   const [openQuestions, setOpenQuestions] = useState(team.context?.openQuestions ?? []);
   const [notes, setNotes] = useState<TeamNoteView[]>(team.context?.notes ?? []);
+  // Checkpoints are machine-generated and refreshed by every team:changed
+  // event, so they are derived straight from the prop rather than mirrored into
+  // state (a mirror could outlive the truth).
+  const checkpoints = team.context?.checkpoints ?? [];
   const [dText, setDText] = useState("");
   const [qText, setQText] = useState("");
   const [digest, setDigest] = useState("");
@@ -1036,6 +1040,25 @@ function BlackboardModal({
               setQText("");
             }} placeholder={t("team.itemPlaceholder")} addLabel={t("team.addItem")} />
           </div>
+
+          {checkpoints.length > 0 && (
+            <div className="team-list">
+              <span className="cowork-taskform__labeltext">{t("team.checkpoints")}</span>
+              <p className="team-hint">{t("team.checkpoints.hint")}</p>
+              <ul>
+                {checkpoints.map((c) => (
+                  <li key={c.id}>
+                    <span>
+                      {c.summary}
+                      <em className="team-hint">
+                        {`（${c.count} 条${c.degraded ? "，" + t("team.checkpoints.degraded") : ""}）`}
+                      </em>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="team-list">
             <span className="cowork-taskform__labeltext">{t("team.notes")}</span>

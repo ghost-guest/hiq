@@ -93,14 +93,50 @@
    narrow windows the grid drops to two rows of three so cards keep room. */
 .usage-stats__cards {
   display: grid;
-  grid-template-columns: 1.3fr repeat(4, 1fr) 1.3fr;
+  grid-template-columns: 1.3fr repeat(5, 1fr) 1.3fr;
   gap: 8px;
+}
+
+@media (max-width: 1100px) {
+  .usage-stats__cards {
+    grid-template-columns: 1.3fr repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 900px) {
   .usage-stats__cards {
     grid-template-columns: 1.3fr 1fr 1.3fr;
   }
+}
+
+/* Truncation verdict: it explains one of the cards above rather than being a
+   metric of its own, so it spans the whole grid. */
+.usage-stats__verdict {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elev);
+  color: var(--fg-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.usage-stats__verdict-icon {
+  color: var(--warn);
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.usage-stats__verdict-list {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .usage-stats__card {

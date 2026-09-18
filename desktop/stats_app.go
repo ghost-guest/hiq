@@ -25,19 +25,26 @@ type UsageStatsRequest struct {
 // UsageStatsRange is the aggregate response. Fields map 1:1 to the settings
 // panel sections (totals, derived stats, daily trend, per-model split).
 type UsageStatsRange struct {
-	From        string                `json:"from"`
-	To          string                `json:"to"`
-	Tokens      int64                 `json:"tokens"`
-	Requests    int                   `json:"requests"`
-	Turns       int                   `json:"turns"`
-	CacheHit    int64                 `json:"cacheHit"`
-	CacheMiss   int64                 `json:"cacheMiss"`
-	ActiveDays  int                   `json:"activeDays"`
-	TopModel    string                `json:"topModel"`
-	TopProvider string                `json:"topProvider"`
-	Daily       []stats.DailyTokens   `json:"daily"`
-	Models      []stats.ModelUsage    `json:"models"`
-	Providers   []stats.ProviderUsage `json:"providers"`
+	From        string `json:"from"`
+	To          string `json:"to"`
+	Tokens      int64  `json:"tokens"`
+	Requests    int    `json:"requests"`
+	Turns       int    `json:"turns"`
+	CacheHit    int64  `json:"cacheHit"`
+	CacheMiss   int64  `json:"cacheMiss"`
+	ActiveDays  int    `json:"activeDays"`
+	TopModel    string `json:"topModel"`
+	TopProvider string `json:"topProvider"`
+	// Output-ceiling observability: truncated counts calls stopped by "length",
+	// split into "our ceiling was too low" (ceilingHit) and "a relay cut it"
+	// (gatewayCut). A truncated call whose ceiling is unknown counts only in
+	// truncated.
+	Truncated  int                   `json:"truncated"`
+	CeilingHit int                   `json:"ceilingHit"`
+	GatewayCut int                   `json:"gatewayCut"`
+	Daily      []stats.DailyTokens   `json:"daily"`
+	Models     []stats.ModelUsage    `json:"models"`
+	Providers  []stats.ProviderUsage `json:"providers"`
 }
 
 // UsageStats aggregates recorded usage over the requested range. It is a pure
@@ -70,6 +77,9 @@ func (a *App) UsageStats(req UsageStatsRequest) (UsageStatsRange, error) {
 		ActiveDays:  res.ActiveDays,
 		TopModel:    res.TopModel,
 		TopProvider: res.TopProvider,
+		Truncated:   res.Truncated,
+		CeilingHit:  res.CeilingHit,
+		GatewayCut:  res.GatewayCut,
 		Daily:       res.Daily,
 		Models:      res.Models,
 		Providers:   res.Providers,

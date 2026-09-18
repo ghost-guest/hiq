@@ -228,6 +228,14 @@ func (m Member) IdentityPrompt() string {
 // maxChars <= 0 uses DefaultDigestMaxChars. The result is truncated at a line
 // boundary so it never cuts mid-token.
 func BlackboardDigest(t Team, maxChars int) string {
+	return BlackboardDigestWithArchive(t, maxChars, 0)
+}
+
+// BlackboardDigestWithArchive is BlackboardDigest plus the team's archived-note
+// count, so the shared-notes block can tell a member that older notes exist and
+// how to page them back (P1-4). archivedNotes <= 0 simply omits the hint — the
+// digest still renders, so callers that only have the team record are unaffected.
+func BlackboardDigestWithArchive(t Team, maxChars, archivedNotes int) string {
 	if maxChars <= 0 {
 		maxChars = DefaultDigestMaxChars
 	}
@@ -267,6 +275,12 @@ func BlackboardDigest(t Team, maxChars int) string {
 			b.WriteString("\n")
 		}
 	}
+	// Everything the team learned that has already aged out of the hot window,
+	// compressed. Rendered before the live notes so the freshest knowledge sits
+	// closest to the task frame below.
+	if block := CheckpointsDigest(t); block != "" {
+		b.WriteString(block)
+	}
 	// The shared scratchpad (P4 共享上下文): the most recent member-contributed
 	// notes, newest last so the freshest knowledge sits next to the task frame.
 	if len(t.Context.Notes) > 0 {
@@ -283,6 +297,7 @@ func BlackboardDigest(t Team, maxChars int) string {
 			b.WriteString(n.Text)
 			b.WriteString("\n")
 		}
+		b.WriteString(ArchiveHint(t, archivedNotes))
 	}
 	if len(t.Context.OpenQuestions) > 0 {
 		b.WriteString("【未决问题】\n")

@@ -60,6 +60,9 @@ const richStats: UsageStatsRange = {
   activeDays: 5,
   topModel: "deepseek/deepseek-v4.1-flash",
   topProvider: "deepseek",
+  truncated: 5,
+  ceilingHit: 2,
+  gatewayCut: 1,
   daily: [
     {
       day: day(-1),
@@ -97,6 +100,9 @@ const emptyStats: UsageStatsRange = {
   activeDays: 0,
   topModel: "",
   topProvider: "",
+  truncated: 0,
+  ceilingHit: 0,
+  gatewayCut: 0,
   daily: [],
   models: [],
   providers: [],
@@ -127,7 +133,7 @@ describe("UsageStatsPanel（用量统计）", () => {
 
     await waitFor(() => expect(container.querySelector(".usage-stats__cards")).toBeTruthy());
     const cards = container.querySelectorAll(".usage-stats__card");
-    expect(cards.length).toBe(6);
+    expect(cards.length).toBe(7);
 
     const text = container.querySelector(".usage-stats__cards")?.textContent ?? "";
     expect(text).toContain("1,500,000"); // token total, exact digits
@@ -135,6 +141,35 @@ describe("UsageStatsPanel（用量统计）", () => {
     expect(text).toContain("42"); // provider requests
     expect(text).toContain("90.0%"); // 900k hit / (900k + 100k) miss, one decimal
     expect(text).toContain("deepseek/deepseek-v4.1-flash");
+  });
+
+  it("splits cut-off replies into our own ceiling and a relay cutting them", async () => {
+    // 5 truncated: 2 filled the ceiling we sent, 1 stopped short of it, and 2
+    // were recorded before the ceiling was captured — the third line must say so
+    // rather than folding the unknown ones into a wrong verdict.
+    host.payload = richStats;
+    const { container } = mount();
+
+    await waitFor(() => expect(container.querySelector(".usage-stats__verdict")).toBeTruthy());
+    const verdict = container.querySelector(".usage-stats__verdict")?.textContent ?? "";
+    expect(verdict).toContain("2 hit the limit we sent");
+    expect(verdict).toContain("raise max_tokens");
+    expect(verdict).toContain("1 stopped short of it");
+    expect(verdict).toContain("relay");
+    expect(verdict).toContain("2 had no recorded limit");
+
+    // The count is also a card, so the metric is visible without reading prose.
+    const text = container.querySelector(".usage-stats__cards")?.textContent ?? "";
+    expect(text).toContain("Cut-off replies");
+  });
+
+  it("omits the verdict block when nothing was cut off", async () => {
+    host.payload = { ...richStats, truncated: 0, ceilingHit: 0, gatewayCut: 0 };
+    const { container } = mount();
+    await waitFor(() => expect(container.querySelector(".usage-stats__cards")).toBeTruthy());
+    expect(container.querySelector(".usage-stats__verdict")).toBeNull();
+    // The card itself is always present — a zero is information.
+    expect(container.querySelectorAll(".usage-stats__card").length).toBe(7);
   });
 
   it("draws the heatmap and the per-model split", async () => {

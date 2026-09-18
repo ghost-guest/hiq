@@ -269,6 +269,7 @@ func (r *Recorder) recordProviderUsage(modelRef string, usage *provider.Usage, q
 		Requests:    usageRequestCount(usage),
 		UsageSource: strings.TrimSpace(usageSource),
 	}
+	rec.MaxOutput, rec.StopReason, rec.Truncated, rec.CeilingHit, rec.GatewayCut = outputCeilingVerdict(usage)
 	if quote != nil {
 		rec.CostAmount = quote.Original.Amount
 		rec.CostCurrency = quote.Original.Currency
@@ -309,4 +310,36 @@ func usageRequestCount(usage *provider.Usage) int {
 		return usage.RequestCount
 	}
 	return 1
+}
+
+// FinishReasonLength is the provider stop reason that means "the model was cut
+// off at the output ceiling" rather than "the model finished answering".
+const FinishReasonLength = "length"
+
+// outputCeilingVerdict classifies one usage record's ending:
+//
+//	maxOutput   the ceiling the request carried (0 = unknown)
+//	reason      the provider's stop reason
+//	truncated   the answer was cut off
+//	ceilingHit  truncated AND the output filled our ceiling → raise the limit
+//	gatewayCut  truncated AND the output stopped short of it → a relay cut it
+//
+// A truncated call whose ceiling is unknown contributes to truncated only: with
+// no ceiling there is nothing to compare against, and guessing would be worse
+// than saying "unknown".
+func outputCeilingVerdict(usage *provider.Usage) (maxOutput int, reason string, truncated, ceilingHit, gatewayCut bool) {
+	if usage == nil {
+		return 0, "", false, false, false
+	}
+	maxOutput = usage.MaxOutputTokens
+	reason = strings.TrimSpace(usage.FinishReason)
+	if reason != FinishReasonLength {
+		return maxOutput, reason, false, false, false
+	}
+	truncated = true
+	if maxOutput > 0 {
+		ceilingHit = usage.CompletionTokens >= maxOutput
+		gatewayCut = !ceilingHit
+	}
+	return maxOutput, reason, true, ceilingHit, gatewayCut
 }

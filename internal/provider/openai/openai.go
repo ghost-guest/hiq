@@ -190,7 +190,8 @@ var bufPool = sync.Pool{
 func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provider.Chunk, error) {
 	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	if err := json.NewEncoder(buf).Encode(c.buildRequest(req)); err != nil {
+	wire := c.buildRequest(req)
+	if err := json.NewEncoder(buf).Encode(wire); err != nil {
 		bufPool.Put(buf)
 		return nil, fmt.Errorf("%s: marshal request: %w", c.name, err)
 	}
@@ -220,7 +221,7 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 	c.authed.Store(true)
 
 	out := make(chan provider.Chunk)
-	go c.streamWithReconnect(ctx, resp, newReq, out)
+	go c.streamWithReconnect(ctx, resp, newReq, out, wire.MaxTokens)
 	return out, nil
 }
 
@@ -233,10 +234,10 @@ const maxStreamReconnects = 3
 // any model output has been forwarded, replays the request rather than failing
 // the turn. Once a token (reasoning/text/tool-call) has been emitted, a replay
 // would duplicate output, so the error is surfaced instead.
-func (c *client) streamWithReconnect(ctx context.Context, resp *http.Response, newReq func(context.Context) (*http.Request, error), out chan<- provider.Chunk) {
+func (c *client) streamWithReconnect(ctx context.Context, resp *http.Response, newReq func(context.Context) (*http.Request, error), out chan<- provider.Chunk, maxOutputTokens int) {
 	defer close(out)
 	for attempt := 0; ; attempt++ {
-		emitted, err := c.readStream(ctx, resp, out)
+		emitted, err := c.readStream(ctx, resp, out, maxOutputTokens)
 		if err == nil {
 			return
 		}
@@ -366,7 +367,7 @@ func (c *client) buildRequest(req provider.Request) chatRequest {
 // ChunkToolCallStart fires the moment a call's name is known. It returns whether
 // any model output was forwarded (so the caller can decide a replay is safe) and
 // the first fatal error — a nil error means the stream reached [DONE].
-func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<- provider.Chunk) (emitted bool, _ error) {
+func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<- provider.Chunk, maxOutputTokens int) (emitted bool, _ error) {
 	defer resp.Body.Close()
 
 	// Close the response body when the context is canceled (user interrupt) or the
@@ -447,6 +448,10 @@ func (c *client) readStream(ctx context.Context, resp *http.Response, out chan<-
 		if sr.Usage != nil {
 			u := normaliseUsage(sr.Usage)
 			u.FinishReason = lastFinishReason
+			// The ceiling the request carried (0 when we sent none and let the
+			// server choose), recorded so a later "length" stop can be told
+			// apart from a gateway truncation.
+			u.MaxOutputTokens = maxOutputTokens
 			emitted = true
 			out <- provider.Chunk{Type: provider.ChunkUsage, Usage: u}
 		}
@@ -586,14 +591,14 @@ type chatRequest struct {
 	Thinking        *thinkingMode  `json:"thinking,omitempty"`
 	// PromptCacheKey routes same-conversation requests to one cache shard
 	// (OpenAI prefix caching). Clamped to the API's 64-char limit upstream.
-	PromptCacheKey  string `json:"prompt_cache_key,omitempty"`
+	PromptCacheKey string `json:"prompt_cache_key,omitempty"`
 	// ResponseFormat constrains output to the given JSON schema (upgrade spec
 	// 4-7). Only set when the caller passed one.
-	ResponseFormat  *chatResponseFormat `json:"response_format,omitempty"`
+	ResponseFormat *chatResponseFormat `json:"response_format,omitempty"`
 }
 
 type chatResponseFormat struct {
-	Type       string           `json:"type"` // "json_schema"
+	Type       string            `json:"type"` // "json_schema"
 	JSONSchema chatJSONSchemaFmt `json:"json_schema"`
 }
 

@@ -49,6 +49,25 @@ type record struct {
 	Total      int       `json:"total,omitempty"`
 	Requests   int       `json:"requests,omitempty"` // provider requests represented by this row
 	Turn       bool      `json:"turn,omitempty"`     // true for TurnDone marker rows
+	// Output-ceiling observability (additive; older readers ignore these).
+	//
+	// A "length" stop on its own says only that the answer ended early. The
+	// ceiling the request carried is what tells the two causes apart, so it is
+	// recorded next to the stop reason and the verdict is precomputed:
+	//
+	//	Truncated   stop reason == "length"
+	//	CeilingHit  truncated AND the output reached our ceiling → we set it too low
+	//	GatewayCut  truncated AND the output stopped short of it → something in
+	//	            between (a relay/gateway) cut the answer
+	//
+	// MaxOutput 0 means the ceiling is unknown (a row written before this
+	// shipped, or a provider that sent none and let the server choose); such a
+	// row can contribute to Truncated but to neither verdict.
+	MaxOutput  int    `json:"max_output,omitempty"`
+	StopReason string `json:"stop_reason,omitempty"`
+	Truncated  bool   `json:"truncated,omitempty"`
+	CeilingHit bool   `json:"ceiling_hit,omitempty"`
+	GatewayCut bool   `json:"gateway_cut,omitempty"`
 	// Cost quote fields (additive; older readers ignore them).
 	UsageSource        string   `json:"usage_source,omitempty"`
 	CostAmount         string   `json:"cost_amount,omitempty"`     // original amount decimal

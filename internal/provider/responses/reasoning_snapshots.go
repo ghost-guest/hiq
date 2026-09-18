@@ -55,11 +55,14 @@ func terminalResponseID(event sseEvent) string {
 	}
 	return ""
 }
-func emitTerminalResponseUsage(ctx context.Context, out chan<- provider.Chunk, event sseEvent) bool {
+func emitTerminalResponseUsage(ctx context.Context, out chan<- provider.Chunk, event sseEvent, maxOutputTokens int) bool {
 	if event.Response != nil {
 
 		usage := usageFromResponse(event.Response)
 		provider.ApplyRequestAttemptCount(ctx, usage)
+		// The ceiling the wire request carried, so a later "length" stop can be
+		// attributed to our own limit or to the gateway cutting the answer.
+		usage.MaxOutputTokens = maxOutputTokens
 		if event.Type == "response.incomplete" {
 			switch event.Response.IncompleteDetails.Reason {
 			case "max_output_tokens":
