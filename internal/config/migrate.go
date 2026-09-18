@@ -71,7 +71,7 @@ func (r *MigrationResult) Notice() string {
 func MigrateLegacyIfNeeded() (*MigrationResult, error) {
 	// Rebrand hop: carry the pre-hiq user directory forward before anything else
 	// resolves it, so the encrypted key store and settings survive the rename.
-	if _, err := migrateLegacyUserDir(); err != nil {
+	if _, err := MigrateLegacyUserDir(); err != nil {
 		return nil, err
 	}
 	dest := userConfigPath()

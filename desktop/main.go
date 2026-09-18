@@ -8,6 +8,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"os"
 	"strings"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
+	"github.com/zzycxz/hiq/internal/config"
 	// Blank imports wire compile-time built-ins into their registries, exactly as
 	// cmd/hiq does — boot.Build resolves providers/tools from these registries.
 	_ "github.com/zzycxz/hiq/internal/provider/anthropic"
@@ -78,6 +80,14 @@ func main() {
 		os.Exit(code)
 	}
 	sandbox.RegisterHelperDispatch()
+	// Rebrand hop (fairpeer -> hiq): carry the pre-rebrand user directory over
+	// before anything below resolves it — the window-state read, the startup
+	// log redirect and every config load all key off the hiq dir. Done here
+	// rather than only in boot.Build because boot only runs once a tab
+	// controller is built, which can be arbitrarily late, or never.
+	if _, err := config.MigrateLegacyUserDir(); err != nil {
+		fmt.Fprintln(os.Stderr, "warning: legacy user-dir migration failed:", err)
+	}
 	app := NewApp()
 
 	// Restore saved window size, or fall back to the default.
