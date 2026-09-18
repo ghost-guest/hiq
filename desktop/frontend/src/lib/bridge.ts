@@ -461,7 +461,8 @@ export interface AppBindings {
   // returns once the card flips to running; progress arrives via team:changed.
   RunTeamTask(teamId: string, taskId: string): Promise<TeamProjectView>;
   CancelTeamTask(teamId: string, taskId: string): Promise<void>;
-  // Task IDs with an in-flight run, so a remounted board restores its spinners.
+  // Task IDs that hold a concurrency slot or are waiting in the pool queue, so
+  // a remounted board restores both its spinners and its 排队中 notes.
   RunningTeamTasks(teamId: string): Promise<string[]>;
   // 项目知识中枢 (project knowledge hub): unifies code/docs/memory/team into a
   // self-maintaining project map with revision history.

@@ -171,6 +171,14 @@ type App struct {
 	// survives a panel unmount or profile switch. Guarded by teamRunsMu.
 	teamRuns   map[string]context.CancelFunc
 	teamRunsMu sync.Mutex
+	// teamPools bounds concurrent member runs per team (Policy.MaxParallel).
+	// A card that arrives while the bound is full waits in its team's FIFO
+	// queue instead of starting, so ten clicks never mean ten live sessions.
+	// Created at startup by initTeams; nil means "no bound enforced".
+	teamPools *teampkg.Pools
+	// teamPoolsMu guards the lazy creation of teamPools (requireTeamStore can
+	// rebuild the store outside startup, from concurrent RPC handlers).
+	teamPoolsMu sync.Mutex
 	// kbHubs caches the project knowledge hub per workspace root — each
 	// workspace has its own project map — and backs the resolver the agent's
 	// kb_* tools call through. Guarded by kbMu.
@@ -1110,6 +1118,11 @@ func (a *App) shutdown(context.Context) {
 	// Save window geometry synchronously from Go so it's persisted even if the
 	// frontend's beforeunload promise hasn't resolved yet.
 	a.saveWindowStateSync()
+
+	// Stop every in-flight member run before the tabs close: a team run keeps
+	// writing to the board and burning upstream quota, so letting it outlive
+	// the window would both leak work and leave cards spinning (P1-3).
+	a.CancelAllTeamRuns("应用退出")
 
 	a.mu.RLock()
 	tabs := make([]*WorkspaceTab, 0, len(a.tabs))

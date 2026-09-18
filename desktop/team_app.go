@@ -251,6 +251,11 @@ func (a *App) UpdateTeamProject(tv TeamProjectView) (TeamProjectView, error) {
 	if err != nil {
 		return TeamProjectView{}, err
 	}
+	// Policy.MaxParallel may have been edited: re-bound the team's pool and start
+	// whatever the new bound now allows to leave the queue (P1-1).
+	for _, key := range a.teamPoolsInit().SetMax(updated.ID, updated.Policy.MaxParallel) {
+		a.startPromotedTeamRun(key)
+	}
 	a.emitTeamChanged(updated)
 	return toTeamProjectView(updated), nil
 }
@@ -263,6 +268,22 @@ func (a *App) DeleteTeamProject(id string) error {
 	}
 	if !store.Delete(id) {
 		return fmt.Errorf("团队不存在: %s", id)
+	}
+	// A deleted team's runs must not keep holding slots or streaming into a
+	// board that no longer exists.
+	if running, _ := a.teamPoolsInit().Drop(id); len(running) > 0 {
+		a.teamRunsMu.Lock()
+		cancels := make([]context.CancelFunc, 0, len(running))
+		for _, key := range running {
+			if cancel, ok := a.teamRuns[key]; ok {
+				cancels = append(cancels, cancel)
+				delete(a.teamRuns, key)
+			}
+		}
+		a.teamRunsMu.Unlock()
+		for _, cancel := range cancels {
+			cancel()
+		}
 	}
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "team:changed", map[string]string{"id": id, "deleted": "1"})
@@ -700,6 +721,10 @@ func (a *App) initTeams() {
 		return
 	}
 	a.teamStore = store
+	a.teamPoolsInit()
+	// A member run exists only in memory, so any card still marked running here
+	// is a leftover from the previous process (P1-2).
+	a.recoverTeamRuns()
 }
 
 // runTeamDraftLLM runs one drafting completion. It reuses the expert runner's

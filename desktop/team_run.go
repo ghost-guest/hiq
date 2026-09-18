@@ -39,33 +39,97 @@ import (
 // teamRunKey identifies one in-flight member run.
 func teamRunKey(teamID, taskID string) string { return teamID + "/" + taskID }
 
+// resolveTeamRunTarget loads a card plus everything needed to run it, applying
+// the same gates the board applies before enabling "run": the assignee must
+// still exist and the card's dependencies must have reached terminal success.
+//
+// Shared by both launch paths — a user-initiated run (which then asks the pool
+// for a slot) and a queue promotion (which already holds one) — so the two can
+// never drift apart.
+func (a *App) resolveTeamRunTarget(teamID, taskID string) (teampkg.Team, teampkg.Task, teampkg.Member, error) {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return teampkg.Team{}, teampkg.Task{}, teampkg.Member{}, err
+	}
+	tm, ok := store.Get(teamID)
+	if !ok {
+		return teampkg.Team{}, teampkg.Task{}, teampkg.Member{}, fmt.Errorf("团队不存在")
+	}
+	tk, ok := tm.Task(taskID)
+	if !ok {
+		return teampkg.Team{}, teampkg.Task{}, teampkg.Member{}, fmt.Errorf("任务不存在")
+	}
+	if strings.TrimSpace(tk.AssigneeID) == "" {
+		return teampkg.Team{}, teampkg.Task{}, teampkg.Member{},
+			fmt.Errorf("这张卡片还没有负责人：先拖到「待开始」按能力自动指派，或手动指派")
+	}
+	member, ok := tm.Member(tk.AssigneeID)
+	if !ok {
+		return teampkg.Team{}, teampkg.Task{}, teampkg.Member{}, fmt.Errorf("负责人已不在团队中，请重新指派")
+	}
+	if missing := unmetTeamDeps(tm, tk); len(missing) > 0 {
+		return teampkg.Team{}, teampkg.Task{}, teampkg.Member{},
+			fmt.Errorf("前置任务尚未完成：%s", strings.Join(missing, "、"))
+	}
+	return tm, tk, member, nil
+}
+
 // RunTeamTask executes a card as its assignee's isolated sub-session and returns
 // the board immediately (the run itself streams in the background, updating
 // Progress and finally the card's state). It is the "让团员真正干活" entry point.
+//
+// The card must first win a concurrency slot: Policy.MaxParallel is a bound, not
+// a suggestion, so a card arriving at a full pool is parked in the team's FIFO
+// queue instead of opening a session (P1-1).
 func (a *App) RunTeamTask(teamID, taskID string) (TeamProjectView, error) {
+	tm, tk, member, err := a.resolveTeamRunTarget(teamID, taskID)
+	if err != nil {
+		return TeamProjectView{}, err
+	}
 	store, err := a.requireTeamStore()
 	if err != nil {
 		return TeamProjectView{}, err
 	}
-	tm, ok := store.Get(teamID)
-	if !ok {
-		return TeamProjectView{}, fmt.Errorf("团队不存在")
-	}
-	tk, ok := tm.Task(taskID)
-	if !ok {
-		return TeamProjectView{}, fmt.Errorf("任务不存在")
-	}
-	if strings.TrimSpace(tk.AssigneeID) == "" {
-		return TeamProjectView{}, fmt.Errorf("这张卡片还没有负责人：先拖到「待开始」按能力自动指派，或手动指派")
-	}
-	member, ok := tm.Member(tk.AssigneeID)
-	if !ok {
-		return TeamProjectView{}, fmt.Errorf("负责人已不在团队中，请重新指派")
-	}
-	if missing := unmetTeamDeps(tm, tk); len(missing) > 0 {
-		return TeamProjectView{}, fmt.Errorf("前置任务尚未完成：%s", strings.Join(missing, "、"))
-	}
+	key := teamRunKey(teamID, taskID)
+	pool := a.teamPoolEnsure(tm.ID, tm.Policy.MaxParallel)
 
+	switch pool.Admit(key) {
+	case teampkg.AdmitDuplicate:
+		return TeamProjectView{}, fmt.Errorf("该任务正在执行或排队中")
+	case teampkg.AdmitQueued:
+		// No slot yet: park the card. The pool hands the key back through
+		// releaseTeamSlot when a slot frees up.
+		queued, err := store.Update(teamID, func(t *teampkg.Team) {
+			for i := range t.Tasks {
+				if t.Tasks[i].ID != taskID {
+					continue
+				}
+				t.Tasks[i].Status = taskmonitor.TaskStateQueued
+				t.Tasks[i].Error = ""
+				t.Tasks[i].Progress = a.teamQueueNote(pool, key)
+				t.Tasks[i].UpdatedAt = time.Now().UTC()
+			}
+		})
+		if err != nil {
+			// Never leave the card holding a queue slot it no longer has a
+			// record for.
+			pool.Dequeue(key)
+			return TeamProjectView{}, err
+		}
+		a.emitTeamChanged(queued)
+		return toTeamProjectView(queued), nil
+	}
+	return a.launchTeamTask(teamID, taskID, tk, member)
+}
+
+// launchTeamTask starts the goroutine for a card whose slot is ALREADY booked in
+// the pool — either Admit returned AdmitRunning, or Release promoted the card out
+// of the queue. Callers must NOT admit again for this key.
+func (a *App) launchTeamTask(teamID, taskID string, tk teampkg.Task, member teampkg.Member) (TeamProjectView, error) {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return TeamProjectView{}, err
+	}
 	key := teamRunKey(teamID, taskID)
 	base := a.ctx
 	if base == nil {
@@ -77,17 +141,13 @@ func (a *App) RunTeamTask(teamID, taskID string) (TeamProjectView, error) {
 	if a.teamRuns == nil {
 		a.teamRuns = map[string]context.CancelFunc{}
 	}
-	if _, running := a.teamRuns[key]; running {
-		a.teamRunsMu.Unlock()
-		cancel()
-		return TeamProjectView{}, fmt.Errorf("该任务正在执行中")
-	}
 	a.teamRuns[key] = cancel
 	a.teamRunsMu.Unlock()
 
 	// Flip the card to running BEFORE dispatching so the board shows a spinner
 	// the moment the call returns. The member prompt is built from the snapshot
-	// taken above, so the status flip cannot affect what the member is told.
+	// taken by the caller, so the status flip cannot affect what the member is
+	// told.
 	started, err := store.Update(teamID, func(t *teampkg.Team) {
 		for i := range t.Tasks {
 			if t.Tasks[i].ID != taskID {
@@ -103,6 +163,9 @@ func (a *App) RunTeamTask(teamID, taskID string) (TeamProjectView, error) {
 	if err != nil {
 		a.forgetTeamRun(key)
 		cancel()
+		// Hand the slot back so a queued card is not stranded behind a card
+		// that never started.
+		a.releaseTeamSlot(teamID, key)
 		return TeamProjectView{}, err
 	}
 
@@ -113,6 +176,120 @@ func (a *App) RunTeamTask(teamID, taskID string) (TeamProjectView, error) {
 		a.replanFailedTeamTask(teamID, taskID)
 	}()
 	return toTeamProjectView(started), nil
+}
+
+// releaseTeamSlot frees a finished run's slot and starts the next queued card, if
+// any. Because it runs from runTeamMember's defer, every exit path — success,
+// failure, cancel — gives the slot back, so the queue always keeps moving.
+func (a *App) releaseTeamSlot(teamID, key string) {
+	pool := a.teamPoolGet(teamID)
+	if pool == nil {
+		return
+	}
+	next, ok := pool.Release(key)
+	if !ok {
+		return
+	}
+	a.startPromotedTeamRun(next)
+}
+
+// startPromotedTeamRun starts a card the pool promoted out of the queue. Its slot
+// is already booked, so this path re-reads the card (its assignee or dependency
+// state may have changed while it waited) and launches directly, never admitting
+// again — and hands the slot back if the card is no longer runnable, so one dead
+// card cannot stall the queue behind it.
+func (a *App) startPromotedTeamRun(key string) {
+	teamID, taskID, ok := splitTeamRunKey(key)
+	if !ok {
+		return
+	}
+	_, tk, member, err := a.resolveTeamRunTarget(teamID, taskID)
+	if err != nil {
+		a.releaseTeamSlot(teamID, key)
+		a.setTeamProgressNote(teamID, taskID, "排队期间条件已变化，未能启动："+err.Error())
+		return
+	}
+	if _, err := a.launchTeamTask(teamID, taskID, tk, member); err != nil {
+		a.setTeamProgressNote(teamID, taskID, "启动失败："+err.Error())
+	}
+}
+
+// splitTeamRunKey inverts teamRunKey. Team IDs are generated without a slash, so
+// the first separator is the boundary.
+func splitTeamRunKey(key string) (teamID, taskID string, ok bool) {
+	i := strings.Index(key, "/")
+	if i <= 0 || i == len(key)-1 {
+		return "", "", false
+	}
+	return key[:i], key[i+1:], true
+}
+
+// teamPoolEnsure returns a team's pool, creating it with the team's policy bound.
+func (a *App) teamPoolEnsure(teamID string, max int) *teampkg.Pool {
+	return a.teamPoolsInit().Ensure(teamID, max)
+}
+
+// teamPoolGet returns an existing pool without creating one.
+func (a *App) teamPoolGet(teamID string) *teampkg.Pool {
+	pools := a.teamPools
+	if pools == nil {
+		return nil
+	}
+	return pools.Get(teamID)
+}
+
+// teamPoolsInit lazily creates the per-team pool registry. It is safe to call
+// from concurrent RPC handlers, which matters because requireTeamStore can
+// re-create the store outside startup.
+func (a *App) teamPoolsInit() *teampkg.Pools {
+	a.teamPoolsMu.Lock()
+	defer a.teamPoolsMu.Unlock()
+	if a.teamPools == nil {
+		a.teamPools = teampkg.NewPools()
+	}
+	return a.teamPools
+}
+
+// teamQueueNote renders the "waiting" line for a card parked in the pool queue,
+// so the board says where it stands instead of a bare "queued".
+func (a *App) teamQueueNote(pool *teampkg.Pool, key string) string {
+	pos, depth := 0, 0
+	if pool != nil {
+		snap := pool.Snapshot()
+		depth = len(snap.Queued)
+		for i, k := range snap.Queued {
+			if k == key {
+				pos = i + 1
+				break
+			}
+		}
+	}
+	if pos == 0 {
+		return "排队中（等前面的成员跑完自动开始）"
+	}
+	return fmt.Sprintf("排队中（第 %d/%d 位，等前面的成员跑完自动开始）", pos, depth)
+}
+
+// setTeamProgressNote writes one progress line and refreshes the board. Used for
+// notes that are not tied to a live run (queue or startup problems).
+func (a *App) setTeamProgressNote(teamID, taskID, line string) {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return
+	}
+	tm, err := store.Update(teamID, func(t *teampkg.Team) {
+		for i := range t.Tasks {
+			if t.Tasks[i].ID != taskID {
+				continue
+			}
+			t.Tasks[i].Progress = line
+			t.Tasks[i].UpdatedAt = time.Now().UTC()
+		}
+	})
+	if err != nil {
+		return
+	}
+	a.emitTeamChanged(tm)
 }
 
 // TeamTaskProgress is the payload of the lightweight `team:task` event. Progress
@@ -180,10 +357,15 @@ func teamTaskFailed(s taskmonitor.TaskState) bool {
 	return s == taskmonitor.TaskStateFailed || s == taskmonitor.TaskStateStale
 }
 
-// CancelTeamTask stops an in-flight member run. The card returns to 待开始
-// (queued + assigned) so it can be re-run.
+// CancelTeamTask stops a card's run — or, when the card is still waiting, simply
+// drops it from the pool queue (there is no run to cancel, only a wait to end).
+// Either way the card returns to 待开始 (queued + assigned) so it can be re-run.
 func (a *App) CancelTeamTask(teamID, taskID string) error {
 	key := teamRunKey(teamID, taskID)
+	if pool := a.teamPoolGet(teamID); pool != nil && pool.Dequeue(key) {
+		a.setTeamProgressNote(teamID, taskID, "")
+		return nil
+	}
 	a.teamRunsMu.Lock()
 	cancel, ok := a.teamRuns[key]
 	if ok {
@@ -197,20 +379,119 @@ func (a *App) CancelTeamTask(teamID, taskID string) error {
 	return nil
 }
 
-// RunningTeamTasks returns the IDs of a team's cards with an in-flight run, so a
-// remounted board can restore its spinners (the goroutine outlives the panel).
+// RunningTeamTasks returns the IDs of a team's cards that hold a concurrency slot
+// or are waiting in its queue, so a remounted board restores both its spinners
+// and its 排队中 notes (the goroutine outlives the panel).
 func (a *App) RunningTeamTasks(teamID string) []string {
-	a.teamRunsMu.Lock()
-	defer a.teamRunsMu.Unlock()
-	prefix := teamID + "/"
-	out := make([]string, 0, len(a.teamRuns))
-	for key := range a.teamRuns {
-		if strings.HasPrefix(key, prefix) {
-			out = append(out, strings.TrimPrefix(key, prefix))
+	pool := a.teamPoolGet(teamID)
+	if pool == nil {
+		return []string{}
+	}
+	snap := pool.Snapshot()
+	keys := make([]string, 0, len(snap.Running)+len(snap.Queued))
+	keys = append(keys, snap.Running...)
+	keys = append(keys, snap.Queued...)
+	out := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if tid, taskID, ok := splitTeamRunKey(key); ok && tid == teamID {
+			out = append(out, taskID)
 		}
 	}
 	sort.Strings(out)
 	return out
+}
+
+// recoverTeamRuns reconciles cards left "running" by a previous process (P1-2).
+//
+// A member run exists only in memory — a goroutine plus a pool slot — so a
+// persisted card still marked running at startup cannot have a live run behind
+// it: the process that owned it is gone. Such a card is moved to stale with an
+// honest note rather than being silently re-run, because an app that starts
+// burning quota the moment it opens is worse than one that says it was
+// interrupted and offers a rerun.
+func (a *App) recoverTeamRuns() {
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return
+	}
+	for _, tm := range store.List() {
+		// At startup every pool is empty, but the check is written against the
+		// live set anyway so the function stays correct if it is ever called
+		// while runs are in flight.
+		live := map[string]struct{}{}
+		if pool := a.teamPoolGet(tm.ID); pool != nil {
+			for _, key := range pool.Snapshot().Running {
+				live[key] = struct{}{}
+			}
+		}
+		changed := false
+		updated, err := store.Update(tm.ID, func(t *teampkg.Team) {
+			for i := range t.Tasks {
+				if t.Tasks[i].Status != taskmonitor.TaskStateRunning {
+					continue
+				}
+				if _, ok := live[teamRunKey(t.ID, t.Tasks[i].ID)]; ok {
+					continue
+				}
+				t.Tasks[i].Status = taskmonitor.TaskStateStale
+				t.Tasks[i].Progress = ""
+				t.Tasks[i].Error = "上次运行被中断（程序已退出），可直接重新运行"
+				t.Tasks[i].UpdatedAt = time.Now().UTC()
+				changed = true
+			}
+		})
+		if err != nil || !changed {
+			continue
+		}
+		a.emitTeamChanged(updated)
+	}
+}
+
+// CancelAllTeamRuns stops every in-flight member run and empties every queue
+// (P1-3) — the app-wide counterpart of open-vetta's work.stop-all.
+//
+// Closing a workspace or quitting must not leave member sessions burning quota
+// behind a hidden panel, so this runs on the shutdown path. Cards that were only
+// waiting have nothing to cancel; their notes are cleared so the board stops
+// claiming they are queued.
+func (a *App) CancelAllTeamRuns(reason string) {
+	if pools := a.teamPools; pools != nil {
+		pools.CancelAll()
+	}
+
+	a.teamRunsMu.Lock()
+	cancels := make([]context.CancelFunc, 0, len(a.teamRuns))
+	for key, cancel := range a.teamRuns {
+		cancels = append(cancels, cancel)
+		delete(a.teamRuns, key)
+	}
+	a.teamRunsMu.Unlock()
+	for _, cancel := range cancels {
+		cancel()
+	}
+
+	store, err := a.requireTeamStore()
+	if err != nil {
+		return
+	}
+	for _, tm := range store.List() {
+		changed := false
+		updated, err := store.Update(tm.ID, func(t *teampkg.Team) {
+			for i := range t.Tasks {
+				if t.Tasks[i].Status != taskmonitor.TaskStateQueued || t.Tasks[i].Progress == "" {
+					continue
+				}
+				t.Tasks[i].Progress = ""
+				t.Tasks[i].UpdatedAt = time.Now().UTC()
+				changed = true
+			}
+		})
+		if err != nil || !changed {
+			continue
+		}
+		a.emitTeamChanged(updated)
+	}
+	_ = reason
 }
 
 // runTeamMember is the background half of RunTeamTask: resolve the member's
@@ -220,6 +501,9 @@ func (a *App) runTeamMember(ctx context.Context, cancel context.CancelFunc, key,
 	defer func() {
 		cancel()
 		a.forgetTeamRun(key)
+		// Released last, so a card promoted out of the queue starts only after
+		// this run's bookkeeping is complete.
+		a.releaseTeamSlot(teamID, key)
 	}()
 
 	store, err := a.requireTeamStore()
