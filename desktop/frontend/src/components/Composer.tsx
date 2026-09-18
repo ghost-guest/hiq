@@ -10,6 +10,7 @@ import { startRecording, checkMicPermission, VoiceRecorderError, type RecordingS
 import { SPINNER_WORDS, useI18n } from "../lib/i18n";
 import { pushHistory, snapshot } from "../lib/composerHistory";
 import { clearLayoutSize, loadOptionalLayoutSize, saveLayoutSize } from "../lib/layoutPreferences";
+import { cacheReadoutPart, joinReadout, sessionCacheHitRate, tokenReadoutParts } from "../lib/runReadout";
 import { useToast } from "../lib/toast";
 import { type BudgetStatusView, type CollaborationMode, type CommandInfo, type ComposerInsertRequest, type ContextInfo, type DirEntry, type EffortInfo, type HistoryMessage, type SessionMeta, type SessionReference, type SlashArgItem, type SlashArgsResult, type ToolApprovalMode, type WireUsage } from "../lib/types";
 import { UsageChip } from "./composer/UsageChip";
@@ -173,11 +174,6 @@ function composerAutoInputMaxHeight(): number {
 
 function loadComposerHeight(): number | null {
   return loadOptionalLayoutSize("composerHeight", clampComposerHeight);
-}
-
-function fmtTokens(n: number): string {
-  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
-  return String(n);
 }
 
 function fmtElapsed(ms: number): string {
@@ -1744,6 +1740,44 @@ export function Composer({
       requestAnimationFrame(() => taRef.current?.focus());
     });
   };
+  // ── persistent run readout ───────────────────────────────────────────────
+  // Cache hit-rate: the live wire event first (it carries the in-flight turn's
+  // cache pair), then the session telemetry that ships with ContextInfo and is
+  // restored with the tab — so the figure survives the turn, and the process,
+  // that produced it. Providers that never report cache tokens yield null and
+  // the part simply drops out.
+  const cachePart = cacheReadoutPart(sessionCacheHitRate(turnUsage) ?? sessionCacheHitRate(contextInfo), t("status.cache"));
+
+  // Last completed turn's figures, snapshotted when `running` drops. Without
+  // this the strip blanked the instant a turn ended, and stayed blank through
+  // the whole thinking phase of the next turn (its usage event only arrives
+  // after that response finishes).
+  const [lastTurn, setLastTurn] = useState<{ tokens: number; ms: number } | null>(null);
+  const prevRunningRef = useRef(false);
+  useEffect(() => {
+    if (prevRunningRef.current && !running) {
+      setLastTurn({ tokens: turnTokens ?? 0, ms: turnStartAt ? Math.max(0, now - turnStartAt) : 0 });
+    }
+    prevRunningRef.current = running;
+  }, [running, turnStartAt, turnTokens, now]);
+  // A different tab is a different conversation — never inherit its readout.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tabId is the reset trigger.
+  useEffect(() => {
+    setLastTurn(null);
+  }, [tabId]);
+
+  // Fallback for a tab this process has not run a turn on yet (app restart,
+  // session switch): the restored session telemetry still describes the last
+  // turn's output volume, speed and cache rate, so the strip is populated from
+  // the moment the app opens instead of only after the first message.
+  const sessionReadout = lastTurn
+    ? null
+    : contextInfo && (contextInfo.sessionElapsedMs ?? 0) > 0 && (contextInfo.sessionCompletionTokens ?? 0) > 0
+      ? { tokens: contextInfo.sessionCompletionTokens ?? 0, ms: contextInfo.sessionElapsedMs ?? 0 }
+      : null;
+  const idle = lastTurn ?? sessionReadout;
+  const idleLabel = lastTurn ? t("status.lastTurn") : t("status.sessionReadout");
+
   const runActivity = retry
     ? t("status.retrying", { attempt: retry.attempt, max: retry.max })
     : running && turnStartAt
@@ -1751,28 +1785,25 @@ export function Composer({
           const elapsedMs = Math.max(0, now - turnStartAt);
           const words = SPINNER_WORDS[locale];
           const word = words[Math.floor(elapsedMs / 3000) % words.length];
-          const parts: string[] = [];
-          if (turnTokens && turnTokens > 0) {
-            parts.push(`↓ ${fmtTokens(turnTokens)} ${t("status.tokens")}`);
-            // Average output speed over the turn; shown once the turn has
-            // run long enough for the number to mean anything.
-            if (elapsedMs > 3000) {
-              parts.push(`${fmtTokens(Math.round(turnTokens / (elapsedMs / 1000)))} tok/s`);
-            }
-          }
-          // Cache hit-rate: prefer the session-cumulative aggregate, fall
-          // back to the single-turn figures. Providers that don't report
-          // cache tokens leave both at 0, in which case the readout hides.
-          if (turnUsage) {
-            const sessHit = turnUsage.sessionCacheHitTokens + turnUsage.sessionCacheMissTokens;
-            const turnHit = turnUsage.cacheHitTokens + turnUsage.cacheMissTokens;
-            const hit = sessHit > 0 ? turnUsage.sessionCacheHitTokens / sessHit : turnHit > 0 ? turnUsage.cacheHitTokens / turnHit : 0;
-            if (hit > 0) parts.push(`${t("status.cache")} ${Math.round(hit * 100)}%`);
-          }
-          const tok = parts.length > 0 ? ` · ${parts.join(" · ")}` : "";
-          return `${word}… ${fmtElapsed(elapsedMs)}${tok}`;
+          // Live figures once this turn reports; until then keep the previous
+          // figures on screen (tagged with where they came from) rather than
+          // blanking the strip for the whole thinking phase.
+          const live = tokenReadoutParts(turnTokens ?? 0, elapsedMs, t("status.tokens"));
+          const stale = live.length === 0 && idle ? tokenReadoutParts(idle.tokens, idle.ms, t("status.tokens")) : [];
+          const body = live.length > 0
+            ? joinReadout([live.join(" · "), cachePart])
+            : joinReadout([stale.length > 0 ? `↩ ${idleLabel} ${stale.join(" · ")}` : "", cachePart]);
+          return `${word}… ${fmtElapsed(elapsedMs)}${body ? ` · ${body}` : ""}`;
         })()
-      : null;
+      : (() => {
+          // Idle: keep the figures on screen so tok/s and the cache rate stay
+          // readable after the turn ends. Nothing to show → the strip hides,
+          // preserving the old behaviour on a brand-new empty session.
+          const done = idle ? tokenReadoutParts(idle.tokens, idle.ms, t("status.tokens")) : [];
+          const body = joinReadout([done.join(" · "), cachePart]);
+          if (!body) return null;
+          return joinReadout([idleLabel, idle?.ms ? fmtElapsed(idle.ms) : "", body]);
+        })();
 
   // Equalizer strip state: "hot" while output tokens are actively streaming
   // (bars brighten), frozen while the turn is gracefully paused.
@@ -2030,17 +2061,17 @@ export function Composer({
       {runActivity && (
         <div className="composer-toolbar composer-toolbar--status-only">
           <div
-            className={"composer-runviz" + (runVizHot ? " composer-runviz--hot" : "") + (paused ? " composer-runviz--paused" : "")}
+            className={"composer-runviz" + (runVizHot ? " composer-runviz--hot" : "") + (paused ? " composer-runviz--paused" : "") + (running ? "" : " composer-runviz--idle")}
             aria-hidden="true"
           >
             {runVizBars.map((b) => (
               <i key={b.key} style={{ "--dur": `${b.dur}s`, "--del": `${b.del}s`, "--amp": b.amp } as CSSProperties} />
             ))}
           </div>
-          <div className="composer-runstatus" role="status" aria-live="polite">
+          <div className={"composer-runstatus" + (running ? "" : " composer-runstatus--idle")} role="status" aria-live="polite">
             <span className="composer-runstatus__dot" />
             <span className="composer-runstatus__text">{runActivity}</span>
-            {onPauseToggle && (
+            {running && onPauseToggle && (
               <Tooltip label={paused ? t("composer.resume") : t("composer.pause")}>
                 <button
                   className={"composer-runstatus__pause" + (paused ? " composer-runstatus__pause--active" : "")}
@@ -2054,12 +2085,14 @@ export function Composer({
                 </button>
               </Tooltip>
             )}
-            <Tooltip label={t("composer.stop")}>
-              <button className="composer-runstatus__stop" type="button" onClick={handleCancel} disabled={decisionPending}>
-                <Square size={10} fill="currentColor" />
-                <span>{t("composer.stopShort")}</span>
-              </button>
-            </Tooltip>
+            {running && (
+              <Tooltip label={t("composer.stop")}>
+                <button className="composer-runstatus__stop" type="button" onClick={handleCancel} disabled={decisionPending}>
+                  <Square size={10} fill="currentColor" />
+                  <span>{t("composer.stopShort")}</span>
+                </button>
+              </Tooltip>
+            )}
           </div>
         </div>
       )}

@@ -790,6 +790,8 @@ export const en = {
   "status.switchFolder": "{cwd}\nClick to switch project folder",
   "status.tokens": "tokens",
   "status.cache": "cache",
+  "status.lastTurn": "last turn",
+  "status.sessionReadout": "session",
   "status.retrying": "retrying ({attempt}/{max})…",
   "status.jobs": "{n} running",
   "status.jobsTitle": "Background jobs",
