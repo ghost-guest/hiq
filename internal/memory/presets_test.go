@@ -55,9 +55,9 @@ func TestSavePresetsRoundTrip(t *testing.T) {
 		Active: "keep",
 		Items: []ProfilePreset{
 			{ID: "keep", Name: "  严格Excel匹配  ", Content: "忠于原表"},
-			{ID: "", Name: "新增", Content: "x"},              // id filled in
-			{ID: "keep", Name: "重复id", Content: "y"},        // id regenerated
-			{ID: "blank", Name: "  ", Content: "   "},         // dropped
+			{ID: "", Name: "新增", Content: "x"},        // id filled in
+			{ID: "keep", Name: "重复id", Content: "y"},  // id regenerated
+			{ID: "blank", Name: "  ", Content: "   "}, // dropped
 		},
 	}
 	if _, err := SavePresets(dir, "cowork", saved); err != nil {

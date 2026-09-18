@@ -1859,6 +1859,7 @@ func (a *App) Checkpoints() []CheckpointMeta {
 type SessionSearchHit struct {
 	Path          string   `json:"path"`
 	Excerpts      []string `json:"excerpts"`
+	TitleMatch    bool     `json:"titleMatch,omitempty"`
 	Title         string   `json:"title,omitempty"`
 	TopicID       string   `json:"topicId,omitempty"`
 	Scope         string   `json:"scope,omitempty"`
@@ -1982,7 +1983,8 @@ func (a *App) SearchSessionText(query string) []SessionSearchHit {
 	out := make([]SessionSearchHit, 0, len(hits))
 	for _, h := range hits {
 		out = append(out, SessionSearchHit{
-			Path: h.Path, Excerpts: h.Excerpts, Title: h.Title, TopicID: h.TopicID,
+			Path: h.Path, Excerpts: h.Excerpts, TitleMatch: h.TitleMatch,
+			Title: h.Title, TopicID: h.TopicID,
 			Scope: h.Scope, WorkspaceRoot: h.WorkspaceRoot, Profile: h.Profile,
 		})
 	}

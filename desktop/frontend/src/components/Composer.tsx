@@ -2084,6 +2084,14 @@ export function Composer({
                       kind: a.previewUrl ? "image" : "file",
                       source: "attachment",
                       previewUrl: a.previewUrl,
+                      // Draft chips browse as one set in the lightbox.
+                      siblings: sortComposerAttachments(attachments).map((att) => ({
+                        path: att.path,
+                        name: attachmentName(att),
+                        kind: att.previewUrl ? ("image" as const) : ("file" as const),
+                        source: "attachment" as const,
+                        previewUrl: att.previewUrl,
+                      })),
                     })
                   }
                 >

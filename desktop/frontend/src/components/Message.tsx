@@ -173,6 +173,14 @@ export function UserMessage({
                     name: attachment.name,
                     kind: attachment.kind,
                     source: attachment.source,
+                    // Every attachment in the message is a peer, so multiple
+                    // images browse as one set via the lightbox ‹ › controls.
+                    siblings: orderedAttachments.map((att) => ({
+                      path: att.path,
+                      name: att.name,
+                      kind: att.kind,
+                      source: att.source,
+                    })),
                   })
                 }
               >

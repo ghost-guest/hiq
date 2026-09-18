@@ -215,6 +215,20 @@ func TestInstalledTextDescribesUsageInventory(t *testing.T) {
 	if err := Upsert(home, InstalledPlugin{Name: "superpowers", Root: "plugins/superpowers", Version: "6.1.0", Description: "Planning workflows", ManifestKind: "codex", Enabled: true}); err != nil {
 		t.Fatal(err)
 	}
+
+	// The default restricted tier withholds the hook; the inventory text below
+	// is asserted under an explicit full-access grant.
+	restrictedList, err := InstalledListText(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(restrictedList, "1 hook withheld") {
+		t.Fatalf("restricted list must withhold the hook:\n%s", restrictedList)
+	}
+	if err := SetTrustTier(home, "superpowers", TrustFullAccess); err != nil {
+		t.Fatal(err)
+	}
+
 	list, err := InstalledListText(home)
 	if err != nil {
 		t.Fatal(err)

@@ -159,9 +159,13 @@ type Manifest struct {
 	Themes []string
 	// Runtime declares a plugin-owned runtime process (native v2).
 	// nil for Claude and Codex packages.
-	Runtime  *RuntimeSpec
-	Requires []CapabilityRef // v2 dependency graph
-	Provides []CapabilityRef
+	Runtime *RuntimeSpec
+	// TrustHint is the trust tier the manifest requests ("restricted" or
+	// "full-access"). It never grants access by itself — the user grants the
+	// effective tier, persisted in InstalledPlugin.TrustTier (see trust.go).
+	TrustHint TrustTier
+	Requires  []CapabilityRef // v2 dependency graph
+	Provides  []CapabilityRef
 }
 
 type Hook struct {
@@ -259,6 +263,10 @@ type InstalledPlugin struct {
 	Commit       string `json:"commit,omitempty"`
 	Status       string `json:"status,omitempty"`
 	StatusReason string `json:"statusReason,omitempty"`
+	// TrustTier is the effective permission tier the user granted this plugin.
+	// Empty means restricted (see trust.go); "full-access" activates the
+	// executing surfaces (runtime, hooks, MCP servers).
+	TrustTier TrustTier `json:"trustTier,omitempty"`
 }
 
 type InstalledPackage struct {
@@ -332,6 +340,11 @@ func Upsert(fairpeerHome string, p InstalledPlugin) error {
 	}
 	for i := range st.Plugins {
 		if st.Plugins[i].Name == p.Name {
+			// Reinstalling or upgrading must not silently drop a trust grant the
+			// user already made: only an explicit tier overwrites the stored one.
+			if p.TrustTier == "" {
+				p.TrustTier = st.Plugins[i].TrustTier
+			}
 			st.Plugins[i] = p
 			return SaveState(fairpeerHome, st)
 		}

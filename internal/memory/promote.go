@@ -169,7 +169,7 @@ func PromoteMemory(store Store, req PromoteRequest) (Promotion, error) {
 		return Promotion{}, err
 	}
 	skill := renderPromotedSkill(name, desc, version, out.Sources, strings.TrimSpace(req.Notes))
-	if err := os.WriteFile(out.Skill, []byte(skill), 0o644); err != nil {
+	if err := writeMemoryFile(out.Skill, skill); err != nil {
 		return Promotion{}, err
 	}
 
@@ -191,7 +191,7 @@ func PromoteMemory(store Store, req PromoteRequest) (Promotion, error) {
 		}
 		budget -= len(body)
 		file := filepath.Join(refDir, src.name+".md")
-		if err := os.WriteFile(file, []byte(body), 0o644); err != nil {
+		if err := writeMemoryFile(file, body); err != nil {
 			return Promotion{}, err
 		}
 		out.Refs = append(out.Refs, file)
@@ -231,11 +231,11 @@ func PromoteMemory(store Store, req PromoteRequest) (Promotion, error) {
 		return Promotion{}, err
 	}
 	out.Manifest = filepath.Join(dir, promoteManifestName)
-	if err := os.WriteFile(out.Manifest, append(raw, '\n'), 0o644); err != nil {
+	if err := writeMemoryFile(out.Manifest, string(append(raw, '\n'))); err != nil {
 		return Promotion{}, err
 	}
 	out.Readme = filepath.Join(dir, "README.md")
-	if err := os.WriteFile(out.Readme, []byte(renderPromotedReadme(name, desc, version, out.Sources)), 0o644); err != nil {
+	if err := writeMemoryFile(out.Readme, renderPromotedReadme(name, desc, version, out.Sources)); err != nil {
 		return Promotion{}, err
 	}
 	return out, nil

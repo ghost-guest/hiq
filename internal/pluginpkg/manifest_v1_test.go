@@ -505,8 +505,34 @@ func TestManifestV2DescribeRendersPromptsThemesRuntime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// No grant yet: the runtime is withheld under the default restricted tier,
+	// so the FULL TRUST block must not appear.
 	for _, want := range []string{
 		"capabilities: 1 skills, 1 commands, 1 prompts, 0 hooks, 0 MCP servers, 1 themes",
+		"trust: restricted",
+		"withheld (restricted): 1 runtime",
+		"prompts:\n  plan - plan",
+		"themes:\n  neon - ",
+	} {
+		if !strings.Contains(show, want) {
+			t.Fatalf("InstalledShowText missing %q:\n%s", want, show)
+		}
+	}
+	if strings.Contains(show, "runtime: FULL TRUST") {
+		t.Fatalf("restricted plugin must withhold the FULL TRUST runtime block:\n%s", show)
+	}
+
+	// Grant full-access: the runtime activates and every declared contribution
+	// renders again.
+	if err := SetTrustTier(home, "example", TrustFullAccess); err != nil {
+		t.Fatal(err)
+	}
+	show, err = InstalledShowText(home, "example")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"trust: full-access",
 		"runtime: FULL TRUST",
 		"command: ${REASONIX_PLUGIN_ROOT}/bin/example --serve",
 		"intercepts: input.receive, tool.before",

@@ -154,7 +154,7 @@ func SavePresets(userDir, profile string, f PresetFile) (string, error) {
 			return "", err
 		}
 	}
-	if err := os.WriteFile(p, append(b, '\n'), 0o644); err != nil {
+	if err := writeMemoryFile(p, string(append(b, '\n'))); err != nil {
 		return "", err
 	}
 	return p, nil

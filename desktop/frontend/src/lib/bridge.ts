@@ -279,7 +279,9 @@ export interface AppBindings {
   PresentForTab(tabID: string): Promise<PresentPayload>;
   Checkpoints(): Promise<CheckpointMeta[]>;
   CheckpointsForTab(tabID: string): Promise<CheckpointMeta[]>;
-  SearchSessionText(query: string): Promise<{ path: string; excerpts: string[]; title?: string; topicId?: string; scope?: string; workspaceRoot?: string; profile?: string }[]>;
+  // titleMatch marks a hit whose SESSION TITLE matched: the kernel ranks those
+  // above transcript matches, so the panel can show why a hit is listed first.
+  SearchSessionText(query: string): Promise<{ path: string; excerpts: string[]; titleMatch?: boolean; title?: string; topicId?: string; scope?: string; workspaceRoot?: string; profile?: string }[]>;
   TurnFactsForTab(tabID: string): Promise<{ seq: number; durationMs: number; retries: number; toolCalls: number; toolErrors: number; promptTokens: number; completionTokens: number; cacheHitTokens: number; cacheMissTokens: number; err?: string }[]>;
   BranchesForTab(tabID: string): Promise<{ id: string; name?: string; parentId?: string; path: string; preview?: string; turns?: number; updatedAt: number; current?: boolean }[]>;
   SwitchBranchForTab(tabID: string, ref: string): Promise<void>;

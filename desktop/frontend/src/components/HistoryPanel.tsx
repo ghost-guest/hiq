@@ -154,7 +154,9 @@ export function HistoryPanel({
   // search session CONTENTS via the kernel (the meta filter above only sees
   // titles/previews). Sessions matched by content but not by metadata are
   // appended below the filtered list, excerpt first.
-  type TextHit = { path: string; excerpts: string[]; title?: string; topicId?: string; scope?: string; workspaceRoot?: string; profile?: string };
+  // titleMatch means the kernel matched this session's TITLE, not just its
+  // transcript — those hits come back first, and the badge explains why.
+  type TextHit = { path: string; excerpts: string[]; titleMatch?: boolean; title?: string; topicId?: string; scope?: string; workspaceRoot?: string; profile?: string };
   const [textHits, setTextHits] = useState<TextHit[]>([]);
   useEffect(() => {
     const q = query.trim();
@@ -545,7 +547,12 @@ export function HistoryPanel({
                     title={h.path}
                   >
                     <div className="hist-texthit">
-                      <div className="hist-texthit__path">{baseName(h.path)}</div>
+                      <div className="hist-texthit__path">
+                        <span className="hist-texthit__name">{baseName(h.path)}</span>
+                        {h.titleMatch && (
+                          <span className="hist-texthit__badge">{tr("history.titleMatch")}</span>
+                        )}
+                      </div>
                       {h.excerpts.map((e, i) => (
                         <div key={i} className="hist-texthit__excerpt">{e}</div>
                       ))}

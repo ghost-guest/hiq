@@ -72,6 +72,7 @@ func InstalledShowText(fairpeerHome, name string) (string, error) {
 		return "", err
 	}
 	summary := pkg.CapabilitySummary()
+	gate := GateForInstalled(p, pkg)
 	state := "disabled"
 	if p.Enabled {
 		state = "enabled"
@@ -83,7 +84,15 @@ func InstalledShowText(fairpeerHome, name string) (string, error) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "plugin %s [%s]\n", p.Name, state)
 	fmt.Fprintf(&b, "version: %s\nkind: %s\nroot: %s\nsource: %s\ncapabilities: %d skills, %d commands, %d prompts, %d hooks, %d MCP servers, %d themes\n", version, p.ManifestKind, filepath.Clean(root), p.Source, summary.Skills, summary.Commands, summary.Prompts, summary.Hooks, summary.MCPServers, summary.Themes)
-	if summary.Runtime {
+	if requested := pkg.RequestedTrust(); requested != gate.Tier {
+		fmt.Fprintf(&b, "trust: %s (manifest requests %s)\n", gate.Tier, requested)
+	} else {
+		fmt.Fprintf(&b, "trust: %s\n", gate.Tier)
+	}
+	if blocked := gate.Summary(); blocked != "" {
+		fmt.Fprintf(&b, "withheld (restricted): %s — grant full-access with `fairpeer plugin trust %s full-access`\n", blocked, p.Name)
+	}
+	if summary.Runtime && !gate.Withholds(SurfaceRuntime) {
 		b.WriteString(RuntimeTrustText(pkg.Manifest.Runtime))
 	}
 	if p.Enabled {
@@ -118,6 +127,7 @@ func pluginCapabilityText(fairpeerHome string, p InstalledPlugin) string {
 		return "invalid: " + err.Error()
 	}
 	summary := pkg.CapabilitySummary()
+	gate := GateForInstalled(p, pkg)
 	parts := []string{}
 	if summary.Skills > 0 {
 		parts = append(parts, fmt.Sprintf("%d skills", summary.Skills))
@@ -128,17 +138,20 @@ func pluginCapabilityText(fairpeerHome string, p InstalledPlugin) string {
 	if summary.Prompts > 0 {
 		parts = append(parts, fmt.Sprintf("%d prompts", summary.Prompts))
 	}
-	if summary.Hooks > 0 {
+	if summary.Hooks > 0 && !gate.Withholds(SurfaceHook) {
 		parts = append(parts, fmt.Sprintf("%d hooks", summary.Hooks))
 	}
-	if summary.MCPServers > 0 {
+	if summary.MCPServers > 0 && !gate.Withholds(SurfaceMCPServer) {
 		parts = append(parts, fmt.Sprintf("%d MCP", summary.MCPServers))
 	}
 	if summary.Themes > 0 {
 		parts = append(parts, fmt.Sprintf("%d themes", summary.Themes))
 	}
-	if summary.Runtime {
+	if summary.Runtime && !gate.Withholds(SurfaceRuntime) {
 		parts = append(parts, "FULL TRUST runtime")
+	}
+	if withheld := gate.Summary(); withheld != "" {
+		parts = append(parts, "restricted: "+withheld+" withheld")
 	}
 	if len(parts) == 0 {
 		return "no exported capabilities"

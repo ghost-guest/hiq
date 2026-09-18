@@ -89,6 +89,10 @@ type v2Root struct {
 	Provides    json.RawMessage `json:"provides"`
 	Contributes json.RawMessage `json:"contributes"`
 	Runtime     json.RawMessage `json:"runtime"`
+	// Trust is the tier this package requests ("restricted" or "full-access").
+	// It is a hint only: the effective tier is granted by the user and stored in
+	// installed state (see trust.go). Absent means restricted.
+	Trust string `json:"trust"`
 	// Resource path fields (same shapes as earlier native manifests).
 	Skills     json.RawMessage              `json:"skills"`
 	Commands   json.RawMessage              `json:"commands"`
@@ -193,6 +197,13 @@ func parseNativeV2(b []byte, root, apiVersion string) (Package, []string, error)
 		Runtime:     runtime,
 		Requires:    requires,
 		Provides:    provides,
+	}
+	if trust := strings.TrimSpace(raw.Trust); trust != "" {
+		tier := TrustTier(trust)
+		if !tier.Valid() {
+			return Package{}, nil, fmt.Errorf("%s: trust must be %q or %q, got %q", NativeManifest, TrustRestricted, TrustFullAccess, trust)
+		}
+		manifest.TrustHint = tier
 	}
 	if err := validateManifest(root, &manifest); err != nil {
 		return Package{}, nil, err

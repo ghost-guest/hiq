@@ -74,7 +74,16 @@ function ToolAttachments({ paths }: { paths: string[] }) {
           type="button"
           key={p}
           className="tool__attachment-open"
-          onClick={() => openAttachmentViewer({ path: p, name: baseName(p), kind: "image", source: "attachment" })}
+          onClick={() =>
+            openAttachmentViewer({
+              path: p,
+              name: baseName(p),
+              kind: "image",
+              source: "attachment",
+              // A tool result's images browse as one set in the lightbox.
+              siblings: paths.map((sibling) => ({ path: sibling, name: baseName(sibling), kind: "image", source: "attachment", previewUrl: previews[sibling] })),
+            })
+          }
         >
           <img src={previews[p]} alt={baseName(p)} loading="lazy" draggable={false} />
         </button>

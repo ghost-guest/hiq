@@ -338,7 +338,7 @@ func (s Store) Save(m Memory) (string, error) {
 	if m.CreatedAt.IsZero() {
 		m.CreatedAt = time.Now().UTC()
 	}
-	if err := os.WriteFile(path, []byte(render(m, name)), 0o644); err != nil {
+	if err := writeMemoryFile(path, render(m, name)); err != nil {
 		return "", err
 	}
 	if err := reindexIn(dir, name, m); err != nil {
@@ -480,7 +480,7 @@ func flushIndexIn(dir string, lines map[string]string) error {
 		b.WriteString(lines[n])
 		b.WriteString("\n")
 	}
-	return os.WriteFile(filepath.Join(dir, indexFile), []byte(b.String()), 0o644)
+	return writeMemoryFile(filepath.Join(dir, indexFile), b.String())
 }
 
 // flushIndexExcept rewrites dir's MEMORY.md without the given name's line.
