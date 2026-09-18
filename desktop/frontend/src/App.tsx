@@ -23,6 +23,7 @@ import {
   SquareKanban,
   Network,
   BookOpen,
+  Users,
 } from "lucide-react";
 import { useToast } from "./lib/toast";
 import { useConfirm } from "./lib/confirm";
@@ -50,6 +51,7 @@ import { TerminalPanel, loadTerminalOpen, saveTerminalOpen } from "./components/
 import logoSymbol from "./assets/logo-symbol.png";
 import { ContextMenu, type ContextMenuPoint } from "./components/ContextMenu";
 import { LoopPanel } from "./components/loop/LoopPanel";
+import { ExpertPanel } from "./components/cowork/ExpertPanel";
 import { TeamBoard } from "./components/cowork/TeamBoard";
 import { KnowledgeHub } from "./components/cowork/KnowledgeHub";
 import { RagPanel } from "./components/cowork/RagPanel";
@@ -877,6 +879,10 @@ export default function App() {
   // 知识库 (RAG document/entity graph) panel. Previously cowork-only; the
   // coding profile now hosts the SAME RagPanel so it isn't lockable-in-office.
   const [ragOpen, setRagOpen] = useState(false);
+  // 专家团 panel (multi-model collaboration: roster + one-shot run). The 办公
+  // profile hosts it as a sidebar panel; the coding profile renders the SAME
+  // ExpertPanel in its main area, so "多模型辩论/评审" needs no profile switch.
+  const [expertOpen, setExpertOpen] = useState(false);
   const [paletteSessions, setPaletteSessions] = useState<SessionMeta[]>([]);
   const [paletteCapabilities, setPaletteCapabilities] = useState<CapabilitiesView | null>(null);
   const { showToast } = useToast();
@@ -2145,6 +2151,10 @@ export default function App() {
   // mid-stream — resetting it there would swallow its in-flight turn.
   useEffect(() => {
     const handler = () => {
+      // Back to the task center: the coding profile's full-area panels (专家团
+      // included) would otherwise keep hiding the main area, so the freshly
+      // activated expert-session tab / switched chat would stay invisible.
+      setExpertOpen(false);
       void refreshTabMetas();
       void syncActiveTab(false);
     };
@@ -2223,6 +2233,7 @@ export default function App() {
       setTeamOpen(false);
       setKbOpen(false);
       setRagOpen(false);
+      setExpertOpen(false);
     });
   }, [activeTabId, syncActiveTab]);
 
@@ -3101,7 +3112,7 @@ ${t("remote.uncPromptBody", { path: picked })}
   // project-tree topic context menu; exportSession/getSessionMarkdown below
   // remain the implementation and are wired through ProjectTree props.)
 
-  const headerNode = !preferenceOpen && !teamOpen && !kbOpen && !ragOpen && (
+  const headerNode = !preferenceOpen && !teamOpen && !kbOpen && !ragOpen && !expertOpen && (
     <header className="topicbar">
       <div className="topicbar__identity">
         <div className="topicbar__title-row">
@@ -3196,7 +3207,17 @@ ${t("remote.uncPromptBody", { path: picked })}
           <RagPanel />
         </div>
       )}
-      {(teamOpen || kbOpen || ragOpen) && !coworkActive && !netdevActive ? null : sidebarImDetailConnection ? (
+      {/* 专家团 surface for the coding profile — the same ExpertPanel the 办公
+          profile hosts. Mounted only while active: the live run lives in the
+          team's expert-session tab (RunExpertTeam activates it and dispatches
+          cowork:reset-panel, which closes this panel), so there is no in-panel
+          stream to keep alive across switches. */}
+      {expertOpen && !coworkActive && !netdevActive && (
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%" }}>
+          <ExpertPanel />
+        </div>
+      )}
+      {(teamOpen || kbOpen || ragOpen || expertOpen) && !coworkActive && !netdevActive ? null : sidebarImDetailConnection ? (
         <SidebarImConnectionDetail
           connection={sidebarImDetailConnection}
           sessions={sidebarImSessions}
@@ -3742,11 +3763,50 @@ ${t("remote.uncPromptBody", { path: picked })}
                   setTeamOpen(false);
                   setKbOpen(false);
                   setRagOpen(false);
+                  setExpertOpen(false);
                   setPreferenceOpen(true);
                 }}
               >
                 <SlidersHorizontal size={14} />
                 <span>{t("preference.title") || "编码偏好"}</span>
+              </button>
+              {/* 专家团 (multi-model collaboration: roster + one-shot run). The
+                  coding profile's own entry to the SAME ExpertPanel the 办公
+                  profile hosts, so 辩论/评审 doesn't require a profile switch.
+                  Distinct from 团队 below: an expert team is a one-shot
+                  collaboration, a team is a persistent project. */}
+              <button
+                className={`cowork-sidebar__item ${expertOpen ? "cowork-sidebar__item--active" : ""}`}
+                onClick={() => {
+                  closeTransientOverlays();
+                  setPreferenceOpen(false);
+                  setLoopOpen(false);
+                  setTeamOpen(false);
+                  setKbOpen(false);
+                  setRagOpen(false);
+                  setExpertOpen(true);
+                }}
+              >
+                <Users size={14} />
+                <span>{t("cowork.expert") || "专家团"}</span>
+              </button>
+              {/* 团队 (multi-agent: 团长 + 团员 + 看板). The coding profile's own
+                  entry to the SAME TeamBoard the 办公 profile hosts, so "团队开发
+                  项目" is one click away without a profile switch. */}
+              <button
+                className={`cowork-sidebar__item ${teamOpen ? "cowork-sidebar__item--active" : ""}`}
+                onClick={() => {
+                  closeTransientOverlays();
+                  setPreferenceOpen(false);
+                  setLoopOpen(false);
+                  setKbOpen(false);
+                  setRagOpen(false);
+                  setExpertOpen(false);
+                  setTeamOpen(true);
+                }}
+              >
+                <SquareKanban size={14} />
+                <span>{t("team.title")}</span>
               </button>
               {/* 项目知识中枢 (project map: code/docs/memory/team → one map +
                   revisions). Mirrors the 办公 profile's entry to the same panel. */}
@@ -3758,6 +3818,7 @@ ${t("remote.uncPromptBody", { path: picked })}
                   setLoopOpen(false);
                   setTeamOpen(false);
                   setRagOpen(false);
+                  setExpertOpen(false);
                   setKbOpen(true);
                 }}
               >
@@ -3774,28 +3835,12 @@ ${t("remote.uncPromptBody", { path: picked })}
                   setLoopOpen(false);
                   setTeamOpen(false);
                   setKbOpen(false);
+                  setExpertOpen(false);
                   setRagOpen(true);
                 }}
               >
                 <BookOpen size={14} />
                 <span>{t("cowork.knowledgeBase") || "知识库"}</span>
-              </button>
-              {/* 团队 (multi-agent: 团长 + 团员 + 看板). The coding profile's own
-                  entry to the SAME TeamBoard the 办公 profile hosts, so "团队开发
-                  项目" is one click away without a profile switch. */}
-              <button
-                className={`cowork-sidebar__item ${teamOpen ? "cowork-sidebar__item--active" : ""}`}
-                onClick={() => {
-                  closeTransientOverlays();
-                  setPreferenceOpen(false);
-                  setLoopOpen(false);
-                  setKbOpen(false);
-                  setRagOpen(false);
-                  setTeamOpen(true);
-                }}
-              >
-                <SquareKanban size={14} />
-                <span>{t("team.title")}</span>
               </button>
               <button
                 className={`cowork-sidebar__item ${loopOpen ? "cowork-sidebar__item--active" : ""}`}
@@ -3805,6 +3850,7 @@ ${t("remote.uncPromptBody", { path: picked })}
                   setTeamOpen(false);
                   setKbOpen(false);
                   setRagOpen(false);
+                  setExpertOpen(false);
                   setLoopOpen(true);
                 }}
               >
@@ -3841,7 +3887,7 @@ ${t("remote.uncPromptBody", { path: picked })}
             <>
               {bannersNode}
               {mainNode}
-              {!preferenceOpen && !teamOpen && !kbOpen && !ragOpen && footerNode}
+              {!preferenceOpen && !teamOpen && !kbOpen && !ragOpen && !expertOpen && footerNode}
               {terminalNode}
             </>
           )}
