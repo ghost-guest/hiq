@@ -1,9 +1,11 @@
-// run-readout.test.ts — the composer's run-status readout (token speed, cache
-// hit-rate) must survive the two moments it used to vanish: the instant a turn
-// ends, and the thinking phase of the next turn. The formatting is pure, so
-// the fallback rules are asserted here instead of through the live DOM.
+// run-readout.test.ts — the composer's param-row readout (token speed, cache
+// hit-rate) must stay readable in the two moments a strip-based readout cannot
+// cover: after a turn ends, and through the thinking phase of the next turn
+// (whose usage event only lands once that response has fully streamed). The
+// formatting is pure, so the fallback rules are asserted here instead of
+// through the live DOM.
 import { describe, expect, it } from "vitest";
-import { cacheReadoutPart, fmtTokens, joinReadout, MIN_SPEED_SAMPLE_MS, MIN_SPEED_SAMPLE_TOKENS, sessionCacheHitRate, tokenReadoutParts } from "../lib/runReadout";
+import { cacheReadoutPart, fmtTokens, joinReadout, MIN_SPEED_SAMPLE_MS, MIN_SPEED_SAMPLE_TOKENS, runReadoutText, sessionCacheHitRate, speedReadoutPart } from "../lib/runReadout";
 import type { WireUsage } from "../lib/types";
 
 function usage(partial: Partial<WireUsage>): WireUsage {
@@ -55,50 +57,68 @@ describe("sessionCacheHitRate", () => {
 
   it("reads the session telemetry that ships with ContextInfo", () => {
     // ContextInfo carries only the session-cumulative fields (and only once a
-    // restored tab has telemetry) — the idle strip has nothing else to go on
+    // restored tab has telemetry) — the readout has nothing else to go on
     // after an app restart.
     expect(sessionCacheHitRate({ sessionCacheHitTokens: 900, sessionCacheMissTokens: 100 })).toBeCloseTo(0.9, 6);
     expect(sessionCacheHitRate({})).toBeNull();
   });
 });
 
-describe("tokenReadoutParts", () => {
+describe("speedReadoutPart", () => {
   it("shows nothing before the turn reports any output tokens", () => {
-    expect(tokenReadoutParts(0, 12000, "tokens")).toEqual([]);
+    expect(speedReadoutPart(0, 12000, "tokens")).toBe("");
   });
 
-  it("holds the speed back when the turn was too short to sample", () => {
-    expect(tokenReadoutParts(120, MIN_SPEED_SAMPLE_MS - 1, "tokens")).toEqual(["↓ 120 tokens"]);
+  it("falls back to the raw count when the turn was too short to sample", () => {
+    expect(speedReadoutPart(120, MIN_SPEED_SAMPLE_MS - 1, "tokens")).toBe("↓ 120 tokens");
   });
 
-  it("holds the speed back when too few tokens came out", () => {
+  it("falls back to the raw count when too few tokens came out", () => {
     // A dozen tokens over 12 s is a real elapsed time but a meaningless rate.
-    expect(tokenReadoutParts(MIN_SPEED_SAMPLE_TOKENS - 1, 12000, "tokens")).toEqual(["↓ 19 tokens"]);
+    expect(speedReadoutPart(MIN_SPEED_SAMPLE_TOKENS - 1, 12000, "tokens")).toBe("↓ 19 tokens");
   });
 
-  it("adds the turn-average speed once the sample qualifies", () => {
-    expect(tokenReadoutParts(3600, 12000, "tokens")).toEqual(["↓ 3.6k tokens", "300 tok/s"]);
+  it("reports the turn-average speed once the sample qualifies", () => {
+    expect(speedReadoutPart(3600, 12000, "tokens")).toBe("300 tok/s");
   });
 
   it("reports the speed for a fast turn instead of hiding it", () => {
     // The regression this guards: a 2 s turn used to clear no threshold at all,
     // so a fast model never showed a tok/s figure.
-    expect(tokenReadoutParts(106, 2000, "tokens")).toEqual(["↓ 106 tokens", "53 tok/s"]);
+    expect(speedReadoutPart(106, 2000, "tokens")).toBe("53 tok/s");
   });
 
   it("never abbreviates the rate", () => {
-    expect(tokenReadoutParts(24000, 12000, "tokens")).toEqual(["↓ 24k tokens", "2000 tok/s"]);
+    expect(speedReadoutPart(24000, 12000, "tokens")).toBe("2000 tok/s");
   });
 });
 
-describe("cacheReadoutPart / joinReadout", () => {
+describe("cacheReadoutPart", () => {
   it("renders a percentage or drops out entirely", () => {
     expect(cacheReadoutPart(0.784, "缓存")).toBe("缓存 78%");
     expect(cacheReadoutPart(null, "缓存")).toBe("");
   });
+});
+
+describe("runReadoutText / joinReadout", () => {
+  it("puts the throughput beside the cache rate", () => {
+    expect(runReadoutText(3600, 12000, "tokens", "缓存 78%")).toBe("300 tok/s · 缓存 78%");
+  });
+
+  it("keeps the count while the rate is not yet meaningful", () => {
+    expect(runReadoutText(40, 400, "tokens", "缓存 78%")).toBe("↓ 40 tokens · 缓存 78%");
+  });
+
+  it("drops the cache part for a provider that never reports it", () => {
+    expect(runReadoutText(3600, 12000, "tokens", "")).toBe("300 tok/s");
+  });
+
+  it("is empty when there is neither a turn nor telemetry — the caller renders nothing", () => {
+    expect(runReadoutText(0, 0, "tokens", "")).toBe("");
+  });
 
   it("joins only the non-empty fragments", () => {
-    expect(joinReadout(["↓ 3k tokens", "45 tok/s", ""])).toBe("↓ 3k tokens · 45 tok/s");
+    expect(joinReadout(["300 tok/s", "缓存 78%", ""])).toBe("300 tok/s · 缓存 78%");
     expect(joinReadout(["", ""])).toBe("");
   });
 });

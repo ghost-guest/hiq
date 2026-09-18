@@ -1,12 +1,14 @@
-// runReadout.ts — pure formatting for the composer's run-status strip.
+// runReadout.ts — pure formatting for the composer's token-throughput readout.
 //
-// The strip used to render only while a turn was in flight, and the tok/s +
-// cache readouts inside it only once the turn's first `usage` event landed.
-// The agent emits Usage *after* a model response has fully streamed
-// (internal/agent/agent.go), so both gaps hid the numbers exactly when a user
-// wanted to read them: while idle, and throughout the thinking phase of the
-// next turn. Formatting lives here so the live/last-turn decision stays
-// unit-testable instead of being buried in a render closure.
+// The figures live in the composer param row, next to the context/usage chip:
+// "169 tok/s · 缓存 80%". They used to sit in the run-status strip, which only
+// renders while a turn is in flight — and the agent emits Usage *after* a
+// response has fully streamed (internal/agent/agent.go), so the numbers were
+// hidden exactly when a user wanted to read them: while idle, and throughout
+// the thinking phase of the next turn. Keeping them in the param row makes them
+// permanently readable without a second status bar. Formatting lives here so
+// the live/last-turn rules stay unit-testable rather than buried in a render
+// closure.
 
 // Token counts under 1000 stay exact; above that we render one decimal of
 // thousands and drop a trailing ".0" (12_000 -> "12k", 3_400 -> "3.4k").
@@ -49,17 +51,16 @@ export function sessionCacheHitRate(usage?: CacheTelemetry | null): number | nul
   return rate > 0 ? rate : null;
 }
 
-// tokenReadoutParts renders "↓ 3k tokens" plus the turn-average speed once the
-// sample qualifies. A rate is never abbreviated ("1234 tok/s", not "1.2k") —
-// thousands separators would be noise next to a number this short. An empty
-// array means "nothing to show yet".
-export function tokenReadoutParts(tokens: number, elapsedMs: number, tokensLabel: string): string[] {
-  if (!(tokens > 0)) return [];
-  const parts = [`↓ ${fmtTokens(tokens)} ${tokensLabel}`];
+// A rate is never abbreviated ("1234 tok/s", not "1.2k") — thousands separators
+// would be noise next to a number this short. When the sample is too small to
+// divide by, the raw output count stands in so the slot never sits empty on a
+// turn that did produce output.
+export function speedReadoutPart(tokens: number, elapsedMs: number, tokensLabel: string): string {
+  if (!(tokens > 0)) return "";
   if (tokens >= MIN_SPEED_SAMPLE_TOKENS && elapsedMs >= MIN_SPEED_SAMPLE_MS) {
-    parts.push(`${Math.round(tokens / (elapsedMs / 1000))} tok/s`);
+    return `${Math.round(tokens / (elapsedMs / 1000))} tok/s`;
   }
-  return parts;
+  return `↓ ${fmtTokens(tokens)} ${tokensLabel}`;
 }
 
 // cacheReadoutPart renders "缓存 78%", or "" when the rate is unknown.
@@ -71,4 +72,11 @@ export function cacheReadoutPart(hitRate: number | null, cacheLabel: string): st
 // joinReadout folds the non-empty fragments into one " · "-separated line.
 export function joinReadout(parts: string[]): string {
   return parts.filter(Boolean).join(" · ");
+}
+
+// runReadoutText is the whole param-row readout: throughput (or the raw count)
+// plus the session cache hit-rate. Returns "" when the provider reports
+// neither, in which case the caller renders nothing at all.
+export function runReadoutText(tokens: number, elapsedMs: number, tokensLabel: string, cachePart: string): string {
+  return joinReadout([speedReadoutPart(tokens, elapsedMs, tokensLabel), cachePart]);
 }

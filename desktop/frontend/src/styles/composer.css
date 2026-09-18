@@ -2131,6 +2131,10 @@
 .composer-usage__bar i { display: block; height: 100%; border-radius: var(--radius-pill); background: var(--accent); transition: width var(--dur-base); }
 .composer-usage--hot .composer-usage__bar i { background: var(--warn); }
 .composer-usage--hot .composer-usage__text { color: var(--warn); }
+/* Token throughput + cache hit-rate, parked beside the context meter. Shares
+   the chip's mono/tabular style so the whole line reads as one readout, but
+   carries no accent of its own — it is reference data, not a warning. */
+.composer-usage__readout { padding-left: 5px; border-left: 1px solid var(--border); }
 /* Hot-state compact affordance (85%+ fill): tiny warn-tinted text button on
    the chip — the only Compact entry point now the overview tab is gone. */
 .composer-usage__compact { appearance: none; border: 1px solid var(--warn); background: transparent; color: var(--warn); border-radius: var(--radius-pill, 999px); padding: 0 6px; font-family: inherit; font-size: 10px; font-weight: 600; line-height: 16px; cursor: pointer; }

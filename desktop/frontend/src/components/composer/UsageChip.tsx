@@ -1,15 +1,17 @@
 // UsageChip — compact context-window meter for the composer param row
 // (ui-redesign spec §4-C3): a 46px fill bar plus inline token readings. The
 // chip itself carries the numbers (session tokens · used/window); aria-label
-// keeps the reading screen-reader friendly. The fill turns warn-coloured past
-// 85% so compaction pressure is visible at a glance — and in that hot state a
-// small inline "compact" button appears on the chip (the sole Compact entry
-// point since the right-dock overview tab was slimmed down). Hovering (or
-// keyboard focus) opens a detail panel: precise context fill, average
-// prompt-cache hit-rate (Σhit/Σ(hit+miss) across the session), current-turn
-// rate, and session-cumulative token splits + active-turn time. Data comes
-// from App state — ContextInfo (extended with session telemetry) plus the
-// latest-turn WireUsage.
+// keeps the reading screen-reader friendly. Past it sits the `readout` string
+// (token throughput + session cache hit-rate) supplied by Composer — a separate
+// prop, because it describes the last completed turn rather than the context.
+// The fill turns warn-coloured past 85% so compaction pressure is visible at a
+// glance — and in that hot state a small inline "compact" button appears on the
+// chip (the sole Compact entry point since the right-dock overview tab was
+// slimmed down). Hovering (or keyboard focus) opens a detail panel: precise
+// context fill, average prompt-cache hit-rate (Σhit/Σ(hit+miss) across the
+// session), current-turn rate, and session-cumulative token splits + active-turn
+// time. Data comes from App state — ContextInfo (extended with session
+// telemetry) plus the latest-turn WireUsage.
 import { Tooltip } from "../Tooltip";
 import { useT } from "../../lib/i18n";
 import { fmtDuration } from "../../lib/duration";
@@ -56,9 +58,13 @@ function fmtCost(cost: number, currency?: string): string {
   return `${sym}${cost < 0.01 ? cost.toFixed(4) : cost.toFixed(3)}`;
 }
 
-export function UsageChip({ context, usage, budget, onCompact, disabled }: { context?: ContextInfo; usage?: WireUsage; budget?: BudgetStatusView; onCompact?: () => void; disabled?: boolean }) {
+export function UsageChip({ context, usage, budget, readout, onCompact, disabled }: { context?: ContextInfo; usage?: WireUsage; budget?: BudgetStatusView; readout?: string; onCompact?: () => void; disabled?: boolean }) {
   const t = useT();
-  if (!context || !context.window || context.window <= 0) return null;
+  if (!context || !context.window || context.window <= 0) {
+    // No window known → no chip. The throughput readout beside it does not
+    // depend on the window, so it still shows (without the hover panel).
+    return readout ? <span className="composer-usage">{readout}</span> : null;
+  }
   const pct = Math.min(100, Math.round((context.used / context.window) * 100));
   const hot = pct >= 85;
   const session = context.sessionTokens > 0 ? context.sessionTokens : context.used;
@@ -128,7 +134,7 @@ export function UsageChip({ context, usage, budget, onCompact, disabled }: { con
     <Tooltip label={panel} bodyClassName="usage-pop-body" side="top">
       <div
         className={`composer-usage${hot ? " composer-usage--hot" : ""}`}
-        aria-label={`${t("composer.contextUsage")} ${pct}% · ${t("composer.sessionTokens")} ${fmtTokens(session)}`}
+        aria-label={`${t("composer.contextUsage")} ${pct}% · ${t("composer.sessionTokens")} ${fmtTokens(session)}${readout ? ` · ${readout}` : ""}`}
       >
         <span className="composer-usage__bar" aria-hidden="true">
           <i style={{ width: `${pct}%` }} />
@@ -137,6 +143,9 @@ export function UsageChip({ context, usage, budget, onCompact, disabled }: { con
           {fmtTokens(session)} · {fmtTokens(context.used)}/{fmtTokens(context.window)}
           {!!budget?.rpm && budget.rpm > 0 && ` · ${budget.used}/${budget.rpm} rpm`}
         </span>
+        {/* Token throughput + session cache hit-rate, always on screen (hover
+            the chip for the full breakdown). */}
+        {!!readout && <span className="composer-usage__readout">{readout}</span>}
         {hot && onCompact && (
           <button
             type="button"

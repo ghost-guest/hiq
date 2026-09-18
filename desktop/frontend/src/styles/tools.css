@@ -216,15 +216,6 @@
   animation-play-state: paused;
 }
 
-/* Idle variant: the strip stays on screen after a turn ends so the tok/s and
-   cache readouts remain readable, but motion stops and the colour drains so a
-   finished turn can never be mistaken for one still in flight. */
-.composer-runviz--idle i {
-  animation: none;
-  transform: scaleY(0.22);
-  opacity: 0.3;
-}
-
 @keyframes runviz-beat {
   from {
     transform: scaleY(0.1);
@@ -261,21 +252,6 @@
   font-family: var(--sans);
   font-size: 12px;
   box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
-}
-
-/* Idle (last-turn) pill: keeps the readout visible without the "live" accent —
-   neutral border/colour and a steady completion dot instead of the pulse. */
-.composer-runstatus--idle {
-  border-color: var(--border);
-  background: color-mix(in srgb, var(--fg-dim) 8%, var(--bg-elev));
-  color: var(--fg-dim);
-  box-shadow: none;
-}
-
-.composer-runstatus--idle .composer-runstatus__dot {
-  animation: none;
-  background: var(--ok);
-  opacity: 0.7;
 }
 
 .composer-runstatus__dot {

@@ -10,7 +10,7 @@ import { startRecording, checkMicPermission, VoiceRecorderError, type RecordingS
 import { SPINNER_WORDS, useI18n } from "../lib/i18n";
 import { pushHistory, snapshot } from "../lib/composerHistory";
 import { clearLayoutSize, loadOptionalLayoutSize, saveLayoutSize } from "../lib/layoutPreferences";
-import { cacheReadoutPart, joinReadout, sessionCacheHitRate, tokenReadoutParts } from "../lib/runReadout";
+import { cacheReadoutPart, runReadoutText, sessionCacheHitRate } from "../lib/runReadout";
 import { useToast } from "../lib/toast";
 import { type BudgetStatusView, type CollaborationMode, type CommandInfo, type ComposerInsertRequest, type ContextInfo, type DirEntry, type EffortInfo, type HistoryMessage, type SessionMeta, type SessionReference, type SlashArgItem, type SlashArgsResult, type ToolApprovalMode, type WireUsage } from "../lib/types";
 import { UsageChip } from "./composer/UsageChip";
@@ -1740,7 +1740,12 @@ export function Composer({
       requestAnimationFrame(() => taRef.current?.focus());
     });
   };
-  // ── persistent run readout ───────────────────────────────────────────────
+  // ── param-row readout: tok/s · cache hit-rate ────────────────────────────
+  // These two figures render next to the context/usage chip, permanently — the
+  // run-status strip above the composer only exists while a turn is in flight,
+  // and the agent emits Usage *after* a response has fully streamed, so a strip
+  // readout is invisible through exactly the phases a user wants to read it.
+  //
   // Cache hit-rate: the live wire event first (it carries the in-flight turn's
   // cache pair), then the session telemetry that ships with ContextInfo and is
   // restored with the tab — so the figure survives the turn, and the process,
@@ -1748,10 +1753,10 @@ export function Composer({
   // the part simply drops out.
   const cachePart = cacheReadoutPart(sessionCacheHitRate(turnUsage) ?? sessionCacheHitRate(contextInfo), t("status.cache"));
 
-  // Last completed turn's figures, snapshotted when `running` drops. Without
-  // this the strip blanked the instant a turn ended, and stayed blank through
-  // the whole thinking phase of the next turn (its usage event only arrives
-  // after that response finishes).
+  // Last completed turn, snapshotted when `running` drops: the live counters
+  // reset when the next turn starts, so without this snapshot the readout would
+  // blank between turns — and stay blank through the next thinking phase, whose
+  // usage event only lands once that response has fully streamed.
   const [lastTurn, setLastTurn] = useState<{ tokens: number; ms: number } | null>(null);
   const prevRunningRef = useRef(false);
   useEffect(() => {
@@ -1766,18 +1771,20 @@ export function Composer({
     setLastTurn(null);
   }, [tabId]);
 
-  // Fallback for a tab this process has not run a turn on yet (app restart,
-  // session switch): the restored session telemetry still describes the last
-  // turn's output volume, speed and cache rate, so the strip is populated from
-  // the moment the app opens instead of only after the first message.
-  const sessionReadout = lastTurn
-    ? null
-    : contextInfo && (contextInfo.sessionElapsedMs ?? 0) > 0 && (contextInfo.sessionCompletionTokens ?? 0) > 0
-      ? { tokens: contextInfo.sessionCompletionTokens ?? 0, ms: contextInfo.sessionElapsedMs ?? 0 }
-      : null;
-  const idle = lastTurn ?? sessionReadout;
-  const idleLabel = lastTurn ? t("status.lastTurn") : t("status.sessionReadout");
+  // A tab this process has not run a turn on yet (app restart, session switch)
+  // still carries restored telemetry describing the last turn's output volume
+  // and wall time, so the readout is populated from the moment the app opens.
+  const readoutSource =
+    lastTurn ??
+    ((contextInfo?.sessionCompletionTokens ?? 0) > 0 && (contextInfo?.sessionElapsedMs ?? 0) > 0
+      ? { tokens: contextInfo?.sessionCompletionTokens ?? 0, ms: contextInfo?.sessionElapsedMs ?? 0 }
+      : null);
+  const runReadout = readoutSource
+    ? runReadoutText(readoutSource.tokens, readoutSource.ms, t("status.tokens"), cachePart)
+    : cachePart;
 
+  // The strip itself stays what it always was: a transient "thinking… 5s"
+  // indicator. Every number now lives in the param row below.
   const runActivity = retry
     ? t("status.retrying", { attempt: retry.attempt, max: retry.max })
     : running && turnStartAt
@@ -1785,25 +1792,9 @@ export function Composer({
           const elapsedMs = Math.max(0, now - turnStartAt);
           const words = SPINNER_WORDS[locale];
           const word = words[Math.floor(elapsedMs / 3000) % words.length];
-          // Live figures once this turn reports; until then keep the previous
-          // figures on screen (tagged with where they came from) rather than
-          // blanking the strip for the whole thinking phase.
-          const live = tokenReadoutParts(turnTokens ?? 0, elapsedMs, t("status.tokens"));
-          const stale = live.length === 0 && idle ? tokenReadoutParts(idle.tokens, idle.ms, t("status.tokens")) : [];
-          const body = live.length > 0
-            ? joinReadout([live.join(" · "), cachePart])
-            : joinReadout([stale.length > 0 ? `↩ ${idleLabel} ${stale.join(" · ")}` : "", cachePart]);
-          return `${word}… ${fmtElapsed(elapsedMs)}${body ? ` · ${body}` : ""}`;
+          return `${word}… ${fmtElapsed(elapsedMs)}`;
         })()
-      : (() => {
-          // Idle: keep the figures on screen so tok/s and the cache rate stay
-          // readable after the turn ends. Nothing to show → the strip hides,
-          // preserving the old behaviour on a brand-new empty session.
-          const done = idle ? tokenReadoutParts(idle.tokens, idle.ms, t("status.tokens")) : [];
-          const body = joinReadout([done.join(" · "), cachePart]);
-          if (!body) return null;
-          return joinReadout([idleLabel, idle?.ms ? fmtElapsed(idle.ms) : "", body]);
-        })();
+      : null;
 
   // Equalizer strip state: "hot" while output tokens are actively streaming
   // (bars brighten), frozen while the turn is gracefully paused.
@@ -2061,14 +2052,14 @@ export function Composer({
       {runActivity && (
         <div className="composer-toolbar composer-toolbar--status-only">
           <div
-            className={"composer-runviz" + (runVizHot ? " composer-runviz--hot" : "") + (paused ? " composer-runviz--paused" : "") + (running ? "" : " composer-runviz--idle")}
+            className={"composer-runviz" + (runVizHot ? " composer-runviz--hot" : "") + (paused ? " composer-runviz--paused" : "")}
             aria-hidden="true"
           >
             {runVizBars.map((b) => (
               <i key={b.key} style={{ "--dur": `${b.dur}s`, "--del": `${b.del}s`, "--amp": b.amp } as CSSProperties} />
             ))}
           </div>
-          <div className={"composer-runstatus" + (running ? "" : " composer-runstatus--idle")} role="status" aria-live="polite">
+          <div className="composer-runstatus" role="status" aria-live="polite">
             <span className="composer-runstatus__dot" />
             <span className="composer-runstatus__text">{runActivity}</span>
             {running && onPauseToggle && (
@@ -2458,7 +2449,7 @@ export function Composer({
               </div>
             )}
             <div className="composer-meta__control composer-meta__control--usage">
-              <UsageChip context={contextInfo} usage={usage} budget={budget} onCompact={compactContext} disabled={disabled || running} />
+              <UsageChip context={contextInfo} usage={usage} budget={budget} readout={runReadout} onCompact={compactContext} disabled={disabled || running} />
             </div>
             {hasEffort && (
               <div className="composer-meta__control composer-meta__control--more">
