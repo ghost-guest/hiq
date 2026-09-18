@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 const { spawnSync } = require("node:child_process");
 
-const pkg = `@fairpeer/cli-${process.platform}-${process.arch}`;
-const exe = `fairpeer${process.platform === "win32" ? ".exe" : ""}`;
+const pkg = `@zzycxz/hiq-cli-${process.platform}-${process.arch}`;
+const exe = `hiq${process.platform === "win32" ? ".exe" : ""}`;
 
 let binary;
 try {
   binary = require.resolve(`${pkg}/bin/${exe}`);
 } catch {
   console.error(
-    `fairpeer: no prebuilt binary for ${process.platform}-${process.arch}.\n` +
+    `hiq: no prebuilt binary for ${process.platform}-${process.arch}.\n` +
       `Install the matching optional package (${pkg}), or build from source:\n` +
-      `  https://github.com/zzycxz/fairpeer`,
+      `  https://github.com/zzycxz/hiq`,
   );
   process.exit(1);
 }
