@@ -319,6 +319,13 @@ type Agent struct {
 	archiveDir          string
 	compactStuck        bool
 	consecutiveCompacts int
+	// Standby trim (no-window sessions): with contextWindow unset nothing ever
+	// compacts, so Session.Messages keeps every full tool output in memory for
+	// the life of the tab. standbyTrimClock rate-limits the memory-only
+	// soft-trim to once per standbyTrimEvery turns; standbyTrimNoticed fires
+	// the one-shot explanatory notice.
+	standbyTrimClock   int
+	standbyTrimNoticed bool
 
 	// stormSig / stormCount track a run of turns that keep failing the same way so
 	// the loop can break a death-spiral. The signature is each call's (tool, error)

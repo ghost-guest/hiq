@@ -451,13 +451,21 @@ func SetSessionIMSource(sessionPath, platform, remoteID, chatType, chatID string
 // previewSession returns the first user message (truncated) and the number of
 // user-role messages so the picker can show "5 turns · 'help me debug the…'".
 // Errors are swallowed — a malformed file just shows up with an empty preview.
+// previewSessionScanLimit bounds how much of a transcript previewSession will
+// decode. It only runs for transcripts whose sidecar cache is missing (legacy
+// or foreign files) — without a cap, one huge .jsonl re-decodes in full on
+// every session-list build. Sessions whose first user turn sits beyond the
+// limit are simply absent from previews/counts; hiq-written transcripts always
+// carry the sidecar cache, so this only softens the legacy fallback.
+const previewSessionScanLimit = 4 << 20 // 4 MiB
+
 func previewSession(path string) (string, int) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", 0
 	}
 	defer f.Close()
-	dec := json.NewDecoder(f)
+	dec := json.NewDecoder(io.LimitReader(f, previewSessionScanLimit))
 	first := ""
 	turns := 0
 	for {

@@ -124,6 +124,17 @@ type App struct {
 	// 动时从已有 SessionMappings 预热，之后每条消息 LoadOrStore 命中即跳过。
 	knownRemoteIDs sync.Map
 
+	// projectTree caches the sidebar tree per profile (see ListProjectTree).
+	// Building it walks every known session dir — one sidecar read per
+	// transcript — so without a cache every project-tree:changed event and
+	// every frontend refetch cost seconds of I/O once the user has a few
+	// hundred sessions. emitProjectTreeChanged drops the cache (any tree
+	// mutation emits), so entries only serve burst/coalesced refetches.
+	// Guarded by treeCacheMu; treeEmitTimer coalesces emit bursts.
+	treeCache     map[string]*projectTreeEntry
+	treeEmitTimer *time.Timer
+	treeCacheMu   sync.Mutex
+
 	// sharedHosts shares one plugin.Host per workspace root across desktop tabs
 	// so opening N tabs on the same project spawns MCP subprocesses (CodeGraph,
 	// etc.) once, not N times. See desktop/shared_host.go.
@@ -189,6 +200,10 @@ type App struct {
 	// kb_* tools call through. Guarded by kbMu.
 	kbHubs map[string]*projectkbpkg.Hub
 	kbMu   sync.Mutex
+	// kbHubOrder tracks LRU access order for kbHubs (oldest first) so opening
+	// many projects over a long session can't accumulate an unbounded number
+	// of fully-materialized knowledge hubs. Guarded by kbMu.
+	kbHubOrder []string
 	// kbWatch is the active 变更即同步 watcher (nil when off). It follows the
 	// active workspace: kbWatchKey is the hub directory it is bound to, so a
 	// tab switch re-targets it rather than leaking watchers. kbWatchEnabled is

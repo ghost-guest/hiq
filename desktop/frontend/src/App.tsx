@@ -2135,10 +2135,24 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    return onProjectTreeChanged(() => {
-      setProjectRevision((value) => value + 1);
-      void refreshTabMetas();
+    let timer: number | null = null;
+    const off = onProjectTreeChanged(() => {
+      // Coalesce bursts: the backend emits one event per activity-status flip
+      // (controller build, turn start, per-tool transitions), and each one
+      // used to trigger a full ListProjectTree refetch + whole-tree re-render.
+      // One trailing refresh per 250ms window is plenty — ListTabs already
+      // polls every 2s, so this only needs to keep the tree fresh.
+      if (timer !== null) return;
+      timer = window.setTimeout(() => {
+        timer = null;
+        setProjectRevision((value) => value + 1);
+        void refreshTabMetas();
+      }, 250);
     });
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+      off();
+    };
   }, [refreshTabMetas]);
 
   // Refresh tab metas + sync active tab when cowork:reset-panel fires —

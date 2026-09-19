@@ -1132,19 +1132,32 @@ export function useController(getProfile?: () => string) {
   }, [activeTabFromBackend, loadSessionDataForTab, reconcileTabRuntime]);
 
   useEffect(() => {
-    const textBatch = createRafBatch<{ tabId: string; e: WireEvent }>((batch) => {
+    // Stream events (token deltas AND per-chunk tool output) are coalesced
+    // into one dispatch per animation frame. Tool events used to dispatch
+    // immediately: every tool_progress chunk copied the whole items array and
+    // re-rendered the transcript, so a tool emitting hundreds of chunks
+    // froze the UI exactly like a token-per-render storm would.
+    const streamBatch = createRafBatch<{ tabId: string; e: WireEvent }>((batch) => {
       for (const { tabId, e } of batch) dispatchTo(tabId, { type: "event", e });
     });
+    const batchedKinds = new Set([
+      "text",
+      "reasoning",
+      "tool_dispatch",
+      "tool_result",
+      "tool_progress",
+      "tool_args_delta",
+    ]);
     const off = onEvent((e) => {
       const targetTabId = e.tabId || activeTabIdRef.current;
       if (!targetTabId) return;
       if (e.kind === "turn_started" || e.kind === "text" || e.kind === "reasoning") {
         lastTokenAt.current.set(targetTabId, Date.now());
       }
-      if (e.kind === "text" || e.kind === "reasoning") {
-        textBatch.push({ tabId: targetTabId, e });
+      if (batchedKinds.has(e.kind)) {
+        streamBatch.push({ tabId: targetTabId, e });
       } else {
-        textBatch.drain();
+        streamBatch.drain();
         dispatchTo(targetTabId, { type: "event", e });
       }
       if (e.kind === "turn_done") {
@@ -1179,7 +1192,7 @@ export function useController(getProfile?: () => string) {
     // and no way to stop (#3844).
     void app.ReplayPendingPrompts().catch(() => {});
 
-    return () => { textBatch.drain(); off(); offReady(); };
+    return () => { streamBatch.drain(); off(); offReady(); };
   }, [dispatchTo, loadSessionDataForTab, refreshCheckpoints, syncActiveTabFromBackend]);
 
   // Stale-stream watchdog: if the frontend thinks the agent is running but

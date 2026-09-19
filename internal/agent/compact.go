@@ -96,9 +96,11 @@ Style: be terse — bullet points and fragments, not prose. Do NOT invent anythi
 
 // maybeCompact compacts the session when the last turn's prompt has grown to the
 // configured fraction of the context window. It is a no-op when compaction is
-// disabled (no window) or usage is unavailable.
+// disabled (no window) or usage is unavailable — except for the memory-only
+// standby trim, which bounds Session.Messages growth when no window is set.
 func (a *Agent) maybeCompact(ctx context.Context, u *provider.Usage) {
 	if a.contextWindow <= 0 || u == nil || u.PromptTokens == 0 {
+		a.standbySoftTrim()
 		return
 	}
 	// Use the budget-scaled window so a user-set ContextBudgetPercent (SPEC v2

@@ -164,6 +164,12 @@ func (a *App) kbWatchRoots(h *projectkbpkg.Hub) []string {
 	return roots
 }
 
+// kbHubsCap bounds how many knowledge hubs stay materialized at once. Each hub
+// holds a full project graph in memory; without a cap, every project ever
+// opened accumulates one for the life of the process. Evicted hubs reload from
+// disk (kb.json) on next use, so eviction is cheap and lossless.
+const kbHubsCap = 6
+
 // knowledgeHub resolves (and caches) the hub for the active workspace. The hub
 // lives under the memory data root, so project knowledge follows the user's
 // configured data location instead of the system config dir — the same rule the
@@ -186,6 +192,7 @@ func (a *App) knowledgeHub() (*projectkbpkg.Hub, error) {
 	}
 	key := cwd + "\x00" + profile
 	if h, ok := a.kbHubs[key]; ok {
+		a.kbHubTouchLocked(key)
 		return h, nil
 	}
 	h, err := projectkbpkg.New(root, cwd, profile)
@@ -193,7 +200,25 @@ func (a *App) knowledgeHub() (*projectkbpkg.Hub, error) {
 		return nil, err
 	}
 	a.kbHubs[key] = h
+	a.kbHubTouchLocked(key)
 	return h, nil
+}
+
+// kbHubTouchLocked moves key to the MRU end and evicts LRU hubs beyond
+// kbHubsCap. Called with kbMu held.
+func (a *App) kbHubTouchLocked(key string) {
+	for i, k := range a.kbHubOrder {
+		if k == key {
+			a.kbHubOrder = append(a.kbHubOrder[:i], a.kbHubOrder[i+1:]...)
+			break
+		}
+	}
+	a.kbHubOrder = append(a.kbHubOrder, key)
+	for len(a.kbHubOrder) > kbHubsCap {
+		oldest := a.kbHubOrder[0]
+		a.kbHubOrder = a.kbHubOrder[1:]
+		delete(a.kbHubs, oldest)
+	}
 }
 
 // kbWorkspaceRoot is the directory the map describes: the active tab's

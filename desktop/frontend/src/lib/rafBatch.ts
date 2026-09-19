@@ -1,5 +1,6 @@
-// Coalesces text/reasoning stream deltas into one flush per animation frame.
-// Non-text events must drain() first so causal ordering is preserved.
+// Coalesces high-frequency stream events (text/reasoning deltas AND per-chunk
+// tool output) into one flush per animation frame. Other events must drain()
+// first so causal ordering is preserved.
 
 type Flush<T> = (batch: T[]) => void;
 

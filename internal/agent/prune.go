@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/zzycxz/hiq/internal/event"
 	"github.com/zzycxz/hiq/internal/provider"
 )
 
@@ -90,6 +91,40 @@ func (a *Agent) SoftTrimLargeResults() (PruneStats, error) {
 	if a.contextWindow <= 0 {
 		return st, nil
 	}
+	return a.softTrimStaleOutputs()
+}
+
+// standbyTrimEvery is how often the no-window standby trim runs (in
+// maybeCompact invocations — roughly turns, sometimes more when usage events
+// retry). Scanning messages is cheap, but Replace rewrites the session slice,
+// so it stays rate-limited.
+const standbyTrimEvery = 8
+
+// standbySoftTrim bounds memory for sessions without a configured context
+// window. Normal compaction can't run (it has no trigger threshold), which
+// left Session.Messages holding every full tool output until the tab closed.
+// The standby pass soft-trims old oversized tool outputs (head+tail kept,
+// message count and checkpoint indexes untouched) — the same graduated step
+// the windowed path uses — so a long zero-config session grows logarithmically
+// instead of linearly. It never hard-prunes or summarizes.
+func (a *Agent) standbySoftTrim() {
+	a.standbyTrimClock++
+	if a.standbyTrimClock < standbyTrimEvery {
+		return
+	}
+	a.standbyTrimClock = 0
+	st, err := a.softTrimStaleOutputs()
+	if err != nil || st.Results == 0 || a.standbyTrimNoticed {
+		return
+	}
+	a.standbyTrimNoticed = true
+	a.sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo,
+		Text: "no context window configured: older oversized tool outputs are now head+tail trimmed in memory to bound usage (message count unchanged)"})
+}
+
+// softTrimStaleOutputs is the window-agnostic core of SoftTrimLargeResults.
+func (a *Agent) softTrimStaleOutputs() (PruneStats, error) {
+	var st PruneStats
 	msgs := a.session.Messages
 	head, start, ok := a.planCompaction(msgs, 1)
 	if !ok {

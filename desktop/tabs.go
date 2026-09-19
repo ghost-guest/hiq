@@ -166,6 +166,12 @@ type activeTurn struct {
 
 const turnFactsCap = 50
 
+// readTelemetryCap bounds the per-tab read_file telemetry ring. The snapshot
+// is re-serialized to disk every turn, so an uncapped slice would grow for as
+// long as the tab lives (one entry per successful read_file) and drag every
+// snapshot write with it. Oldest entries fall off, mirroring turnFacts.
+const readTelemetryCap = 200
+
 func cloneStringPtr(v *string) *string {
 	if v == nil {
 		return nil
@@ -208,6 +214,12 @@ func (t *WorkspaceTab) currentSessionPath() string {
 func (t *WorkspaceTab) recordReadFile(rec readFileRecord) {
 	t.telemMu.Lock()
 	t.readTelemetry = append(t.readTelemetry, rec)
+	if len(t.readTelemetry) > readTelemetryCap {
+		// Drop oldest in bulk so a burst of reads doesn't shift the slice on
+		// every append.
+		drop := len(t.readTelemetry) - readTelemetryCap
+		t.readTelemetry = append(t.readTelemetry[:0], t.readTelemetry[drop:]...)
+	}
 	t.telemMu.Unlock()
 }
 
@@ -3014,10 +3026,37 @@ func (a *App) setTabActivityStatus(tabID, status string) bool {
 	return true
 }
 
+// projectTreeCacheTTL bounds how long a built sidebar tree may be reused.
+// Every tree mutation funnels through emitProjectTreeChanged, which drops the
+// cache synchronously — so the TTL only serves refetches that race a burst of
+// change events (frontend coalescing window), never masks real state.
+const projectTreeCacheTTL = 2 * time.Second
+
+// projectTreeEmitCoalesce collapses bursts of project-tree:changed emissions
+// (one per activity-status flip per event; several fire while a controller
+// builds or a turn starts) into at most one WebView event per window.
+const projectTreeEmitCoalesce = 150 * time.Millisecond
+
+type projectTreeEntry struct {
+	builtAt time.Time
+	nodes   []ProjectNode
+}
+
 func (a *App) emitProjectTreeChanged() {
-	if a.ctx != nil {
-		runtime.EventsEmit(a.ctx, "project-tree:changed")
+	a.treeCacheMu.Lock()
+	a.treeCache = nil
+	if a.treeEmitTimer == nil {
+		a.treeEmitTimer = time.AfterFunc(projectTreeEmitCoalesce, func() {
+			a.treeCacheMu.Lock()
+			a.treeEmitTimer = nil
+			ctx := a.ctx
+			a.treeCacheMu.Unlock()
+			if ctx != nil {
+				runtime.EventsEmit(ctx, "project-tree:changed")
+			}
+		})
 	}
+	a.treeCacheMu.Unlock()
 }
 
 // DeleteTopic removes a topic and its title metadata.
@@ -3196,6 +3235,31 @@ func (a *App) TrashTopic(topicID string) error {
 // un-profiled index (backward compatible). Wails binds this as a 1-arg method;
 // the frontend always passes a profile ("dev"/"cowork"/"netdev").
 func (a *App) ListProjectTree(profile string) []ProjectNode {
+	// Cached fast path: building the tree scans every known session dir, so
+	// with hundreds of transcripts a rebuild costs seconds of small-file I/O.
+	// The cache is dropped by emitProjectTreeChanged on any mutation and
+	// additionally expires after projectTreeCacheTTL, so stale data is bounded
+	// by the coalescing window rather than by correct-invalidation discipline.
+	a.treeCacheMu.Lock()
+	if e := a.treeCache[profile]; e != nil && time.Since(e.builtAt) < projectTreeCacheTTL {
+		nodes := e.nodes
+		a.treeCacheMu.Unlock()
+		return nodes
+	}
+	a.treeCacheMu.Unlock()
+
+	nodes := a.buildProjectTree(profile)
+
+	a.treeCacheMu.Lock()
+	if a.treeCache == nil {
+		a.treeCache = map[string]*projectTreeEntry{}
+	}
+	a.treeCache[profile] = &projectTreeEntry{builtAt: time.Now(), nodes: nodes}
+	a.treeCacheMu.Unlock()
+	return nodes
+}
+
+func (a *App) buildProjectTree(profile string) []ProjectNode {
 	// Legacy adoption reads ONLY this profile's partition: the dev partition
 	// (config.SessionDir) must never feed a cowork/netdev tree (generation-
 	// level isolation — cross-profile content is not produced in the first
