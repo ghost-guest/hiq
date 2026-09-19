@@ -248,3 +248,69 @@ func TestLedgerRoundTripSaveLoad(t *testing.T) {
 		t.Fatal("ledger must round-trip as a first-class message")
 	}
 }
+
+// TestLedgerSurvivesRepeatedCompactions simulates 3 consecutive compactions
+// using the same deterministic logic as compact(): pinnedPrefixLen ->
+// partitionFold -> summary replaces the fold region. The ledger must stay in
+// the pinned prefix and byte-identical after every fold.
+func TestLedgerSurvivesRepeatedCompactions(t *testing.T) {
+	a := newLedgerTestAgent(t)
+	a.ensureTaskLedger("refactor the exporter")
+	if _, err := a.UpdateLedger("constraints", "module path must stay github.com/zzycxz/hiq", "replace"); err != nil {
+		t.Fatal(err)
+	}
+	original := a.session.Messages[a.ledgerIndex()].Content
+
+	for round := 1; round <= 3; round++ {
+		// Foldable filler each round.
+		a.session.Add(provider.Message{Role: provider.RoleAssistant, Content: strings.Repeat("round filler ", 500)})
+		a.session.Add(provider.Message{Role: provider.RoleTool, Content: strings.Repeat("tool out ", 500)})
+
+		msgs := a.session.Messages
+		head := a.pinnedPrefixLen(msgs)
+		start := len(msgs) - 1 // fold everything except the last message
+		if start <= head {
+			t.Fatalf("round %d: nothing to fold (head=%d start=%d)", round, head, start)
+		}
+		region := msgs[head:start]
+
+		kept, fold := a.partitionFold(region)
+		if len(fold) == 0 {
+			t.Fatalf("round %d: empty fold", round)
+		}
+		// Replicate the post-compaction transcript assembly from compact().
+		compacted := append([]provider.Message{}, msgs[:head]...)
+		compacted = append(compacted, kept...)
+		compacted = append(compacted, provider.Message{
+			Role:    provider.RoleUser,
+			Content: summaryTagOpen + "\nSummary of earlier conversation:\nfake digest round " + string(rune('0'+round)) + "\n" + summaryTagClose,
+		})
+		compacted = append(compacted, msgs[start:]...)
+		a.session.Replace(compacted)
+
+		// Invariants after each fold:
+		msgs = a.session.Messages
+		head = a.pinnedPrefixLen(msgs)
+		idx := a.ledgerIndex()
+		if idx < 0 || idx >= head {
+			t.Fatalf("round %d: ledger at %d outside pinned prefix (head=%d)", round, idx, head)
+		}
+		if got := msgs[idx].Content; got != original {
+			t.Fatalf("round %d: ledger content drifted (len %d -> %d)", round, len(original), len(got))
+		}
+		// Prior summaries must also be pinned (never re-summarized).
+		for i := 1; i < round; i++ {
+			found := false
+			for j := 0; j < head; j++ {
+				if isCompactionSummary(msgs[j]) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("round %d: prior compaction summary not pinned", round)
+			}
+		}
+		t.Logf("round %d OK: head=%d ledgerIdx=%d total=%d", round, head, idx, len(msgs))
+	}
+}
