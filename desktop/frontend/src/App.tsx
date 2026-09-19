@@ -1017,6 +1017,39 @@ export default function App() {
     }
   }, [state.items, previewUrl, coworkActive, netdevActive]);
 
+  // Same contract for local files: when a tool writes a renderable artifact
+  // (html/htm/svg), surface it in the preview pane via the loopback file
+  // server — the iframe cannot navigate file:// and a raw path in the address
+  // bar would be a dead `http://D:\...`. Detection is one-shot per tool item
+  // (newest match wins); repeated writes re-register, so the pane reloads.
+  const previewFileItemRef = useRef(-1);
+  useEffect(() => {
+    if (coworkActive || netdevActive) return;
+    if (!state.items) return;
+    const re = /[A-Za-z]:\\[^\s"'`<>|*?]+\.(?:html?|svg)/i;
+    for (let i = state.items.length - 1; i >= 0; i--) {
+      const it = state.items[i];
+      if (it.kind !== "tool") continue;
+      const m = re.exec(it.output ?? "");
+      if (!m) continue;
+      if (i <= previewFileItemRef.current) return;
+      previewFileItemRef.current = i;
+      const p = m[0];
+      void app.PreviewLocalFile(p)
+        .then((url) => {
+          if (url === previewUrl) return;
+          setPreviewUrl(url);
+          if (previewSuppressedRef.current !== url) {
+            ensureDockTab("preview");
+            setRightDockMode("preview");
+            setWorkspacePanelOpen(true);
+          }
+        })
+        .catch(() => { /* unreadable/unsupported — not worth nagging about */ });
+      return;
+    }
+  }, [state.items, previewUrl, coworkActive, netdevActive]);
+
   // Remember the last active dock tab.
   useEffect(() => {
     try {
@@ -4068,6 +4101,16 @@ ${t("remote.uncPromptBody", { path: picked })}
                   }}
                   onPreviewModeChange={handleWorkspacePreviewModeChange}
                   onAddToChat={addWorkspaceTextToComposer}
+                  onOpenInPreview={(path) => {
+                    void app.PreviewLocalFile(path)
+                      .then((url) => {
+                        commitPreviewUrl(url);
+                        ensureDockTab("preview");
+                        setRightDockMode("preview");
+                        setWorkspacePanelOpen(true);
+                      })
+                      .catch(() => { /* unsupported type can't happen (menu-gated); unreadable file → keep pane */ });
+                  }}
                   onRequestPanelWidth={ensureWorkspacePanelWidth}
                   refreshKey={dockRefreshKey}
                   initialViewMode={rightDockMode === "changed" ? "changed" : "files"}

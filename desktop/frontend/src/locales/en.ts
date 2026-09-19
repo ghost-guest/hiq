@@ -391,6 +391,7 @@ export const en = {
   "workspace.sourceGit": "Git",
   "workspace.deleted": "Deleted",
   "workspace.revealInFileManager": "Show in file manager",
+  "workspace.openInPreview": "Open in preview",
 
   // mcp & skills drawer
   "caps.title": "MCP & Skills",

@@ -9,10 +9,29 @@ import { ArrowLeft, ArrowRight, ExternalLink, Globe, Loader2, MonitorPlay, Refre
 import { app } from "../lib/bridge";
 import { useT } from "../lib/i18n";
 
-function normalizeUrl(raw: string): string {
+// looksLikeFilePath reports whether the input is a filesystem path (Windows
+// drive-letter or POSIX absolute) rather than a URL — those go through the
+// backend's loopback preview server, because an iframe cannot navigate file://
+// and prefixing `http://` onto `D:\...` (the old behavior) is a dead address.
+function looksLikeFilePath(raw: string): boolean {
+  const t = raw.trim();
+  if (!t || /^(https?:|about:|data:|file:)/i.test(t)) return false;
+  return /^[A-Za-z]:[\\/]/.test(t) || t.startsWith("/");
+}
+
+// commitInput resolves any address the pane accepts — http(s) URL, bare host,
+// or a local file path — into an iframe-navigable URL.
+async function resolveInput(raw: string): Promise<string | null> {
   const trimmed = raw.trim();
-  if (!trimmed) return "";
+  if (!trimmed) return null;
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (looksLikeFilePath(trimmed)) {
+    try {
+      return await app.PreviewLocalFile(trimmed);
+    } catch {
+      return null; // keep the pane on its current content; the reason is a path problem, not a URL
+    }
+  }
   return `http://${trimmed}`;
 }
 
@@ -53,12 +72,13 @@ export function PreviewPane({ url, onUrlCommit }: { url: string; onUrlCommit?: (
   }, [current]);
 
   const commit = (raw: string) => {
-    const next = normalizeUrl(raw);
-    if (!next) return;
-    pushHistory(next);
-    setCurrent(next);
-    setNonce((v) => v + 1);
-    onUrlCommit?.(next);
+    void resolveInput(raw).then((next) => {
+      if (!next) return;
+      pushHistory(next);
+      setCurrent(next);
+      setNonce((v) => v + 1);
+      onUrlCommit?.(next);
+    });
   };
 
   const step = (delta: -1 | 1) => {

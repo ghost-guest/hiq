@@ -187,6 +187,24 @@ func (b bash) Execute(ctx context.Context, args json.RawMessage) (string, error)
 	cmd.Stdout = w
 	cmd.Stderr = w
 	err := cmd.Run()
+	if isWindowsProcInitFailure(err) {
+		// STATUS_DLL_INIT_FAILED at spawn time is a transient Windows race
+		// (observed when the desktop app's env block is being written while a
+		// CreateProcess reads it), not a property of the command. One
+		// immediate retry; the shell itself is innocent.
+		time.Sleep(250 * time.Millisecond)
+		cmd = exec.CommandContext(runCtx, argv[0], argv[1:]...)
+		cmd.Dir = b.workDir
+		cmd.Env = cmdEnv
+		setKillTree(cmd)
+		cmd.WaitDelay = bashWaitDelay
+		cmd.Stdout = w
+		cmd.Stderr = w
+		err = cmd.Run()
+		if isWindowsProcInitFailure(err) {
+			return buf.String(), fmt.Errorf("command exited: %w (the shell process failed to initialize — a transient Windows condition, not a problem with your command; try again, and prefer the dedicated read_file/ls/glob tools over shell for file checks)", err)
+		}
+	}
 	// Note: `buf` is a capped buffer (jobs.CappedBuffer) so a runaway command
 	// (yes, cat /dev/urandom) can't OOM the process; output past the cap is
 	// head+tail truncated. Same discipline as background jobs.
@@ -212,6 +230,18 @@ func (b bash) foregroundTimeout() time.Duration {
 		return 0
 	}
 	return b.timeout
+}
+
+// isWindowsProcInitFailure reports whether err is a Windows process that died
+// during DLL initialization (STATUS_DLL_INIT_FAILED, 0xC0000142) — i.e. it
+// never actually ran the command. Seen intermittently when a desktop exe's
+// environment block is mid-write while CreateProcess snapshots it for the
+// child; retrying the identical spawn succeeds.
+func isWindowsProcInitFailure(err error) bool {
+	if err == nil || runtime.GOOS != "windows" {
+		return false
+	}
+	return strings.Contains(err.Error(), "0xc0000142")
 }
 
 // progressWriter forwards each chunk the command writes to a tool.ProgressFunc,

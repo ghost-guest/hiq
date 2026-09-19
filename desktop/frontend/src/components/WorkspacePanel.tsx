@@ -18,6 +18,7 @@ import {
   FolderTree,
   FolderX,
   GitBranch,
+  Globe,
   Maximize2,
   MessageSquarePlus,
   Minimize2,
@@ -187,6 +188,7 @@ export function WorkspacePanel({
   onToggleMaximized,
   onPreviewModeChange,
   onAddToChat,
+  onOpenInPreview,
   onRequestPanelWidth,
   refreshKey,
   initialViewMode = "files",
@@ -202,6 +204,10 @@ export function WorkspacePanel({
   onToggleMaximized: () => void;
   onPreviewModeChange?: (active: boolean) => void;
   onAddToChat?: (text: string) => void;
+  // Open a file in the right dock's preview pane (loopback file server). Only
+  // renderable extensions show the menu entry; undefined hides it (contexts
+  // without the coding preview dock).
+  onOpenInPreview?: (path: string) => void;
   onRequestPanelWidth?: (width: number) => void;
   refreshKey?: number;
   initialViewMode?: "files" | "changed";
@@ -759,6 +765,16 @@ export function WorkspacePanel({
     if (!treeMenu) return;
     onAddToChat?.(formatWorkspaceReference(treeMenu.path, treeMenu.isDir));
     setTreeMenu(null);
+  };
+
+  // Extensions the preview pane can render via the loopback file server; keep
+  // in sync with the backend's previewableExt allowlist.
+  const PREVIEWABLE_FILE_RE = /\.(?:html?|svg|png|jpe?g|gif|webp|bmp|ico|pdf|md|txt|json|xml)$/i;
+  const openTreeInPreview = () => {
+    if (!treeMenu || treeMenu.isDir || !onOpenInPreview) return;
+    const target = treeMenu;
+    setTreeMenu(null);
+    onOpenInPreview(target.path);
   };
 
   const addTreeFileToChat = async () => {
@@ -1393,6 +1409,15 @@ export function WorkspacePanel({
                       label: t("workspace.addFileContentToChat"),
                       onSelect: () => void addTreeFileToChat(),
                     },
+                    ...(onOpenInPreview && PREVIEWABLE_FILE_RE.test(treeMenu.path)
+                      ? [
+                          {
+                            icon: <Globe size={14} />,
+                            label: t("workspace.openInPreview"),
+                            onSelect: openTreeInPreview,
+                          },
+                        ]
+                      : []),
                   ]),
               {
                 icon: <FolderOpen size={14} />,

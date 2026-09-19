@@ -392,6 +392,7 @@ export const zh: Record<DictKey, string> = {
   "workspace.sourceGit": "Git",
   "workspace.deleted": "已删除",
   "workspace.revealInFileManager": "在文件管理器中显示",
+  "workspace.openInPreview": "在预览中打开",
 
   // MCP 与技能抽屉
   "caps.title": "MCP 与技能",

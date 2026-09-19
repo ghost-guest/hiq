@@ -739,6 +739,11 @@ export interface AppBindings {
   // OpenURLInManagedBrowser launches the managed browser if needed and opens
   // the URL as a new tab in it (preview pane's companion-window tier).
   OpenURLInManagedBrowser(url: string): Promise<ManagedBrowserStatus>;
+  // PreviewLocalFile registers a local file with the loopback preview server
+  // and returns its http://127.0.0.1 URL for the preview pane's iframe. Only
+  // existing files with a renderable extension (html/svg/images/pdf/text) are
+  // accepted; anything else rejects with a reason.
+  PreviewLocalFile(path: string): Promise<string>;
   // 浏览器控制台 (ops browser console): manual primitives over the kernel's
   // console session slot, recording, and the record→SKILL.md generator.
   // Progress streams: "browser:record" (live events) / "browser:trial"
@@ -5376,6 +5381,11 @@ function makeMockApp(): AppBindings {
     async OpenURLInManagedBrowser(_url: string) {
       await delay(300);
       return { running: true, url: "http://127.0.0.1:9222", browser: "Chrome (mock)", profile: "~/hiq/browser-profile", alreadyRunning: false };
+    },
+    async PreviewLocalFile(_path: string) {
+      // Browser dev mode has no loopback file server; surface the gap the same
+      // way a backend rejection would so the pane keeps its previous content.
+      throw new Error("local file preview is unavailable in browser dev mode");
     },
     // 浏览器控制台 mock：browser dev 模式下的桩——交互原语返回模拟输出，
     // 录制/生成给出一条示例轨迹转朴素草稿，试运行模拟三步进度。
