@@ -74,9 +74,68 @@ export function joinReadout(parts: string[]): string {
   return parts.filter(Boolean).join(" · ");
 }
 
-// runReadoutText is the whole param-row readout: throughput (or the raw count)
-// plus the session cache hit-rate. Returns "" when the provider reports
-// neither, in which case the caller renders nothing at all.
-export function runReadoutText(tokens: number, elapsedMs: number, tokensLabel: string, cachePart: string): string {
-  return joinReadout([speedReadoutPart(tokens, elapsedMs, tokensLabel), cachePart]);
+// resolveRunReadout composes the param-row readout: the live estimate wins
+// while a turn streams, the last exact figure is the fallback (idle, or the
+// first second of a turn before there is anything to divide), and the session
+// cache hit-rate rides along. Returns "" when there is nothing to show at all.
+export function resolveRunReadout(livePart: string, exactPart: string, cachePart: string): string {
+  return joinReadout([livePart || exactPart, cachePart]);
+}
+
+// ── live (in-flight) throughput ─────────────────────────────────────────────
+//
+// A provider reports real token counts only when a response finishes, so during
+// a turn the only continuous signal is the streamed text itself. The figures
+// below turn that text into a tokens/s reading: a script-aware character rate
+// (CJK and Latin tokenize at very different densities) times a correction
+// learned from the last exact count the provider did give us.
+
+// Characters per token, before correction. Chinese runs ~1.5–1.7 chars/token on
+// Qwen/DeepSeek-class tokenizers; English prose and code run ~4.
+export const CJK_CHARS_PER_TOKEN = 1.6;
+export const LATIN_CHARS_PER_TOKEN = 4;
+
+// Anything outside this band means the sample is nonsense (a response that
+// streamed no text at all, or a provider reporting counts for something else),
+// so the learned correction is pinned rather than allowed to run away.
+export const MIN_TOKEN_SCALE = 0.2;
+export const MAX_TOKEN_SCALE = 5;
+
+const CJK_RE = /[\u3000-\u303f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef]/gu;
+
+// countCjk counts the CJK code points in a streamed delta — punctuation, kana,
+// ideographs, compatibility forms and fullwidth forms. Everything else (ASCII,
+// accents, emoji) is treated as "other" for the density split.
+export function countCjk(text: string): number {
+  if (!text) return 0;
+  const m = text.match(CJK_RE);
+  return m ? m.length : 0;
+}
+
+// estimateTokens converts streamed character counts into an approximate token
+// count. `scale` is the learned correction (1 = the defaults above).
+export function estimateTokens(cjkChars: number, otherChars: number, scale = 1): number {
+  if (!(cjkChars > 0) && !(otherChars > 0)) return 0;
+  const base = cjkChars / CJK_CHARS_PER_TOKEN + otherChars / LATIN_CHARS_PER_TOKEN;
+  return base * (scale > 0 ? scale : 1);
+}
+
+// blendTokenScale folds one completed response's true ratio into the running
+// correction. A single response is a poor sample (its character mix is one
+// point), so it is clamped and blended rather than adopted.
+export function blendTokenScale(current: number, sample: number, weight = 0.5): number {
+  if (!Number.isFinite(sample) || sample <= 0) return current;
+  const clamped = Math.min(MAX_TOKEN_SCALE, Math.max(MIN_TOKEN_SCALE, sample));
+  const next = current * (1 - weight) + clamped * weight;
+  return Math.min(MAX_TOKEN_SCALE, Math.max(MIN_TOKEN_SCALE, next));
+}
+
+// liveSpeedPart renders "≈ 62 tok/s" while a turn streams. The "≈" is not
+// decoration: the number is derived from characters, and only the provider's
+// own count (once the turn ends) is exact. Returns "" until the sample is worth
+// dividing by, so the caller falls back to the last exact figure instead of
+// flashing a bogus 0.
+export function liveSpeedPart(estTokens: number, elapsedMs: number): string {
+  if (!(estTokens >= MIN_SPEED_SAMPLE_TOKENS) || elapsedMs < MIN_SPEED_SAMPLE_MS) return "";
+  return `≈ ${Math.round(estTokens / (elapsedMs / 1000))} tok/s`;
 }

@@ -5,7 +5,7 @@
 // formatting is pure, so the fallback rules are asserted here instead of
 // through the live DOM.
 import { describe, expect, it } from "vitest";
-import { cacheReadoutPart, fmtTokens, joinReadout, MIN_SPEED_SAMPLE_MS, MIN_SPEED_SAMPLE_TOKENS, runReadoutText, sessionCacheHitRate, speedReadoutPart } from "../lib/runReadout";
+import { blendTokenScale, cacheReadoutPart, countCjk, estimateTokens, fmtTokens, joinReadout, liveSpeedPart, MIN_SPEED_SAMPLE_MS, MIN_SPEED_SAMPLE_TOKENS, resolveRunReadout, sessionCacheHitRate, speedReadoutPart } from "../lib/runReadout";
 import type { WireUsage } from "../lib/types";
 
 function usage(partial: Partial<WireUsage>): WireUsage {
@@ -100,21 +100,84 @@ describe("cacheReadoutPart", () => {
   });
 });
 
-describe("runReadoutText / joinReadout", () => {
-  it("puts the throughput beside the cache rate", () => {
-    expect(runReadoutText(3600, 12000, "tokens", "缓存 78%")).toBe("300 tok/s · 缓存 78%");
+describe("countCjk", () => {
+  it("counts ideographs, fullwidth punctuation and kana", () => {
+    // 你 好 ， 世 界 — the comma is U+FF0C, i.e. the same bucket as the hanzi.
+    expect(countCjk("你好，世界")).toBe(5);
+    expect(countCjk("テスト")).toBe(3);
   });
 
-  it("keeps the count while the rate is not yet meaningful", () => {
-    expect(runReadoutText(40, 400, "tokens", "缓存 78%")).toBe("↓ 40 tokens · 缓存 78%");
+  it("leaves latin, accents and emoji to the other bucket", () => {
+    expect(countCjk("hello, world! naïve")).toBe(0);
+    expect(countCjk("")).toBe(0);
   });
 
-  it("drops the cache part for a provider that never reports it", () => {
-    expect(runReadoutText(3600, 12000, "tokens", "")).toBe("300 tok/s");
+  it("mixes the two scripts in one delta", () => {
+    expect(countCjk("foo 二分查找 bar")).toBe(4);
+  });
+});
+
+describe("estimateTokens", () => {
+  it("is zero when nothing has streamed", () => {
+    expect(estimateTokens(0, 0)).toBe(0);
+  });
+
+  it("charges CJK by 1.6 chars/token and latin by 4", () => {
+    expect(estimateTokens(160, 0)).toBeCloseTo(100, 6);
+    expect(estimateTokens(0, 400)).toBeCloseTo(100, 6);
+  });
+
+  it("applies the learned correction, ignoring a nonsense one", () => {
+    expect(estimateTokens(160, 0, 2)).toBeCloseTo(200, 6);
+    expect(estimateTokens(160, 0, 0)).toBeCloseTo(100, 6);
+    expect(estimateTokens(160, 0, Number.NaN)).toBeCloseTo(100, 6);
+  });
+});
+
+describe("blendTokenScale", () => {
+  it("keeps the current value when the sample is unusable", () => {
+    expect(blendTokenScale(1.5, 0)).toBe(1.5);
+    expect(blendTokenScale(1.5, Number.NaN)).toBe(1.5);
+  });
+
+  it("clamps a wild sample before blending", () => {
+    // 50x is nonsense (50 chars per token); the band stops one bad response
+    // from wrecking every later estimate.
+    expect(blendTokenScale(1, 50)).toBe(3);
+    expect(blendTokenScale(1, 0.001)).toBe(0.6);
+  });
+
+  it("moves halfway toward a sane sample", () => {
+    expect(blendTokenScale(1, 2)).toBeCloseTo(1.5, 6);
+  });
+});
+
+describe("liveSpeedPart", () => {
+  it("stays hidden until the sample is worth dividing by", () => {
+    expect(liveSpeedPart(MIN_SPEED_SAMPLE_TOKENS - 1, 5000)).toBe("");
+    expect(liveSpeedPart(100, MIN_SPEED_SAMPLE_MS - 1)).toBe("");
+  });
+
+  it("marks the figure as approximate — only the provider's count is exact", () => {
+    expect(liveSpeedPart(100, 2000)).toBe("≈ 50 tok/s");
+  });
+});
+
+describe("resolveRunReadout / joinReadout", () => {
+  it("prefers the live estimate while a turn streams", () => {
+    expect(resolveRunReadout("≈ 62 tok/s", "300 tok/s", "缓存 78%")).toBe("≈ 62 tok/s · 缓存 78%");
+  });
+
+  it("falls back to the last exact figure before the live one has a sample", () => {
+    expect(resolveRunReadout("", "300 tok/s", "缓存 78%")).toBe("300 tok/s · 缓存 78%");
+  });
+
+  it("still shows the cache rate when there is no throughput to pair it with", () => {
+    expect(resolveRunReadout("", "", "缓存 78%")).toBe("缓存 78%");
   });
 
   it("is empty when there is neither a turn nor telemetry — the caller renders nothing", () => {
-    expect(runReadoutText(0, 0, "tokens", "")).toBe("");
+    expect(resolveRunReadout("", "", "")).toBe("");
   });
 
   it("joins only the non-empty fragments", () => {

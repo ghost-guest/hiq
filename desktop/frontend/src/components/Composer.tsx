@@ -10,7 +10,7 @@ import { startRecording, checkMicPermission, VoiceRecorderError, type RecordingS
 import { SPINNER_WORDS, useI18n } from "../lib/i18n";
 import { pushHistory, snapshot } from "../lib/composerHistory";
 import { clearLayoutSize, loadOptionalLayoutSize, saveLayoutSize } from "../lib/layoutPreferences";
-import { cacheReadoutPart, runReadoutText, sessionCacheHitRate } from "../lib/runReadout";
+import { cacheReadoutPart, estimateTokens, liveSpeedPart, resolveRunReadout, sessionCacheHitRate, speedReadoutPart } from "../lib/runReadout";
 import { useToast } from "../lib/toast";
 import { type BudgetStatusView, type CollaborationMode, type CommandInfo, type ComposerInsertRequest, type ContextInfo, type DirEntry, type EffortInfo, type HistoryMessage, type SessionMeta, type SessionReference, type SlashArgItem, type SlashArgsResult, type ToolApprovalMode, type WireUsage } from "../lib/types";
 import { UsageChip } from "./composer/UsageChip";
@@ -361,6 +361,9 @@ export function Composer({
   turnStartAt,
   turnTokens,
   turnUsage,
+  turnChars = 0,
+  turnCjkChars = 0,
+  tokenScale = 1,
   retry,
   transientDismissSignal,
   placeholderOverride,
@@ -431,9 +434,15 @@ export function Composer({
   ready?: boolean;
   turnStartAt?: number;
   turnTokens?: number;
-  // Latest usage event of the in-flight turn — feeds the status line's
-  // tok/s and cache hit-rate readouts alongside turnTokens.
+  // Latest usage event of the in-flight turn — feeds the param-row tok/s and
+  // cache hit-rate readouts alongside turnTokens.
   turnUsage?: WireUsage;
+  // Characters streamed so far this turn (+ how many were CJK) and the learned
+  // chars→tokens correction, used to show a live tok/s before the provider
+  // reports its own exact counts.
+  turnChars?: number;
+  turnCjkChars?: number;
+  tokenScale?: number;
   retry?: { attempt: number; max: number };
   transientDismissSignal?: number;
   // Mode-specific placeholder (netdev): falls back to composer.placeholder.
@@ -1779,9 +1788,16 @@ export function Composer({
     ((contextInfo?.sessionCompletionTokens ?? 0) > 0 && (contextInfo?.sessionElapsedMs ?? 0) > 0
       ? { tokens: contextInfo?.sessionCompletionTokens ?? 0, ms: contextInfo?.sessionElapsedMs ?? 0 }
       : null);
-  const runReadout = readoutSource
-    ? runReadoutText(readoutSource.tokens, readoutSource.ms, t("status.tokens"), cachePart)
-    : cachePart;
+  const exactPart = readoutSource ? speedReadoutPart(readoutSource.tokens, readoutSource.ms, t("status.tokens")) : "";
+  // Live figure while a turn streams. A provider reports real token counts only
+  // when a response finishes, so this is derived from the characters received
+  // so far — it ticks every second instead of jumping once per turn. Until it
+  // has a sample worth dividing by, the last exact figure stays on screen.
+  const livePart =
+    running && turnStartAt
+      ? liveSpeedPart(estimateTokens(turnCjkChars, Math.max(0, turnChars - turnCjkChars), tokenScale), Math.max(0, now - turnStartAt))
+      : "";
+  const runReadout = resolveRunReadout(livePart, exactPart, cachePart);
 
   // The strip itself stays what it always was: a transient "thinking… 5s"
   // indicator. Every number now lives in the param row below.

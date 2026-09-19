@@ -8,6 +8,7 @@ import { asArray } from "./array";
 import { app, onEvent, onReady } from "./bridge";
 import { createRafBatch } from "./rafBatch";
 import { t } from "./i18n";
+import { blendTokenScale, countCjk, estimateTokens } from "./runReadout";
 import type {
   CheckpointMeta,
   CollaborationMode,
@@ -106,6 +107,15 @@ interface State {
   turnStartAt: number;
   turnTokens: number;
   turnTotalTokens: number;
+  // Characters streamed during this turn (assistant text + reasoning + the
+  // patch previews a tool call streams) and how many of those were CJK. A
+  // provider reports real token counts only when a response finishes, so an
+  // in-flight tok/s has to be estimated from these instead — see lib/runReadout.
+  turnChars: number;
+  turnCjkChars: number;
+  // Chars→tokens correction for that estimate, relearned from every response
+  // that reports an exact count (1 = the built-in defaults).
+  tokenScale: number;
   sessionTokens: number;
   retry?: { attempt: number; max: number; afterMs?: number };
   turnItemStart: number; // items index where the current turn began (1-4 summary scoping)
@@ -123,6 +133,9 @@ export const initialState: State = {
   turnStartAt: 0,
   turnTokens: 0,
   turnTotalTokens: 0,
+  turnChars: 0,
+  turnCjkChars: 0,
+  tokenScale: 1,
   sessionTokens: 0,
   seq: 0,
   turnItemStart: 0,
@@ -586,7 +599,7 @@ function applyEvent(s: State, e: WireEvent): State {
       let cur: State = s;
       if (cur.pendingUser !== undefined) cur = flushPendingUser(cur);
       const { items, id, seq } = ensureAssistant(cur);
-      return { ...cur, items, currentAssistant: id, seq, live: { id, text: "", reasoning: "" }, running: true, turnActive: true, turnStartAt: Date.now(), turnTokens: 0, turnTotalTokens: 0, turnItemStart: items.length };
+      return { ...cur, items, currentAssistant: id, seq, live: { id, text: "", reasoning: "" }, running: true, turnActive: true, turnStartAt: Date.now(), turnTokens: 0, turnTotalTokens: 0, turnChars: 0, turnCjkChars: 0, turnItemStart: items.length };
     }
     case "text":
     case "reasoning": {
@@ -594,7 +607,9 @@ function applyEvent(s: State, e: WireEvent): State {
       const delta = e.text ?? e.reasoning ?? "";
       const base = s.live?.id === id ? s.live : { id, text: "", reasoning: "" };
       const live = e.kind === "text" ? { ...base, text: base.text + delta } : { ...base, reasoning: base.reasoning + delta };
-      return { ...s, items, live, currentAssistant: id, seq };
+      // Count what actually came down the wire so the param row can show a
+      // live tok/s while the turn is still running.
+      return { ...s, items, live, currentAssistant: id, seq, turnChars: s.turnChars + delta.length, turnCjkChars: s.turnCjkChars + countCjk(delta) };
     }
     case "message": {
       const { items, id, seq } = ensureAssistant(s);
@@ -652,7 +667,11 @@ function applyEvent(s: State, e: WireEvent): State {
         const it = next[idx];
         if (it.kind === "tool") next[idx] = { ...it, argsDiff: e.text ?? "", name: t.name || it.name };
       }
-      return { ...s, items: next };
+      // A patch preview is streamed file content, i.e. the same output tokens
+      // the provider will count when this round finishes — without it the live
+      // estimate reads far too low on any turn that writes files.
+      const patch = e.text ?? "";
+      return { ...s, items: next, turnChars: s.turnChars + patch.length, turnCjkChars: s.turnCjkChars + countCjk(patch) };
     }
     case "tool_progress": {
       const t = e.tool;
@@ -670,7 +689,17 @@ function applyEvent(s: State, e: WireEvent): State {
       const usageTokens = usageTotalTokens(e.usage);
       const turnTotalTokens = s.turnTotalTokens + usageTokens;
       const sessionTokens = s.sessionTokens + usageTokens;
-      return { ...s, usage: e.usage, context: { ...s.context, used, sessionTokens }, turnTokens, turnTotalTokens, sessionTokens };
+      // The first exact count of a turn is also the calibration sample for the
+      // live estimator: characters streamed so far vs the tokens they cost.
+      // Later rounds are skipped — by then `turnChars` spans every round while
+      // `completionTokens` covers only the round that just finished.
+      let tokenScale = s.tokenScale;
+      if (s.turnTokens === 0 && s.turnChars > 0) {
+        const estimated = estimateTokens(s.turnCjkChars, s.turnChars - s.turnCjkChars);
+        const actual = e.usage?.completionTokens ?? 0;
+        if (estimated > 0 && actual > 0) tokenScale = blendTokenScale(s.tokenScale, actual / estimated);
+      }
+      return { ...s, usage: e.usage, context: { ...s.context, used, sessionTokens }, turnTokens, turnTotalTokens, sessionTokens, tokenScale };
     }
     case "notice":
       return { ...s, running: s.turnActive ? s.running : false, seq: s.seq + 1, items: [...s.items, { kind: "notice", id: `n${s.seq}`, level: e.level ?? "info", text: e.text ?? "" }] };
@@ -772,6 +801,8 @@ export function reducer(s: State, a: Action): State {
         turnStartAt: Date.now(),
         turnTokens: 0,
         turnTotalTokens: 0,
+        turnChars: 0,
+        turnCjkChars: 0,
         pendingUser: a.text,
         discardTurn: false,
       };
