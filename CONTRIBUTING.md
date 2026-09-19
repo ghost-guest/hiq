@@ -15,7 +15,7 @@
 ## 快速开始
 
 ```bash
-git clone https://github.com/zzycxz/hiq.git
+git clone https://github.com/ghost-guest/hiq.git
 cd hiq
 make build    # 编译 CLI 二进制文件
 make test     # 运行完整的测试套件

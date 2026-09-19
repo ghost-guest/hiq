@@ -29,15 +29,15 @@ ending in `-canary.N` publish under the `canary` dist-tag.)
 | Action | Who | Mechanism |
 |---|---|---|
 | **Cut a canary** | any maintainer (write access) | `workflow_dispatch`, runs free (open `canary` environment) |
-| **Ship `next` / stable** | **zzycxz only** | stable publish jobs gate on the `release` environment — zzycxz must approve before anything goes public |
+| **Ship `next` / stable** | **ghost-guest only** | stable publish jobs gate on the `release` environment — ghost-guest must approve before anything goes public |
 
 So a maintainer can dispatch a canary anytime, but a stable release — even one a
-maintainer starts by pushing a tag — pauses in the Actions UI until **zzycxz approves**
+maintainer starts by pushing a tag — pauses in the Actions UI until **ghost-guest approves**
 the `release` environment deployment.
 
-> Repo settings backing this: Environments → `release` has zzycxz as a required
+> Repo settings backing this: Environments → `release` has ghost-guest as a required
 > reviewer; `canary` has none. (Optional hardening: a tag ruleset restricting
-> `v*`/`npm-v*`/`desktop-v*` creation to zzycxz, so maintainers can't even start a
+> `v*`/`npm-v*`/`desktop-v*` creation to ghost-guest, so maintainers can't even start a
 > stable release.)
 
 ## The release loop
@@ -56,7 +56,7 @@ the `release` environment deployment.
    git tag npm-v1.4.0     && git push origin npm-v1.4.0      # npm -> next
    git tag desktop-v1.4.0 && git push origin desktop-v1.4.0  # desktop -> R2 latest/
    ```
-   Each stable run **waits for zzycxz to approve the `release` environment** before publishing.
+   Each stable run **waits for ghost-guest to approve the `release` environment** before publishing.
 6. **Promote to default install** (optional, when 1.x should become the bare `npm i` target):
    ```sh
    npm dist-tag add hiq@1.4.0 latest

@@ -1,6 +1,6 @@
 # 会话引用功能架构文档
 
-> GitHub Issue: https://github.com/zzycxz/hiq/issues/3185
+> 原始设计讨论见上游仓库（fairpeer 血缘）issue #3185，该 issue 未随本仓库迁移。
 
 ## 1. 功能需求
 

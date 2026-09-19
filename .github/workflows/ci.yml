@@ -56,7 +56,7 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev
           
       - name: Install Wails CLI
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.13.0
 
       # Locale parity gate (WORKSPACE_GIT_SPEC F2): en/zh key-set equality and
       # "zh values must not be untranslated English sentences". One matrix leg
@@ -76,6 +76,13 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
+          # The repo carries desktop/rsrc_windows_amd64.syso so a plain `go build`
+          # links the app icon + VERSIONINFO. `wails build` generates its own
+          # resource, and two .rsrc objects make the Go linker fail with
+          # "too many .rsrc sections" — park the committed one for wails runs.
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            mv rsrc_windows_amd64.syso rsrc_windows_amd64.syso.parked
+          fi
           if [ "${{ matrix.goos }}" = "windows" ]; then
             wails build -platform ${{ matrix.goos }}/${{ matrix.goarch }} -clean -trimpath -webview2 embed -nsis
           elif [ "${{ matrix.goos }}" = "linux" ]; then

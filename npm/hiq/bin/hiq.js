@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const { spawnSync } = require("node:child_process");
 
-const pkg = `@zzycxz/hiq-cli-${process.platform}-${process.arch}`;
+const pkg = `@ghost-guest/hiq-cli-${process.platform}-${process.arch}`;
 const exe = `hiq${process.platform === "win32" ? ".exe" : ""}`;
 
 let binary;
@@ -11,7 +11,7 @@ try {
   console.error(
     `hiq: no prebuilt binary for ${process.platform}-${process.arch}.\n` +
       `Install the matching optional package (${pkg}), or build from source:\n` +
-      `  https://github.com/zzycxz/hiq`,
+      `  https://github.com/ghost-guest/hiq`,
   );
   process.exit(1);
 }

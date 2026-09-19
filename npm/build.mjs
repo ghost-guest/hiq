@@ -30,7 +30,7 @@ mkdirSync(STAGE, { recursive: true });
 
 const subPackages = [];
 for (const t of TARGETS) {
-  const name = `@hiq/cli-${t.node}`;
+  const name = `@ghost-guest/hiq-cli-${t.node}`;
   const dir = join(STAGE, `cli-${t.node}`);
   const exe = t.goos === "windows" ? "hiq.exe" : "hiq";
   mkdirSync(join(dir, "bin"), { recursive: true });
@@ -67,7 +67,7 @@ for (const t of TARGETS) {
         license: "MIT",
         repository: {
           type: "git",
-          url: "git+https://github.com/zzycxz/hiq.git",
+          url: "git+https://github.com/ghost-guest/hiq.git",
         },
       },
       null,

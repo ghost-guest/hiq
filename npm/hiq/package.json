@@ -1,5 +1,5 @@
 {
-  "name": "@zzycxz/hiq",
+  "name": "@ghost-guest/hiq",
   "version": "0.1.6",
   "description": "A general-purpose AI coding agent for the terminal.",
   "bin": {
@@ -12,13 +12,13 @@
     "node": ">=18"
   },
   "license": "MIT",
-  "homepage": "https://github.com/zzycxz/hiq#readme",
+  "homepage": "https://github.com/ghost-guest/hiq#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zzycxz/hiq.git"
+    "url": "git+https://github.com/ghost-guest/hiq.git"
   },
   "bugs": {
-    "url": "https://github.com/zzycxz/hiq/issues"
+    "url": "https://github.com/ghost-guest/hiq/issues"
   },
   "keywords": [
     "ai",
@@ -28,11 +28,11 @@
     "tui"
   ],
   "optionalDependencies": {
-    "@zzycxz/hiq-cli-darwin-arm64": "0.0.0",
-    "@zzycxz/hiq-cli-darwin-x64": "0.0.0",
-    "@zzycxz/hiq-cli-linux-arm64": "0.0.0",
-    "@zzycxz/hiq-cli-linux-x64": "0.0.0",
-    "@zzycxz/hiq-cli-win32-arm64": "0.0.0",
-    "@zzycxz/hiq-cli-win32-x64": "0.0.0"
+    "@ghost-guest/hiq-cli-darwin-arm64": "0.0.0",
+    "@ghost-guest/hiq-cli-darwin-x64": "0.0.0",
+    "@ghost-guest/hiq-cli-linux-arm64": "0.0.0",
+    "@ghost-guest/hiq-cli-linux-x64": "0.0.0",
+    "@ghost-guest/hiq-cli-win32-arm64": "0.0.0",
+    "@ghost-guest/hiq-cli-win32-x64": "0.0.0"
   }
 }

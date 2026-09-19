@@ -34,7 +34,7 @@ import (
 
 // Manifest endpoints — GitHub releases as the sole source.
 const (
-	ghReleasesBase = "https://github.com/zzycxz/hiq/releases"
+	ghReleasesBase = "https://github.com/ghost-guest/hiq/releases"
 	httpTimeout    = 15 * time.Second
 )
 

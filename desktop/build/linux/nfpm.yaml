@@ -13,7 +13,7 @@ platform: "linux"
 version: "${DEB_VERSION}"
 section: "utils"
 priority: "optional"
-maintainer: "zzycxz <zzycxz@users.noreply.github.com>"
+maintainer: "ghost-guest <ghost-guest@users.noreply.github.com>"
 description: |
   hiq desktop — a Wails shell around the Go kernel.
 vendor: "hiq Contributors"

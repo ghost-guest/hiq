@@ -66,7 +66,7 @@ func TestGenManifest(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	t.Setenv("GITHUB_REPOSITORY", "zzycxz/hiq")
+	t.Setenv("GITHUB_REPOSITORY", "ghost-guest/hiq")
 
 	if err := genManifest(dir, "v1.2.0", "desktop-v1.2.0"); err != nil {
 		t.Fatalf("genManifest: %v", err)
@@ -89,11 +89,11 @@ func TestGenManifest(t *testing.T) {
 	if !ok {
 		t.Fatal("windows-amd64 missing")
 	}
-	wantURL := "https://github.com/zzycxz/hiq/releases/download/desktop-v1.2.0/hiq-windows-amd64.exe"
+	wantURL := "https://github.com/ghost-guest/hiq/releases/download/desktop-v1.2.0/hiq-windows-amd64.exe"
 	if win.URL != wantURL {
 		t.Fatalf("windows url = %q, want %q", win.URL, wantURL)
 	}
-	wantSig := "https://github.com/zzycxz/hiq/releases/download/desktop-v1.2.0-sigs/hiq-windows-amd64.exe.minisig"
+	wantSig := "https://github.com/ghost-guest/hiq/releases/download/desktop-v1.2.0-sigs/hiq-windows-amd64.exe.minisig"
 	if win.Sig != wantSig {
 		t.Fatalf("windows sig = %q, want %q", win.Sig, wantSig)
 	}

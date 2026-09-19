@@ -169,7 +169,7 @@ func signFiles(files []string) error {
 func genManifest(dir, version, tag string) error {
 	repo := os.Getenv("GITHUB_REPOSITORY")
 	if repo == "" {
-		repo = "zzycxz/hiq"
+		repo = "ghost-guest/hiq"
 	}
 	m := update.Manifest{
 		Version:      version,

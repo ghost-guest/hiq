@@ -91,6 +91,11 @@ jobs:
         working-directory: desktop
         shell: bash
         run: |
+          # Park the committed rsrc_windows_amd64.syso (see ci.yml): `wails build`
+          # generates its own resource and two .rsrc objects fail to link.
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            mv rsrc_windows_amd64.syso rsrc_windows_amd64.syso.parked
+          fi
           if [ "${{ runner.os }}" = "Windows" ]; then
             wails build -platform ${{ matrix.platform }} -clean -trimpath -ldflags "-X main.version=${{ github.ref_name }}" -tags codegraph_embed -webview2 embed -nsis
           elif [ "${{ runner.os }}" = "Linux" ]; then
