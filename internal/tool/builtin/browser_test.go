@@ -13,7 +13,7 @@ func TestBrowserToolsRoster(t *testing.T) {
 	tools := BrowserTools()
 	want := map[string]bool{
 		"browser_open": true, "browser_attach": true, "browser_navigate": true,
-		"browser_tabs": true, "browser_switch_tab": true, "browser_hover": true,
+		"browser_cookies": true, "browser_tabs": true, "browser_switch_tab": true, "browser_hover": true,
 		"browser_back": true, "browser_forward": true,
 		"browser_click": true, "browser_type": true, "browser_scroll": true,
 		"browser_extract": true, "browser_screenshot": true, "browser_evaluate": true,

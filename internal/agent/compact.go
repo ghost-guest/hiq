@@ -473,11 +473,13 @@ func latestCompactionSummary(msgs []provider.Message) (text string, idx int) {
 
 // pinnedPrefixLen counts the leading messages a fold keeps verbatim: the system
 // prompt, the first user turn (its task + stated facts/constraints) when it is
-// small enough to be a brief, and any prior summaries — so a fold never
-// summarizes the user's facts away, and a later fold never re-summarizes an
-// earlier summary into nothing (the drift that silently dropped user-stated facts
-// after the second compaction). A large first turn (pasted content) stays
-// foldable so pinning never starves the window.
+// small enough to be a brief, the task-ledger message (the durable anchor the
+// model maintains via task_ledger — folded away it would defeat its purpose),
+// and any prior summaries — so a fold never summarizes the user's facts away,
+// and a later fold never re-summarizes an earlier summary into nothing (the
+// drift that silently dropped user-stated facts after the second compaction).
+// A large first turn (pasted content) stays foldable so pinning never starves
+// the window.
 func (a *Agent) pinnedPrefixLen(msgs []provider.Message) int {
 	i := 0
 	if i < len(msgs) && msgs[i].Role == provider.RoleSystem {
@@ -486,7 +488,7 @@ func (a *Agent) pinnedPrefixLen(msgs []provider.Message) int {
 	if i < len(msgs) && msgs[i].Role == provider.RoleUser && !isCompactionSummary(msgs[i]) && a.pinnableUserTurn(msgs[i]) {
 		i++
 	}
-	for i < len(msgs) && isCompactionSummary(msgs[i]) {
+	for i < len(msgs) && (isCompactionSummary(msgs[i]) || isTaskLedger(msgs[i])) {
 		i++
 	}
 	return i
@@ -507,13 +509,14 @@ func (a *Agent) pinnableUserTurn(m provider.Message) bool {
 
 // partitionFold splits a compaction region into messages kept verbatim and the
 // rest, which folds into the digest. Kept messages are: small user turns (the
-// deterministic floor — a fact the user stated is never summarized away) and
-// prior compaction summaries (so a later fold never re-summarizes an earlier
-// digest, preventing the information-drift that silently dropped user-stated
-// facts after the second compaction). Order within each group is preserved.
+// deterministic floor — a fact the user stated is never summarized away), the
+// task-ledger message (the durable anchor; see taskledger.go), and prior
+// compaction summaries (so a later fold never re-summarizes an earlier digest,
+// preventing the information-drift that silently dropped user-stated facts
+// after the second compaction). Order within each group is preserved.
 func (a *Agent) partitionFold(region []provider.Message) (kept, fold []provider.Message) {
 	for _, m := range region {
-		if isCompactionSummary(m) || (m.Role == provider.RoleUser && a.pinnableUserTurn(m)) {
+		if isCompactionSummary(m) || isTaskLedger(m) || (m.Role == provider.RoleUser && a.pinnableUserTurn(m)) {
 			kept = append(kept, m)
 		} else {
 			fold = append(fold, m)

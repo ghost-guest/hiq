@@ -353,6 +353,11 @@ type Agent struct {
 	// never a block, because identical reads can be legitimate polling.
 	readRepeatSig   string
 	readRepeatCount int
+	// lastReanchorStep is the step number of the most recent task-ledger
+	// re-anchor nudge (see applyLedgerReanchor in taskledger.go). taskLedger
+	// gates the whole ledger mechanism (Options.TaskLedger).
+	lastReanchorStep int
+	taskLedger       bool
 	// repeatText detects streamed-output repetition (the same passage emitted
 	// over and over) within a single answer. Advisory only: it surfaces a
 	// Notice on detection, it never aborts the turn — distinct from the
@@ -728,6 +733,15 @@ type Options struct {
 	CompactForceRatio float64
 	RecentKeep        int
 	ArchiveDir        string
+
+	// TaskLedger opts this agent into the task-ledger drift guard: Run seeds
+	// a durable task anchor after the first user turn (pinned verbatim across
+	// compactions, see taskledger.go) and re-anchors the goal every N tool
+	// rounds. Off by default — specialized sessions (guardian reviews, ACP
+	// e2e harnesses) own their message-log invariants and must not carry a
+	// ledger; the interactive loop and task/skill sub-agents opt in.
+	TaskLedger bool
+
 	// ContextBudgetPercent caps the effective context window the agent treats as
 	// available, triggering compaction earlier (SPEC v2 §3.6). 0 or 100 = use
 	// the full window (the default, zero user config). 80 = compact as if the
@@ -849,6 +863,7 @@ func New(prov provider.Provider, tools *tool.Registry, session *Session, opts Op
 		compactForceRatio: opts.CompactForceRatio,
 		recentKeep:        opts.RecentKeep,
 		archiveDir:        opts.ArchiveDir,
+		taskLedger:        opts.TaskLedger,
 		opGate:            newOpGate(),
 	}
 }
@@ -876,13 +891,22 @@ func (a *Agent) Run(ctx context.Context, input any) error {
 	a.repeatSuccessCounts = nil
 	a.readRepeatSig = ""
 	a.readRepeatCount = 0
+	a.lastReanchorStep = 0
 	a.repeatText.reset()
 	a.repeatTextWarned = false
 	if a.opGate != nil {
 		a.opGate.reset()
 	}
 	a.sink.Emit(event.Event{Kind: event.TurnStarted})
-	a.session.Add(provider.MessageFromInput(input))
+	inputMsg := provider.MessageFromInput(input)
+	a.session.Add(inputMsg)
+	// Task ledger (taskledger.go): opt-in sessions insert the durable anchor
+	// after the first user turn when none exists — before this turn's first
+	// provider request, so the insertion rides a request that is cache-cold
+	// anyway.
+	if a.taskLedger {
+		a.ensureTaskLedger(provider.ContentString(inputMsg.Content))
+	}
 
 	finalReadinessBlocks := 0
 	emptyFinalBlocks := 0
@@ -1031,6 +1055,13 @@ func (a *Agent) Run(ctx context.Context, input any) error {
 		emptyFinalBlocks = 0
 
 		results := a.executeBatch(ctx, calls)
+		// Task-ledger re-anchor (taskledger.go): every ledgerReanchorEvery
+		// rounds, append an advisory goal digest to the latest result before
+		// it is persisted — the text has not been sent yet, so this costs no
+		// prefix stability. Opt-in with the ledger itself.
+		if a.taskLedger {
+			a.applyLedgerReanchor(step+1, results)
+		}
 		for i, call := range calls {
 			a.session.Add(provider.Message{
 				Role:       provider.RoleTool,
@@ -1970,6 +2001,12 @@ func (a *Agent) executeOne(ctx context.Context, call provider.ToolCall, preview 
 	// hiq.tool(...) RPCs against the same tools this call was dispatched
 	// from (read-only allowlist enforced by the kernel host adapter).
 	cctx = tool.WithRegistry(cctx, a.tools)
+	// Stamp the ledger editor so task_ledger can rewrite the session's
+	// durable task anchor (see taskledger.go) — only where the mechanism is
+	// enabled; elsewhere the tool degrades to a clear "unavailable" error.
+	if a.taskLedger {
+		cctx = tool.WithLedgerEditor(cctx, a)
+	}
 	if a.evidence != nil {
 		cctx = evidence.WithLedger(cctx, a.evidence)
 		cctx = evidence.WithSessionMessages(cctx, a.session.Snapshot())

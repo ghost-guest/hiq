@@ -72,7 +72,15 @@ func TestRunCancelledMidStreamLeavesResumableSession(t *testing.T) {
 			t.Fatalf("a cancelled turn left a dangling tool message at %d: %+v", i, m)
 		}
 	}
-	last := repaired[len(repaired)-1]
+	// The last user-visible message is the pending prompt; the task ledger
+	// (kernel infrastructure, inserted after the first user turn) is skipped.
+	last := provider.Message{}
+	for i := len(repaired) - 1; i >= 0; i-- {
+		if !IsTaskLedger(repaired[i]) {
+			last = repaired[i]
+			break
+		}
+	}
 	if last.Role != provider.RoleUser || provider.ContentString(last.Content) != "do the thing" {
 		t.Errorf("the pending user message should survive a cancel, got %+v", last)
 	}

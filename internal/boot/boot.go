@@ -1549,6 +1549,7 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 			Gate:          headlessGate,
 			ContextWindow: ctxWin,
 			ArchiveDir:    config.ArchiveDir(),
+			TaskLedger:    true, // skill sub-agents run long tasks too
 			PreEditHook:   subagentPreEdit.Fire,
 			PostEditHook:  subagentPostEdit.Fire,
 		}, agent.NestedSink(sctx, event.Discard))
@@ -1683,6 +1684,9 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		CompactForceRatio:    cfg.Agent.CompactForceRatio,
 		ContextBudgetPercent: cfg.Agent.ContextBudgetPercent,
 		ArchiveDir:           config.ArchiveDir(),
+		// Long-task drift guard: the interactive loop carries the task ledger
+		// (pinned across compactions, re-anchors the goal periodically).
+		TaskLedger: true,
 		// The interactive loop (CLI/TUI/desktop/serve/bot all build through
 		// here) keeps the visible-final guarantee: a turn that ends with no
 		// readable answer is re-prompted instead of silently landing as an

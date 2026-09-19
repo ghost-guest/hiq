@@ -313,7 +313,10 @@ func (gs *Session) rollbackReview(before []provider.Message, rewriteBefore int) 
 				continue
 			}
 		}
-		if last.Role != provider.RoleUser || agent.IsCompactionSummary(last) {
+		// Both the compaction digest and the task ledger are kernel-owned
+		// user-role messages — the trim must stop at either instead of
+		// consuming them as disposable turns.
+		if last.Role != provider.RoleUser || agent.IsCompactionSummary(last) || agent.IsTaskLedger(last) {
 			break
 		}
 		msgs = msgs[:len(msgs)-1]

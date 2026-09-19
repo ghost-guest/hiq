@@ -9,6 +9,7 @@ import (
 	"sync"
 	"unicode/utf8"
 
+	"github.com/zzycxz/hiq/internal/agent"
 	"github.com/zzycxz/hiq/internal/event"
 	"github.com/zzycxz/hiq/internal/permission"
 	"github.com/zzycxz/hiq/internal/provider"
@@ -167,15 +168,18 @@ func (s *updateSink) send(update any) {
 
 // replay streams a loaded conversation back to the client as session/update
 // notifications so a resumed session reconstructs its transcript view. The
-// system message is skipped (not user-visible); everything is reported as already
+// system message is skipped (not user-visible), and so are the kernel's own
+// tagged user messages — compaction summaries and the task ledger — which are
+// infrastructure, not user-visible turns. Everything is reported as already
 // completed since it is history, not a live turn.
 func (s *updateSink) replay(msgs []provider.Message) {
 	for _, m := range msgs {
 		switch m.Role {
 		case provider.RoleUser:
-			if m.Content != "" {
-				s.send(messageChunk{SessionUpdate: "user_message_chunk", Content: textBlock(provider.ContentString(m.Content))})
+			if m.Content == "" || agent.IsCompactionSummary(m) || agent.IsTaskLedger(m) {
+				continue
 			}
+			s.send(messageChunk{SessionUpdate: "user_message_chunk", Content: textBlock(provider.ContentString(m.Content))})
 		case provider.RoleAssistant:
 			if m.ReasoningContent != "" {
 				s.send(messageChunk{SessionUpdate: "agent_thought_chunk", Content: textBlock(m.ReasoningContent)})

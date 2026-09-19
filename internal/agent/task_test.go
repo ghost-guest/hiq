@@ -247,7 +247,19 @@ func TestTaskToolPersistsAndContinuesTranscript(t *testing.T) {
 	if len(msgs) < 4 {
 		t.Fatalf("continued request messages = %+v, want prior transcript plus new task", msgs)
 	}
-	if msgs[1].Content != "first task" || msgs[2].Content != "first answer" || !strings.HasPrefix(lastUser(sub.requests[1]), "second task") {
+	// Content-based: the sub-agent's continued request carries the prior
+	// task/answer (plus the task ledger the sub-agent seeds, taskledger.go)
+	// and the new task as the latest user turn.
+	var sawTask, sawAnswer bool
+	for _, m := range msgs {
+		if m.Role == provider.RoleUser && m.Content == "first task" {
+			sawTask = true
+		}
+		if m.Role == provider.RoleAssistant && m.Content == "first answer" {
+			sawAnswer = true
+		}
+	}
+	if !sawTask || !sawAnswer || !strings.HasPrefix(lastUser(sub.requests[1]), "second task") {
 		t.Fatalf("continued request messages = %+v, want first task/answer then second task", msgs)
 	}
 }
@@ -289,8 +301,23 @@ func TestTaskToolFailedForegroundContinuationPersistsAndRejectsReuse(t *testing.
 	if err != nil {
 		t.Fatalf("LoadSession: %v", err)
 	}
+	// Content-based: the transcript must carry first task/answer plus the new
+	// task (the task ledger the sub-agent seeds rides along, taskledger.go).
 	msgs := loaded.Snapshot()
-	if len(msgs) != 4 || msgs[1].Content != "first task" || msgs[2].Content != "first answer" || msgs[3].Content != "second task" {
+	var sawTask, sawAnswer bool
+	var lastPrompt string
+	for _, m := range msgs {
+		if m.Role == provider.RoleUser && !IsTaskLedger(m) {
+			lastPrompt = m.Content
+		}
+		if m.Role == provider.RoleUser && m.Content == "first task" {
+			sawTask = true
+		}
+		if m.Role == provider.RoleAssistant && m.Content == "first answer" {
+			sawAnswer = true
+		}
+	}
+	if !sawTask || !sawAnswer || lastPrompt != "second task" {
 		t.Fatalf("failed continuation transcript = %+v, want first task/answer plus second task", msgs)
 	}
 	if _, err := task.Execute(testTaskContext(), []byte(`{"prompt":"third task","continue_from":"`+ref+`"}`)); err == nil || !strings.Contains(err.Error(), "failed and cannot be continued") {

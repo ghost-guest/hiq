@@ -38,8 +38,11 @@ func (m *mockProvider) Stream(ctx context.Context, req provider.Request) (<-chan
 
 func lastUser(req provider.Request) string {
 	for i := len(req.Messages) - 1; i >= 0; i-- {
-		if req.Messages[i].Role == provider.RoleUser {
-			return provider.ContentString(req.Messages[i].Content)
+		m := req.Messages[i]
+		// The task ledger is kernel infrastructure (taskledger.go), not a
+		// user turn — skip it when looking for the latest prompt.
+		if m.Role == provider.RoleUser && !IsTaskLedger(m) {
+			return provider.ContentString(m.Content)
 		}
 	}
 	return ""
