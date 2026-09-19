@@ -3,12 +3,43 @@ package pykernel
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/zzycxz/hiq/internal/runtime"
 )
+
+// TestKernelBundledInterpreter pins the kernel to an interpreter supplied via
+// HIQ_PYKERNEL_BUNDLE_PYTHON (CI sets it to the embeddable distribution under
+// runtimes/python/) and asserts the full cell path works there — the same
+// interpreter a fresh unzip uses on a machine without any Python install.
+func TestKernelBundledInterpreter(t *testing.T) {
+	py := os.Getenv("HIQ_PYKERNEL_BUNDLE_PYTHON")
+	if py == "" {
+		t.Skip("HIQ_PYKERNEL_BUNDLE_PYTHON not set")
+	}
+	if _, err := os.Stat(py); err != nil {
+		t.Fatalf("bundled interpreter missing: %v", err)
+	}
+	orig := resolvePython
+	resolvePython = func() (string, []string, error) { return py, nil, nil }
+	t.Cleanup(func() { resolvePython = orig })
+
+	k := NewKernel(RegistryHost{})
+	defer k.Reset()
+	if _, err := k.Cell(context.Background(), "bundle_mark = 41 + 1", time.Minute); err != nil {
+		t.Fatalf("cell: %v", err)
+	}
+	res, err := k.Cell(context.Background(), "print(bundle_mark * 10)", time.Minute)
+	if err != nil {
+		t.Fatalf("second cell: %v", err)
+	}
+	if res.Error != "" || !strings.Contains(res.Stdout, "420") {
+		t.Fatalf("persistence through bundle interpreter broken: err=%q stdout=%q", res.Error, res.Stdout)
+	}
+}
 
 // requirePython skips the e2e suite when no interpreter is available (CI legs
 // and portable installs without Python still run the pure-Go tests).

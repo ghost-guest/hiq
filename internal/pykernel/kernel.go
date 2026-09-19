@@ -203,10 +203,14 @@ func (k *Kernel) alive() bool {
 	return k.proc != nil && k.proc.Process != nil && k.proc.ProcessState == nil
 }
 
+// resolvePython is the interpreter resolution seam; tests override it to pin
+// a specific interpreter (e.g. the bundled embeddable distribution).
+var resolvePython = hiruntime.ResolvePython
+
 func (k *Kernel) spawnLocked() error {
-	py, prefix, err := hiruntime.ResolvePython()
+	py, prefix, err := resolvePython()
 	if err != nil {
-		return fmt.Errorf("pykernel: Python is not available — install Python 3.8+ (py or python3 on PATH, or uv) to use python_cell: %w", err)
+		return fmt.Errorf("pykernel: Python is not available — python_cell needs a Python 3.8+ interpreter (bundled runtimes/python/, py or python3 on PATH, or uv): %w", err)
 	}
 	cmd := exec.Command(py, append(prefix, "-I", "-X", "utf8", "-c", workerScript)...)
 	cmd.Env = append(os.Environ(), "PYTHONDONTWRITEBYTECODE=1")

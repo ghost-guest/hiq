@@ -102,6 +102,13 @@ func ResolveUV() (string, bool) {
 // ("/usr/bin/python3", nil).
 func ResolvePython() (cmd string, prefixArgs []string, err error) {
 	pyOnce.Do(func() {
+		// 0. Bundled portable Python next to the exe (desktop release ships
+		// the embeddable distribution under runtimes/python/). Wins over uv
+		// and PATH so a fresh unzip works with zero machine setup.
+		if p, ok := bundledPython(); ok {
+			pyCmd, pyPrefix, pyErr = p, nil, nil
+			return
+		}
 		// 1. If uv is available, prefer it (handles deps + venv isolation).
 		if uvPath, ok := ResolveUV(); ok {
 			pyCmd, pyPrefix, pyErr = uvPath, []string{"run", "python"}, nil

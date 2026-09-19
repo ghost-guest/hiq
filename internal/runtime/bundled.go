@@ -34,6 +34,32 @@ func isExec(path string) bool {
 	return true
 }
 
+// bundledPython looks for a portable Python interpreter shipped in the bundle
+// directory (runtimes/python/python.exe, or runtimes/python/bin/python.exe).
+// The desktop release ships the Windows embeddable distribution there so a
+// fresh unzip on a machine without Python still gets python_cell.
+func bundledPython() (string, bool) {
+	base, ok := bundledBaseDir()
+	if !ok {
+		return "", false
+	}
+	return findBundledPython(base)
+}
+
+// findBundledPython probes a bundle base directory for a python executable.
+// Split from bundledPython so the layout logic is unit-testable. Uses
+// lookPathInDir so Windows extension handling (.exe/.cmd/.bat) is shared.
+func findBundledPython(base string) (string, bool) {
+	for _, sub := range []string{"python", filepath.Join("python", "bin")} {
+		for _, name := range pythonNames() {
+			if p, ok := lookPathInDir(filepath.Join(base, sub), name); ok {
+				return p, true
+			}
+		}
+	}
+	return "", false
+}
+
 // bundledUV looks for uv in the exe-adjacent bundle directory.
 func bundledUV() (string, bool) {
 	base, ok := bundledBaseDir()
