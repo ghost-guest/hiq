@@ -122,3 +122,52 @@ func TestPreviewServerStablePortAcrossRegistrations(t *testing.T) {
 func portOf(url string) string {
 	return strings.Split(strings.TrimPrefix(url, "http://127.0.0.1:"), "/")[0]
 }
+
+// TestPreviewInjectsFitScriptIntoHTML: served HTML carries the size-report
+// script (the pane's zoom-to-fit depends on it), other types stay untouched.
+func TestPreviewInjectsFitScriptIntoHTML(t *testing.T) {
+	dir := t.TempDir()
+	page := filepath.Join(dir, "page.html")
+	if err := os.WriteFile(page, []byte("<!doctype html><html><body><h1>fixed width</h1></body></html>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	img := filepath.Join(dir, "a.png")
+	if err := os.WriteFile(img, []byte{0x89, 'P', 'N', 'G'}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	port, err := appPreview.start()
+	if err != nil {
+		t.Fatal(err)
+	}
+	u1, err := (&App{}).PreviewLocalFile(page)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u2, err := (&App{}).PreviewLocalFile(img)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.Get(u1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if !strings.Contains(string(body), "__hiqPreviewSize") {
+		t.Fatal("html response missing the fit-report script")
+	}
+	if !strings.Contains(string(body), "fixed width") {
+		t.Fatal("injection must not disturb the original markup")
+	}
+	// Sibling html (not the registered entry) is also instrumented; png is not.
+	_ = port
+	resp2, err := http.Get(u2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp2.Body.Close()
+	raw2, _ := io.ReadAll(resp2.Body)
+	if strings.Contains(string(raw2), "__hiqPreviewSize") {
+		t.Fatal("non-html response must not be injected")
+	}
+}

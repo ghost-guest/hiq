@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -161,7 +164,62 @@ func (p *previewLocal) handle(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", ct)
 	w.Header().Set("Cache-Control", "no-store")
+	// HTML gets the fit-report script injected so the pane can zoom-to-fit
+	// fixed-width pages (generated game/landing pages are often 1200-1920px
+	// wide — raw iframes would need horizontal scrolling). Siblings included:
+	// a multi-page artifact should fit on every page.
+	if strings.HasPrefix(ct, "text/html") {
+		if data, rerr := os.ReadFile(target); rerr == nil {
+			data = injectPreviewFitScript(data)
+			w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+			_, _ = w.Write(data)
+			return
+		}
+		// Read failed (deleted between open and read?) — fall through to the
+		// raw ServeContent path, which will surface its own error.
+		_, _ = f.Seek(0, io.SeekStart)
+	}
 	http.ServeContent(w, r, filepath.Base(target), info.ModTime(), f)
+}
+
+// previewFitScript posts the document's content size to the parent pane so
+// PreviewPane can scale the iframe to fit without scrollbars. Re-posted on
+// load/resize and polled lightly — generated pages animate widths, and a
+// ResizeObserver alone misses late layout shifts in some frameworks.
+const previewFitScript = `<script>(function(){
+  var last="";
+  function post(){
+    try{
+      var de=document.documentElement,b=document.body;
+      var w=Math.max(de?de.scrollWidth:0,b?b.scrollWidth:0);
+      var h=Math.max(de?de.scrollHeight:0,b?b.scrollHeight:0);
+      if(!w||!h)return;
+      var msg=w+"x"+h;
+      if(msg===last)return; last=msg;
+      parent.postMessage({__hiqPreviewSize:true,w:w,h:h},"*");
+    }catch(e){}
+  }
+  window.addEventListener("load",post);
+  window.addEventListener("resize",post);
+  setInterval(post,600);
+  if(document.readyState!=="loading")setTimeout(post,0);
+})();</script>`
+
+// injectPreviewFitScript appends the fit-report script to an HTML document —
+// before </body> when present (keeps doctypes intact), else at the tail.
+func injectPreviewFitScript(html []byte) []byte {
+	if bytes.Contains(html, []byte("__hiqPreviewSize")) {
+		return html // already instrumented
+	}
+	lower := bytes.ToLower(html)
+	if idx := bytes.LastIndex(lower, []byte("</body>")); idx >= 0 {
+		out := make([]byte, 0, len(html)+len(previewFitScript))
+		out = append(out, html[:idx]...)
+		out = append(out, previewFitScript...)
+		out = append(out, html[idx:]...)
+		return out
+	}
+	return append(html, previewFitScript...)
 }
 
 // parseIndex keeps the URL index strictly numeric.

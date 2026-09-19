@@ -741,6 +741,18 @@ type CoworkConfig struct {
 	// open between tasks. Empty = current behavior (launch + own lifecycle
 	// per browser_auto run).
 	BrowserAttachURL string `toml:"browser_attach_url"`
+	// BrowserPersistCookies controls whether the driven browser keeps cookies
+	// (login state) across launches. nil/true (default) = persistent profile
+	// when browser_user_data_dir is set; false = "拒绝 Cookies" style ephemeral
+	// sessions — the user-data-dir is ignored and every launch starts
+	// cookie-clean (logins do not survive restarts). Surfaced as the 接受
+	// Cookies toggle in the desktop browser settings card.
+	BrowserPersistCookies *bool `toml:"browser_persist_cookies"`
+	// BrowserOpenLinksIn is the agent's default tab behavior for opening
+	// webpages ("打开网页时"): "current" (default) reuses the tab the session
+	// drives; "new" opens each browser_navigate in a fresh tab, keeping the
+	// previous pages open. An explicit new_tab arg on browser_navigate wins.
+	BrowserOpenLinksIn string `toml:"browser_open_links_in"`
 	// PPTActiveTemplate is the id of the active PPT template (from the templates
 	// dir <user-config>/hiq/ppt-templates/<id>.json). When set, the ppt-wizard
 	// skill generates decks from that template: it opens the template's master_file

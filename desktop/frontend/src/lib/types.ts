@@ -1504,6 +1504,12 @@ export interface CoWorkSettingsView {
   // debug-enabled browser (the managed 可控浏览器 on port 9222) instead of
   // launching a fresh one per task. Empty = launch mode.
   browserAttachURL: string;
+  // 接受 Cookies toggle: null/true keeps the persistent profile (logins
+  // survive restarts); false = every browser launch starts cookie-clean.
+  browserPersistCookies: boolean | null;
+  // 打开网页时 tab policy: "current" (default) reuses the driven tab; "new"
+  // opens each browser_navigate in a fresh tab, keeping old pages open.
+  browserOpenLinksIn: string;
   embeddingModel: string;
   // Knowledge-base master switch. null = unset (default → enabled); true =
   // enabled; false = fully disabled. Mirrors [cowork] rag_enabled. Distinct

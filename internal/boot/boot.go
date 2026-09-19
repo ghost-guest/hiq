@@ -786,6 +786,8 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 		// from the network spec; auto/env modes fall back to a probe via
 		// ProxyURLFor (chromedp needs one concrete --proxy-server URL).
 		builtin.SetBrowserLaunchOptions(cfg.Cowork.BrowserHeadless, cfg.Cowork.BrowserUserDataDir, resolveBrowserProxyURL(proxySpec))
+		// Cookie persistence + default tab behavior (接受 Cookies / 打开网页时).
+		builtin.SetBrowserCookiePolicy(cfg.Cowork.BrowserPersistCookies, cfg.Cowork.BrowserOpenLinksIn)
 	}
 	if profileKey == config.ProfileCowork {
 		// Desktop automation tools (screenshot, screen_click/type/scroll,

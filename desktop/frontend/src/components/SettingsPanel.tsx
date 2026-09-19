@@ -5112,7 +5112,7 @@ function CoWorkSection({ s, busy, apply }: SectionProps) {
   const refs = allRefs(s);
   const [draft, setDraft] = useState<CoWorkSettingsView>(() => {
     const base = s.cowork ?? {
-      browserPath: "", browserAttachURL: "", embeddingModel: "", ragEnabled: null,
+      browserPath: "", browserAttachURL: "", browserPersistCookies: null, browserOpenLinksIn: "", embeddingModel: "", ragEnabled: null,
       pptActiveTemplate: "", pptTemplates: [], pptTemplateDir: "",
       smtpPassword: "", imapPassword: "", smtpPasswordSet: false, imapPasswordSet: false, detectedBrowser: "",
       screenshotEnabled: false, screenshotHotkey: "Ctrl+Shift+Alt+W", screenshotVlmModel: "", screenshotPrompt: "",
@@ -5366,6 +5366,22 @@ function CoWorkSection({ s, busy, apply }: SectionProps) {
       setManagedStarting(false);
     }
   };
+  // --- Cookies 管理 + 打开网页时 (HanaAgent-style browser behaviors) --------
+  const [clearingCookies, setClearingCookies] = useState(false);
+  const [cookieMsg, setCookieMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const cookiesOn = draft.browserPersistCookies !== false; // null = on (default)
+  const clearCookies = async () => {
+    setClearingCookies(true);
+    setCookieMsg(null);
+    try {
+      const msg = await app.ClearManagedBrowserCookies();
+      setCookieMsg({ ok: true, text: msg });
+    } catch (e) {
+      setCookieMsg({ ok: false, text: String(e) });
+    } finally {
+      setClearingCookies(false);
+    }
+  };
   const pptOn = !!draft.pptActiveTemplate;
   // Mail is "on" when at least one account is configured (multi-account path)
   // or the legacy single-pair SMTP/IMAP has a host.
@@ -5541,6 +5557,51 @@ function CoWorkSection({ s, busy, apply }: SectionProps) {
                   title={managedStatus.running ? t("cowork.managedRunning", { browser: managedStatus.browser || "?" }) : managedStatus.detail || t("cowork.managedOff")}
                 />
               )}
+            </div>
+            {/* Cookies 管理 + 打开网页时（对照 HanaAgent 的浏览器默认行为） */}
+            <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <label className="cap-switch" title={t("cowork.acceptCookiesTip")}>
+                <input
+                  type="checkbox"
+                  checked={cookiesOn}
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    setDraft(d => { const n = { ...d, browserPersistCookies: on ? null : false }; commitDraft(n); return n; });
+                  }}
+                />
+                <span className="cap-switch__track" />
+              </label>
+              <span style={{ fontSize: "var(--font-size, 13px)" }}>{t("cowork.acceptCookies")}</span>
+              <button
+                type="button"
+                className="btn btn--small"
+                disabled={busy || clearingCookies}
+                onClick={clearCookies}
+                title={t("cowork.clearCookiesTip")}
+              >
+                {clearingCookies ? <Loader2 className="spinner" size={14} /> : t("cowork.clearCookies")}
+              </button>
+            </div>
+            {(cookieMsg || !cookiesOn) && (
+              <div className={`mem-hint${cookieMsg && !cookieMsg.ok ? " mem-hint--error" : ""}`} style={{ marginTop: 4, whiteSpace: "normal", lineHeight: 1.6 }}>
+                {cookieMsg
+                  ? cookieMsg.text
+                  : t("cowork.acceptCookiesOffHint")}
+              </div>
+            )}
+            <div className="set-input-browse" style={{ marginTop: 10 }}>
+              <span className="mem-hint" style={{ margin: 0, whiteSpace: "nowrap" }}>{t("cowork.openLinksIn")}</span>
+              <select
+                className="mem-input set-grow"
+                value={draft.browserOpenLinksIn === "new" ? "new" : "current"}
+                onChange={e => {
+                  const v = e.target.value;
+                  setDraft(d => { const n = { ...d, browserOpenLinksIn: v }; commitDraft(n); return n; });
+                }}
+              >
+                <option value="current">{t("cowork.openLinksCurrent")}</option>
+                <option value="new">{t("cowork.openLinksNew")}</option>
+              </select>
             </div>
             <div className="mem-hint" style={{ marginTop: 6, whiteSpace: "normal", lineHeight: 1.6 }}>
               {t("cowork.browserAttachHint")}

@@ -31,6 +31,13 @@ type CoWorkSettingsView struct {
 	// debug-enabled browser (the managed 可控浏览器) instead of launching a
 	// fresh one per task. Empty = launch mode.
 	BrowserAttachURL string `json:"browserAttachURL"`
+	// BrowserPersistCookies is the 接受 Cookies toggle: nil/true keeps the
+	// persistent profile (logins survive); false = every launch starts
+	// cookie-clean. Applied when the browser allocator is created.
+	BrowserPersistCookies *bool `json:"browserPersistCookies"`
+	// BrowserOpenLinksIn is the 打开网页时 tab policy: "current" (default) or
+	// "new" (each browser_navigate opens a fresh tab).
+	BrowserOpenLinksIn string `json:"browserOpenLinksIn"`
 	// RAGEnabled is the knowledge-base master switch. nil = enabled (default);
 	// explicit false = fully disabled (no auto-injection, no rag_* tools, expert
 	// teams skip KB context). Mirrors [cowork] rag_enabled. Distinct from
@@ -141,9 +148,11 @@ func coworkSettingsView(c config.CoworkConfig) CoWorkSettingsView {
 	}
 
 	v := CoWorkSettingsView{
-		BrowserPath:        c.BrowserPath,
-		BrowserAttachURL:   c.BrowserAttachURL,
-		EmbeddingModel:     c.EmbeddingModel,
+		BrowserPath:           c.BrowserPath,
+		BrowserAttachURL:      c.BrowserAttachURL,
+		BrowserPersistCookies: c.BrowserPersistCookies,
+		BrowserOpenLinksIn:    c.BrowserOpenLinksIn,
+		EmbeddingModel:        c.EmbeddingModel,
 		RAGEnabled:         c.RAGEnabled,
 		PPTActiveTemplate:  c.PPTActiveTemplate,
 		PPTTemplates:       templates,
@@ -359,6 +368,12 @@ func (a *App) SetCoWorkSettings(v CoWorkSettingsView) (err error) {
 	if err := a.applyConfigOnly(func(c *config.Config) error {
 		c.Cowork.BrowserPath = strings.TrimSpace(v.BrowserPath)
 		c.Cowork.BrowserAttachURL = browserlaunch.NormalizeCDPEndpoint(strings.TrimSpace(v.BrowserAttachURL))
+		c.Cowork.BrowserPersistCookies = v.BrowserPersistCookies
+		if v.BrowserOpenLinksIn == "new" {
+			c.Cowork.BrowserOpenLinksIn = "new"
+		} else {
+			c.Cowork.BrowserOpenLinksIn = "" // "current" is the zero value
+		}
 		c.Cowork.EmbeddingModel = strings.TrimSpace(v.EmbeddingModel)
 		// Knowledge-base master switch. The front-end always sends an explicit
 		// bool from its toggle, so we copy the pointer through; nil stays nil
@@ -647,6 +662,18 @@ func (a *App) InboxPreview(mailbox string, limit int) ([]InboxItem, error) {
 // panel so users see what auto-detect found before overriding.
 func (a *App) CheckCoworkBrowser() string {
 	return detectBrowserForSettings()
+}
+
+// ClearManagedBrowserCookies wipes cookies from every live driven-browser
+// session. Powers the browser card's 清除 Cookies button. Returns a friendly
+// message either way (never a raw CDP error) so the panel can toast it.
+func (a *App) ClearManagedBrowserCookies() (string, error) {
+	msg, err := builtin.BrowserClearAllCookies()
+	if err != nil {
+		return "", err
+	}
+	slog.Info("ClearManagedBrowserCookies", "msg", msg)
+	return msg, nil
 }
 
 // OpenPPTTemplateDir opens the PPT templates folder in the OS file manager so the

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"image"
 	"image/jpeg"
 	"os"
@@ -23,6 +24,7 @@ import (
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/cdproto/input"
+	"github.com/chromedp/cdproto/network"
 	cdprotopage "github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	cdptarget "github.com/chromedp/cdproto/target"
@@ -61,6 +63,7 @@ func BrowserTools() []tool.Tool {
 		browserOpen{},
 		browserAttach{},
 		browserNavigate{},
+		browserCookies{},
 		browserTabs{},
 		browserSwitchTab{},
 		browserHover{},
@@ -410,6 +413,34 @@ var (
 	browserReaperOnce sync.Once
 )
 
+// BrowserClearAllCookies clears cookies on EVERY live browser session (CDP
+// Network.clearBrowserCookies is browser-wide, one call suffices, but sessions
+// may be separate browser processes). Powers the settings card's 清除 Cookies
+// button. Returns a human summary; error only when no session is live (the
+// button then tells the user to start the managed browser first).
+func BrowserClearAllCookies() (string, error) {
+	browserMu.Lock()
+	defer browserMu.Unlock()
+	if len(browserSessions) == 0 {
+		return "", fmt.Errorf("当前没有运行中的浏览器会话 — 先在设置里启动可控浏览器，或让智能体执行一次 browser_open")
+	}
+	cleared := 0
+	for _, s := range browserSessions {
+		if s.ctx == nil || s.ctx.Err() != nil {
+			continue
+		}
+		ctx, cancel := context.WithTimeout(s.ctx, 10*time.Second)
+		if err := network.ClearBrowserCookies().Do(ctx); err == nil {
+			cleared++
+		}
+		cancel()
+	}
+	if cleared == 0 {
+		return "", fmt.Errorf("浏览器会话已断开，清除失败 — 请重新启动可控浏览器后重试")
+	}
+	return fmt.Sprintf("已清除 %d 个浏览器会话的全部 Cookies（所有网站退出登录）", cleared), nil
+}
+
 // browserPoolCtx is the parent allocator context for all browser sessions. It is
 // created lazily on first browser_open and never cancelled (process-lifetime).
 var browserPoolCtx context.Context
@@ -425,6 +456,10 @@ type browserLaunchOptions struct {
 	headless    bool   // false = visible browser (more human-like)
 	userDataDir string // persistent profile dir; "" = temp profile
 	proxyServer string // e.g. "http://127.0.0.1:7890"; "" = no --proxy-server
+	// persistCookies (nil = true) and openLinksIn ("current"|"new") come from
+	// SetBrowserCookiePolicy; see there for semantics.
+	persistCookies *bool
+	openLinksIn    string
 }
 
 // globalBrowserLaunch is the resolved launch config. Set once at boot.
@@ -440,6 +475,27 @@ func SetBrowserLaunchOptions(headless bool, userDataDir, proxyServer string) {
 		userDataDir: strings.TrimSpace(userDataDir),
 		proxyServer: strings.TrimSpace(proxyServer),
 	}
+}
+
+// SetBrowserCookiePolicy injects the cookie/tab behavior toggles from the
+// cowork settings (HanaAgent-style browser options):
+//   - persistCookies: nil/true keeps the persistent user-data-dir (cookies and
+//     logins survive restarts); false forces an ephemeral session — the
+//     configured user-data-dir is ignored and every launch starts cookie-clean.
+//     Consulted when the allocator is created (first browser_open), so a
+//     mid-session toggle lands on the next app start.
+//   - openLinksIn: "current" (default) navigates in the tab the session
+//     already drives; "new" opens each browser_navigate in a fresh tab,
+//     leaving the previous page open for back-and-forth.
+func SetBrowserCookiePolicy(persistCookies *bool, openLinksIn string) {
+	globalBrowserLaunch.persistCookies = persistCookies
+	globalBrowserLaunch.openLinksIn = strings.TrimSpace(openLinksIn)
+}
+
+// cookiesPersisted reports whether the browser should keep cookies across
+// launches (nil = default true, the historical behavior).
+func (o browserLaunchOptions) cookiesPersisted() bool {
+	return o.persistCookies == nil || *o.persistCookies
 }
 
 // ensureBrowserAllocator creates the shared chromedp allocator on first use. It
@@ -490,7 +546,9 @@ func ensureBrowserAllocator() (context.Context, string, error) {
 	// Persistent profile keeps cookies/login state across launches. Essential for
 	// sites that require sign-in (GitHub, internal portals) and reduces CAPTCHA
 	// friction on repeat visits. Empty = chromedp's default temp profile.
-	if globalBrowserLaunch.userDataDir != "" {
+	// The 接受 Cookies toggle (persist=false) forces the temp profile even when
+	// a user-data-dir is configured — "don't keep cookies" wins.
+	if globalBrowserLaunch.userDataDir != "" && globalBrowserLaunch.cookiesPersisted() {
 		opts = append(opts, chromedp.UserDataDir(globalBrowserLaunch.userDataDir))
 	}
 	// Route the browser through the same proxy as the rest of hiq. Without
@@ -1095,7 +1153,7 @@ type browserNavigate struct{}
 func (browserNavigate) Name() string { return "browser_navigate" }
 
 func (browserNavigate) Description() string {
-	return "Navigate an OPEN browser session to a URL (replaces the current page). " +
+	return "Navigate an OPEN browser session to a URL. By default the current tab is reused; set new_tab=true (or the user's 打开网页时 setting) to open the URL in a fresh tab and drive it there, keeping the old page open. " +
 		"Use ONLY when a browser session is already open or the user explicitly asks to operate a browser. " +
 		"Do NOT use this to read a URL's content — use web_fetch for that. " +
 		"Do NOT use this to search the internet — use web_search for that. " +
@@ -1108,7 +1166,8 @@ func (browserNavigate) Schema() json.RawMessage {
 "type":"object",
 "properties":{
   "session_id":{"type":"string","description":"Session id from browser_open"},
-  "url":{"type":"string","description":"Absolute URL to navigate to"}
+  "url":{"type":"string","description":"Absolute URL to navigate to"},
+  "new_tab":{"type":"boolean","description":"Open the URL in a NEW tab instead of the current one. Optional; defaults to the user's configured 打开网页时 behavior."}
 },
 "required":["session_id","url"]
 }`)
@@ -1141,6 +1200,7 @@ func (browserNavigate) Execute(ctx context.Context, args json.RawMessage) (strin
 	var p struct {
 		SessionID string `json:"session_id"`
 		URL       string `json:"url"`
+		NewTab    *bool  `json:"new_tab"`
 	}
 	if err := json.Unmarshal(args, &p); err != nil {
 		return "", fmt.Errorf("invalid args: %w", err)
@@ -1152,6 +1212,17 @@ func (browserNavigate) Execute(ctx context.Context, args json.RawMessage) (strin
 	s, err := ensureSession(p.SessionID)
 	if err != nil {
 		return "", err
+	}
+	// Tab policy: explicit new_tab arg wins; otherwise the settings default
+	// ("打开网页时": current tab vs 新开标签页).
+	newTab := globalBrowserLaunch.openLinksIn == "new"
+	if p.NewTab != nil {
+		newTab = *p.NewTab
+	}
+	if newTab {
+		if err := openSessionTab(s, "about:blank"); err != nil {
+			return "", wrapError(s, "navigate", p.URL, fmt.Errorf("open new tab: %w", err))
+		}
 	}
 	if err := runBrowserAction(ctx, s, chromedp.Navigate(p.URL), chromedp.WaitReady("body")); err != nil {
 		return "", wrapError(s, "navigate", p.URL, fmt.Errorf("navigate: %w", err))
@@ -1773,6 +1844,111 @@ func (browserSwitchTab) Schema() json.RawMessage {
 }
 
 func (browserSwitchTab) ReadOnly() bool { return false }
+
+// browserCookies — inspect and manage the session browser's cookies (CDP
+// Network domain). Powers "记住登录态 / 清 Cookies" style requests without
+// dropping to JS, and mirrors the desktop cookies management card.
+type browserCookies struct{}
+
+func (browserCookies) Name() string { return "browser_cookies" }
+
+func (browserCookies) ReadOnly() bool { return false }
+
+func (browserCookies) Description() string {
+	return "Manage the session browser's cookies. op=\"get\" lists the cookies the current page can see (name/domain/value truncated); op=\"clear\" wipes ALL cookies (logouts every site — ask before doing it); op=\"set\" writes one cookie (name+value required; domain/path default to the current page's). Use when debugging login state, carrying an auth cookie over, or when the user asks to clear cookies."
+}
+
+func (browserCookies) Schema() json.RawMessage {
+	return json.RawMessage(`{
+"type":"object",
+"properties":{
+  "session_id":{"type":"string","description":"Session id from browser_open"},
+  "op":{"type":"string","enum":["get","set","clear"],"description":"get = list cookies; set = write one cookie; clear = remove ALL cookies"},
+  "name":{"type":"string","description":"Cookie name (set)"},
+  "value":{"type":"string","description":"Cookie value (set)"},
+  "domain":{"type":"string","description":"Cookie domain (optional; defaults to current page host)"},
+  "path":{"type":"string","description":"Cookie path (optional; defaults to \"/\")"}
+},
+"required":["session_id","op"]
+}`)
+}
+
+func (browserCookies) Execute(ctx context.Context, args json.RawMessage) (string, error) {
+	var p struct {
+		SessionID string `json:"session_id"`
+		Op        string `json:"op"`
+		Name      string `json:"name"`
+		Value     string `json:"value"`
+		Domain    string `json:"domain"`
+		Path      string `json:"path"`
+	}
+	if err := json.Unmarshal(args, &p); err != nil {
+		return "", fmt.Errorf("invalid args: %w", err)
+	}
+	if p.SessionID == "" || p.Op == "" {
+		return "", errors.New("session_id and op are required")
+	}
+	s, err := ensureSession(p.SessionID)
+	if err != nil {
+		return "", err
+	}
+	switch p.Op {
+	case "get":
+		getCtx, getCancel := context.WithTimeout(s.ctx, 10*time.Second)
+		defer getCancel()
+		cookies, err := network.GetCookies().Do(getCtx)
+		if err != nil {
+			return "", wrapError(s, "cookies.get", "", err)
+		}
+		return wrapResult(s, "cookies.get", "", formatCookies(cookies)), nil
+	case "clear":
+		clearCtx, clearCancel := context.WithTimeout(s.ctx, 10*time.Second)
+		defer clearCancel()
+		if err := network.ClearBrowserCookies().Do(clearCtx); err != nil {
+			return "", wrapError(s, "cookies.clear", "", err)
+		}
+		return wrapResult(s, "cookies.clear", "", "all cookies cleared (every site is logged out in this browser)"), nil
+	case "set":
+		if p.Name == "" {
+			return "", errors.New("name is required for op=set")
+		}
+		if p.Domain == "" {
+			var cur string
+			_ = chromedp.Run(s.ctx, chromedp.Location(&cur))
+			if u, err := url.Parse(cur); err == nil && u.Hostname() != "" {
+				p.Domain = u.Hostname()
+			}
+		}
+		if p.Path == "" {
+			p.Path = "/"
+		}
+		setCtx, setCancel := context.WithTimeout(s.ctx, 10*time.Second)
+		defer setCancel()
+		params := network.SetCookie(p.Name, p.Value).WithDomain(p.Domain).WithPath(p.Path)
+		if err := params.Do(setCtx); err != nil {
+			return "", wrapError(s, "cookies.set", p.Name, err)
+		}
+		return wrapResult(s, "cookies.set", p.Name, fmt.Sprintf("cookie %s set for %s", p.Name, p.Domain)), nil
+	default:
+		return "", fmt.Errorf("unknown op %q (get|set|clear)", p.Op)
+	}
+}
+
+func formatCookies(cookies []*network.Cookie) string {
+	if len(cookies) == 0 {
+		return "no cookies visible from the current page"
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "%d cookies:\n", len(cookies))
+	for _, c := range cookies {
+		val := c.Value
+		if len(val) > 40 {
+			val = val[:37] + "..."
+		}
+		fmt.Fprintf(&b, "- %s=%s (domain %s, path %s)\n", c.Name, val, c.Domain, c.Path)
+	}
+	return b.String()
+}
 
 func (browserSwitchTab) Execute(ctx context.Context, args json.RawMessage) (string, error) {
 	var p struct {
@@ -3469,6 +3645,34 @@ func firstNonEmptyStr(vals ...string) string {
 		}
 	}
 	return ""
+}
+
+// openSessionTab creates a brand-new tab in the session's browser and re-points
+// the session onto it. Uses Target.createTarget over the browser-level
+// connection (switchSessionTab then attaches to the new target with its proven
+// WithTargetID path). The previously driven tab stays open.
+func openSessionTab(s *browserSession, url string) error {
+	c := chromedp.FromContext(s.ctx)
+	if c == nil || c.Browser == nil {
+		return errors.New("session browser not connected")
+	}
+	if url == "" {
+		url = "about:blank"
+	}
+	var created struct {
+		TargetID cdptarget.ID `json:"targetId"`
+	}
+	createCtx, cancel := context.WithTimeout(s.ctx, 15*time.Second)
+	defer cancel()
+	err := c.Browser.Execute(createCtx, "Target.createTarget",
+		map[string]any{"url": url}, &created)
+	if err != nil {
+		return fmt.Errorf("create tab: %w", err)
+	}
+	if created.TargetID == "" {
+		return errors.New("Target.createTarget returned no targetId")
+	}
+	return switchSessionTab(s, created.TargetID)
 }
 
 func switchSessionTab(s *browserSession, id cdptarget.ID) error {

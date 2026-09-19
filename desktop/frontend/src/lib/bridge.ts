@@ -739,6 +739,11 @@ export interface AppBindings {
   // OpenURLInManagedBrowser launches the managed browser if needed and opens
   // the URL as a new tab in it (preview pane's companion-window tier).
   OpenURLInManagedBrowser(url: string): Promise<ManagedBrowserStatus>;
+
+  // ClearManagedBrowserCookies wipes cookies from every live driven-browser
+  // session (settings card 清除 Cookies button). Rejects when no session is
+  // running — the UI toasts the error message.
+  ClearManagedBrowserCookies(): Promise<string>;
   // PreviewLocalFile registers a local file with the loopback preview server
   // and returns its http://127.0.0.1 URL for the preview pane's iframe. Only
   // existing files with a renderable extension (html/svg/images/pdf/text) are
@@ -2105,6 +2110,8 @@ function makeMockApp(): AppBindings {
     cowork: {
       browserPath: "",
       browserAttachURL: "",
+      browserPersistCookies: null,
+      browserOpenLinksIn: "",
       embeddingModel: "",
       ragEnabled: null,
       pptActiveTemplate: "",
@@ -5381,6 +5388,11 @@ function makeMockApp(): AppBindings {
     async OpenURLInManagedBrowser(_url: string) {
       await delay(300);
       return { running: true, url: "http://127.0.0.1:9222", browser: "Chrome (mock)", profile: "~/hiq/browser-profile", alreadyRunning: false };
+    },
+
+    async ClearManagedBrowserCookies() {
+      await delay(200);
+      return "已清除浏览器会话的全部 Cookies（mock）";
     },
     async PreviewLocalFile(_path: string) {
       // Browser dev mode has no loopback file server; surface the gap the same

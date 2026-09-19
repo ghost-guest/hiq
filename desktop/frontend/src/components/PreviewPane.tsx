@@ -4,7 +4,13 @@
 // agent's tool output (App.tsx) and may also be entered manually; back/forward
 // navigate the pane-local history; the managed-browser button hands the URL to
 // the attachable Chrome (companion tier, §3.6).
-import { useEffect, useState } from "react";
+//
+// Zoom-to-fit: generated pages are often authored at a fixed width (game
+// canvases, landing pages) that overflows the narrow dock and demands
+// horizontal scrolling. Loopback-served HTML (desktop/preview_server.go)
+// injects a size-report script, so the pane learns the content box and scales
+// the iframe — 适应宽度 / 适应窗口 / 实际大小, fit-width by default.
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, ExternalLink, Globe, Loader2, MonitorPlay, RefreshCw } from "lucide-react";
 import { app } from "../lib/bridge";
 import { useT } from "../lib/i18n";
@@ -35,10 +41,13 @@ async function resolveInput(raw: string): Promise<string | null> {
   return `http://${trimmed}`;
 }
 
-// Navigation history, cached in-module so it survives the pane unmounting when
-// the dock closes (same pattern as TerminalPanel's terminal cache).
+type ZoomMode = "fit-width" | "fit-page" | "actual";
+
+// Navigation history + zoom preference, cached in-module so they survive the
+// pane unmounting when the dock closes (same pattern as TerminalPanel's cache).
 let historyStack: string[] = [];
 let historyIndex = -1;
+let zoomPref: ZoomMode = "fit-width";
 
 function pushHistory(url: string) {
   if (historyStack[historyIndex] === url) return;
@@ -58,6 +67,13 @@ export function PreviewPane({ url, onUrlCommit }: { url: string; onUrlCommit?: (
   const [draft, setDraft] = useState(url);
   const [nonce, setNonce] = useState(0);
   const [managedBusy, setManagedBusy] = useState(false);
+  const [zoom, setZoom] = useState<ZoomMode>(zoomPref);
+  // Content box reported by the injected fit script (loopback pages only).
+  const [contentSize, setContentSize] = useState<{ w: number; h: number } | null>(null);
+  // The viewport's visible box, measured so fit modes can compute a scale.
+  const [viewportEl, setViewportEl] = useState<HTMLDivElement | null>(null);
+  const [viewportBox, setViewportBox] = useState({ w: 0, h: 0 });
+  const viewportRef = useCallback((el: HTMLDivElement | null) => setViewportEl(el), []);
 
   useEffect(() => {
     if (url && url !== current) {
@@ -70,6 +86,39 @@ export function PreviewPane({ url, onUrlCommit }: { url: string; onUrlCommit?: (
   useEffect(() => {
     setDraft(current);
   }, [current]);
+
+  // New navigation: drop the previous page's reported size until the fresh
+  // document reports its own.
+  useEffect(() => {
+    setContentSize(null);
+  }, [current, nonce]);
+
+  // Fit reports come from loopback-served HTML via parent.postMessage.
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      const d = e.data as { __hiqPreviewSize?: boolean; w?: number; h?: number } | null;
+      if (d && d.__hiqPreviewSize && typeof d.w === "number" && typeof d.h === "number" && d.w > 0 && d.h > 0) {
+        setContentSize({ w: d.w, h: d.h });
+      }
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
+
+  // Track the viewport's visible box for scale computation.
+  useEffect(() => {
+    if (!viewportEl) return;
+    const update = () => setViewportBox({ w: viewportEl.clientWidth, h: viewportEl.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(viewportEl);
+    return () => ro.disconnect();
+  }, [viewportEl]);
+
+  const changeZoom = (mode: ZoomMode) => {
+    zoomPref = mode;
+    setZoom(mode);
+  };
 
   const commit = (raw: string) => {
     void resolveInput(raw).then((next) => {
@@ -88,6 +137,29 @@ export function PreviewPane({ url, onUrlCommit }: { url: string; onUrlCommit?: (
     setCurrent(historyStack[historyIndex]);
     setNonce((v) => v + 1);
   };
+
+  // Scale the iframe only when the page reported a size and a fit mode is on.
+  // Never upscale past 1× — small pages stay pixel-crisp and centered CSS
+  // keeps working; fitting is about taming oversized content.
+  let scale = 1;
+  const hasReport = !!contentSize && contentSize.w > 0 && contentSize.h > 0 && viewportBox.w > 0;
+  if (hasReport && zoom !== "actual") {
+    const byW = viewportBox.w / contentSize!.w;
+    scale = zoom === "fit-page" ? Math.min(byW, viewportBox.h / contentSize!.h) : byW;
+    scale = Math.min(1, Math.max(0.05, scale));
+  }
+  const frameStyle: React.CSSProperties = hasReport
+    ? {
+        width: contentSize!.w,
+        height: contentSize!.h,
+        transform: scale < 1 ? `scale(${scale})` : undefined,
+        transformOrigin: "0 0",
+        flex: "0 0 auto",
+      }
+    : {};
+  const wrapperStyle: React.CSSProperties = hasReport
+    ? { width: Math.round(contentSize!.w * scale), height: Math.round(contentSize!.h * scale), overflow: "hidden", flex: "0 0 auto", margin: "0 auto" }
+    : {};
 
   if (!current) {
     return (
@@ -164,6 +236,17 @@ export function PreviewPane({ url, onUrlCommit }: { url: string; onUrlCommit?: (
             aria-label={t("preview.addressPlaceholder")}
           />
         </form>
+        <select
+          className="preview-pane__zoom"
+          value={zoom}
+          onChange={(e) => changeZoom(e.target.value as ZoomMode)}
+          aria-label={t("preview.zoomTitle")}
+          title={t("preview.zoomTitle")}
+        >
+          <option value="fit-width">{t("preview.fitWidth")}</option>
+          <option value="fit-page">{t("preview.fitPage")}</option>
+          <option value="actual">{t("preview.actualSize")}</option>
+        </select>
         <button
           type="button"
           className="preview-pane__btn preview-pane__btn--managed"
@@ -190,13 +273,16 @@ export function PreviewPane({ url, onUrlCommit }: { url: string; onUrlCommit?: (
           <ExternalLink size={12} />
         </button>
       </div>
-      <div className="preview-pane__viewport">
-        <iframe
-          key={nonce}
-          className="preview-pane__frame"
-          src={current}
-          title={t("preview.tabTitle")}
-        />
+      <div className="preview-pane__viewport" ref={viewportRef}>
+        <div style={wrapperStyle}>
+          <iframe
+            key={nonce}
+            className="preview-pane__frame"
+            style={frameStyle}
+            src={current}
+            title={t("preview.tabTitle")}
+          />
+        </div>
       </div>
     </div>
   );
