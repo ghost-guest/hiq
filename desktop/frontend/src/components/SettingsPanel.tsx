@@ -20,7 +20,7 @@ import {
 import { TEXT_SIZES, applyTextSize, getTextSize, type TextSize } from "../lib/textSize";
 import { FONT_FAMILIES, applyFontFamily, getFontFamily, type FontFamily } from "../lib/fontFamily";
 import { getDisplayMode, onDisplayModeChange, setDisplayMode as setLocalDisplayMode } from "../lib/displayMode";
-import type { BotConnectionView, BotInstallStartResult, BotSettingsView, CoWorkSettingsView, HookConfigView, HooksSettingsView, MailProbeResult, ManagedBrowserStatus, NetworkView, PatrolView, ProviderTemplate, ProviderView, RegistryStatus, SecretStoreStatus, SettingsTab, SettingsView, WallpaperView } from "../lib/types";
+import type { BotConnectionView, BotInstallStartResult, BotSettingsView, CoWorkSettingsView, DataDirSaveResult, HookConfigView, HooksSettingsView, MailProbeResult, ManagedBrowserStatus, MemorySettings, NetworkView, PatrolView, ProviderTemplate, ProviderView, RegistryStatus, SecretStoreStatus, SettingsTab, SettingsView, WallpaperView } from "../lib/types";
 import {
   WALLPAPER_BLUR_MAX,
   WALLPAPER_DIM_MAX,
@@ -1098,7 +1098,98 @@ function GeneralSection({ s, busy, apply }: SectionProps) {
           ))}
         </div>
       </SettingsField>
+      <DataDirField busy={busy} apply={apply} />
     </SettingsSection>
+  );
+}
+
+// dataDirBytes renders a migration size the way the rest of the app does
+// (KB/MB); small enough that a one-off helper beats a shared import.
+function dataDirBytes(n: number): string {
+  if (n >= 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  if (n >= 1024) return `${Math.ceil(n / 1024)} KB`;
+  return `${n} B`;
+}
+
+// DataDirField is the General page's "where do new sessions live" control. It
+// edits the user data root shared with the memory panel ([memory] root): the
+// global 工作台 session store, the per-project session stores, memory and the
+// portrait layer all resolve from it, so pointing it at another drive keeps the
+// system drive from filling up with transcripts. Saving optionally COPIES the
+// existing trees to the new root first (copy-only, destination wins) so old
+// conversations stay listed; the change takes effect on the next session.
+function DataDirField({ busy, apply }: Pick<SectionProps, "busy" | "apply">) {
+  const { t } = useI18n();
+  const [view, setView] = useState<MemorySettings | null>(null);
+  const [value, setValue] = useState("");
+  const [migrate, setMigrate] = useState(true);
+  const [saved, setSaved] = useState("");
+  useEffect(() => {
+    let alive = true;
+    void app
+      .GetDataDirSettings()
+      .then((s) => {
+        if (!alive) return;
+        setView(s);
+        setValue(s.configuredRoot);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const envLocked = view?.rootFromEnv ?? false;
+  const effective = view?.root ?? "";
+  const dirty = view != null && value.trim() !== view.configuredRoot;
+  const save = () => {
+    setSaved("");
+    void apply(async () => {
+      const res: DataDirSaveResult = await app.SaveDataDir(value.trim(), migrate);
+      setView(res.settings);
+      setValue(res.settings.configuredRoot);
+      setSaved(
+        res.migration
+          ? t("settings.dataDirSavedMigrated", { files: res.migration.files, size: dataDirBytes(res.migration.bytes) })
+          : t("settings.dataDirSaved"),
+      );
+    });
+  };
+  return (
+    <SettingsField
+      label={t("settings.dataDir")}
+      hint={envLocked ? t("settings.dataDirEnvLocked") : t("settings.dataDirHint")}
+      stacked
+    >
+      <div className="set-input-browse">
+        <input
+          className="mem-input set-grow"
+          placeholder={view?.defaultRoot || t("settings.dataDir")}
+          value={value}
+          disabled={busy || envLocked}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <button
+          type="button"
+          className="btn btn--small set-input-browse__btn"
+          disabled={busy || envLocked}
+          onClick={async () => {
+            const dir = await app.PickDirectory(t("settings.dataDir"));
+            if (dir) setValue(dir);
+          }}
+        >
+          {t("settings.browse")}
+        </button>
+        <button type="button" className="btn btn--small" disabled={busy || envLocked || !dirty} onClick={save}>
+          {t("settings.dataDirSave")}
+        </button>
+      </div>
+      <label className="set-check" style={{ marginTop: 8 }}>
+        <input type="checkbox" checked={migrate} disabled={busy || envLocked} onChange={(e) => setMigrate(e.target.checked)} />
+        {t("settings.dataDirMigrate")}
+      </label>
+      {effective && <div className="settings-field__hint-line" style={{ marginTop: 6 }}>{t("settings.dataDirCurrent", { root: effective })}</div>}
+      {saved && <div className="settings-field__hint-line" style={{ marginTop: 4 }}>{saved}</div>}
+    </SettingsField>
   );
 }
 

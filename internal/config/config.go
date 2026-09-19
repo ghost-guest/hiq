@@ -2521,8 +2521,14 @@ func ArchiveDir() string {
 // SessionDir is where chat sessions are persisted (one .jsonl per session).
 // Used by `hiq chat --continue` / `--resume` to find the recent ones. Empty
 // if the user config dir can't be resolved — sessions then aren't saved.
+//
+// The directory follows the user data root (MemoryUserDir): when no [memory]
+// root is configured this is the OS config dir (the historical location, so
+// existing installs see no change); when the user relocates the data root the
+// global session store moves with it instead of silently filling the system
+// drive. MigrateMemoryTree copies the old store, so history stays reachable.
 func SessionDir() string {
-	dir := userDir()
+	dir := MemoryUserDir()
 	if dir == "" {
 		return ""
 	}

@@ -68,6 +68,7 @@ import type {
   MemorySettings,
   MemorySettingsInput,
   MemoryMigrationReport,
+  DataDirSaveResult,
   MemoryPromotionInput,
   MemoryPromotionResult,
   Meta,
@@ -423,7 +424,12 @@ export interface AppBindings {
   RejectMemory(name: string): Promise<boolean>;
   SaveMemorySettings(input: MemorySettingsInput): Promise<MemorySettings>;
   MigrateMemoryRoot(to: string): Promise<MemoryMigrationReport>;
+  // General settings page: the user data root behind [memory] root — where
+  // sessions (global 工作台 + per-project), memory and the portrait layer live.
+  GetDataDirSettings(): Promise<MemorySettings>;
+  SaveDataDir(dir: string, migrate: boolean): Promise<DataDirSaveResult>;
   PromoteMemoryArtifact(input: MemoryPromotionInput): Promise<MemoryPromotionResult>;
+  CancelAllTeamRuns(reason: string): Promise<void>;
   // 团队 (team): persistent leader + members project with a kanban board.
   // Distinct from the 专家团 team methods above (ListExpertTeams/…).
   ListTeamProjects(): Promise<TeamProjectView[]>;
@@ -4413,6 +4419,24 @@ function makeMockApp(): AppBindings {
       emit({ kind: "notice", level: "info", text: `memory migrated → ${to}` });
       return { from: mockMemorySettings.root, to, copied: ["profile/", "memory/", "projects/"], skipped: [], files: 3, bytes: 1024 };
     },
+    async GetDataDirSettings() {
+      return { ...mockMemorySettings };
+    },
+    async SaveDataDir(dir: string, migrate: boolean) {
+      const from = mockMemorySettings.root;
+      mockMemorySettings = {
+        ...mockMemorySettings,
+        configuredRoot: dir,
+        root: dir || mockMemorySettings.defaultRoot,
+      };
+      emit({ kind: "notice", level: "info", text: `data dir saved → ${mockMemorySettings.root}` });
+      return {
+        settings: { ...mockMemorySettings },
+        migration: migrate && from !== mockMemorySettings.root
+          ? { from, to: mockMemorySettings.root, copied: ["profile/", "memory/", "projects/", "sessions/"], skipped: [], files: 4, bytes: 2048 }
+          : undefined,
+      };
+    },
     async PromoteMemoryArtifact(input: MemoryPromotionInput) {
       const dir = `${mockMemorySettings.root}/${input.kind === "plugin" ? "plugins" : "skills"}/${input.name}`;
       emit({ kind: "notice", level: "info", text: `promoted memory → ${dir}` });
@@ -5530,6 +5554,7 @@ function makeMockApp(): AppBindings {
     async ListTeamProjects() {
       return mockTeams.map((x) => ({ ...x }));
     },
+    async CancelAllTeamRuns(_reason: string) {},
     async GetTeamProject(id: string) {
       const tm = mockFindTeam(id);
       if (!tm) throw new Error("团队不存在");

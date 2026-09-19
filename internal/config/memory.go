@@ -285,12 +285,12 @@ func MemoryRootError(root string) error {
 
 // memoryMigrateDirs are the top-level data SUBTREES that follow the memory root.
 //
-// Note what is NOT here: the global session store (<userDir>/sessions, see
-// config.SessionDir) stays in the system config dir — it is conversation
-// storage, not memory, and it is resolved from userDir() rather than the memory
-// root by design. Project-scoped sessions DO follow, because they live under
+// "sessions" is the GLOBAL session store (config.SessionDir, <root>/sessions,
+// with per-profile partitions): it resolves from the memory root too, so a
+// relocation must carry it or the 工作台 history would be stranded on the old
+// drive. Project-scoped sessions follow automatically, because they live under
 // projects/<slug>/<profile>/sessions.
-var memoryMigrateDirs = []string{"memory", "profile", "projects", "trustdomain"}
+var memoryMigrateDirs = []string{"memory", "profile", "projects", "sessions", "trustdomain"}
 
 // memoryMigrateFiles are the user-global memory/state FILES at the old root
 // (the user-scope doc layer and the legacy cross-session skill usage stats).

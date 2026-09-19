@@ -6740,6 +6740,91 @@ func (a *App) MigrateMemoryRoot(to string) (config.MemoryMigrationReport, error)
 	return config.MigrateMemoryTree(from, dest)
 }
 
+// GetDataDirSettings is the General settings page's read model for the user
+// data root — the directory where chat sessions (global 工作台 store and
+// per-project stores), memory and the portrait layer live. It is the same
+// [memory] section the memory panel edits, exposed without a session context
+// so the General page does not depend on an active controller.
+func (a *App) GetDataDirSettings() MemorySettings {
+	return configMemorySettings()
+}
+
+// DataDirSaveResult is SaveDataDir's outcome: the refreshed settings view plus
+// the migration report when a copy was requested.
+type DataDirSaveResult struct {
+	Settings  MemorySettings                `json:"settings"`
+	Migration *config.MemoryMigrationReport `json:"migration,omitempty"`
+}
+
+// SaveDataDir persists the General page's data-directory choice: the user data
+// root behind [memory] root. Sessions (global and per-project), memory and the
+// portrait layer all resolve from it, so pointing it at another drive keeps the
+// system drive from filling up with transcripts.
+//
+// With migrate set, the CURRENT root's data trees (including the global session
+// store) are COPIED to the destination first — copy, never move, destination
+// wins, idempotent — so existing conversations stay listed after the switch.
+// Leaving migrate off is legal: new sessions then land on the new root while
+// the old ones remain on the old drive until a later migration.
+//
+// An empty dir resets to the OS default root (migrate copies back the same
+// way). $HIQ_MEMORY_ROOT, when set, wins over the config file, so saving is
+// refused with an explanatory error instead of silently doing nothing.
+// Like every memory edit the change takes effect on the NEXT session — the
+// data root is part of the boot snapshot behind the cache-stable prefix.
+func (a *App) SaveDataDir(dir string, migrate bool) (DataDirSaveResult, error) {
+	raw := strings.TrimSpace(dir)
+
+	if config.MemoryRootFromEnv() {
+		return DataDirSaveResult{}, fmt.Errorf(
+			"环境变量 HIQ_MEMORY_ROOT=%s 已强制指定数据目录，配置文件不生效；请先取消该环境变量再改用本设置",
+			config.ConfiguredMemoryRoot())
+	}
+
+	// Resolve and validate the destination the same way SaveMemorySettings
+	// does, so both entry points agree on what is acceptable.
+	var dest string
+	if raw != "" {
+		probe := config.Default()
+		probe.Memory = config.MemoryConfig{Root: raw}
+		resolved := probe.MemoryRootPath()
+		if resolved == "" {
+			return DataDirSaveResult{}, fmt.Errorf("数据目录 %q 无法解析", raw)
+		}
+		dest = resolved
+	} else {
+		dest = config.DefaultMemoryRoot()
+	}
+	if dest == "" {
+		return DataDirSaveResult{}, fmt.Errorf("默认数据目录无法解析")
+	}
+	if err := config.MemoryRootError(dest); err != nil {
+		return DataDirSaveResult{}, err
+	}
+
+	cfg, path, err := a.loadDesktopUserConfigForEdit()
+	if err != nil {
+		return DataDirSaveResult{}, err
+	}
+
+	out := DataDirSaveResult{}
+	from := config.MemoryRoot()
+	if migrate && from != "" && from != dest {
+		rep, err := config.MigrateMemoryTree(from, dest)
+		if err != nil {
+			return out, err
+		}
+		out.Migration = &rep
+	}
+
+	cfg.Memory.Root = raw
+	if err := cfg.SaveTo(path); err != nil {
+		return DataDirSaveResult{}, err
+	}
+	out.Settings = configMemorySettings()
+	return out, nil
+}
+
 // MemoryPromotionInput is the panel's "promote memory into a skill/plugin"
 // request. Selection mirrors the `recall` tool (explicit names, or a
 // level/tag/query filter) so the panel and the model address memory the same way.

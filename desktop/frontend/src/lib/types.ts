@@ -1204,6 +1204,13 @@ export interface MemoryMigrationReport {
   bytes: number;
 }
 
+// DataDirSaveResult is SaveDataDir's outcome (desktop/app.go SaveDataDir): the
+// refreshed [memory] view plus the migration report when a copy was requested.
+export interface DataDirSaveResult {
+  settings: MemorySettings;
+  migration?: MemoryMigrationReport;
+}
+
 // MemoryPromotionInput selects saved memories and describes the artifact to
 // build from them (desktop/app.go PromoteMemoryArtifact). Selection mirrors the
 // `recall` tool: explicit names, or a level/tag/query filter.
