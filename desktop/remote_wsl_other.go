@@ -15,6 +15,17 @@ type wslTransport struct{}
 
 func newWSLTransport() remoteTransport { return wslTransport{} }
 
+// wslDistro mirrors the Windows-side shape. Off Windows there is no distro to
+// enumerate, but the type must still exist: the binding generator walks the
+// whole App method set on every platform, so a missing type breaks the
+// macOS/Linux builds (Wails "Generating bindings" step).
+type wslDistro struct {
+	Name    string `json:"name"`
+	State   string `json:"state"`
+	Version int    `json:"version"`
+	Default bool   `json:"default"`
+}
+
 // ListWSLDistros is a stub off Windows.
 func (a *App) ListWSLDistros() []wslDistro { return nil }
 
