@@ -344,6 +344,15 @@ type Agent struct {
 	// stormSig: a model keeps doing the same successful write, so there is no
 	// error for the failure-only storm breaker to see.
 	repeatSuccessCounts map[string]int
+	// readRepeatSig / readRepeatCount track consecutive batches of identical
+	// successful read-only calls (name+args fingerprint). The fourth loop
+	// guard, after stormSig (failures), repeatSuccessCounts (successful
+	// writes) and opGate (failing ops): a model that keeps re-reading the
+	// same file or re-running the same read-only command makes progress by
+	// nobody's measure. Advisory only — a nudge is appended to the result,
+	// never a block, because identical reads can be legitimate polling.
+	readRepeatSig   string
+	readRepeatCount int
 	// repeatText detects streamed-output repetition (the same passage emitted
 	// over and over) within a single answer. Advisory only: it surfaces a
 	// Notice on detection, it never aborts the turn — distinct from the
@@ -865,6 +874,8 @@ func (a *Agent) Run(ctx context.Context, input any) error {
 		a.evidence.Reset()
 	}
 	a.repeatSuccessCounts = nil
+	a.readRepeatSig = ""
+	a.readRepeatCount = 0
 	a.repeatText.reset()
 	a.repeatTextWarned = false
 	if a.opGate != nil {
@@ -1601,7 +1612,61 @@ func (a *Agent) executeBatch(ctx context.Context, calls []provider.ToolCall) []s
 		}
 	}
 	a.applyStormBreaker(calls, outcomes, results)
+	a.applyReadRepeatNudge(calls, outcomes, results)
 	return results
+}
+
+// readRepeatNudgeThreshold is how many consecutive identical successful
+// read-only batches it takes before the guard nudges the model. Higher than
+// the write-oriented thresholds because identical reads are occasionally
+// legitimate polling; the nudge is advisory either way.
+const readRepeatNudgeThreshold = 4
+
+// applyReadRepeatNudge appends a change-approach hint when the model has run
+// the exact same read-only batch several times in a row (K-brain's doom-loop
+// shape for the success case hiq's three existing guards miss). Advisory: the
+// result text gains a nudge, nothing is blocked and no state is reset — a
+// legitimately polling model just reads the hint and moves on.
+func (a *Agent) applyReadRepeatNudge(calls []provider.ToolCall, outcomes []toolOutcome, results []string) {
+	if len(calls) == 0 {
+		a.readRepeatSig, a.readRepeatCount = "", 0
+		return
+	}
+	for i := range calls {
+		t, ok := a.tools.Get(calls[i].Name)
+		if !ok || !t.ReadOnly() || outcomes[i].errMsg != "" || outcomes[i].blocked {
+			a.readRepeatSig, a.readRepeatCount = "", 0
+			return
+		}
+	}
+	var sb strings.Builder
+	for i := range calls {
+		sb.WriteString(calls[i].Name)
+		sb.WriteByte(0)
+		sb.WriteString(canonicalToolArgs(calls[i].Arguments))
+		sb.WriteByte(1)
+	}
+	sig := sb.String()
+	if sig != a.readRepeatSig {
+		a.readRepeatSig, a.readRepeatCount = sig, 1
+		return
+	}
+	a.readRepeatCount++
+	if a.readRepeatCount < readRepeatNudgeThreshold {
+		return
+	}
+	short := calls[0].Name
+	subject := fmt.Sprintf("%q", short)
+	if len(calls) > 1 {
+		subject = fmt.Sprintf("this identical batch of %d read-only calls", len(calls))
+		short = fmt.Sprintf("a batch of %d read-only calls", len(calls))
+	}
+	results[0] += fmt.Sprintf(
+		"\n\n[loop guard] %s has returned the same result %d times in a row. The data will not change by re-reading it. Decide on what you already have, use a different tool, or explain the blocker in your final answer.",
+		subject, a.readRepeatCount)
+	a.sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelWarn, Text: fmt.Sprintf(
+		"loop guard: %s repeated %d× identically — nudging the model to change approach",
+		short, a.readRepeatCount)})
 }
 
 type toolCallBatch struct {
@@ -1901,6 +1966,10 @@ func (a *Agent) executeOne(ctx context.Context, call provider.ToolCall, preview 
 		}
 	}
 	cctx := withCallContext(ctx, call.ID, a.sink, a.asker)
+	// Stamp the session registry so python_cell can serve mid-cell
+	// hiq.tool(...) RPCs against the same tools this call was dispatched
+	// from (read-only allowlist enforced by the kernel host adapter).
+	cctx = tool.WithRegistry(cctx, a.tools)
 	if a.evidence != nil {
 		cctx = evidence.WithLedger(cctx, a.evidence)
 		cctx = evidence.WithSessionMessages(cctx, a.session.Snapshot())

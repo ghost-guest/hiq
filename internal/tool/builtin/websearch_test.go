@@ -93,16 +93,18 @@ func clearSearchEnv(t *testing.T) {
 func TestBuildSearchEnginesAlwaysHasFallback(t *testing.T) {
 	clearSearchEnv(t)
 
-	engines := buildSearchEngines(&http.Client{}, "q")
-	if len(engines) != 1 || engines[0].name != "AnySearch (free)" {
-		t.Fatalf("no-key config should yield exactly the anonymous AnySearch engine, got %+v", engines)
+	engines := buildSearchEngines(webSearch{}, &http.Client{}, "q")
+	// Zero-config chain: direct-scrape engines first, anonymous AnySearch last.
+	if len(engines) != 3 || engines[0].name != "Bing (direct)" || engines[1].name != "Baidu (direct)" || engines[2].name != "AnySearch (free)" {
+		t.Fatalf("no-key config should yield direct engines + anonymous AnySearch, got %+v", engines)
 	}
 
 	t.Setenv("ANYSEARCH_API_KEY", "as_sk_x")
 	t.Setenv("EXA_API_KEY", "exa_x")
-	engines = buildSearchEngines(&http.Client{}, "q")
-	if len(engines) != 2 || engines[0].name != "Exa" || engines[1].name != "AnySearch" {
-		t.Fatalf("keyed config should yield keyed engines in order, got %+v", engines)
+	engines = buildSearchEngines(webSearch{}, &http.Client{}, "q")
+	// Keyed engines come first (in key order), then the always-on fallbacks.
+	if len(engines) != 5 || engines[0].name != "Exa" || engines[1].name != "AnySearch" || engines[len(engines)-1].name != "AnySearch (free)" {
+		t.Fatalf("keyed config should yield keyed engines before the fallbacks, got %+v", engines)
 	}
 }
 
