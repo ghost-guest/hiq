@@ -17,7 +17,7 @@ maintainer: "zzycxz <zzycxz@users.noreply.github.com>"
 description: |
   hiq desktop — a Wails shell around the Go kernel.
 vendor: "hiq Contributors"
-homepage: "https://github.com/zzycxz/hiq"
+homepage: "https://github.com/ghost-guest/hiq"
 license: "MIT"
 # Runtime libraries the WebKitGTK 4.1 build links against (-tags webkit2_41); apt
 # pulls them in on install. These package names ship from Ubuntu 22.04 / Debian 12 on.

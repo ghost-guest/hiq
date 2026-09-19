@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/transport-P2P%20WebRTC-161b22?style=flat-square&logo=webrtc&logoColor=white" alt="P2P"/>
   <img src="https://img.shields.io/badge/e2e-AES--256--GCM-dbab09?style=flat-square&logo=lock&logoColor=white" alt="E2E"/>
   <img src="https://img.shields.io/badge/status-planning%20(M0)-8b949e?style=flat-square" alt="Status"/>
-  <img src="https://img.shields.io/github/license/zzycxz/hiq.svg?style=flat-square&labelColor=161b22" alt="license"/>
+  <img src="https://img.shields.io/github/license/ghost-guest/hiq.svg?style=flat-square&labelColor=161b22" alt="license"/>
 </p>
 
 <br/>

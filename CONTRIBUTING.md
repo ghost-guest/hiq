@@ -2,6 +2,8 @@
 
 感谢您对参与 hiq 贡献感兴趣！本指南涵盖了您开始贡献所需了解的一切。
 
+> **关于本项目：** hiq 是 [fairpeer](https://github.com/zzycxz/fairpeer) 的二次开发（二开）版本，fairpeer 又 fork 自 [Reasonix / DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix)。贡献时请留意：为保持与上游的可对比性，**品牌名之外的标识符（环境变量、磁盘格式常量、Go module 路径）不要随手改名**，详见 [hiq.md](./hiq.md)。
+
 有关完整的架构概述和命名规范，请参阅 [hiq.md](./hiq.md)。
 
 ## 前置要求
