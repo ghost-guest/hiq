@@ -2219,13 +2219,38 @@ export interface NetDevLiveEvent {
 // One update from the kernel's browser-panel sink ("browser:mirror" Wails
 // event; desktop/app.go forwards internal/tool/builtin.BrowserPanelFrame).
 export interface BrowserMirrorFrame {
-  kind: "frame" | "status";
+  kind: "frame" | "status" | "live";
   source: "tool" | "auto"; // chromedp tools | browser-use sidecar
   phase?: "start" | "end" | "step"; // status only
   text?: string;
   url?: string;
-  image?: string; // data URL (frame only)
+  title?: string; // page title (live frames, after load)
+  image?: string; // data URL (frame + live)
   session_id?: string; // the browser session that produced this frame
+  tab_id?: string; // page target the live frame came from
+}
+
+// One input action forwarded from the interactive browser panel. Coordinates
+// are frame-normalized (0..1); the kernel maps them to CSS page pixels.
+export interface BrowserPanelInput {
+  type: "click" | "down" | "up" | "move" | "wheel" | "key" | "text";
+  x?: number;
+  y?: number;
+  deltaX?: number;
+  deltaY?: number;
+  button?: "left" | "middle" | "right";
+  clickCount?: number;
+  key?: string; // named key: Enter | Backspace | Escape | ArrowUp | ...
+  text?: string;
+  modifiers?: number;
+}
+
+// One entry of the interactive panel's tab strip.
+export interface BrowserPanelTab {
+  id: string;
+  title: string;
+  url: string;
+  active: boolean;
 }
 
 // ── 浏览器控制台 (ops browser console) ───────────────────────────────────────

@@ -10,6 +10,8 @@ import type { BrowserMirrorFrame } from "./types";
 export interface MirrorSessionFrame {
   image: string;
   url: string;
+  title?: string; // page title (live frames)
+  tabId?: string; // page target the latest live frame came from
   at: number; // unix millis of the latest frame
 }
 
@@ -66,6 +68,29 @@ export function applyBrowserMirrorFrame(
   state: BrowserMirrorState,
   frame: BrowserMirrorFrame,
 ): { state: BrowserMirrorState; startedActivity: boolean } {
+  if (frame.kind === "live") {
+    // Live screencast frame: same visual fields as "frame", plus the page
+    // title and the target tab. These arrive at ~10 fps — bump the seq so
+    // useSyncExternalStore re-renders the viewport image.
+    return {
+      state: {
+        ...state,
+        image: frame.image ?? state.image,
+        url: frame.url || state.url,
+        lastText: state.lastText,
+        seq: state.seq + 1,
+        sessions: frame.session_id
+          ? rememberSessionFrame(state.sessions, frame.session_id, {
+              image: frame.image ?? state.sessions[frame.session_id]?.image ?? "",
+              url: frame.url || state.sessions[frame.session_id]?.url || "",
+              title: frame.title ?? state.sessions[frame.session_id]?.title,
+              tabId: frame.tab_id ?? state.sessions[frame.session_id]?.tabId,
+            })
+          : state.sessions,
+      },
+      startedActivity: false,
+    };
+  }
   if (frame.kind === "frame") {
     return {
       state: {
@@ -79,6 +104,8 @@ export function applyBrowserMirrorFrame(
           ? rememberSessionFrame(state.sessions, frame.session_id, {
               image: frame.image ?? "",
               url: frame.url || state.sessions[frame.session_id]?.url || "",
+              title: frame.title ?? state.sessions[frame.session_id]?.title,
+              tabId: frame.tab_id ?? state.sessions[frame.session_id]?.tabId,
             })
           : state.sessions,
       },

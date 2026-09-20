@@ -1,18 +1,116 @@
-// BrowserMirrorPanel — the cowork dock's 浏览器 tab (pane-system §3.6
-// companion tier): live mirror of the browser the agent drives. Screenshots
-// and lifecycle states flow kernel → Wails "browser:mirror" → the App-level
-// subscription → the browserMirror module store, so this panel can be closed
-// or remounted freely without losing the stream.
-import { useSyncExternalStore } from "react";
-import { Globe, Loader2 } from "lucide-react";
-import { browserMirrorSnapshot, subscribeBrowserMirror } from "../../lib/browserMirror";
+// BrowserMirrorPanel — the cowork dock's 浏览器 tab: an INTERACTIVE mirror
+// of the browser the agent drives (snow-app-style embedded feel, over CDP).
+// Live screencast frames and lifecycle states flow kernel → Wails
+// "browser:mirror" → the App-level subscription → the browserMirror module
+// store, so this panel can be closed or remounted freely without losing the
+// stream. The viewport forwards pointer/keyboard input back through
+// BrowserPanelDispatch, so the user browses the very page instance the agent
+// drives — one target, two drivers. Mounting = the dock tab is visible, so
+// this panel also drives the screencast on/off flow control.
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { ArrowLeft, ArrowRight, Globe, Loader2, RefreshCw } from "lucide-react";
+import {
+  browserMirrorSnapshot,
+  subscribeBrowserMirror,
+  type MirrorSessionFrame,
+} from "../../lib/browserMirror";
+import { app } from "../../lib/bridge";
 import { useT } from "../../lib/i18n";
+import type { BrowserPanelInput, BrowserPanelTab } from "../../lib/types";
+
+// latestSessionFrame picks the most recently updated session — the one the
+// agent (or the user) is driving right now.
+function latestSessionFrame(
+  sessions: Record<string, MirrorSessionFrame>,
+): { id: string; frame: MirrorSessionFrame } | null {
+  let best: { id: string; frame: MirrorSessionFrame } | null = null;
+  for (const [id, frame] of Object.entries(sessions)) {
+    if (!best || frame.at > best.frame.at) best = { id, frame };
+  }
+  return best;
+}
 
 export function BrowserMirrorPanel() {
   const t = useT();
   const s = useSyncExternalStore(subscribeBrowserMirror, browserMirrorSnapshot);
+  const live = latestSessionFrame(s.sessions);
+  const sessionID = live?.id ?? "";
+  const frame = live?.frame ?? null;
 
-  if (!s.image && !s.running) {
+  // Toolbar + tab strip state.
+  const [address, setAddress] = useState("");
+  const [tabs, setTabs] = useState<BrowserPanelTab[]>([]);
+  const [loading, setLoading] = useState(false);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const lastMoveRef = useRef(0);
+
+  // Mounting = the dock tab is visible → stream on; unmount → stream off.
+  useEffect(() => {
+    void app?.BrowserPanelSetVisible(true);
+    return () => {
+      void app?.BrowserPanelSetVisible(false);
+    };
+  }, []);
+
+  // Track the address bar from the stream; refresh the tab strip when the
+  // session or its active tab changes.
+  useEffect(() => {
+    if (frame) setAddress(frame.url);
+  }, [frame?.url]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!sessionID) return;
+    let cancelled = false;
+    app?.BrowserPanelTabs(sessionID)
+      .then((ts) => {
+        if (!cancelled) setTabs(ts ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionID, frame?.tabId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const guard = useCallback(
+    (fn: () => Promise<void>) => {
+      if (!sessionID) return;
+      setLoading(true);
+      fn()
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    },
+    [sessionID],
+  );
+
+  const navigate = useCallback(
+    (url: string) => {
+      const v = url.trim();
+      if (!v) return;
+      guard(() => app!.BrowserPanelNavigate(sessionID, v));
+    },
+    [guard, sessionID],
+  );
+
+  // Coordinate normalization: pointer position → 0..1 within the frame image.
+  const norm = useCallback((e: { clientX: number; clientY: number }) => {
+    const el = viewportRef.current?.querySelector("img");
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return null;
+    return {
+      x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
+      y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
+    };
+  }, []);
+
+  const dispatch = useCallback(
+    (ev: BrowserPanelInput) => {
+      if (!sessionID || !app) return;
+      void app.BrowserPanelDispatch(sessionID, ev).catch(() => {});
+    },
+    [sessionID],
+  );
+
+  if (!frame) {
     return (
       <div className="browser-mirror browser-mirror--empty">
         <Globe size={22} />
@@ -21,38 +119,141 @@ export function BrowserMirrorPanel() {
     );
   }
 
+  const btn = (ev: React.PointerEvent): "left" | "middle" | "right" =>
+    ev.button === 1 ? "middle" : ev.button === 2 ? "right" : "left";
+
   return (
-    <div className="browser-mirror">
-      <div className="browser-mirror__bar">
-        <span
-          className={`browser-mirror__dot${s.running ? " browser-mirror__dot--live" : ""}`}
-          aria-hidden="true"
-        />
-        <span className="browser-mirror__source">
-          {s.source === "auto" ? t("browserMirror.sourceAuto") : t("browserMirror.sourceTool")}
-        </span>
-        <span className={`browser-mirror__state${s.running ? " browser-mirror__state--live" : ""}`}>
-          {s.running ? t("browserMirror.running") : t("browserMirror.ended")}
-        </span>
-      </div>
-      {s.url && (
-        <div className="browser-mirror__url" title={s.url}>
-          {s.url}
+    <div className="browser-mirror browser-mirror--live">
+      {/* Tab strip */}
+      {tabs.length > 0 && (
+        <div className="browser-mirror__tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`browser-mirror__tab${tab.active ? " browser-mirror__tab--active" : ""}`}
+              title={tab.url}
+              onClick={() => guard(() => app!.BrowserPanelSwitchTab(sessionID, tab.id))}
+            >
+              <span className="browser-mirror__tab-title">{tab.title || tab.url}</span>
+            </button>
+          ))}
         </div>
       )}
-      <div className="browser-mirror__viewport">
-        {s.image ? (
-          <img className="browser-mirror__img" src={s.image} alt={s.lastText || ""} />
-        ) : (
-          <div className="browser-mirror__placeholder">
-            <Loader2 size={16} className="composer-phase__spin" />
-            <span>{t("browserMirror.waitingFrame")}</span>
-          </div>
-        )}
+      {/* Toolbar: back / forward / reload / address */}
+      <div className="browser-mirror__toolbar">
+        <button
+          className="browser-mirror__tool"
+          title={t("browserMirror.back")}
+          disabled={loading}
+          onClick={() => guard(() => app!.BrowserPanelBack(sessionID))}
+        >
+          <ArrowLeft size={15} />
+        </button>
+        <button
+          className="browser-mirror__tool"
+          title={t("browserMirror.forward")}
+          disabled={loading}
+          onClick={() => guard(() => app!.BrowserPanelForward(sessionID))}
+        >
+          <ArrowRight size={15} />
+        </button>
+        <button
+          className="browser-mirror__tool"
+          title={t("browserMirror.reload")}
+          disabled={loading}
+          onClick={() => guard(() => app!.BrowserPanelReload(sessionID))}
+        >
+          {loading ? <Loader2 size={15} className="composer-phase__spin" /> : <RefreshCw size={15} />}
+        </button>
+        <input
+          className="browser-mirror__address"
+          value={address}
+          spellCheck={false}
+          onChange={(e) => setAddress(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              (e.target as HTMLInputElement).blur();
+              navigate(address);
+            }
+          }}
+          placeholder={t("browserMirror.addressHint")}
+        />
+        <span
+          className={`browser-mirror__dot${loading ? " browser-mirror__dot--live" : ""}`}
+          aria-hidden="true"
+        />
       </div>
-      {s.lastText && (
-        <div className="browser-mirror__text" title={s.lastText}>
-          {s.lastText}
+      {/* Interactive viewport: pointer + wheel + keyboard forwarded via CDP */}
+      <div
+        ref={viewportRef}
+        className="browser-mirror__viewport browser-mirror__viewport--live"
+        tabIndex={0}
+        onContextMenu={(e) => e.preventDefault()}
+        onPointerDown={(e) => {
+          const p = norm(e);
+          if (!p) return;
+          e.currentTarget.focus();
+          dispatch({ type: "down", x: p.x, y: p.y, button: btn(e), clickCount: 1 });
+        }}
+        onPointerUp={(e) => {
+          const p = norm(e);
+          if (!p) return;
+          dispatch({ type: "up", x: p.x, y: p.y, button: btn(e), clickCount: 1 });
+        }}
+        onDoubleClick={(e) => {
+          const p = norm(e);
+          if (!p) return;
+          dispatch({ type: "click", x: p.x, y: p.y, clickCount: 2 });
+        }}
+        onPointerMove={(e) => {
+          const now = Date.now();
+          if (now - lastMoveRef.current < 60) return; // ~16 hover updates/s
+          lastMoveRef.current = now;
+          const p = norm(e);
+          if (!p) return;
+          dispatch({ type: "move", x: p.x, y: p.y });
+        }}
+        onWheel={(e) => {
+          const p = norm(e);
+          if (!p) return;
+          e.preventDefault();
+          dispatch({ type: "wheel", x: p.x, y: p.y, deltaX: e.deltaX, deltaY: e.deltaY });
+        }}
+        onKeyDown={(e) => {
+          if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
+            dispatch({ type: "text", text: e.key });
+            return;
+          }
+          const named = [
+            "Enter",
+            "Backspace",
+            "Delete",
+            "Tab",
+            "Escape",
+            "ArrowUp",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "Home",
+            "End",
+            "PageUp",
+            "PageDown",
+          ];
+          if (named.includes(e.key)) {
+            e.preventDefault();
+            const mods =
+              (e.shiftKey ? 8 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 1 : 0) | (e.metaKey ? 4 : 0);
+            dispatch({ type: "key", key: e.key, modifiers: mods });
+          }
+        }}
+      >
+        <img className="browser-mirror__img" src={frame.image} alt={frame.title || ""} draggable={false} />
+      </div>
+      {(frame.title || frame.url) && (
+        <div className="browser-mirror__text" title={frame.url}>
+          {frame.title || frame.url}
         </div>
       )}
     </div>

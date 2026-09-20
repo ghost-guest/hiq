@@ -773,6 +773,16 @@ export interface AppBindings {
   BrowserConsoleWait(condition: string, timeoutSec: number): Promise<string>;
   BrowserConsoleExtract(selector: string): Promise<string>;
   BrowserConsoleScreenshot(): Promise<string>;
+  // Interactive browser panel (live mirror tier): visibility flow control,
+  // input forwarding, toolbar navigation, and the tab strip.
+  BrowserPanelSetVisible(visible: boolean): Promise<void>;
+  BrowserPanelDispatch(sessionID: string, ev: import("./types").BrowserPanelInput): Promise<void>;
+  BrowserPanelNavigate(sessionID: string, url: string): Promise<void>;
+  BrowserPanelBack(sessionID: string): Promise<void>;
+  BrowserPanelForward(sessionID: string): Promise<void>;
+  BrowserPanelReload(sessionID: string): Promise<void>;
+  BrowserPanelTabs(sessionID: string): Promise<import("./types").BrowserPanelTab[]>;
+  BrowserPanelSwitchTab(sessionID: string, tabID: string): Promise<void>;
   BrowserConsoleEvaluate(expression: string): Promise<string>;
   BrowserConsoleRecordStart(): Promise<void>;
   BrowserConsoleRecordStop(): Promise<import("./types").BrowserConsoleRecordEvent[]>;
@@ -5440,7 +5450,18 @@ function makeMockApp(): AppBindings {
     async BrowserConsoleWait(_condition: string, _timeoutSec: number) { await delay(300); return "waited (mock)"; },
     async BrowserConsoleExtract(selector: string) { return selector ? `提取 ${selector} 的内容 (mock)` : "提取整页内容 (mock)"; },
     async BrowserConsoleScreenshot() { await delay(300); return "data:image/png;base64,"; },
-    async BrowserConsoleEvaluate(_expression: string) { return "undefined (mock)"; },
+
+    async BrowserPanelSetVisible(_visible: boolean) {},
+    async BrowserPanelDispatch(_sessionID: string, _ev: import("./types").BrowserPanelInput) { await delay(120); },
+    async BrowserPanelNavigate(_s: string, url: string) { await delay(250); void url; },
+    async BrowserPanelBack(_s: string) { await delay(200); },
+    async BrowserPanelForward(_s: string) { await delay(200); },
+    async BrowserPanelReload(_s: string) { await delay(250); },
+    async BrowserPanelTabs(_s: string) {
+      await delay(150);
+      return [{ id: "t1", title: "示例页", url: "https://ops.local/home", active: true }];
+    },
+    async BrowserPanelSwitchTab(_s: string, _tabID: string) { await delay(200); },    async BrowserConsoleEvaluate(_expression: string) { return "undefined (mock)"; },
     async BrowserConsoleRecordStart() { await delay(200); },
     async BrowserConsoleRecordStop() {
       return [

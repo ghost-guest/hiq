@@ -102,7 +102,11 @@ type BrowserPanelFrame struct {
 	Phase  string `json:"phase,omitempty"` // status only: "start" | "end"
 	Text   string `json:"text,omitempty"`
 	URL    string `json:"url,omitempty"`
+	Title  string `json:"title,omitempty"` // page title (live frames, after load)
 	Image  string `json:"image,omitempty"` // data URL (frame only)
+	// TabID tags live frames with the page target they came from, so the
+	// panel's tab strip can mark the active tab.
+	TabID string `json:"tab_id,omitempty"`
 	// SessionID tags every frame with the browser session that produced it,
 	// so the frontend can keep per-session mirrors (the ops viewer shows the
 	// console session AND agent-driven sessions side by side).
@@ -209,6 +213,10 @@ type browserSession struct {
 	// old tab's context is abandoned, not canceled — chromedp cancel would
 	// CLOSE that target, and the old tab must stay open for switching back.
 	tabMu sync.Mutex
+	// panelStream carries the live-panel screencast bookkeeping (see
+	// browserpanel.go). Atomic pointer: created lazily on first panel use,
+	// never mutated after.
+	panelStream atomic.Pointer[panelStreamState]
 	// Session keep-alive (会话保活): armed from the ops console toggle or the
 	// browser_keepalive tool. Each tick refreshes lastUsed (beats the idle
 	// reaper) and, per mode, pings the site session from inside the page or
@@ -693,6 +701,7 @@ func newBrowserSession() (*browserSession, error) {
 	browserSessions[id] = s
 	browserMu.Unlock()
 	startBrowserReaper()
+	startPanelStream(s) // live panel: begin mirroring the initial tab
 	// Phase 1: Start dialog auto-accept handler.
 	startDialogHandler(s)
 	// Downloads: pin a known download dir and capture completion events so the
@@ -756,6 +765,7 @@ func newAttachedSession(cdpURL string) (*browserSession, error) {
 	browserSessions[id] = s
 	browserMu.Unlock()
 	startBrowserReaper()
+	startPanelStream(s) // live panel: begin mirroring the initial tab
 	// Same background services as a spawned session: dialog auto-accept,
 	// download capture, and websocket keepalive. Without these, an attached
 	// session dies on the first alert() or on proxies that close idle websockets.
@@ -3698,6 +3708,7 @@ func switchSessionTab(s *browserSession, id cdptarget.ID) error {
 	s.ctx = newCtx
 	s.ctxCancel = cancel
 	s.refs.Store(nil) // refs belonged to the abandoned page
+	panelRestart(s)   // live panel stream follows the new tab
 	return nil
 }
 
