@@ -461,6 +461,11 @@ export function NetDevLayout({
     setBench("browser");
     setBrowserBenchEverOpened(true);
   }, []);
+  // NOTE (2026-09-20): the browser bench no longer auto-opens on browser
+  // activity. The built-in browser was taken offline — no browser_* tool is
+  // registered any more, so no mirror frames arrive to trigger it — and with
+  // the trigger gone the anti-nag suppression ref became dead weight. The bench
+  // itself stays reachable from the switch bar (?bench=browser) as before.
   // 大屏（DASHBOARD spec §4.1）：初始屏/深链 finding；manualSignal 驱动
   // Alt+1..5、命令面板、hiq://finding 深链的后到切换。
   const [dashScreen, setDashScreen] = useState<DashScreen | null>(() => dashScreenParam());

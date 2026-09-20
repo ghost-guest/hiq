@@ -1510,6 +1510,10 @@ export interface CoWorkSettingsView {
   // 打开网页时 tab policy: "current" (default) reuses the driven tab; "new"
   // opens each browser_navigate in a fresh tab, keeping old pages open.
   browserOpenLinksIn: string;
+  // 浏览器显示方式: "panel" (default, stored as "") mirrors the driven browser
+  // inside the dock's browser tab with no window of its own; "window" opens a
+  // regular visible Chrome window (the dock still mirrors it).
+  browserSurface: string;
   embeddingModel: string;
   // Knowledge-base master switch. null = unset (default → enabled); true =
   // enabled; false = fully disabled. Mirrors [cowork] rag_enabled. Distinct
@@ -2240,6 +2244,9 @@ export interface BrowserPanelInput {
   deltaY?: number;
   button?: "left" | "middle" | "right";
   clickCount?: number;
+  // DOM PointerEvent.buttons bitmask (left=1, right=2, middle=4). Sent with
+  // "move" so the kernel can tell a drag from a hover.
+  buttons?: number;
   key?: string; // named key: Enter | Backspace | Escape | ArrowUp | ...
   text?: string;
   modifiers?: number;

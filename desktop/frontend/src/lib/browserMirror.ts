@@ -79,13 +79,13 @@ export function applyBrowserMirrorFrame(
     return {
       state: {
         ...state,
-        image: frame.image ?? state.image,
+        image: frame.image || state.image,
         url: frame.url || state.url,
         lastText: state.lastText,
         seq: state.seq + 1,
         sessions: frame.session_id
           ? rememberSessionFrame(state.sessions, frame.session_id, {
-              image: frame.image ?? state.sessions[frame.session_id]?.image ?? "",
+              image: frame.image || state.sessions[frame.session_id]?.image || "",
               url: frame.url || state.sessions[frame.session_id]?.url || "",
               title: frame.title ?? state.sessions[frame.session_id]?.title,
               tabId: frame.tab_id ?? state.sessions[frame.session_id]?.tabId,
@@ -122,14 +122,14 @@ export function applyBrowserMirrorFrame(
     return {
       state: {
         ...state,
-        image: frame.image ?? "",
+        image: frame.image || "",
         url: frame.url || state.url,
         source: frame.source,
         lastText: frame.text || state.lastText,
         seq: state.seq + 1,
         sessions: frame.session_id
           ? rememberSessionFrame(state.sessions, frame.session_id, {
-              image: frame.image ?? "",
+              image: frame.image || "",
               url: frame.url || state.sessions[frame.session_id]?.url || "",
               title: frame.title ?? state.sessions[frame.session_id]?.title,
               tabId: frame.tab_id ?? state.sessions[frame.session_id]?.tabId,

@@ -38,6 +38,10 @@ type CoWorkSettingsView struct {
 	// BrowserOpenLinksIn is the 打开网页时 tab policy: "current" (default) or
 	// "new" (each browser_navigate opens a fresh tab).
 	BrowserOpenLinksIn string `json:"browserOpenLinksIn"`
+	// BrowserSurface is 浏览器显示方式: "panel" (default — mirrored in the dock's
+	// browser tab, no window of its own) or "window" (a visible Chrome window).
+	// Read back as "" for panel so older clients keep working.
+	BrowserSurface string `json:"browserSurface"`
 	// RAGEnabled is the knowledge-base master switch. nil = enabled (default);
 	// explicit false = fully disabled (no auto-injection, no rag_* tools, expert
 	// teams skip KB context). Mirrors [cowork] rag_enabled. Distinct from
@@ -152,6 +156,7 @@ func coworkSettingsView(c config.CoworkConfig) CoWorkSettingsView {
 		BrowserAttachURL:      c.BrowserAttachURL,
 		BrowserPersistCookies: c.BrowserPersistCookies,
 		BrowserOpenLinksIn:    c.BrowserOpenLinksIn,
+		BrowserSurface:        c.BrowserSurface,
 		EmbeddingModel:        c.EmbeddingModel,
 		RAGEnabled:         c.RAGEnabled,
 		PPTActiveTemplate:  c.PPTActiveTemplate,
@@ -373,6 +378,11 @@ func (a *App) SetCoWorkSettings(v CoWorkSettingsView) (err error) {
 			c.Cowork.BrowserOpenLinksIn = "new"
 		} else {
 			c.Cowork.BrowserOpenLinksIn = "" // "current" is the zero value
+		}
+		if v.BrowserSurface == "window" {
+			c.Cowork.BrowserSurface = "window"
+		} else {
+			c.Cowork.BrowserSurface = "" // "panel" is the zero value (default)
 		}
 		c.Cowork.EmbeddingModel = strings.TrimSpace(v.EmbeddingModel)
 		// Knowledge-base master switch. The front-end always sends an explicit

@@ -6070,6 +6070,20 @@
   margin: var(--space-2) 0 0;
   max-width: 220px;
 }
+/* Session exists but the first screencast frame hasn't landed yet — shown in
+   place of an unexplained blank viewport. */
+.browser-mirror__pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  color: var(--fg-faint);
+  font-size: var(--font-control-small);
+}
 .browser-mirror__bar {
   display: flex;
   align-items: center;
@@ -6118,14 +6132,49 @@
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   overflow: hidden;
+  /* Anchors the 1×1 input sink at the click point. */
+  position: relative;
 }
 .browser-mirror__img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
+/* Input sink: invisible, 1×1, parked under the click point and focused. It is
+   the element that actually receives the user's keystrokes — a real editable so
+   an IME (拼音 etc.) can compose there. pointer-events:none keeps every click on
+   the viewport underneath; caret/color transparent keep it invisible. */
+.browser-mirror__sink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  pointer-events: none;
+}
 .browser-mirror--live {
   gap: var(--space-2);
+}
+/* Input-failure banner: dispatch errors used to be swallowed, so a shell that
+   ignored every click looked exactly like a working one. */
+.browser-mirror__input-error {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  background: rgba(217, 83, 79, 0.14);
+  color: #d9534f;
+  font-size: 11px;
+  line-height: 1.35;
+  word-break: break-word;
 }
 .browser-mirror__tabs {
   display: flex;
@@ -6199,7 +6248,10 @@
 .browser-mirror__viewport--live {
   cursor: auto;
 }
-.browser-mirror__viewport--live:focus {
+/* The sink is the focused element now, so the focus ring must key off the
+   viewport containing it (a bare :focus would never match again). */
+.browser-mirror__viewport--live:focus,
+.browser-mirror__viewport--live:focus-within {
   outline: 1px solid var(--accent);
   outline-offset: -1px;
 }

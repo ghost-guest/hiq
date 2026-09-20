@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### remove(desktop/browser): 内置浏览器整体下架——不再注册 browser_* 工具、移除右侧「浏览器」标签与浏览器设置卡
+
+用户反馈（截图：hiq 组占用 893.9MB，其中 headless Chrome 三进程 ~270MB）：**「这个浏览器太占用内存了，把这个浏览器的功能去掉吧，保持最初版的就行了，别内置浏览器了，它占内存，又卡」**。
+
+驱动的 Chrome 是应用里最重的一环——一个 headless 面板浏览器常驻 ~270MB，外加每帧 JPEG 编码的 screencast——因此本次把整条链路停用，而不只是隐藏入口：
+
+- **工具层停用**：`internal/boot/boot.go` 新增 `browserToolsEnabled = false` 总开关，`registerBrowserTools` 在关状态下**一个工具都不注册**（这是唯一能结构性保证永不启动 Chrome 的状态——只是 `reg.Hide` 的话，browser-auto 子代理与 browser-flow 执行器仍能碰到）。工具实现（`browser*.go`、`browserpanel.go`、`browserpick.go`）与 Go 侧绑定全部保留，翻回 `true` 即恢复。
+- **提示词与技能白名单同步**：默认系统提示删掉 `browser_open` 条目，改为明确声明「本构建没有浏览器自动化」（否则模型会继续承诺打开页面/改用 shell 启动浏览器）；cowork 路由表删除 `browser_open` / `browser-auto` 两行；dev 与 cowork 的技能白名单移除 `browser-auto`。
+- **前端入口移除**：编码工作台 dock 的「浏览器」标签、cowork dock 的「浏览器」标签、`BrowserMirrorPanel` 组件、netdev 浏览器工作台的**自动弹出**订阅、设置里整张「浏览器自动化」卡片（路径探测 / 可控浏览器 / Cookies 管理 / 显示方式 / 打开网页时）全部删除；持久化的 `"browser"` 标签值在加载时被目录过滤丢弃、落到「文件」标签。
+- **保留**：netdev 运维浏览器工作台本身（用户选择保留现状，仅不再自动弹出）与浏览器控制台代码。
+- 验证：新增守卫 `TestBrowserSurfaceStaysDisabled`（boot：注册表必须为空）与 `TestBrowserFeatureIsFullyOffline`（config：默认提示词/路由表/白名单都不得再宣传浏览器）；`internal/config` 全量绿、boot 守卫绿、双模块 build 绿、`tsc --noEmit` 零错、`npm run build` 全门禁绿。
+
 ### feat(netdev/desktop): 浏览器体验三修——侧栏内嵌预览回归 + 工作台去元素面板（事件同步右侧栏）+ 元素悬停/选中页面高亮
 
 用户三点反馈：

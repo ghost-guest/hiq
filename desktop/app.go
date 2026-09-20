@@ -1135,6 +1135,11 @@ func (a *App) shutdown(context.Context) {
 	if a.buService != nil {
 		a.buService.Stop()
 	}
+	// Close the browser driving the dock's live panel. The process-wide allocator
+	// would otherwise outlive the window as an orphan headless Chrome — and keep
+	// holding its profile lock, which breaks the panel on the next launch.
+	builtin.ReleaseBrowserPool()
+
 	// Save window geometry synchronously from Go so it's persisted even if the
 	// frontend's beforeunload promise hasn't resolved yet.
 	a.saveWindowStateSync()

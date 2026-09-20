@@ -29,7 +29,6 @@ import {
   Mail,
   Coffee,
   MessageSquare,
-  MonitorPlay,
   PartyPopper,
 
   RefreshCw,
@@ -42,12 +41,10 @@ import {
 } from "lucide-react";
 
 import { app, onRagChanged, onRagProgress } from "../../lib/bridge";
-import { subscribeBrowserMirrorFocus } from "../../lib/browserMirror";
 import { useToast } from "../../lib/toast";
 import { CustomSelect } from "./CustomSelect";
 import { ContextPanel } from "../ContextPanel";
 import { DockTabs, useDockTabState } from "../DockTabs";
-import { BrowserMirrorPanel } from "./BrowserMirrorPanel";
 
 // realApp mirrors bridge.ts's private helper: returns the Wails binding only
 // when window.go.main.App is present (i.e. we are inside the desktop shell).
@@ -190,10 +187,11 @@ export function CoworkDock({
 // DefaultDock (Kp) — 今日 / 邮件 / 文件 / 概览
 // ===========================================================================
 
-type DefaultTab = "today" | "mail" | "files" | "overview" | "browser";
-// "browser" (the agent-browser mirror) is deliberately NOT in the default
-// open set: per the pane-system's context-driven principle the tab appears
-// when browsing activity starts (or via the "+" menu), not by default.
+type DefaultTab = "today" | "mail" | "files" | "overview";
+// The agent-browser mirror tab ("browser") was retired on 2026-09-20 together
+// with the built-in browser itself: the driven Chrome process was the heaviest
+// thing the app spawned, so the panel, its tools and this tab are gone. A stale
+// "browser" entry in the persisted tab list is simply not rendered.
 const DEFAULT_TAB_CATALOG: readonly DefaultTab[] = ["today", "mail", "files", "overview"];
 const COWORK_DOCK_TABS_KEY = "hiq.coworkDockTabs";
 
@@ -248,24 +246,11 @@ function DefaultDock({
     setTab(key);
   };
 
-  // Mirror-tab focus requests come from App (browser activity onset): ensure
-  // the tab exists and switch to it. Setters are stable, so an empty dep list
-  // keeps one subscription per dock mount.
-  useEffect(
-    () =>
-      subscribeBrowserMirrorFocus(() => {
-        setOpenTabs((prev) => (prev.includes("browser") ? prev : [...prev, "browser"]));
-        setTab("browser");
-      }),
-    [],
-  );
-
   const TAB_DEFS: { key: DefaultTab; label: string; icon: React.ReactNode }[] = [
     { key: "today", label: t("coworkDock.today"), icon: <CalendarDays size={13} /> },
     { key: "mail", label: t("coworkDock.mail"), icon: <Mail size={13} /> },
     { key: "files", label: t("coworkDock.files"), icon: <FileText size={13} /> },
     { key: "overview", label: t("coworkDock.overview"), icon: <Activity size={13} /> },
-    { key: "browser", label: t("coworkDock.browser"), icon: <MonitorPlay size={13} /> },
   ];
 
   return (
@@ -314,7 +299,6 @@ function DefaultDock({
             busy={busy}
           />
         )}
-        {tab === "browser" && <BrowserMirrorPanel />}
       </div>
     </aside>
   );

@@ -731,6 +731,15 @@ type CoworkConfig struct {
 	// essential for sites that require sign-in, and it reduces the "verify you
 	// are human" friction on revisit.
 	BrowserUserDataDir string `toml:"browser_user_data_dir"`
+	// BrowserSurface selects where the driven browser is SHOWN:
+	//   "panel" (default / empty) — mirrored inside the app's dock browser tab.
+	//     The browser process runs headless, so no separate Chrome window pops
+	//     up; the user watches and drives the real page in the panel.
+	//   "window" — a regular visible Chrome window (watch it in place, use it
+	//     directly); the dock still mirrors it when open.
+	// Only meaningful in the desktop app: with no panel to mirror into (CLI/TUI)
+	// the browser always runs headed, or it would be invisible.
+	BrowserSurface string `toml:"browser_surface"`
 	// BrowserAttachURL makes browser automation ATTACH to an already-running
 	// debug-enabled browser instead of launching a fresh instance per task
 	// (e.g. "http://127.0.0.1:9222" — the endpoint the desktop's managed
@@ -892,6 +901,14 @@ func (c CoworkConfig) RAGEnabledOrDefault() bool {
 		return true
 	}
 	return *c.RAGEnabled
+}
+
+// BrowserSurfacePanel reports whether the driven browser should stay behind the
+// in-app panel (default) instead of opening its own visible window. Anything
+// other than an explicit "window" means panel — including the empty value, so
+// existing configs get the non-intrusive behavior.
+func (c CoworkConfig) BrowserSurfacePanel() bool {
+	return !strings.EqualFold(strings.TrimSpace(c.BrowserSurface), "window")
 }
 
 // LLMConfig holds the global LLM request budget (rate limiting). It applies
@@ -1740,6 +1757,10 @@ Use the provided tools to read and write files and run shell commands.
 - grep: Search code by regex. Prefer this over bash grep.
 - glob: Find files by pattern. Prefer this over bash find.
 - bash: Run shell commands. Use for builds, tests, git, installations.
+No browser automation is available in this build: there is no browser tool and
+no in-app browser panel. If the user asks to open or drive a web page, say so
+plainly and offer web_fetch / web_search for read-only content — never try to
+launch a browser through shell commands (xdg-open / open / start / curl).
 For multi-step work, track progress with the todo_write tool: lay out the steps,
 keep exactly one in_progress, and flip each to completed as you finish it.
 

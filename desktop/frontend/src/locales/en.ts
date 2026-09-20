@@ -109,6 +109,7 @@ export const en = {
   "rightDock.workbench": "Workspace panel",
   "rightDock.views": "Workspace views",
   "rightDock.turns": "Turns",
+  "rightDock.browser": "Browser",
 
   // topic bar
   "topicBar.renameSession": "Rename session",
@@ -1174,6 +1175,10 @@ export const en = {
   "cowork.clearCookies": "Clear cookies",
   "cowork.clearCookiesTip": "Clear ALL cookies kept by the driven browser (logs every site out)",
   "cowork.openLinksIn": "When opening a webpage",
+  "cowork.browserSurface": "Where the browser shows",
+  "cowork.surfacePanel": "Right-hand dock (default, no window)",
+  "cowork.surfaceWindow": "Open a Chrome window",
+  "cowork.surfacePanelHint": "By default the page opens in the right-hand 浏览器 dock and is mirrored live — no separate Chrome window pops up, and you can click/type in the dock to drive the very same page the agent drives. Logins persist in a dedicated profile (kept apart from the managed browser). Pick \"Open a Chrome window\" for the old behavior; the dock keeps mirroring it. An attach URL, if set, still wins.",
   "cowork.openLinksCurrent": "Use the current tab",
   "cowork.openLinksNew": "Open a new tab",
   "cowork.managedRunning": "{browser} is running and attachable",
@@ -2313,6 +2318,8 @@ export const en = {
   "coworkDock.overview": "Overview",
   "coworkDock.browser": "Browser",
   "browserMirror.emptyHint": "Mirrors the agent's browser live while it uses browser tools or autonomous browsing",
+  "browserMirror.pending": "Opening the page…",
+  "browserMirror.sinkLabel": "Page input area (click the page, then type)",
   "browserMirror.running": "Running",
   "browserMirror.ended": "Ended",
   "browserMirror.waitingFrame": "Waiting for the first frame…",

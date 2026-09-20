@@ -145,7 +145,6 @@ func PanelStartPick(id string) error {
 	}
 	st := pickStateFor(s)
 	st.mu.Lock()
-	defer st.mu.Unlock()
 	// Tab switches create a fresh chromedp context; the binding listener must
 	// ride the CURRENT one (re-install after a switch, never duplicated).
 	if st.listenCtx != s.ctx {
@@ -153,18 +152,29 @@ func PanelStartPick(id string) error {
 		st.listenCtx = s.ctx
 	}
 	if st.armed {
+		st.mu.Unlock()
 		return nil
 	}
+	// Mark armed BEFORE the CDP calls, and never hold mu across them: the
+	// listener takes this same mutex on chromedp's message-loop goroutine, and
+	// wedging that goroutine also blocks the responses the calls below are
+	// waiting for — the panel would freeze for the whole timeout (the deadlock
+	// family that already cost us the screencast and tab switching).
+	st.armed = true
+	st.result.Store(nil)
+	st.mu.Unlock()
+
 	ctx, cancel := context.WithTimeout(s.ctx, 10*time.Second)
 	defer cancel()
 	if err := chromedp.Run(ctx,
 		cdpruntime.AddBinding("__hiqPickElement"),
 		chromedp.Evaluate(panelPickJS, nil),
 	); err != nil {
+		st.mu.Lock()
+		st.armed = false
+		st.mu.Unlock()
 		return fmt.Errorf("arm picker: %w", err)
 	}
-	st.armed = true
-	st.result.Store(nil)
 	return nil
 }
 
@@ -176,11 +186,14 @@ func PanelStopPick(id string) error {
 	}
 	st := pickStateFor(s)
 	st.mu.Lock()
-	defer st.mu.Unlock()
-	if !st.armed {
+	armed := st.armed
+	st.armed = false
+	st.mu.Unlock()
+	if !armed {
 		return nil
 	}
-	st.armed = false
+	// Same rule as above: mu is already released, so the message loop can keep
+	// delivering responses while this call is in flight.
 	ctx, cancel := context.WithTimeout(s.ctx, 5*time.Second)
 	defer cancel()
 	_ = chromedp.Run(ctx, chromedp.Evaluate(panelPickStoppedJS, nil))

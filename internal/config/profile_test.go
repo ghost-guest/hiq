@@ -192,9 +192,11 @@ func TestProfileResolveSkillDisabled(t *testing.T) {
 // prompt still said `run_skill("ppt-auto", task)` → the model retried instead of
 // telling the user to re-enable it.
 func TestCoworkPromptAddonDropsDisabledRows(t *testing.T) {
-	// Baseline: the full add-on advertises every routing skill.
+	// Baseline: the full add-on advertises every routing skill. (browser-auto
+	// left this list on 2026-09-20 with the built-in browser: its row is gone
+	// from the add-on entirely, see TestCoworkPromptDropsBrowserRows.)
 	full := CoworkPromptAddon(nil)
-	for _, name := range []string{"ppt-auto", "email-auto", "browser-auto"} {
+	for _, name := range []string{"ppt-auto", "email-auto", "schedule-auto"} {
 		if !strings.Contains(full, `run_skill("`+name+`"`) {
 			t.Fatalf("full add-on missing routing row for %q", name)
 		}
@@ -205,7 +207,7 @@ func TestCoworkPromptAddonDropsDisabledRows(t *testing.T) {
 	if strings.Contains(filtered, `run_skill("ppt-auto"`) {
 		t.Fatal("disabled skill ppt-auto still has a routing row in the filtered add-on")
 	}
-	for _, name := range []string{"email-auto", "browser-auto", "knowledge-auto"} {
+	for _, name := range []string{"email-auto", "desktop-auto", "knowledge-auto"} {
 		if !strings.Contains(filtered, `run_skill("`+name+`"`) {
 			t.Fatalf("filtering ppt-auto wrongly removed unrelated routing row for %q", name)
 		}
@@ -214,6 +216,37 @@ func TestCoworkPromptAddonDropsDisabledRows(t *testing.T) {
 	// Name matching trims whitespace (SkillNameKey).
 	if got := CoworkPromptAddon([]string{" ppt-auto "}); strings.Contains(got, `run_skill("ppt-auto"`) {
 		t.Fatal("SkillNameKey normalization failed: ' ppt-auto ' did not match 'ppt-auto'")
+	}
+}
+
+// TestBrowserFeatureIsFullyOffline keeps the built-in browser's retirement
+// consistent across every place that advertises it. The surface was taken
+// offline on 2026-09-20 (boot.browserToolsEnabled=false) because the driven
+// Chrome process (~270MB resident headless browser plus a per-frame JPEG
+// screencast) made the app laggy and memory-hungry.
+//
+// Prompts and tools must move together: advertising a tool that isn't
+// registered makes the model promise an action it cannot take, and staying
+// silent about the removal invites it to launch a browser through shell
+// commands instead.
+func TestBrowserFeatureIsFullyOffline(t *testing.T) {
+	if strings.Contains(DefaultSystemPrompt, "- browser_open") {
+		t.Error("DefaultSystemPrompt still advertises browser_open — that tool is no longer registered")
+	}
+	if !strings.Contains(DefaultSystemPrompt, "No browser automation") {
+		t.Error("DefaultSystemPrompt should state plainly that this build has no browser automation")
+	}
+	for _, banned := range []string{`run_skill("browser-auto"`, "browser_open"} {
+		if strings.Contains(coworkDefaultPromptAddon, banned) {
+			t.Errorf("cowork prompt still routes work to %s — the browser surface is offline", banned)
+		}
+	}
+	for _, p := range builtinProfiles() {
+		for _, s := range p.EnabledSkills {
+			if strings.EqualFold(strings.TrimSpace(s), "browser-auto") {
+				t.Errorf("profile %q whitelists browser-auto, whose tools no longer exist", p.Name)
+			}
+		}
 	}
 }
 

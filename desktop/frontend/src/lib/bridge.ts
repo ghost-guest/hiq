@@ -2132,6 +2132,7 @@ function makeMockApp(): AppBindings {
       browserAttachURL: "",
       browserPersistCookies: null,
       browserOpenLinksIn: "",
+      browserSurface: "",
       embeddingModel: "",
       ragEnabled: null,
       pptActiveTemplate: "",

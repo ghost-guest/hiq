@@ -20,7 +20,7 @@ import {
 import { TEXT_SIZES, applyTextSize, getTextSize, type TextSize } from "../lib/textSize";
 import { FONT_FAMILIES, applyFontFamily, getFontFamily, type FontFamily } from "../lib/fontFamily";
 import { getDisplayMode, onDisplayModeChange, setDisplayMode as setLocalDisplayMode } from "../lib/displayMode";
-import type { BotConnectionView, BotInstallStartResult, BotSettingsView, CoWorkSettingsView, DataDirSaveResult, HookConfigView, HooksSettingsView, MailProbeResult, ManagedBrowserStatus, MemorySettings, NetworkView, PatrolView, ProviderTemplate, ProviderView, RegistryStatus, SecretStoreStatus, SettingsTab, SettingsView, WallpaperView } from "../lib/types";
+import type { BotConnectionView, BotInstallStartResult, BotSettingsView, CoWorkSettingsView, DataDirSaveResult, HookConfigView, HooksSettingsView, MailProbeResult, MemorySettings, NetworkView, PatrolView, ProviderTemplate, ProviderView, RegistryStatus, SecretStoreStatus, SettingsTab, SettingsView, WallpaperView } from "../lib/types";
 import {
   WALLPAPER_BLUR_MAX,
   WALLPAPER_DIM_MAX,
@@ -5094,19 +5094,6 @@ function OptionalModule({
 }
 
 
-// browserDisplayName maps a browser executable path to a friendly product
-// name ("chrome.exe" → "Chrome"). Returns "" for an empty path (nothing
-// detected). Used by the coWork browser detect button so the hint line still
-// reads "Chrome detected" rather than a raw .exe path, while browserPath holds
-// the actual path that gets persisted.
-function browserDisplayName(path: string): string {
-  const base = path.split(/[\\/]/).pop()?.toLowerCase() ?? "";
-  if (base.includes("chrome")) return "Chrome";
-  if (base.includes("msedge") || base.includes("edge")) return "Edge";
-  if (base.includes("brave")) return "Brave";
-  return base ? base.replace(/\.exe$/, "") : "";
-}
-
 function CoWorkSection({ s, busy, apply }: SectionProps) {
   const t = useT();
   const refs = allRefs(s);
@@ -5142,7 +5129,6 @@ function CoWorkSection({ s, busy, apply }: SectionProps) {
     };
   });
   
-  const [browserDetecting, setBrowserDetecting] = useState(false);
   const [recordingHotkey, setRecordingHotkey] = useState(false);
   const [recordingEStopHotkey, setRecordingEStopHotkey] = useState(false);
   // recordingRef mirrors which hotkey (if any) is being recorded. The window-
@@ -5298,29 +5284,6 @@ function CoWorkSection({ s, busy, apply }: SectionProps) {
     void probeMail(String(i), name);
   };
 
-  const checkBrowser = async () => {
-    setBrowserDetecting(true);
-    try {
-      // CheckCoworkBrowser returns the detected executable PATH. Autofill it
-      // into browserPath so the config actually persists — previously detection
-      // only set the read-only detectedBrowser, which was never saved, so the
-      // picked browser vanished on reopen. The user can still override by
-      // editing the path field directly. Detection persists immediately.
-      const path = await app.CheckCoworkBrowser();
-      setDraft(d => {
-        const next = {
-          ...d,
-          detectedBrowser: browserDisplayName(path),
-          browserPath: path,
-        };
-        commitDraft(next);
-        return next;
-      });
-    } finally {
-      setBrowserDetecting(false);
-    }
-  };
-
   const pickPPTTemplate = async () => {
     try {
       const path = await app.PickPPTTemplate();
@@ -5330,58 +5293,11 @@ function CoWorkSection({ s, busy, apply }: SectionProps) {
     } catch { /* user cancelled */ }
   };
 
-  // Derive enabled state from draft values — empty = disabled.
-  const browserOn = !!(draft.detectedBrowser || draft.browserPath);
-  // --- 可控浏览器 (managed attachable browser) ------------------------------
-  // The persistent browser window browser_auto can attach to. Start launches
-  // it on the fixed CDP port with a dedicated profile; the attach URL is then
-  // autofilled + saved so automation connects to it instead of spawning a
-  // fresh temp browser per task.
-  const [managedStarting, setManagedStarting] = useState(false);
-  const [managedStatus, setManagedStatus] = useState<ManagedBrowserStatus | null>(null);
-  // Probe once on mount so the status line reflects reality (e.g. a browser
-  // kept open from an earlier session shows as already running).
-  useEffect(() => {
-    let cancelled = false;
-    app.CheckManagedBrowser()
-      .then(st => { if (!cancelled && st.running) setManagedStatus(st); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
-  const startManagedBrowser = async () => {
-    setManagedStarting(true);
-    try {
-      const st = await app.StartManagedBrowser();
-      setManagedStatus(st);
-      if (st.running) {
-        setDraft(d => {
-          const next = { ...d, browserAttachURL: st.url };
-          commitDraft(next);
-          return next;
-        });
-      }
-    } catch (e) {
-      setManagedStatus({ running: false, url: "http://127.0.0.1:9222", browser: "", profile: "", alreadyRunning: false, detail: String(e) });
-    } finally {
-      setManagedStarting(false);
-    }
-  };
-  // --- Cookies 管理 + 打开网页时 (HanaAgent-style browser behaviors) --------
-  const [clearingCookies, setClearingCookies] = useState(false);
-  const [cookieMsg, setCookieMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const cookiesOn = draft.browserPersistCookies !== false; // null = on (default)
-  const clearCookies = async () => {
-    setClearingCookies(true);
-    setCookieMsg(null);
-    try {
-      const msg = await app.ClearManagedBrowserCookies();
-      setCookieMsg({ ok: true, text: msg });
-    } catch (e) {
-      setCookieMsg({ ok: false, text: String(e) });
-    } finally {
-      setClearingCookies(false);
-    }
-  };
+  // Browser automation settings are GONE (2026-09-20): the built-in browser was
+  // taken offline (no browser_* tool is registered, no panel, no managed
+  // browser launcher) because the driven Chrome process was the heaviest thing
+  // the app spawned. The [cowork] browser_* config keys are kept for
+  // forward-compat but nothing in the UI reads or writes them any more.
   const pptOn = !!draft.pptActiveTemplate;
   // Mail is "on" when at least one account is configured (multi-account path)
   // or the legacy single-pair SMTP/IMAP has a host.
@@ -5399,9 +5315,6 @@ function CoWorkSection({ s, busy, apply }: SectionProps) {
   // Toggle helpers: disabling clears related fields so the backend treats them
   // as "not configured", and persists immediately (no save button). Enabling
   // just expands the card (user fills in values, saved on blur/enter).
-  const toggleBrowser = (on: boolean) => {
-    if (!on) setDraft(d => { const n = { ...d, browserPath: "", detectedBrowser: "" }; commitDraft(n); return n; });
-  };
   const togglePpt = (on: boolean) => {
     if (!on) setDraft(d => { const n = { ...d, pptActiveTemplate: "" }; commitDraft(n); return n; });
   };
@@ -5505,122 +5418,9 @@ function CoWorkSection({ s, busy, apply }: SectionProps) {
     <>
       <SettingsSection title={t("settings.tab.cowork")}>
 
-        {/* ── 浏览器自动化 ── */}
-        <OptionalModule title={t("cowork.browser")} description={t("cowork.browserModDesc")} enabled={browserOn} onToggle={toggleBrowser}>
-          <div className="optional-module__controls">
-            <div className="set-input-browse">
-              <input
-                className="mem-input set-grow"
-                placeholder={t("cowork.browserPath")}
-                value={draft.browserPath}
-                onChange={e => setDraft({ ...draft, browserPath: e.target.value })}
-                onBlur={commitCurrent}
-                onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-              />
-              <button
-                type="button"
-                className="btn btn--small set-input-browse__btn"
-                disabled={busy || browserDetecting}
-                onClick={checkBrowser}
-              >
-                {browserDetecting ? <Loader2 className="spinner" size={14} /> : t("cowork.browserDetect")}
-              </button>
-              {draft.detectedBrowser && (
-                <span className="mem-hint" style={{ margin: 0, whiteSpace: "nowrap" }}>
-                  {t("cowork.browserDetected", { name: draft.detectedBrowser })}
-                </span>
-              )}
-            </div>
-            {/* 可控浏览器：常驻、可附着的浏览器窗口。填了 CDP 地址后，浏览器自动化
-                会附着到这个已打开的浏览器，而不是每次新开一个临时实例。 */}
-            <div className="set-input-browse" style={{ marginTop: 10 }}>
-              <input
-                className="mem-input set-grow"
-                placeholder={t("cowork.browserAttachURL")}
-                value={draft.browserAttachURL ?? ""}
-                onChange={e => setDraft({ ...draft, browserAttachURL: e.target.value })}
-                onBlur={commitCurrent}
-                onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-              />
-              <button
-                type="button"
-                className="btn btn--small set-input-browse__btn"
-                disabled={busy || managedStarting}
-                onClick={startManagedBrowser}
-                title={t("cowork.managedBrowserStartTip")}
-              >
-                {managedStarting ? <Loader2 className="spinner" size={14} /> : t("cowork.startManagedBrowser")}
-              </button>
-              {managedStatus && (
-                <span
-                  className={`managed-dot ${managedStatus.running ? "managed-dot--ok" : "managed-dot--off"}`}
-                  title={managedStatus.running ? t("cowork.managedRunning", { browser: managedStatus.browser || "?" }) : managedStatus.detail || t("cowork.managedOff")}
-                />
-              )}
-            </div>
-            {/* Cookies 管理 + 打开网页时（对照 HanaAgent 的浏览器默认行为） */}
-            <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <label className="cap-switch" title={t("cowork.acceptCookiesTip")}>
-                <input
-                  type="checkbox"
-                  checked={cookiesOn}
-                  onChange={(e) => {
-                    const on = e.target.checked;
-                    setDraft(d => { const n = { ...d, browserPersistCookies: on ? null : false }; commitDraft(n); return n; });
-                  }}
-                />
-                <span className="cap-switch__track" />
-              </label>
-              <span style={{ fontSize: "var(--font-size, 13px)" }}>{t("cowork.acceptCookies")}</span>
-              <button
-                type="button"
-                className="btn btn--small"
-                disabled={busy || clearingCookies}
-                onClick={clearCookies}
-                title={t("cowork.clearCookiesTip")}
-              >
-                {clearingCookies ? <Loader2 className="spinner" size={14} /> : t("cowork.clearCookies")}
-              </button>
-            </div>
-            {(cookieMsg || !cookiesOn) && (
-              <div className={`mem-hint${cookieMsg && !cookieMsg.ok ? " mem-hint--error" : ""}`} style={{ marginTop: 4, whiteSpace: "normal", lineHeight: 1.6 }}>
-                {cookieMsg
-                  ? cookieMsg.text
-                  : t("cowork.acceptCookiesOffHint")}
-              </div>
-            )}
-            <div className="set-input-browse" style={{ marginTop: 10 }}>
-              <span className="mem-hint" style={{ margin: 0, whiteSpace: "nowrap" }}>{t("cowork.openLinksIn")}</span>
-              <select
-                className="mem-input set-grow"
-                value={draft.browserOpenLinksIn === "new" ? "new" : "current"}
-                onChange={e => {
-                  const v = e.target.value;
-                  setDraft(d => { const n = { ...d, browserOpenLinksIn: v }; commitDraft(n); return n; });
-                }}
-              >
-                <option value="current">{t("cowork.openLinksCurrent")}</option>
-                <option value="new">{t("cowork.openLinksNew")}</option>
-              </select>
-            </div>
-            <div className="mem-hint" style={{ marginTop: 6, whiteSpace: "normal", lineHeight: 1.6 }}>
-              {t("cowork.browserAttachHint")}
-            </div>
-            {managedStatus?.running && (
-              <div className="mem-hint" style={{ marginTop: 4, whiteSpace: "normal", lineHeight: 1.6 }}>
-                {managedStatus.alreadyRunning
-                  ? t("cowork.managedAlready", { browser: managedStatus.browser || "?" })
-                  : t("cowork.managedStarted", { browser: managedStatus.browser || "?" })}
-                {managedStatus.profile ? ` · ${managedStatus.profile}` : ""}
-              </div>
-            )}
-            {!managedStatus?.running && managedStatus?.detail && (
-              <div className="mem-hint mem-hint--error" style={{ marginTop: 4, whiteSpace: "normal" }}>
-                {managedStatus.detail}
-              </div>
-            )}
-          </div>
-        </OptionalModule>
+        {/* 浏览器自动化设置已下架（2026-09-20）：内置浏览器连同其工具与面板一起移除，
+            驱动的 Chrome 进程是应用里最重的一环。Go 侧的配置键与绑定方法保留，
+            但界面不再提供路径探测、Cookies 管理或“可控浏览器”启动入口。 */}
 
         {/* ── PPT 生成 ── */}
         <OptionalModule title={t("cowork.ppt")} description={t("cowork.pptDescFull")} enabled={pptOn} onToggle={togglePpt}>

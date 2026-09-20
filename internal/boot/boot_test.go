@@ -143,6 +143,24 @@ model = "x"
 		t.Fatalf("LoadSession: %v", err)
 	}
 	msgs := sess.Snapshot()
+	// The persisted transcript carries kernel infrastructure the task/answer
+	// contract is not about: the task-ledger anchor (skill subagents run with
+	// TaskLedger on, see the boot.Tasks wiring) and compaction summaries. Drop
+	// them before asserting the user-visible shape — otherwise this test breaks
+	// whenever the kernel legitimately adds an anchor message, which is exactly
+	// what a durable-anchor design is supposed to do. (Pre-existing failure at
+	// ac17d6bb, found 2026-09-20 while verifying the browser-tool fix.)
+	kernel := func(m provider.Message) bool {
+		return agent.IsTaskLedger(m) || agent.IsCompactionSummary(m)
+	}
+	visible := make([]provider.Message, 0, len(msgs))
+	for _, m := range msgs {
+		if kernel(m) {
+			continue
+		}
+		visible = append(visible, m)
+	}
+	msgs = visible
 	if len(msgs) != 4 || msgs[1].Content != "first skill task" || msgs[2].Content != "first skill answer" || msgs[3].Content != "second skill task" {
 		t.Fatalf("failed skill transcript = %+v, want first task/answer plus second task", msgs)
 	}
@@ -1020,7 +1038,7 @@ func TestBuildMigratesLegacyConfigEndToEnd(t *testing.T) {
 	t.Setenv("USERPROFILE", home)                               // os.UserHomeDir on Windows
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config")) // os.UserConfigDir on Linux
 	t.Setenv("AppData", filepath.Join(home, "AppData"))         // os.UserConfigDir on Windows
-	t.Setenv("HIQ_API_KEY", "")                            // track for cleanup; migration os.Setenv's it live
+	t.Setenv("HIQ_API_KEY", "")                                 // track for cleanup; migration os.Setenv's it live
 
 	proj := robustTempDir(t)
 	t.Chdir(proj)
@@ -1717,4 +1735,32 @@ func TestLegacySkillRenameAppliedToWhitelist(t *testing.T) {
 			t.Fatal("renamed skill desktop-auto disabled despite stale-alias whitelist — the alias must keep governing it")
 		}
 	}
+}
+
+// TestBrowserSurfaceStaysDisabled is the guard for the 2026-09-20 decision to
+// take the built-in browser offline: the driven Chrome process (~270MB resident
+// headless browser + a per-frame JPEG screencast) was the heaviest thing hiq
+// spawned and the user reported the app as laggy and memory-hungry.
+//
+// It asserts the boot path registers NOTHING — the only state that structurally
+// guarantees no Chrome is ever launched. If you flip browserToolsEnabled to
+// true, this test fails on purpose: restoring the surface also means restoring
+// the panel dock tab (desktop/frontend/src/App.tsx), the settings entry, and
+// the browser rows in the profile prompts/skill whitelists (internal/config).
+func TestBrowserSurfaceStaysDisabled(t *testing.T) {
+	reg := tool.NewRegistry()
+	configureBrowserSurface(reg, &config.Config{}, netclient.ProxySpec{})
+
+	if _, ok := reg.Get(builtin.BrowserOpenToolName); ok {
+		t.Fatal("browser_open must stay unregistered: the built-in browser is disabled (browserToolsEnabled=false)")
+	}
+	if names := reg.Names(); len(names) != 0 {
+		t.Fatalf("browser surface must register nothing while the tool gate is off; got %v", names)
+	}
+	// NOTE: the launch knobs are still injected by configureBrowserSurface, by
+	// design — the ops browser console (builtin.ConsoleOpen, kept) reads
+	// headless / user-data-dir / proxy / surface from them, so dropping the
+	// injection would silently turn that surface into a visible fresh-profile
+	// browser. There is no getter for those package-private knobs, so it stays
+	// covered by review rather than by an assertion here.
 }

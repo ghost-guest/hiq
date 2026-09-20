@@ -51,13 +51,37 @@ import (
 // profile-gated in boot.go (registered only when the cowork profile is active),
 // so they don't appear in the dev tool list at all.
 
-// BrowserTools returns the full set of browser automation tools, for
-// registration when the cowork profile is active. Unlike the compile-time
-// built-ins (which self-register via init() and are therefore in every tool
-// list), browser tools are intentionally NOT in the global set — they are
-// office-specific and should not appear in dev mode. boot.go calls this only
-// under the cowork profile, so the dev tool list stays clean and the browser
-// subprocess is never reachable from a coding session.
+// BrowserOpenToolName is the one browser tool the main agent loop keeps VISIBLE
+// in its schema — the entry point that turns "打开这个网址" into the in-app
+// browser panel. boot registers the whole set for every profile and hides the
+// rest (see boot.go); everything else is reached through the browser-auto
+// subagent. Keep the name in sync with browserOpen.Name().
+const BrowserOpenToolName = "browser_open"
+
+// BrowserSetPathToolName is browser_set_path — the second visible entry tool:
+// browser_open's no-browser-found error tells the agent to collect the user's
+// Chrome/Edge path and call it, so hiding it would leave that recovery
+// unreachable. Keep the name in sync with browserSetPath.Name().
+const BrowserSetPathToolName = "browser_set_path"
+
+// BrowserVisibleToolNames returns the browser tools the main loop keeps in its
+// schema: the panel ENTRY points (open a page, point hiq at a browser that
+// auto-detection missed). Every other browser_* tool stays hidden and is reached
+// by the browser-auto subagent through FilterRegistry, so an ordinary coding
+// turn doesn't pay ~1.5k tokens for click/type/snapshot/network schemas it will
+// almost never call directly.
+func BrowserVisibleToolNames() map[string]bool {
+	return map[string]bool{
+		BrowserOpenToolName:    true,
+		BrowserSetPathToolName: true,
+	}
+}
+
+// BrowserTools returns the full set of browser automation tools. boot.go
+// registers them for EVERY profile (2026-09-20): the in-app browser panel is a
+// first-class UI surface, so a 编码-mode session must be able to open it too.
+// Only BrowserOpenToolName stays visible in the main loop's schema; the rest are
+// hidden there and reachable by the browser-auto subagent via FilterRegistry.
 func BrowserTools() []tool.Tool {
 	return []tool.Tool{
 		browserOpen{},
@@ -210,9 +234,15 @@ type browserSession struct {
 	downloadRecords []downloadRecord
 	// stepTracker tracks action repetition and page stagnation for loop detection.
 	stepTracker *browserStepTracker
-	// tabMu serializes tab switches (auto-follow + browser_switch_tab). The
+	// switchMu serializes tab switches (auto-follow + browser_switch_tab). The
 	// old tab's context is abandoned, not canceled — chromedp cancel would
 	// CLOSE that target, and the old tab must stay open for switching back.
+	switchMu sync.Mutex
+	// tabMu guards the s.ctx/s.ctxCancel FIELDS only, and must NEVER be held
+	// across a CDP call. The panel's event listener reads s.ctx through it
+	// (panelTabIsCurrent) while running on chromedp's message-loop goroutine
+	// with the target's listenersMu held — so a writer that blocks on tabMu
+	// would wedge every later CDP call on the session (see panelStreamEvent).
 	tabMu sync.Mutex
 	// panelStream carries the live-panel screencast bookkeeping (see
 	// browserpanel.go). Atomic pointer: created lazily on first panel use,
@@ -456,8 +486,30 @@ func BrowserClearAllCookies() (string, error) {
 }
 
 // browserPoolCtx is the parent allocator context for all browser sessions. It is
-// created lazily on first browser_open and never cancelled (process-lifetime).
-var browserPoolCtx context.Context
+// created lazily on first browser_open and normally lives for the whole process;
+// browserPoolCancel lets ReleaseBrowserPool dispose of it (app shutdown, tests).
+var (
+	browserPoolCtx    context.Context
+	browserPoolCancel context.CancelFunc
+)
+
+// ReleaseBrowserPool shuts the shared allocator down: the browser process is
+// killed and the next browser_open launches a fresh one. Sessions should be
+// closed first. Safe to call when no allocator exists yet.
+//
+// Production only needs this at shutdown; the live browser tests need it because
+// a headless Chrome EXITS as soon as its last target closes, leaving the cached
+// allocator pointing at a dead process — a second test then fails with
+// "chrome failed to start".
+func ReleaseBrowserPool() {
+	browserMu.Lock()
+	cancel := browserPoolCancel
+	browserPoolCtx, browserPoolCancel = nil, nil
+	browserMu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
 
 // browserLaunchOptions holds the launch-time knobs injected from config (and
 // the resolved proxy). They shape the chromedp allocator: a persistent profile
@@ -470,6 +522,12 @@ type browserLaunchOptions struct {
 	headless    bool   // false = visible browser (more human-like)
 	userDataDir string // persistent profile dir; "" = temp profile
 	proxyServer string // e.g. "http://127.0.0.1:7890"; "" = no --proxy-server
+	// panelOnly mirrors the browser into the in-app dock panel instead of
+	// opening its own window ([cowork] browser_surface = "panel", the default):
+	// the process runs headless and a stable profile keeps logins. Ignored when
+	// no panel sink is registered (CLI/TUI) — a headless browser there would be
+	// invisible, so it falls back to a visible window.
+	panelOnly bool
 	// persistCookies (nil = true) and openLinksIn ("current"|"new") come from
 	// SetBrowserCookiePolicy; see there for semantics.
 	persistCookies *bool
@@ -484,11 +542,55 @@ var globalBrowserLaunch = browserLaunchOptions{headless: false}
 // cowork config and the proxy spec. Empty proxyServer means "no proxy" (the
 // browser uses the system default), matching chromedp's behaviour.
 func SetBrowserLaunchOptions(headless bool, userDataDir, proxyServer string) {
-	globalBrowserLaunch = browserLaunchOptions{
-		headless:    headless,
-		userDataDir: strings.TrimSpace(userDataDir),
-		proxyServer: strings.TrimSpace(proxyServer),
+	globalBrowserLaunch.headless = headless
+	globalBrowserLaunch.userDataDir = strings.TrimSpace(userDataDir)
+	globalBrowserLaunch.proxyServer = strings.TrimSpace(proxyServer)
+}
+
+// SetBrowserSurface selects where the driven browser is shown. panelOnly=true
+// (the default, [cowork] browser_surface = "panel") keeps the browser out of
+// the way — headless, mirrored in the dock's browser tab — instead of popping
+// its own Chrome window. panelOnly=false ("window") keeps today's visible
+// window. Resolved in ensureBrowserAllocator, which is where the panel sink
+// availability is known.
+func SetBrowserSurface(panelOnly bool) {
+	globalBrowserLaunch.panelOnly = panelOnly
+}
+
+// resolvedSurface turns the configured surface into the two allocator knobs it
+// affects: headless and the user-data-dir.
+//
+// Panel mode runs headless (the dock already shows the page — a second window
+// is the pop-up users complain about) and defaults to a STABLE profile, so a
+// one-time login inside the panel survives a restart. The CLI has no panel to
+// mirror into, so there the browser stays headed; an explicit
+// browser_headless=true still wins for servers/CI.
+func resolvedSurface() (headless bool, userDataDir string) {
+	headless = globalBrowserLaunch.headless
+	userDataDir = globalBrowserLaunch.userDataDir
+	if !globalBrowserLaunch.panelOnly {
+		return headless, userDataDir
 	}
+	if browserPanelSink != nil {
+		headless = true
+	}
+	if userDataDir == "" {
+		userDataDir = defaultPanelProfileDir()
+	}
+	return headless, userDataDir
+}
+
+// defaultPanelProfileDir is the panel-driven browser's profile: a fixed path so
+// cookies/logins persist. Deliberately NOT the managed browser's
+// <config>/hiq/browser-profile — two Chrome processes pointed at one profile
+// would fight over it (the second exits immediately), and the managed browser
+// is a separate, user-started window.
+func defaultPanelProfileDir() string {
+	base, err := os.UserConfigDir()
+	if err != nil || base == "" {
+		return ""
+	}
+	return filepath.Join(base, "hiq", "browser-profile-panel")
 }
 
 // SetBrowserCookiePolicy injects the cookie/tab behavior toggles from the
@@ -548,7 +650,10 @@ func ensureBrowserAllocator() (context.Context, string, error) {
 	// in a map (last write wins).
 	//
 	// On servers / CI without a display, the user sets browser_headless = true.
-	if globalBrowserLaunch.headless {
+	// Surface + headless: panel mode hides the browser behind the in-app dock
+	// (no stray Chrome window); explicitly configured headless still wins.
+	headless, userDataDir := resolvedSurface()
+	if headless {
 		opts = append(opts, chromedp.Flag("headless", true))
 	} else {
 		opts = append(opts, chromedp.Flag("headless", false))
@@ -562,8 +667,8 @@ func ensureBrowserAllocator() (context.Context, string, error) {
 	// friction on repeat visits. Empty = chromedp's default temp profile.
 	// The 接受 Cookies toggle (persist=false) forces the temp profile even when
 	// a user-data-dir is configured — "don't keep cookies" wins.
-	if globalBrowserLaunch.userDataDir != "" && globalBrowserLaunch.cookiesPersisted() {
-		opts = append(opts, chromedp.UserDataDir(globalBrowserLaunch.userDataDir))
+	if userDataDir != "" && globalBrowserLaunch.cookiesPersisted() {
+		opts = append(opts, chromedp.UserDataDir(userDataDir))
 	}
 	// Route the browser through the same proxy as the rest of hiq. Without
 	// this the browser ignores [network] proxy and goes direct, which fails on
@@ -572,16 +677,17 @@ func ensureBrowserAllocator() (context.Context, string, error) {
 		opts = append(opts, chromedp.Flag("proxy-server", globalBrowserLaunch.proxyServer))
 	}
 	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
-	// Keep cancel alive for the process lifetime; we never tear down the
-	// allocator itself, only individual sessions.
-	_ = cancel
+	// The allocator normally lives for the whole process (individual sessions are
+	// torn down on their own); keep its cancel so ReleaseBrowserPool can dispose
+	// of the browser — including its temp profile — on demand.
 	browserPoolCtx = allocCtx
+	browserPoolCancel = cancel
 	// Debug: print the launch config so desktop users can see which browser and
 	// mode is actually used (the allocator is built lazily on first browser_open,
 	// and the desktop app swallows stdout — this line still reaches logs when run
 	// from a terminal).
-	fmt.Printf("[browser] allocator created: exe=%s headless=%v userDataDir=%q proxy=%q\n",
-		exePath, globalBrowserLaunch.headless, globalBrowserLaunch.userDataDir, globalBrowserLaunch.proxyServer)
+	fmt.Printf("[browser] allocator created: exe=%s headless=%v userDataDir=%q proxy=%q panelOnly=%v\n",
+		exePath, headless, userDataDir, globalBrowserLaunch.proxyServer, globalBrowserLaunch.panelOnly)
 	return allocCtx, name, nil
 }
 
@@ -605,9 +711,18 @@ func reapIdleBrowserSessions() {
 	browserMu.Lock()
 	for id, s := range browserSessions {
 		last := s.lastUsed.Load()
-		if now-last > int64(browserIdleTimeout.Seconds()) {
-			stale = append(stale, id)
+		if now-last <= int64(browserIdleTimeout.Seconds()) {
+			continue
 		}
+		// Never reap a session the user is LOOKING at. The dock keeps showing the
+		// last streamed frame after a reap, so the next click would hit a dead
+		// session and silently do nothing — exactly the "I can see the page but
+		// clicking does nothing" report. Panel visibility is the "someone is
+		// watching" signal; closing the dock restores normal reaping.
+		if st := s.panelStream.Load(); st != nil && st.visible.Load() {
+			continue
+		}
+		stale = append(stale, id)
 	}
 	browserMu.Unlock()
 	for _, id := range stale {
@@ -1030,11 +1145,12 @@ type browserOpen struct{}
 func (browserOpen) Name() string { return "browser_open" }
 
 func (browserOpen) Description() string {
-	return "Launch a browser tab (Chromium via Chrome DevTools Protocol) and return a session id used by the other browser_* tools. " +
-		"Pass an optional url to navigate immediately. Auto-detects an installed Chromium-based browser (Chrome, then Edge, then Brave); set the CHROME_PATH env var to force a specific one. " +
-		"Use for web research, form filling, scraping, and any task needing a real browser. " +
-		"ROUTING: only open a browser when the user explicitly asks to operate one, or when a task needs real browser rendering (login, JS-heavy pages, clicks). " +
-		"For plain information lookup use web_search; for reading a URL's content use web_fetch — both are cheaper and don't need a browser session. " +
+	return "Open a browser tab (Chromium via Chrome DevTools Protocol) in hiq's BUILT-IN browser panel — a live, interactive view the user can see and operate alongside you — and return a session id used by the other browser_* tools. " +
+		"Pass url to navigate immediately. Auto-detects an installed Chromium-based browser (Chrome, then Edge, then Brave); set the CHROME_PATH env var to force a specific one. " +
+		"ROUTING (read this first): whenever the user asks you to open, visit, or show a web page — \"打开这个网址\", \"打开浏览器\", \"访问一下 X\", \"看看这个页面\", just a URL on its own — call THIS tool with that url (the page shows in the app's right-hand 浏览器 dock; a separate Chrome window only if the user configured that). That is the whole point of the panel: they want to SEE the page, and this is the only way they can. " +
+		"NEVER open a page for the user with a shell command (xdg-open, open, start, cmd /c start, curl, wget) or by fetching HTML — none of those show them anything, and reporting \"the environment cannot open a browser window\" is wrong: the built-in panel always can. " +
+		"For reading a page's text where nobody needs to see it, use web_fetch (cheaper, no browser session); for search results use web_search. " +
+		"DELEGATION: for a browser TASK beyond viewing — logging in, filling forms, clicking through a flow, scraping, multi-step interaction — hand the whole goal to run_skill(\"browser-auto\", task). " +
 		"The session stays open for 10 minutes of inactivity; reuse its id across calls."
 }
 
@@ -3106,12 +3222,17 @@ func startDialogHandler(s *browserSession) {
 				s.dialogMu.Unlock()
 				// Auto-accept alert, confirm, beforeunload; cancel prompt (can't provide input).
 				shouldAccept := e.Type != cdprotopage.DialogTypePrompt
-				// Best-effort dialog handling — if the session is closing, this will fail silently.
-				actx, cancel := context.WithTimeout(s.ctx, 3*time.Second)
-				defer cancel()
-				_ = chromedp.Run(actx, chromedp.ActionFunc(func(ctx context.Context) error {
-					return cdprotopage.HandleJavaScriptDialog(shouldAccept).Do(ctx)
-				}))
+				// MUST NOT call chromedp.Run inline: this listener runs on the
+				// target's message-loop goroutine with listenersMu held, and the
+				// response it would wait for can only be delivered by that same
+				// goroutine — the session wedges permanently. Hand the dialog off.
+				go func() {
+					actx, cancel := context.WithTimeout(s.ctx, 3*time.Second)
+					defer cancel()
+					_ = chromedp.Run(actx, chromedp.ActionFunc(func(ctx context.Context) error {
+						return cdprotopage.HandleJavaScriptDialog(shouldAccept).Do(ctx)
+					}))
+				}()
 			}
 		})
 		// Block until session context is cancelled.
@@ -3692,13 +3813,22 @@ func openSessionTab(s *browserSession, url string) error {
 }
 
 func switchSessionTab(s *browserSession, id cdptarget.ID) error {
+	// Serialize switches, but do NOT hold tabMu across the CDP calls below:
+	// the panel's event listener takes tabMu (panelTabIsCurrent) while it runs
+	// with the target's listenersMu held, so blocking on tabMu from here would
+	// stop the listener goroutine from ever releasing listenersMu — and the
+	// attach/StopScreencast calls below would then wait forever on it. Keep
+	// tabMu strictly for swapping the s.ctx fields.
+	s.switchMu.Lock()
+	defer s.switchMu.Unlock()
 	s.tabMu.Lock()
-	defer s.tabMu.Unlock()
-	c := chromedp.FromContext(s.ctx)
+	prev := s.ctx
+	s.tabMu.Unlock()
+	c := chromedp.FromContext(prev)
 	if c == nil || c.Browser == nil {
 		return errors.New("session browser not connected")
 	}
-	newCtx, cancel := chromedp.NewContext(s.ctx, chromedp.WithTargetID(id))
+	newCtx, cancel := chromedp.NewContext(prev, chromedp.WithTargetID(id))
 	boot := make(chan error, 1)
 	go func() { boot <- chromedp.Run(newCtx) }()
 	select {
@@ -3711,8 +3841,10 @@ func switchSessionTab(s *browserSession, id cdptarget.ID) error {
 		cancel()
 		return fmt.Errorf("attach tab %s: timed out", id)
 	}
+	s.tabMu.Lock()
 	s.ctx = newCtx
 	s.ctxCancel = cancel
+	s.tabMu.Unlock()
 	s.refs.Store(nil) // refs belonged to the abandoned page
 	panelRestart(s)   // live panel stream follows the new tab
 	return nil

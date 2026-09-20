@@ -761,34 +761,22 @@ func Build(ctx context.Context, opts Options) (*control.Controller, error) {
 	// from the main loop via reg.Hide, so registering them unconditionally
 	// doesn't pollute the dev tool list, but allows subagents to work anywhere).
 	profileKey := config.ProfileNameKey(profileName(opts.Profile))
-	if profileKey == config.ProfileCowork || profileKey == config.ProfileNetDev { // Browser automation tools (cowork + netdev: the ops console's
-		// browser tab shares this session infrastructure, and netdev skills
-		// may drive browsers too). Hidden from the main loop's schema: the
-		// model drives the browser through run_skill("browser-auto")
-		// subagents, which reach these via FilterRegistry. This keeps 12
-		// browser tool schemas out of every turn.
-		builtin.SetConfiguredBrowserPath(cfg.Cowork.BrowserPath)
-		for _, t := range builtin.BrowserTools() {
-			reg.Add(t)
-			reg.Hide(t.Name())
-		}
-		// Deterministic executor for `executor: browser-flow` skills: run_skill
-		// routes those to the kernel step-table runner instead of an LLM
-		// subagent — long per-site flows run verbatim, no per-step drift.
-		// Callback-shaped so the skill package stays independent of the tool
-		// layer (boot is the natural meeting point).
-		skill.SetFlowRunner(func(ctx context.Context, sk skill.Skill, arguments string) (string, error) {
-			return builtin.RunBrowserFlow(ctx, sk.Body, arguments)
-		})
-		// Browser launch options must be wired for netdev too — the ops
-		// console's spawned sessions read the same global config (visible
-		// window + persistent profile + proxy). The proxy URL is resolved
-		// from the network spec; auto/env modes fall back to a probe via
-		// ProxyURLFor (chromedp needs one concrete --proxy-server URL).
-		builtin.SetBrowserLaunchOptions(cfg.Cowork.BrowserHeadless, cfg.Cowork.BrowserUserDataDir, resolveBrowserProxyURL(proxySpec))
-		// Cookie persistence + default tab behavior (接受 Cookies / 打开网页时).
-		builtin.SetBrowserCookiePolicy(cfg.Cowork.BrowserPersistCookies, cfg.Cowork.BrowserOpenLinksIn)
-	}
+
+	// Browser automation surface. TOOL REGISTRATION IS OFF since 2026-09-20 (see
+	// browserToolsEnabled): the model can no longer ask hiq to drive Chrome, so
+	// no headless browser process is spawned on its behalf. The launch knobs are
+	// still injected — the ops browser console, a manual surface that was kept
+	// on purpose, reads headless/profile/proxy from them.
+	configureBrowserSurface(reg, cfg, proxySpec)
+	// Deterministic executor for `executor: browser-flow` skills: run_skill
+	// routes those to the kernel step-table runner instead of an LLM
+	// subagent — long per-site flows run verbatim, no per-step drift.
+	// Callback-shaped so the skill package stays independent of the tool
+	// layer (boot is the natural meeting point).
+	skill.SetFlowRunner(func(ctx context.Context, sk skill.Skill, arguments string) (string, error) {
+		return builtin.RunBrowserFlow(ctx, sk.Body, arguments)
+	})
+
 	if profileKey == config.ProfileCowork {
 		// Desktop automation tools (screenshot, screen_click/type/scroll,
 		// get_ui_tree). Windows-native (Win32 BitBlt/SendInput); on other
@@ -2436,6 +2424,63 @@ func pluginSpecNames(specs []plugin.Spec) []string {
 //     custom skill into the tree expects it to work regardless of profile.
 //
 // The result preserves first spelling and dedupes by SkillNameKey.
+
+// browserToolsEnabled gates the browser TOOL registration: the browser_* schemas
+// the model can call. It does not touch the launch-knob injection (see
+// configureBrowserSurface) nor the ops browser console, both of which stay live.
+//
+// false since 2026-09-20. The driven Chrome was by far the heaviest thing hiq
+// started — a headless panel browser (~270MB resident) plus a per-frame JPEG
+// screencast — and the user reported the app as laggy and memory-hungry and
+// asked for the feature to go away. Flipping this back to true re-registers the
+// tools; the panel UI (desktop/frontend/src/App.tsx), the settings card and the
+// profile prompt rows must be restored with it, which is exactly what the guards
+// in internal/config and internal/boot exist to remind you of.
+const browserToolsEnabled = false
+
+// configureBrowserSurface wires the browser automation surface: it always
+// injects the launch knobs, and registers the browser_* tools only when
+// browserToolsEnabled is set.
+//
+// The launch knobs are injected REGARDLESS of the gate on purpose. They are
+// pure in-memory values — nothing is spawned — and they are read by code that
+// is still live: the ops browser console (builtin.ConsoleOpen, deliberately
+// kept) builds its session through the same newBrowserSession(), so skipping
+// the injection would silently change its headless flag, persistent profile and
+// proxy to the built-in defaults.
+//
+// Visibility (when the gate is on): the panel ENTRY tools stay in the main
+// loop's schema (builtin.BrowserVisibleToolNames — browser_open and
+// browser_set_path). The other ~22 schemas are hidden (reg.Hide) and reached by
+// the browser-auto subagent through FilterRegistry, so an ordinary coding turn
+// doesn't pay ~1.5k tokens for click/type/snapshot/network.
+func configureBrowserSurface(reg *tool.Registry, cfg *config.Config, proxySpec netclient.ProxySpec) {
+	builtin.SetConfiguredBrowserPath(cfg.Cowork.BrowserPath)
+	// The proxy URL is resolved from the network spec; auto/env modes fall back
+	// to a probe via ProxyURLFor (chromedp needs one concrete --proxy-server URL).
+	builtin.SetBrowserLaunchOptions(cfg.Cowork.BrowserHeadless, cfg.Cowork.BrowserUserDataDir, resolveBrowserProxyURL(proxySpec))
+	// Where the browser is SHOWN: the dock's browser tab (default — headless, no
+	// stray Chrome window) or its own visible window ([cowork] browser_surface).
+	builtin.SetBrowserSurface(cfg.Cowork.BrowserSurfacePanel())
+	// Cookie persistence + default tab behavior (接受 Cookies / 打开网页时).
+	builtin.SetBrowserCookiePolicy(cfg.Cowork.BrowserPersistCookies, cfg.Cowork.BrowserOpenLinksIn)
+
+	if !browserToolsEnabled {
+		// Register NOTHING (2026-09-20): an unregistered tool is the only state
+		// that makes it impossible for the model to spawn Chrome — hiding it
+		// would still leave the browser-auto skill and the browser-flow executor
+		// able to reach it by name.
+		return
+	}
+	visible := builtin.BrowserVisibleToolNames()
+	for _, t := range builtin.BrowserTools() {
+		reg.Add(t)
+		if !visible[t.Name()] {
+			reg.Hide(t.Name())
+		}
+	}
+}
+
 // netdevExcludedToolPrefixes lists the tool-name prefixes removed from the
 // Registry when a profile sets tool_scope = "netdev-only": every process-exec
 // and file-write surface. Prefix matching (Registry.RemovePrefix) also covers

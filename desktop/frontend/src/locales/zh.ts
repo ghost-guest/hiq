@@ -110,6 +110,7 @@ export const zh: Record<DictKey, string> = {
   "rightDock.workbench": "工作区面板",
   "rightDock.views": "工作区视图",
   "rightDock.turns": "轮次",
+  "rightDock.browser": "浏览器",
 
   // 话题栏
   "topicBar.renameSession": "重命名会话",
@@ -1177,6 +1178,10 @@ export const zh: Record<DictKey, string> = {
   "cowork.clearCookies": "清除 Cookies",
   "cowork.clearCookiesTip": "清除可控浏览器当前保存的全部 Cookies（所有网站退出登录）",
   "cowork.openLinksIn": "打开网页时",
+  "cowork.browserSurface": "浏览器显示方式",
+  "cowork.surfacePanel": "右侧侧边栏（默认，不弹窗口）",
+  "cowork.surfaceWindow": "弹出 Chrome 窗口",
+  "cowork.surfacePanelHint": "默认在右侧「浏览器」侧边栏里打开并实时镜像，不会再弹出独立的 Chrome 窗口；你可以在侧边栏里直接点击、输入，和 agent 操作同一个页面。登录状态会保留（存到独立配置目录，与“可控浏览器”互不干扰）。选“弹出 Chrome 窗口”则恢复独立窗口，侧边栏仍会镜像。若同时配置了“可控浏览器附着地址”，以该地址为准。",
   "cowork.openLinksCurrent": "在当前标签页操作",
   "cowork.openLinksNew": "新开标签页",
   "cowork.managedRunning": "{browser} 正在运行，可直接附着",
@@ -2313,6 +2318,8 @@ export const zh: Record<DictKey, string> = {
   "coworkDock.overview": "概览",
   "coworkDock.browser": "浏览器",
   "browserMirror.emptyHint": "AI 使用浏览器工具或自主浏览时，这里会实时镜像它的浏览器画面",
+  "browserMirror.pending": "正在打开页面…",
+  "browserMirror.sinkLabel": "浏览器页面输入区（点击页面后可直接键入）",
   "browserMirror.running": "运行中",
   "browserMirror.ended": "已结束",
   "browserMirror.waitingFrame": "等待画面…",

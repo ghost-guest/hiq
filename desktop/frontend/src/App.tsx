@@ -33,7 +33,7 @@ import { useController, type Item, type LiveStream } from "./lib/useController";
 import { app, onEvent, onProjectTreeChanged, onSchedulerNotice,
   onRemoteStatus, onBrowserMirror,
 } from "./lib/bridge";
-import { browserMirrorSnapshot, pushBrowserMirrorFrame, requestBrowserMirrorFocus } from "./lib/browserMirror";
+import { pushBrowserMirrorFrame } from "./lib/browserMirror";
 import { loadWallpaper, subscribeWallpaper } from "./lib/wallpaper";
 import { onHiqDeepLink, onProfileChanged } from "./lib/bridge";
 import { CoWorkLayout } from "./layouts/CoWorkLayout";
@@ -170,7 +170,10 @@ const DOCK_TABS_KEY = "hiq.dockTabs";
 
 // All tabs the dock's "+" menu can open, in canonical order. Persisted dock
 // tab lists are filtered against this, so entries saved before the 2026-08-27
-// rename (the old "context" overview tab) are dropped on load.
+// rename (the old "context" overview tab) are dropped on load — and so is the
+// retired "browser" tab (taken offline 2026-09-20 with the built-in browser:
+// the driven Chrome process was the heaviest thing the app spawned, so the
+// panel and its tools are gone). A persisted selection falls back to "files".
 const DOCK_TAB_CATALOG: RightDockMode[] = ["turns", "files", "changed", "preview", "session"];
 
 const DEFAULT_DOCK_TABS: RightDockMode[] = ["files", "changed", "preview"];
@@ -1057,26 +1060,15 @@ export default function App() {
     } catch { /* storage unavailable */ }
   }, [rightDockMode]);
 
-  // Browser mirror (pane-system §3.6 companion): forward every kernel frame
-  // into the module store (always-on — the stream survives dock/tab closes),
-  // and on activity onset auto-open the cowork dock on the 浏览器 tab. Browser
-  // tools are cowork-profile only, so other profiles just record frames.
-  // Anti-nag mirrors the preview dock: closing the dock mid-run suppresses
-  // reopening until the next run/session start.
-  const browserMirrorSuppressedRef = useRef(false);
-  useEffect(
-    () =>
-      onBrowserMirror((frame) => {
-        if (frame.kind === "status" && frame.phase === "start") {
-          browserMirrorSuppressedRef.current = false;
-        }
-        const startedActivity = pushBrowserMirrorFrame(frame);
-        if (!startedActivity || !coworkActive || browserMirrorSuppressedRef.current) return;
-        requestBrowserMirrorFocus();
-        setCoworkDockOpen(true);
-      }),
-    [coworkActive],
-  );
+  // Browser mirror (pane-system §3.6 companion): forward every kernel mirror
+  // frame into the module store, which is what the ops (netdev) browser
+  // workbench renders from.
+  //
+  // The auto-open-on-activity behavior is GONE (2026-09-20): the built-in
+  // browser was taken offline — no browser_* tool is registered any more, so no
+  // kernel frame will arrive — and the retired 浏览器 dock tab must not
+  // resurrect itself from a stale "browser" value in localStorage.
+  useEffect(() => onBrowserMirror((frame) => { pushBrowserMirrorFrame(frame); }), []);
 
   const commitPreviewUrl = useCallback((url: string) => {
     setPreviewUrl(url);
@@ -2555,19 +2547,12 @@ export default function App() {
       return;
     }
     if (coworkActive) {
-      // Mirror anti-nag (§3.3 pattern): a manual close mid-browsing-run
-      // suppresses the dock's auto-reopen until the next run/session starts.
-      if (browserMirrorSnapshot().running) {
-        browserMirrorSuppressedRef.current = true;
-      }
       setCoworkDockOpen(false);
       return;
     }
     if (!workspacePanelOpen) {
       return;
     }
-    // Pane-system §3.3: a manual close suppresses auto-reopening for THIS url —
-    // a NEW dev-server url still triggers the preview tab.
     previewSuppressedRef.current = previewUrl;
     setWorkspacePanelMaximized(false);
     setWorkspacePanelOpen(false);
