@@ -783,6 +783,9 @@ export interface AppBindings {
   BrowserPanelReload(sessionID: string): Promise<void>;
   BrowserPanelTabs(sessionID: string): Promise<import("./types").BrowserPanelTab[]>;
   BrowserPanelSwitchTab(sessionID: string, tabID: string): Promise<void>;
+  BrowserPanelStartPick(sessionID: string): Promise<void>;
+  BrowserPanelStopPick(sessionID: string): Promise<void>;
+  BrowserPanelTakePick(sessionID: string): Promise<import("./types").BrowserPickDescriptor | null>;
   BrowserConsoleEvaluate(expression: string): Promise<string>;
   BrowserConsoleRecordStart(): Promise<void>;
   BrowserConsoleRecordStop(): Promise<import("./types").BrowserConsoleRecordEvent[]>;
@@ -5461,7 +5464,13 @@ function makeMockApp(): AppBindings {
       await delay(150);
       return [{ id: "t1", title: "示例页", url: "https://ops.local/home", active: true }];
     },
-    async BrowserPanelSwitchTab(_s: string, _tabID: string) { await delay(200); },    async BrowserConsoleEvaluate(_expression: string) { return "undefined (mock)"; },
+    async BrowserPanelSwitchTab(_s: string, _tabID: string) { await delay(200); },
+    async BrowserPanelStartPick(_s: string) {},
+    async BrowserPanelStopPick(_s: string) {},
+    async BrowserPanelTakePick(_s: string) {
+      await delay(150);
+      return null;
+    },    async BrowserConsoleEvaluate(_expression: string) { return "undefined (mock)"; },
     async BrowserConsoleRecordStart() { await delay(200); },
     async BrowserConsoleRecordStop() {
       return [

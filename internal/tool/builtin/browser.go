@@ -80,6 +80,7 @@ func BrowserTools() []tool.Tool {
 		browserUploadFile{},
 		browserSetPath{},
 		browserWait{},
+		browserNetwork{},
 		browserKeepalive{},
 		browserAuto{},
 	}
@@ -217,6 +218,10 @@ type browserSession struct {
 	// browserpanel.go). Atomic pointer: created lazily on first panel use,
 	// never mutated after.
 	panelStream atomic.Pointer[panelStreamState]
+	// pickState / netLog carry the element picker and the network recorder
+	// (browserpick.go / browsernet.go) — same lazy-atomic-pointer pattern.
+	pickState atomic.Pointer[pickState]
+	netLog    atomic.Pointer[netRecorder]
 	// Session keep-alive (会话保活): armed from the ops console toggle or the
 	// browser_keepalive tool. Each tick refreshes lastUsed (beats the idle
 	// reaper) and, per mode, pings the site session from inside the page or

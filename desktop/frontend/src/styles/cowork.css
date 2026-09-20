@@ -6206,6 +6206,36 @@
 .browser-mirror__viewport--live img {
   user-select: none;
 }
+.browser-mirror__tool--active {
+  background: var(--accent);
+  color: var(--bg);
+}
+.browser-mirror__chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  padding: 2px var(--space-2);
+  font-size: var(--font-control-small);
+  overflow: hidden;
+}
+.browser-mirror__chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg-dim);
+  min-width: 0;
+}
+.browser-mirror__chip-text code {
+  color: var(--accent);
+}
+.browser-mirror__chip-sel {
+  font-family: var(--mono);
+  color: var(--fg-faint);
+}
 .browser-mirror__placeholder {
   display: flex;
   align-items: center;

@@ -52,3 +52,19 @@ func (a *App) BrowserPanelTabs(sessionID string) ([]builtin.PanelTab, error) {
 func (a *App) BrowserPanelSwitchTab(sessionID string, tabID string) error {
 	return builtin.PanelSwitchTab(sessionID, tabID)
 }
+
+// BrowserPanelStartPick arms the element picker: the page highlights hovered
+// elements and the next click reports a descriptor (panel → chip).
+func (a *App) BrowserPanelStartPick(sessionID string) error {
+	return builtin.PanelStartPick(sessionID)
+}
+
+// BrowserPanelStopPick cancels an armed element picker.
+func (a *App) BrowserPanelStopPick(sessionID string) error {
+	return builtin.PanelStopPick(sessionID)
+}
+
+// BrowserPanelTakePick returns and clears the latest picked element, if any.
+func (a *App) BrowserPanelTakePick(sessionID string) (*builtin.PickDescriptor, error) {
+	return builtin.PanelTakePick(sessionID)
+}

@@ -2219,7 +2219,7 @@ export interface NetDevLiveEvent {
 // One update from the kernel's browser-panel sink ("browser:mirror" Wails
 // event; desktop/app.go forwards internal/tool/builtin.BrowserPanelFrame).
 export interface BrowserMirrorFrame {
-  kind: "frame" | "status" | "live";
+  kind: "frame" | "status" | "live" | "picked";
   source: "tool" | "auto"; // chromedp tools | browser-use sidecar
   phase?: "start" | "end" | "step"; // status only
   text?: string;
@@ -2251,6 +2251,21 @@ export interface BrowserPanelTab {
   title: string;
   url: string;
   active: boolean;
+}
+
+// One picked page element (element picker → chat chip).
+export interface BrowserPickDescriptor {
+  selector: string;
+  tag: string;
+  id?: string;
+  classes?: string;
+  text?: string;
+  href?: string;
+  value?: string;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
 }
 
 // ── 浏览器控制台 (ops browser console) ───────────────────────────────────────

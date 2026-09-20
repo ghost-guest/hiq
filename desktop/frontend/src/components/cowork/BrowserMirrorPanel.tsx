@@ -8,7 +8,7 @@
 // drives — one target, two drivers. Mounting = the dock tab is visible, so
 // this panel also drives the screencast on/off flow control.
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ArrowLeft, ArrowRight, Globe, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Copy, Globe, Loader2, MousePointer2, RefreshCw, SendToBack } from "lucide-react";
 import {
   browserMirrorSnapshot,
   subscribeBrowserMirror,
@@ -41,6 +41,7 @@ export function BrowserMirrorPanel() {
   const [address, setAddress] = useState("");
   const [tabs, setTabs] = useState<BrowserPanelTab[]>([]);
   const [loading, setLoading] = useState(false);
+  const [picking, setPicking] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   const lastMoveRef = useRef(0);
 
@@ -110,6 +111,20 @@ export function BrowserMirrorPanel() {
     [sessionID],
   );
 
+  // Element picker: arm/cancel on the session; the picked element arrives as
+  // a "picked" frame through the store (chip below).
+  const togglePick = useCallback(() => {
+    if (!sessionID || !app) return;
+    if (picking) {
+      void app.BrowserPanelStopPick(sessionID).catch(() => {});
+      setPicking(false);
+    } else {
+      void app.BrowserPanelStartPick(sessionID)
+        .then(() => setPicking(true))
+        .catch(() => {});
+    }
+  }, [picking, sessionID]);
+
   if (!frame) {
     return (
       <div className="browser-mirror browser-mirror--empty">
@@ -164,6 +179,14 @@ export function BrowserMirrorPanel() {
           onClick={() => guard(() => app!.BrowserPanelReload(sessionID))}
         >
           {loading ? <Loader2 size={15} className="composer-phase__spin" /> : <RefreshCw size={15} />}
+        </button>
+        <button
+          className={`browser-mirror__tool${picking ? " browser-mirror__tool--active" : ""}`}
+          title={t("browserMirror.pick")}
+          disabled={loading}
+          onClick={togglePick}
+        >
+          <MousePointer2 size={15} />
         </button>
         <input
           className="browser-mirror__address"
@@ -251,6 +274,36 @@ export function BrowserMirrorPanel() {
       >
         <img className="browser-mirror__img" src={frame.image} alt={frame.title || ""} draggable={false} />
       </div>
+      {/* Picked element chip: insert a readable description into the chat
+          input (existing cowork:insert-text channel) or copy the selector. */}
+      {s.picked && (
+        <div className="browser-mirror__chip">
+          <span className="browser-mirror__chip-text" title={s.picked.selector}>
+            <code>{s.picked.tag}</code>
+            {s.picked.text ? ` “${s.picked.text.slice(0, 40)}”` : ""}
+            {" · "}
+            <span className="browser-mirror__chip-sel">{s.picked.selector}</span>
+          </span>
+          <button
+            className="browser-mirror__tool"
+            title={t("browserMirror.insertChat")}
+            onClick={() => {
+              const d = s.picked!;
+              const desc = `${d.tag}${d.text ? ` “${d.text}”` : ""}（选择器 ${d.selector}）`;
+              window.dispatchEvent(new CustomEvent("cowork:insert-text", { detail: desc }));
+            }}
+          >
+            <SendToBack size={14} />
+          </button>
+          <button
+            className="browser-mirror__tool"
+            title={t("browserMirror.copySelector")}
+            onClick={() => void navigator.clipboard.writeText(s.picked!.selector).catch(() => {})}
+          >
+            <Copy size={14} />
+          </button>
+        </div>
+      )}
       {(frame.title || frame.url) && (
         <div className="browser-mirror__text" title={frame.url}>
           {frame.title || frame.url}

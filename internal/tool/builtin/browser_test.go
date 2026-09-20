@@ -19,7 +19,7 @@ func TestBrowserToolsRoster(t *testing.T) {
 		"browser_extract": true, "browser_screenshot": true, "browser_evaluate": true,
 		"browser_snapshot": true, "browser_select_option": true, "browser_upload_file": true,
 		"browser_set_path": true, "browser_wait": true, "browser_keepalive": true,
-		"browser_auto": true,
+		"browser_network": true, "browser_auto": true,
 	}
 	if len(tools) != len(want) {
 		t.Fatalf("BrowserTools returned %d tools, want %d", len(tools), len(want))

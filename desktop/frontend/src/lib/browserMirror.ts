@@ -22,6 +22,7 @@ export interface BrowserMirrorState {
   running: boolean; // between status start and end
   lastText: string; // browser name / latest action / run summary
   seq: number; // increments on every store change
+  picked: import("./types").BrowserPickDescriptor | null; // latest picked element (panel chip)
   // Per-session latest frames (kernel tags frames with session_id): the ops
   // viewer lists the console session plus agent-driven sessions from here.
   // Capped by recency; aggregate fields above stay the historical behavior.
@@ -37,6 +38,7 @@ const initialBrowserMirrorState: BrowserMirrorState = {
   running: false,
   lastText: "",
   seq: 0,
+  picked: null,
   sessions: {},
 };
 
@@ -90,6 +92,15 @@ export function applyBrowserMirrorFrame(
       },
       startedActivity: false,
     };
+  }
+  if (frame.kind === "picked") {
+    let desc: import("./types").BrowserPickDescriptor | null = null;
+    try {
+      desc = frame.text ? (JSON.parse(frame.text) as import("./types").BrowserPickDescriptor) : null;
+    } catch {
+      desc = null;
+    }
+    return { state: { ...state, picked: desc, seq: state.seq + 1 }, startedActivity: false };
   }
   if (frame.kind === "frame") {
     return {
