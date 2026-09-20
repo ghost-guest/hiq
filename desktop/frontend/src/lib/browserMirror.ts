@@ -23,6 +23,7 @@ export interface BrowserMirrorState {
   lastText: string; // browser name / latest action / run summary
   seq: number; // increments on every store change
   picked: import("./types").BrowserPickDescriptor | null; // latest picked element (panel chip)
+  downloads: import("./types").BrowserPanelDownload[]; // latest downloads (capped)
   // Per-session latest frames (kernel tags frames with session_id): the ops
   // viewer lists the console session plus agent-driven sessions from here.
   // Capped by recency; aggregate fields above stay the historical behavior.
@@ -39,6 +40,7 @@ const initialBrowserMirrorState: BrowserMirrorState = {
   lastText: "",
   seq: 0,
   picked: null,
+  downloads: [],
   sessions: {},
 };
 
@@ -101,6 +103,20 @@ export function applyBrowserMirrorFrame(
       desc = null;
     }
     return { state: { ...state, picked: desc, seq: state.seq + 1 }, startedActivity: false };
+  }
+  if (frame.kind === "download") {
+    let d: import("./types").BrowserPanelDownload | null = null;
+    try {
+      d = frame.text ? (JSON.parse(frame.text) as import("./types").BrowserPanelDownload) : null;
+    } catch {
+      d = null;
+    }
+    if (!d) return { state, startedActivity: false };
+    const others = state.downloads.filter((x) => x.guid !== d!.guid);
+    return {
+      state: { ...state, downloads: [d, ...others].slice(0, 8), seq: state.seq + 1 },
+      startedActivity: false,
+    };
   }
   if (frame.kind === "frame") {
     return {

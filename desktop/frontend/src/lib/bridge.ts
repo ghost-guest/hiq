@@ -786,6 +786,13 @@ export interface AppBindings {
   BrowserPanelStartPick(sessionID: string): Promise<void>;
   BrowserPanelStopPick(sessionID: string): Promise<void>;
   BrowserPanelTakePick(sessionID: string): Promise<import("./types").BrowserPickDescriptor | null>;
+  BrowserPanelDownloads(sessionID: string): Promise<import("./types").BrowserPanelDownload[]>;
+  BrowserPanelFindInPage(sessionID: string, query: string): Promise<number>;
+  BrowserPanelFindClear(sessionID: string): Promise<void>;
+  BrowserPanelExportState(sessionID: string): Promise<string>;
+  BrowserPanelImportState(sessionID: string): Promise<number>;
+  BrowserBookmarksList(): Promise<import("./types").BrowserBookmark[]>;
+  BrowserBookmarkToggle(url: string, title: string): Promise<boolean>;
   BrowserConsoleEvaluate(expression: string): Promise<string>;
   BrowserConsoleRecordStart(): Promise<void>;
   BrowserConsoleRecordStop(): Promise<import("./types").BrowserConsoleRecordEvent[]>;
@@ -5470,7 +5477,14 @@ function makeMockApp(): AppBindings {
     async BrowserPanelTakePick(_s: string) {
       await delay(150);
       return null;
-    },    async BrowserConsoleEvaluate(_expression: string) { return "undefined (mock)"; },
+    },
+    async BrowserPanelDownloads(_s: string) { return []; },
+    async BrowserPanelFindInPage(_s: string, _q: string) { return 0; },
+    async BrowserPanelFindClear(_s: string) {},
+    async BrowserPanelExportState(_s: string) { return ""; },
+    async BrowserPanelImportState(_s: string) { return 0; },
+    async BrowserBookmarksList() { return []; },
+    async BrowserBookmarkToggle(_u: string, _t: string) { return true; },    async BrowserConsoleEvaluate(_expression: string) { return "undefined (mock)"; },
     async BrowserConsoleRecordStart() { await delay(200); },
     async BrowserConsoleRecordStop() {
       return [

@@ -8,7 +8,23 @@
 // drives — one target, two drivers. Mounting = the dock tab is visible, so
 // this panel also drives the screencast on/off flow control.
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ArrowLeft, ArrowRight, Copy, Globe, Loader2, MousePointer2, RefreshCw, SendToBack } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Copy,
+  Download,
+  Globe,
+  Loader2,
+  LogIn,
+  LogOut,
+  MousePointer2,
+  RefreshCw,
+  Search,
+  SendToBack,
+  Star,
+  X,
+} from "lucide-react";
+import type { BrowserBookmark } from "../../lib/types";
 import {
   browserMirrorSnapshot,
   subscribeBrowserMirror,
@@ -42,6 +58,11 @@ export function BrowserMirrorPanel() {
   const [tabs, setTabs] = useState<BrowserPanelTab[]>([]);
   const [loading, setLoading] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState("");
+  const [findCount, setFindCount] = useState<number | null>(null);
+  const [bookmarks, setBookmarks] = useState<BrowserBookmark[]>([]);
+  const downloads = s.downloads;
   const viewportRef = useRef<HTMLDivElement>(null);
   const lastMoveRef = useRef(0);
 
@@ -52,6 +73,13 @@ export function BrowserMirrorPanel() {
       void app?.BrowserPanelSetVisible(false);
     };
   }, []);
+
+  // Bookmarks load once per session; toggles refresh the list.
+  useEffect(() => {
+    app?.BrowserBookmarksList()
+      .then(setBookmarks)
+      .catch(() => {});
+  }, [sessionID]);
 
   // Track the address bar from the stream; refresh the tab strip when the
   // session or its active tab changes.
@@ -124,6 +152,33 @@ export function BrowserMirrorPanel() {
         .catch(() => {});
     }
   }, [picking, sessionID]);
+
+  const bookmarked = !!frame?.url && bookmarks.some((b) => b.url === frame.url);
+
+  const toggleBookmark = useCallback(() => {
+    const url = frame?.url;
+    if (!url || !app) return;
+    void app
+      .BrowserBookmarkToggle(url, frame?.title || url)
+      .then(() => app.BrowserBookmarksList())
+      .then(setBookmarks)
+      .catch(() => {});
+  }, [frame?.url, frame?.title]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const runFind = useCallback(
+    (q: string) => {
+      setFindQuery(q);
+      if (!q) {
+        setFindCount(null);
+        void app?.BrowserPanelFindClear(sessionID).catch(() => {});
+        return;
+      }
+      void app?.BrowserPanelFindInPage(sessionID, q)
+        .then((n) => setFindCount(n))
+        .catch(() => {});
+    },
+    [sessionID],
+  );
 
   if (!frame) {
     return (
@@ -202,11 +257,67 @@ export function BrowserMirrorPanel() {
           }}
           placeholder={t("browserMirror.addressHint")}
         />
+        <button
+          className={`browser-mirror__tool${bookmarked ? " browser-mirror__tool--active" : ""}`}
+          title={t("browserMirror.bookmark")}
+          onClick={toggleBookmark}
+        >
+          <Star size={15} />
+        </button>
+        <button
+          className={`browser-mirror__tool${findOpen ? " browser-mirror__tool--active" : ""}`}
+          title={t("browserMirror.find")}
+          onClick={() => {
+            setFindOpen((v) => !v);
+            if (findOpen) runFind("");
+          }}
+        >
+          <Search size={15} />
+        </button>
         <span
           className={`browser-mirror__dot${loading ? " browser-mirror__dot--live" : ""}`}
           aria-hidden="true"
         />
       </div>
+      {/* Bookmarks bar */}
+      {bookmarks.length > 0 && (
+        <div className="browser-mirror__bookmarks">
+          {bookmarks.map((b) => (
+            <button
+              key={b.id}
+              className="browser-mirror__bookmark"
+              title={b.url}
+              onClick={() => navigate(b.url)}
+            >
+              {b.title || b.url}
+            </button>
+          ))}
+        </div>
+      )}
+      {/* Find bar */}
+      {findOpen && (
+        <div className="browser-mirror__findrow">
+          <input
+            className="browser-mirror__address"
+            autoFocus
+            value={findQuery}
+            spellCheck={false}
+            onChange={(e) => runFind(e.target.value)}
+            placeholder={t("browserMirror.findPlaceholder")}
+          />
+          {findCount !== null && <span className="browser-mirror__findcount">{findCount}</span>}
+          <button
+            className="browser-mirror__tool"
+            title={t("browserMirror.findClose")}
+            onClick={() => {
+              setFindOpen(false);
+              runFind("");
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
       {/* Interactive viewport: pointer + wheel + keyboard forwarded via CDP */}
       <div
         ref={viewportRef}
@@ -274,6 +385,43 @@ export function BrowserMirrorPanel() {
       >
         <img className="browser-mirror__img" src={frame.image} alt={frame.title || ""} draggable={false} />
       </div>
+      {/* Downloads + login-state row */}
+      {(downloads.length > 0 || sessionID) && (
+        <div className="browser-mirror__meta">
+          {downloads.slice(0, 3).map((d) => (
+            <span key={d.guid} className="browser-mirror__dl" title={d.path || d.url}>
+              <Download size={13} />
+              <span className="browser-mirror__dl-name">{d.name}</span>
+              <span className={`browser-mirror__dl-state browser-mirror__dl-state--${d.state}`}>
+                {t(`browserMirror.dl_${d.state}`)}
+              </span>
+            </span>
+          ))}
+          <span className="browser-mirror__meta-actions">
+            <button
+              className="browser-mirror__tool"
+              title={t("browserMirror.exportState")}
+              onClick={() => void app?.BrowserPanelExportState(sessionID).catch(() => {})}
+            >
+              <LogOut size={14} />
+            </button>
+            <button
+              className="browser-mirror__tool"
+              title={t("browserMirror.importState")}
+              onClick={() =>
+                void app
+                  ?.BrowserPanelImportState(sessionID)
+                  .then((n) => {
+                    if (n > 0) void app?.BrowserPanelReload(sessionID).catch(() => {});
+                  })
+                  .catch(() => {})
+              }
+            >
+              <LogIn size={14} />
+            </button>
+          </span>
+        </div>
+      )}
       {/* Picked element chip: insert a readable description into the chat
           input (existing cowork:insert-text channel) or copy the selector. */}
       {s.picked && (

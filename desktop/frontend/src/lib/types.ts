@@ -2219,7 +2219,7 @@ export interface NetDevLiveEvent {
 // One update from the kernel's browser-panel sink ("browser:mirror" Wails
 // event; desktop/app.go forwards internal/tool/builtin.BrowserPanelFrame).
 export interface BrowserMirrorFrame {
-  kind: "frame" | "status" | "live" | "picked";
+  kind: "frame" | "status" | "live" | "picked" | "download";
   source: "tool" | "auto"; // chromedp tools | browser-use sidecar
   phase?: "start" | "end" | "step"; // status only
   text?: string;
@@ -2251,6 +2251,23 @@ export interface BrowserPanelTab {
   title: string;
   url: string;
   active: boolean;
+}
+
+// One download mirrored from the driven browser session.
+export interface BrowserPanelDownload {
+  guid: string;
+  name: string;
+  url?: string;
+  state: "inProgress" | "completed" | "canceled";
+  path?: string;
+}
+
+// One saved bookmark (panel bookmarks bar).
+export interface BrowserBookmark {
+  id: string;
+  title: string;
+  url: string;
+  created_at_ms: number;
 }
 
 // One picked page element (element picker → chat chip).

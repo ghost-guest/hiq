@@ -9,9 +9,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"image"
 	"image/jpeg"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -242,6 +242,7 @@ type downloadRecord struct {
 	URL           string // page URL that triggered the download
 	SuggestedName string // filename suggested by the server
 	State         string // "inProgress", "completed", or "canceled"
+	FilePath      string // on-disk path once completed (download progress event)
 }
 
 // --- loop detection (Phase 2) -----------------------------------------------
@@ -712,7 +713,7 @@ func newBrowserSession() (*browserSession, error) {
 	// Downloads: pin a known download dir and capture completion events so the
 	// agent learns a download finished (and where the file landed) instead of
 	// silently waiting forever after a "click download link" step.
-	startDownloadsHandler(s)
+	panelStartDownloadsHandler(s)
 	// Phase 6: Start WebSocket keepalive.
 	startSessionKeepalive(s)
 	EmitBrowserPanel(BrowserPanelFrame{Kind: "status", Source: "tool", Phase: "start", Text: s.browser, SessionID: s.id})
@@ -775,7 +776,7 @@ func newAttachedSession(cdpURL string) (*browserSession, error) {
 	// download capture, and websocket keepalive. Without these, an attached
 	// session dies on the first alert() or on proxies that close idle websockets.
 	startDialogHandler(s)
-	startDownloadsHandler(s)
+	panelStartDownloadsHandler(s)
 	startSessionKeepalive(s)
 	EmitBrowserPanel(BrowserPanelFrame{Kind: "status", Source: "tool", Phase: "start", Text: s.browser, SessionID: s.id})
 	return s, nil

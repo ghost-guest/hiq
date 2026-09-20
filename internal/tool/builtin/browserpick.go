@@ -29,8 +29,10 @@ type PickDescriptor struct {
 	Text     string  `json:"text,omitempty"` // trimmed inner text (≤120 chars)
 	Href     string  `json:"href,omitempty"`
 	Value    string  `json:"value,omitempty"` // input value when applicable
-	X, Y     float64 `json:"x,omitempty"`     // viewport rect (CSS px)
-	W, H     float64 `json:"w,omitempty"`
+	X        float64 `json:"x,omitempty"`     // viewport rect (CSS px)
+	Y        float64 `json:"y,omitempty"`
+	W        float64 `json:"w,omitempty"`
+	H        float64 `json:"h,omitempty"`
 }
 
 // pickState is the per-session picker bookkeeping (lazy, like panelStreamState).

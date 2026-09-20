@@ -263,7 +263,8 @@ func panelTitleAndURL(tabCtx context.Context) (title, url string) {
 // PanelInputEvent is one input action from the interactive panel.
 type PanelInputEvent struct {
 	Type       string  `json:"type"` // click|down|up|move|wheel|key|text
-	X, Y       float64 `json:"x,omitempty"`
+	X          float64 `json:"x,omitempty"`
+	Y          float64 `json:"y,omitempty"`
 	DeltaX     float64 `json:"deltaX,omitempty"`
 	DeltaY     float64 `json:"deltaY,omitempty"`
 	Button     string  `json:"button,omitempty"` // left|middle|right
