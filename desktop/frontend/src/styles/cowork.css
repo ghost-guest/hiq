@@ -6185,7 +6185,7 @@
   min-width: 0;
   height: 26px;
   border: 1px solid var(--border-soft);
-  border-radius: 13px;
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   color: var(--fg);
   font-size: var(--font-control-small);
