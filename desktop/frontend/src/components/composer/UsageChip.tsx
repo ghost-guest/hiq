@@ -1,7 +1,11 @@
 // UsageChip — compact context-window meter for the composer param row
 // (ui-redesign spec §4-C3): a 46px fill bar plus inline token readings. The
 // chip itself carries the numbers (session tokens · used/window); aria-label
-// keeps the reading screen-reader friendly. Past it sits the `readout` string
+// keeps the reading screen-reader friendly. When the provider has no
+// context_window configured the bar and the used/window pair give way to the
+// session total plus a "window unset" label — the chip never vanishes, because
+// a silently missing readout reads as a bug rather than as a config gap. Past
+// it sits the `readout` string
 // (token throughput + session cache hit-rate) supplied by Composer — a separate
 // prop, because it describes the last completed turn rather than the context.
 // The fill turns warn-coloured past 85% so compaction pressure is visible at a
@@ -60,13 +64,19 @@ function fmtCost(cost: number, currency?: string): string {
 
 export function UsageChip({ context, usage, budget, readout, onCompact, disabled }: { context?: ContextInfo; usage?: WireUsage; budget?: BudgetStatusView; readout?: string; onCompact?: () => void; disabled?: boolean }) {
   const t = useT();
-  if (!context || !context.window || context.window <= 0) {
-    // No window known → no chip. The throughput readout beside it does not
-    // depend on the window, so it still shows (without the hover panel).
+  if (!context) {
+    // Nothing to anchor the chip to — the throughput readout is not derived
+    // from ContextInfo, so it still shows on its own.
     return readout ? <span className="composer-usage">{readout}</span> : null;
   }
-  const pct = Math.min(100, Math.round((context.used / context.window) * 100));
-  const hot = pct >= 85;
+  // A provider with no context_window configured reports window=0, which hiq
+  // treats as "no context management". Bailing out here used to make the whole
+  // readout disappear without a trace: the user sees "tok/s · cache" sitting
+  // alone and has no way to tell that the context numbers are missing by
+  // configuration rather than by bug. Keep the slot and name the gap instead.
+  const hasWindow = context.window > 0;
+  const pct = hasWindow ? Math.min(100, Math.round((context.used / context.window) * 100)) : 0;
+  const hot = hasWindow && pct >= 85;
   const session = context.sessionTokens > 0 ? context.sessionTokens : context.used;
 
   // Aggregate cache rate prefers the telemetry totals (works for every
@@ -86,10 +96,16 @@ export function UsageChip({ context, usage, budget, readout, onCompact, disabled
   const panel = (
     <div className="usage-pop">
       <div className="usage-pop__title">{t("composer.usageDetail.title")}</div>
-      <div className="usage-pop__bar" aria-hidden="true">
-        <i style={{ width: `${Math.min(100, (context.used / context.window) * 100)}%` }} />
-      </div>
-      <Row label={`${fmtFull(context.used)} / ${fmtFull(context.window)}`} value={`${((context.used / context.window) * 100).toFixed(1)}%`} />
+      {hasWindow ? (
+        <>
+          <div className="usage-pop__bar" aria-hidden="true">
+            <i style={{ width: `${Math.min(100, (context.used / context.window) * 100)}%` }} />
+          </div>
+          <Row label={`${fmtFull(context.used)} / ${fmtFull(context.window)}`} value={`${((context.used / context.window) * 100).toFixed(1)}%`} />
+        </>
+      ) : (
+        <div className="usage-pop__hint">{t("composer.usageDetail.noWindowHint")}</div>
+      )}
       {!!context.compactRatio && context.compactRatio > 0 && context.compactRatio < 1 && (
         <Row label={t("composer.usageDetail.compactLine")} value={`${Math.round(context.compactRatio * 100)}%`} />
       )}
@@ -133,14 +149,19 @@ export function UsageChip({ context, usage, budget, readout, onCompact, disabled
   return (
     <Tooltip label={panel} bodyClassName="usage-pop-body" side="top">
       <div
-        className={`composer-usage${hot ? " composer-usage--hot" : ""}`}
-        aria-label={`${t("composer.contextUsage")} ${pct}% · ${t("composer.sessionTokens")} ${fmtTokens(session)}${readout ? ` · ${readout}` : ""}`}
+        className={`composer-usage${hot ? " composer-usage--hot" : ""}${hasWindow ? "" : " composer-usage--nowindow"}`}
+        aria-label={`${t("composer.contextUsage")} ${hasWindow ? `${pct}%` : t("composer.usageDetail.noWindow")} · ${t("composer.sessionTokens")} ${fmtTokens(session)}${readout ? ` · ${readout}` : ""}`}
       >
-        <span className="composer-usage__bar" aria-hidden="true">
-          <i style={{ width: `${pct}%` }} />
-        </span>
+        {hasWindow && (
+          <span className="composer-usage__bar" aria-hidden="true">
+            <i style={{ width: `${pct}%` }} />
+          </span>
+        )}
         <span className="composer-usage__text">
-          {fmtTokens(session)} · {fmtTokens(context.used)}/{fmtTokens(context.window)}
+          {fmtTokens(session)}
+          {hasWindow
+            ? ` · ${fmtTokens(context.used)}/${fmtTokens(context.window)}`
+            : ` · ${t("composer.usageDetail.noWindow")}`}
           {!!budget?.rpm && budget.rpm > 0 && ` · ${budget.used}/${budget.rpm} rpm`}
         </span>
         {/* Token throughput + session cache hit-rate, always on screen (hover

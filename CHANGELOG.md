@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### fix(composer): 上下文用量胶囊在渠道未配窗口时整块消失——改为保留槽位并明示原因
+
+用户实测反馈（截图）：输入框右下角只剩「26 tok/s · 缓存 96%」，上下文与用量那一块整块不见了。排查结论：**既不是 v0.1.23 下架浏览器导致的，也不是新回归**——`UsageChip` 一直带着「拿不到 window 就整块不渲染」的分支（`if (!context.window) return null`），而新用的 `DeepSeek-V4.1-Flash` 所属渠道（`octpus` / `小米财财`）配置里没写 `context_window`，后端因此报告 `window=0`（hiq 把 0 视为「不做上下文管理」）；对照组 `yyqwen` 配了 `131072`，所以 `32k · 0/131k · 0/60 rpm` 显示正常。
+
+- **渲染**：窗口未知时不再 `return null`，改为保留槽位——显示会话累计 token + 「窗口未配置」，且不画进度条（0 宽度的条会被读成「0% 已用」）；hover 面板用一段说明替代占用比例行，并指出去 设置 → 模型 补窗口。`composer-usage--nowindow` 作为语义类，便于样式与测试定位。
+- **文案**：修正设置里那句误导提示——`context_window` 填 0 的真实语义是**不启用自动压缩**（只走内存软裁剪 `standbySoftTrim`），不是「使用模型服务默认值」；中英同步（`settings.contextWindowHint` / `settings.contextWindowPlaceholder`）。
+- **测试**：新增 `src/__tests__/usage-chip.test.tsx`（3 例：无窗口保留槽位且无进度条、有窗口渲染 used/window、无 ContextInfo 时仍显示 throughput），并接入 `npm test`。
+- 验证：`check:css` 三门禁绿、`tsc --noEmit` 零错、`locale-parity` 2/2、`run-readout` 29/29、新增用例 3/3。
+
 ### remove(desktop/browser): 内置浏览器整体下架——不再注册 browser_* 工具、移除右侧「浏览器」标签与浏览器设置卡
 
 用户反馈（截图：hiq 组占用 893.9MB，其中 headless Chrome 三进程 ~270MB）：**「这个浏览器太占用内存了，把这个浏览器的功能去掉吧，保持最初版的就行了，别内置浏览器了，它占内存，又卡」**。
